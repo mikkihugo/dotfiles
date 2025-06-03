@@ -38,3 +38,4 @@ Thumbs.db
 .env_tokens
 config/.env.gpg
 *_GIST_ID*
+.aider*

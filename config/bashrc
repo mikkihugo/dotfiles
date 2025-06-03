@@ -35,6 +35,9 @@ alias claude="/home/mhugo/.claude/local/claude"
 # mise version manager (asdf replacement)
 eval "$(mise activate bash)"
 
+# zoxide (smart cd)
+eval "$(zoxide init bash)"
+
 source ~/.aliases
 
 # encore.dev

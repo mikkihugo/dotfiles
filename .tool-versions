@@ -12,7 +12,7 @@ k9s 0.50.6
 bat 0.25.0
 fd 10.2.0
 fzf 0.62.0
-exa 0.10.1
+eza 0.21.4
 hyperfine 1.19.0
 lazygit 0.51.1
 github-cli 2.74.0

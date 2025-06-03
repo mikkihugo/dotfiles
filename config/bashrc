@@ -46,9 +46,9 @@ export PATH="/home/mhugo/.encore/bin:$PATH"
 # starship prompt
 eval "$(starship init bash)"
 
-# Auto tmux on SSH login
+# Auto zellij on SSH login
 if [[ -n "$SSH_CLIENT" ]] || [[ -n "$SSH_TTY" ]]; then
-    source ~/.tmux-auto.sh
+    source ~/dotfiles/scripts/zellij-auto.sh
 fi
 
 # FZF integration

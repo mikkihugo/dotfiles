@@ -1,0 +1,55 @@
+# Starship configuration
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_status\
+$python\
+$nodejs\
+$golang\
+$rust\
+$package\
+$kubernetes\
+$time\
+$line_break\
+$character"""
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+[directory]
+style = "blue bold"
+truncation_length = 3
+truncate_to_repo = false
+
+[git_branch]
+symbol = "🌿 "
+style = "bright-green bold"
+
+[git_status]
+style = "red bold"
+
+[python]
+symbol = "🐍 "
+python_binary = "python"
+
+[nodejs]
+symbol = "⬢ "
+style = "bright-green bold"
+
+[golang]
+symbol = "🐹 "
+
+[rust]
+symbol = "🦀 "
+
+[kubernetes]
+disabled = false
+symbol = "☸️ "
+
+[time]
+disabled = false
+style = "white bold"
+format = "[$time]($style)"

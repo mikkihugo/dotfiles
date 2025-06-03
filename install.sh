@@ -26,7 +26,7 @@ backup_file ~/.bashrc
 backup_file ~/.aliases
 backup_file ~/.tmux.conf
 backup_file ~/.tool-versions
-backup_file ~/mise.toml
+backup_file ~/.mise.toml
 backup_file ~/.config/starship.toml
 
 echo ""
@@ -40,8 +40,8 @@ if ! command -v mise >/dev/null; then
 fi
 
 # Copy mise configuration
-if [[ -f "$DOTFILES_DIR/mise.toml" ]]; then
-    cp "$DOTFILES_DIR/mise.toml" ~/mise.toml
+if [[ -f "$DOTFILES_DIR/.mise.toml" ]]; then
+    cp "$DOTFILES_DIR/.mise.toml" ~/.mise.toml
     echo "📦 Installing development tools with mise..."
     mise trust
     mise install

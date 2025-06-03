@@ -51,7 +51,7 @@ chmod +x install.sh
 
 ```
 dotfiles/
-├── mise.toml              # Mise configuration
+├── .mise.toml             # Mise configuration
 ├── .tool-versions         # Legacy ASDF compatibility
 ├── install.sh             # Automated setup script
 ├── config/
@@ -125,9 +125,9 @@ git push
 
 ### Add new tools:
 ```bash
-# Add to mise.toml
+# Add to .mise.toml
 # Edit the [tools] section
-vim mise.toml
+vim .mise.toml
 # Update install script
 vim install.sh
 ```

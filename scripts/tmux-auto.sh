@@ -19,23 +19,9 @@ if [[ $session_count -eq 0 ]]; then
     echo "🚀 Creating new tmux session..."
     tmux new-session -d -s "main"
     tmux attach-session -t "main"
-elif [[ $session_count -eq 1 ]]; then
-    # One session - attach to it
-    session_name=$(tmux list-sessions -F '#{session_name}' 2>/dev/null)
-    echo "📎 Attaching to existing session: $session_name"
-    tmux attach-session -t "$session_name"
 else
-    # Multiple sessions - show menu
-    echo "🔗 Multiple tmux sessions found:"
-    tmux list-sessions
-    echo ""
-    echo "Commands:"
-    echo "  tmux attach -t SESSION_NAME  # Attach to specific session"
-    echo "  tmux new -s SESSION_NAME     # Create new session"
-    echo "  tmux list-sessions           # List all sessions"
-    echo ""
-    read -p "Enter session name to attach (or press Enter to skip): " choice
-    if [[ -n "$choice" ]]; then
-        tmux attach-session -t "$choice" 2>/dev/null || echo "❌ Session '$choice' not found"
-    fi
+    # Always create a new session with timestamp
+    new_session="ssh-$(date +%Y%m%d-%H%M%S)"
+    echo "🚀 Creating new tmux session: $new_session"
+    tmux new-session -s "$new_session"
 fi

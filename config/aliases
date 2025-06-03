@@ -1,0 +1,73 @@
+# Modern CLI tool aliases
+alias ls='exa --icons --group-directories-first'
+alias ll='exa -la --icons --group-directories-first'
+alias lt='exa --tree --level=2 --icons'
+alias cat='bat'
+alias grep='grep --color=auto'
+alias find='fd'
+alias ping='ping -c 5'
+
+# Git shortcuts
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git log --oneline -10'
+alias gd='git diff'
+alias lg='lazygit'
+
+# GitHub CLI shortcuts
+alias ghpr='gh pr create'
+alias ghprs='gh pr status'
+alias ghprv='gh pr view'
+alias ghrepo='gh repo view --web'
+alias ghissue='gh issue create'
+
+# Kubernetes shortcuts (when you have clusters)
+alias k='kubectl'
+alias kgp='kubectl get pods'
+alias kgs='kubectl get services'
+alias kgd='kubectl get deployments'
+
+# Directory navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+# System info
+alias ports='netstat -tuln'
+alias psa='ps aux'
+alias df='df -h'
+alias du='du -h'
+alias free='free -h'
+
+# Development shortcuts
+alias py='python'
+alias ipy='ipython'
+alias serve='python -m http.server 8000'
+alias json='python -m json.tool'
+
+# File operations
+alias cp='cp -i'
+alias mv='mv -i'
+alias rm='rm -i'
+alias mkdir='mkdir -p'
+
+# Networking
+alias myip='curl -s ipinfo.io/ip'
+alias localip='hostname -I | cut -d" " -f1'
+alias moshstats='echo "Mosh connection info:" && echo "MOSH_CONNECTION_STRING: $MOSH_CONNECTION_STRING"'
+alias netlat='ping -c 3'
+alias netspeed='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -'
+
+# Process management
+alias killall='killall -v'
+alias jobs='jobs -l'
+
+# Tmux shortcuts
+alias t='tmux'
+alias ta='tmux attach'
+alias tl='tmux list-sessions'
+alias tn='tmux new -s'
+alias tk='tmux kill-session -t'
+alias td='tmux detach'

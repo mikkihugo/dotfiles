@@ -2,49 +2,54 @@
 
 This repository is **public** and contains NO secrets. All sensitive data is managed separately.
 
-## 📋 Token Management Options
+## 📋 Token Management via Private Gist (Recommended)
 
-### Option 1: Manual Setup (Simple)
-After cloning, manually set your tokens:
+### Quick Setup for New Machines
 ```bash
-export GITHUB_TOKEN="your_token_here"
-echo "export GITHUB_TOKEN='$GITHUB_TOKEN'" >> ~/.bashrc
+# 1. Install dotfiles
+git clone https://github.com/mikkihugo/dotfiles ~/dotfiles
+cd ~/dotfiles && ./install.sh
+
+# 2. Login to GitHub CLI (one-time)
+gh auth login
+
+# 3. Retrieve tokens from private gist
+gh gist view YOUR_GIST_ID > ~/.env_tokens
+source ~/.env_tokens
+
+# 4. Auto-load on shell start (optional)
+echo '[[ -f ~/.env_tokens ]] && source ~/.env_tokens' >> ~/.bashrc
 ```
 
-### Option 2: Encrypted Sync (Recommended)
-Use the included env-manager for secure token sync:
-```bash
-# First time setup on primary machine
-env-setup    # Creates encrypted .env.gpg
-env-backup   # Saves to dotfiles/config/.env.gpg
+### Managing Your Tokens
 
-# On new machines
-env-restore  # Restores from dotfiles/config/.env.gpg
+**View current tokens:**
+```bash
+gh gist view YOUR_GIST_ID
 ```
 
-### Option 3: Private Gist (Alternative)
-Store tokens in a private GitHub Gist:
+**Update tokens:**
 ```bash
-# Save tokens to private gist
-gh gist create --private ~/.env
+# Edit locally then update
+vim ~/.env_tokens
+gh gist edit YOUR_GIST_ID ~/.env_tokens
 
-# On new machine
-gh gist view GIST_ID > ~/.env
-source ~/.env
+# Or edit directly in browser
+gh gist edit YOUR_GIST_ID --web
 ```
 
 ## 🛡️ Security Notes
 
-- **Never commit tokens** to this public repo
-- **Use .env.gpg** for encrypted storage
-- **GPG passphrase** protects your secrets
-- **Public repo** allows easy cloning without auth
+- **Private gist** - Only accessible with your GitHub account
+- **No passwords** - Uses GitHub authentication
+- **Version controlled** - Gist tracks all changes
+- **Cross-machine sync** - Same tokens everywhere
 
 ## 🚀 Quick Start Without Tokens
 
 The environment works without tokens:
 ```bash
-git clone https://github.com/USERNAME/dotfiles
+git clone https://github.com/mikkihugo/dotfiles
 cd dotfiles && ./install.sh
 # Everything works except GitHub operations
 ```

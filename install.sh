@@ -26,39 +26,25 @@ backup_file ~/.bashrc
 backup_file ~/.aliases
 backup_file ~/.tmux.conf
 backup_file ~/.tool-versions
+backup_file ~/mise.toml
 backup_file ~/.config/starship.toml
 
 echo ""
-echo "🔧 Installing ASDF and plugins..."
+echo "🔧 Installing mise (modern asdf replacement)..."
 
-# Install ASDF if not present
-if [[ ! -d ~/.asdf ]]; then
-    git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.17.0
-    echo '. "$HOME/.asdf/asdf.sh"' >> ~/.bashrc
-    echo '. "$HOME/.asdf/completions/asdf.bash"' >> ~/.bashrc
-    source ~/.asdf/asdf.sh
+# Install mise if not present
+if ! command -v mise >/dev/null; then
+    curl https://mise.run | sh
+    echo 'eval "$(mise activate bash)"' >> ~/.bashrc
+    export PATH="$HOME/.local/bin:$PATH"
 fi
 
-# Install ASDF plugins and tools
-echo "📦 Installing development tools..."
-asdf plugin add python || true
-asdf plugin add nodejs || true
-asdf plugin add golang || true
-asdf plugin add rust || true
-asdf plugin add starship || true
-asdf plugin add k9s || true
-asdf plugin add bat || true
-asdf plugin add fd || true
-asdf plugin add fzf || true
-asdf plugin add exa || true
-asdf plugin add hyperfine || true
-asdf plugin add lazygit || true
-asdf plugin add github-cli || true
-
-# Install versions from .tool-versions
-if [[ -f "$DOTFILES_DIR/.tool-versions" ]]; then
-    cp "$DOTFILES_DIR/.tool-versions" ~/.tool-versions
-    asdf install
+# Copy mise configuration
+if [[ -f "$DOTFILES_DIR/mise.toml" ]]; then
+    cp "$DOTFILES_DIR/mise.toml" ~/mise.toml
+    echo "📦 Installing development tools with mise..."
+    mise trust
+    mise install
 fi
 
 echo ""
@@ -84,7 +70,7 @@ echo "🎨 Setting up shell integrations..."
 
 # Setup FZF
 if command -v fzf >/dev/null; then
-    ~/.asdf/installs/fzf/*/install --key-bindings --completion --no-update-rc
+    $(mise where fzf)/install --key-bindings --completion --no-update-rc 2>/dev/null || true
 fi
 
 echo ""

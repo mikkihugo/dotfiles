@@ -27,21 +27,13 @@ fi
 unset rc
 export PATH=~/.npm-global/bin:$PATH
 
-# Secure environment variable loading
-# Use env-manager.sh to manage sensitive tokens
-if [[ -f "$HOME/.env.gpg" ]] && command -v gpg >/dev/null; then
-    # Load encrypted environment variables
-    eval "$(~/dotfiles/scripts/env-manager.sh load 2>/dev/null)"
-fi
-
-# Source local environment if exists (for manual token setup)
-[[ -f ~/.bashrc_local ]] && source ~/.bashrc_local
+# Load tokens from private gist
+[[ -f ~/.env_tokens ]] && source ~/.env_tokens
 
 alias claude="/home/mhugo/.claude/local/claude"
 
-# asdf version manager
-. "$HOME/.asdf/asdf.sh"
-. "$HOME/.asdf/completions/asdf.bash"
+# mise version manager (asdf replacement)
+eval "$(mise activate bash)"
 
 source ~/.aliases
 

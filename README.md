@@ -5,7 +5,7 @@ GitOps-style configuration management for a supercharged development environment
 ## ✨ Features
 
 ### 🛠️ Development Tools
-- **ASDF** - Version manager for all languages
+- **Mise** - Modern, fast version manager (asdf replacement)
 - **Python 3.12.8** - With SQLite support 
 - **Node.js 22.16.0** - Latest LTS
 - **Go 1.22.0** - Systems programming
@@ -51,7 +51,8 @@ chmod +x install.sh
 
 ```
 dotfiles/
-├── .tool-versions          # ASDF tool versions
+├── mise.toml              # Mise configuration
+├── .tool-versions         # Legacy ASDF compatibility
 ├── install.sh             # Automated setup script
 ├── config/
 │   ├── bashrc             # Bash configuration
@@ -69,7 +70,7 @@ dotfiles/
 ## 🎯 What Gets Installed
 
 ### Core Environment
-- **ASDF** - Multi-language version manager
+- **Mise** - Modern version manager (Rust-based, faster than asdf)
 - **Starship** - Cross-shell prompt
 - **Tmux** - Terminal multiplexer with auto-start
 - **Modern CLI tools** - bat, exa, fd, fzf, etc.
@@ -124,8 +125,9 @@ git push
 
 ### Add new tools:
 ```bash
-# Add to .tool-versions
-echo "terraform latest" >> .tool-versions
+# Add to mise.toml
+# Edit the [tools] section
+vim mise.toml
 # Update install script
 vim install.sh
 ```
@@ -202,7 +204,8 @@ MIT License - Feel free to use and modify!
 
 ## 🙏 Acknowledgments
 
-- [ASDF](https://asdf-vm.com/) - Amazing version manager
+- [Mise](https://mise.jdx.dev/) - Modern version manager
+- [ASDF](https://asdf-vm.com/) - Original version manager
 - [Starship](https://starship.rs/) - Beautiful prompt
 - [Tmux](https://github.com/tmux/tmux) - Terminal multiplexer
 - [Modern CLI tools](https://github.com/ibraheemdev/modern-unix) - Inspiration

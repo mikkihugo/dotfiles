@@ -5,6 +5,12 @@
 - **Rule**: Commit ALL home config changes immediately
 - **Command**: `cd ~/dotfiles && git add -A && git commit -m "message" && git push`
 
+## FORBIDDEN: File naming
+- **NEVER use**: `enhanced`, `improved`, `better`, `v2`, `new`, `old`
+- **NEVER create**: `file_enhanced.ts`, `component_v2.tsx`, `service_better.ts`
+- **ALWAYS**: Edit the original file directly
+- **ALWAYS**: Use git for version control, not filename suffixes
+
 ## Sensitive Data (.env files)
 - **Storage**: Private GitHub Gists (NOT in dotfiles repo)
 - **Local**: `~/.env_tokens` (downloaded from gist)

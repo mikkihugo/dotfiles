@@ -4,21 +4,17 @@ eval "$(mise activate bash)"
 # starship prompt  
 eval "$(starship init bash)"
 
-# Auto-load environment variables from ~/.env if it exists
-if [ -f "$HOME/.env" ]; then
-    set -a  # Export all variables
-    source "$HOME/.env"
-    set +a
-fi
+# Add ~/.scripts to PATH
+export PATH="$HOME/.scripts:$PATH"
 
-# Also load tokens from ~/.env_tokens
+# Auto-load tokens from ~/.env_tokens (all API keys)
 if [ -f "$HOME/.env_tokens" ]; then
     set -a
     source "$HOME/.env_tokens"
     set +a
 fi
 
-# Also load project-specific .env if in a project directory
+# Load project-specific .env if in a project directory
 if [ -f ".env" ] && [ "$PWD" != "$HOME" ]; then
     set -a
     source ".env"

@@ -39,3 +39,10 @@ Thumbs.db
 config/.env.gpg
 *_GIST_ID*
 .aider*
+
+# Environment files - these go to encrypted gists
+.env
+.env.*
+*.env
+!.env.example
+!.env.template

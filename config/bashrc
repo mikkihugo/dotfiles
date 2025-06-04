@@ -11,6 +11,13 @@ if [ -f "$HOME/.env" ]; then
     set +a
 fi
 
+# Also load tokens from ~/.env_tokens
+if [ -f "$HOME/.env_tokens" ]; then
+    set -a
+    source "$HOME/.env_tokens"
+    set +a
+fi
+
 # Also load project-specific .env if in a project directory
 if [ -f ".env" ] && [ "$PWD" != "$HOME" ]; then
     set -a

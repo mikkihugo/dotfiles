@@ -41,7 +41,6 @@ config/.env.gpg
 .aider*
 
 # Environment files - these go to encrypted gists
-.env
 .env.*
 *.env
 !.env.example

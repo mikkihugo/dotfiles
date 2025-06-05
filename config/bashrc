@@ -1,12 +1,66 @@
-# mise
-eval "$(mise activate bash)"
-export PATH="$HOME/.local/share/mise/shims:$PATH"
+# Cleaned and optimized .bashrc
+
+# mise activation
+if [ -f "$HOME/.local/bin/mise" ]; then
+  eval "$("$HOME/.local/bin/mise" activate bash)"
+  export PATH="$HOME/.local/share/mise/shims:$PATH"
+else
+  echo "mise not found, installing automatically..."
+  # Create installer script
+  cat > "$HOME/.mise_installer.sh" << 'EOF'
+#!/bin/bash
+set -e
+MISE_DEST="$HOME/.local/bin/mise"
+MISE_TEMP="$HOME/.mise_tmp"
+mkdir -p "$HOME/.local/bin"
+mkdir -p "$MISE_TEMP"
+cd "$MISE_TEMP"
+
+# Try several methods to download the installer
+if command -v curl &>/dev/null; then
+  curl -fsSL https://mise.run > install.sh
+elif command -v wget &>/dev/null; then
+  wget -q -O install.sh https://mise.run
+elif command -v fetch &>/dev/null; then
+  fetch -q -o install.sh https://mise.run
+else
+  echo "No download tool found (curl, wget, fetch)"
+  exit 1
+fi
+
+chmod +x install.sh
+./install.sh
+rm -rf "$MISE_TEMP"
+EOF
+  
+  # Make executable and run
+  chmod +x "$HOME/.mise_installer.sh"
+  "$HOME/.mise_installer.sh"
+  rm -f "$HOME/.mise_installer.sh"
+  
+  if [ -f "$HOME/.local/bin/mise" ]; then
+    eval "$("$HOME/.local/bin/mise" activate bash)"
+    export PATH="$HOME/.local/share/mise/shims:$PATH"
+  fi
+fi
+
+# unset mise function if it exists (to use the binary instead)
+unset -f mise 2>/dev/null || true
+
+# starship prompt
+if command -v starship &> /dev/null; then
+  eval "$(starship init bash)"
+else
+  echo "starship not found, skipping prompt setup"
+fi
+
+# API Keys moved to ~/.env_tokens for security
+
+# Add custom paths if needed
+export PATH="$PATH:/home/mhugo/.local/bin:/home/mhugo/bin"
 
 # SQLite3 library path for Python
 export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
-
-# starship prompt  
-eval "$(starship init bash)"
 
 # Load aliases
 if [ -f "$HOME/.aliases" ]; then
@@ -29,3 +83,13 @@ if [ -f ".env" ] && [ "$PWD" != "$HOME" ]; then
     source ".env"
     set +a
 fi
+alias claude="/home/mhugo/.claude/local/claude"
+
+# pnpm
+export PNPM_HOME="/home/mhugo/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+export PATH="$HOME/.npm-global/bin:$PATH"

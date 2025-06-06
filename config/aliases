@@ -4,8 +4,8 @@ alias ll='eza -la --icons --group-directories-first'
 alias lt='eza --tree --level=2 --icons'
 alias cat='bat'
 alias grep='grep --color=auto'
-alias find='fd'
-alias ping='ping -c 5'
+# alias find='fd'  # Removed: causes conflicts with traditional find usage
+# alias ping='ping -c 5'  # Commented out - limits pings which might interfere
 
 # Git shortcuts
 alias gs='git status'
@@ -37,13 +37,9 @@ alias ....='cd ../../..'
 # System info
 alias ports='netstat -tuln'
 alias psa='ps aux'
-alias df='duf'
-alias du='dust'
+alias df='df -h'
+alias du='du -h'
 alias free='free -h'
-
-# Cool modern tools
-alias btm='btm'
-alias tk='tokei'
 
 # Development shortcuts
 alias py='python'
@@ -52,9 +48,10 @@ alias serve='python -m http.server 8000'
 alias json='python -m json.tool'
 
 # File operations
-alias cp='cp -i'
-alias mv='mv -i'
-alias rm='rm -i'
+# Commented out - these add interactive mode which can interfere with scripts
+# alias cp='cp -i'
+# alias mv='mv -i'
+# alias rm='rm -i'
 alias mkdir='mkdir -p'
 
 # Networking
@@ -75,3 +72,14 @@ alias tl='tmux list-sessions'
 alias tn='tmux new -s'
 alias tk='tmux kill-session -t'
 alias td='tmux detach'
+
+# Environment management
+alias env-setup='~/dotfiles/scripts/env-manager.sh setup'
+alias env-edit='~/dotfiles/scripts/env-manager.sh edit'
+alias env-load='source <(~/dotfiles/scripts/env-manager.sh load)'
+alias env-backup='~/dotfiles/scripts/env-manager.sh backup'
+
+# Modern CLI tools
+# alias rg='ripgrep'  # Removed: 'rg' command already works, no alias needed
+alias http='ht'  # httpie-go uses 'ht' command
+alias d='dive'

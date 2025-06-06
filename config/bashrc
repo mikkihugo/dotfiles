@@ -84,6 +84,8 @@ if [ -f ".env" ] && [ "$PWD" != "$HOME" ]; then
     set +a
 fi
 alias claude="/home/mhugo/.claude/local/claude"
+alias claude-unsafe="/home/mhugo/claude-unsafe/safety-wrapper.sh"
+alias claude-yolo="echo '⚠️  Use claude-unsafe instead - it has persistent safety checks'"
 
 # pnpm
 export PNPM_HOME="/home/mhugo/.local/share/pnpm"

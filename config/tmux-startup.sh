@@ -16,6 +16,66 @@ manage_tmux_sessions() {
     # Don't run if inside a tmux session already
     [ ! -z "$TMUX" ] && return
 
+    # Check if gum is available for fancy UI
+    if command -v gum &> /dev/null; then
+        manage_tmux_sessions_gum
+    else
+        manage_tmux_sessions_basic
+    fi
+}
+
+# Fancy UI version using gum
+manage_tmux_sessions_gum() {
+    # Get existing sessions
+    local sessions=$(tmux list-sessions -F "#{session_name}:#{?session_attached,[ATTACHED],[FREE]}:#{session_windows} windows" 2>/dev/null | sed 's/:/ /g')
+    
+    local header="TMUX SESSION MANAGER"
+    local options=()
+    
+    if [ ! -z "$sessions" ]; then
+        while IFS= read -r session; do
+            options+=("Attach to: $session")
+        done <<< "$sessions"
+    fi
+    
+    options+=(
+        "Create new session"
+        "Start bash shell"
+        "Restore saved sessions"
+    )
+    
+    # Show menu with gum
+    local choice=$(printf '%s\n' "${options[@]}" | gum choose \
+        --header "$header" \
+        --header.foreground="212" \
+        --cursor.foreground="212" \
+        --selected.foreground="212" \
+        --height=10)
+    
+    case "$choice" in
+        "Attach to: "*)
+            local session_name=$(echo "$choice" | awk '{print $3}')
+            tmux attach-session -t "$session_name"
+            exit
+            ;;
+        "Create new session")
+            local new_name=$(gum input --placeholder "Enter session name" --header "New TMUX Session")
+            if [ ! -z "$new_name" ]; then
+                tmux new-session -s "$new_name"
+                exit
+            fi
+            ;;
+        "Restore saved sessions")
+            ~/.scripts/tmux-save-restore.sh restore
+            ;;
+        "Start bash shell")
+            bash
+            ;;
+    esac
+}
+
+# Basic UI version (fallback)
+manage_tmux_sessions_basic() {
     # Get a list of all tmux sessions, their IDs, and attachment status
     sessions=$(tmux list-sessions -F "#{session_id}:#{?session_attached,Attached,Not Attached}:#{session_name}" 2>/dev/null)
 
@@ -39,8 +99,9 @@ manage_tmux_sessions() {
     echo "  1) Attach to an existing session"
     echo "  2) Create a new tmux session"
     echo "  3) Start a standard bash shell"
+    echo "  4) Restore saved sessions"
     echo ""
-    read -p "Enter your choice [1-3]: " choice
+    read -p "Enter your choice [1-4]: " choice
 
     case "$choice" in
         1)
@@ -68,6 +129,9 @@ manage_tmux_sessions() {
         3)
             echo "Starting bash shell..."
             bash
+            ;;
+        4)
+            ~/.scripts/tmux-save-restore.sh restore
             ;;
         *)
             echo "Invalid option. Starting bash shell."

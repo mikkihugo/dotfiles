@@ -1,55 +1,101 @@
-# Starship configuration
+# Dark Retro Theme - Inspired by 80s terminals with neon accents
+
+# Format string with custom separators
 format = """
-$username\
-$hostname\
-$directory\
-$git_branch\
-$git_status\
-$python\
-$nodejs\
-$golang\
-$rust\
-$package\
-$kubernetes\
-$time\
-$line_break\
-$character"""
+[╭─](bright-black) $username$hostname[─](bright-black)$directory$git_branch$git_status
+[│](bright-black)  $python$nodejs$golang$rust$docker$kubernetes$package
+[╰─](bright-black)$character
+"""
+
+# Right-side prompt
+right_format = """$cmd_duration[─](bright-black)$time"""
 
 [character]
-success_symbol = "[❯](bold green)"
-error_symbol = "[❯](bold red)"
+success_symbol = "[▸](bold bright-cyan)"
+error_symbol = "[▸](bold bright-red)"
+vicmd_symbol = "[▸](bold bright-magenta)"
+
+[username]
+style_user = "bright-magenta bold"
+style_root = "bright-red bold"
+format = "[┌─](bright-black)[$user]($style)"
+show_always = true
+
+[hostname]
+style = "bright-cyan bold"
+format = "[@$hostname]($style) "
+disabled = false
 
 [directory]
-style = "blue bold"
+style = "bright-green bold"
 truncation_length = 3
-truncate_to_repo = false
+truncate_to_repo = true
+format = "[in](bright-black) [$path]($style)[$read_only]($read_only_style) "
+read_only = " "
+read_only_style = "bright-red"
 
 [git_branch]
-symbol = "🌿 "
-style = "bright-green bold"
+symbol = " "
+style = "bright-yellow bold"
+format = "[on](bright-black) [$symbol$branch(:$remote_branch)]($style) "
 
 [git_status]
-style = "red bold"
+style = "bright-red bold"
+format = "([$all_status$ahead_behind]($style) )"
+conflicted = "⚔️ "
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+untracked = "?"
+stashed = "$"
+modified = "!"
+staged = "+"
+renamed = "»"
+deleted = "✘"
+
+[cmd_duration]
+style = "bright-yellow bold"
+format = "[took](bright-black) [$duration]($style) "
+min_time = 2_000
 
 [python]
-symbol = "🐍 "
-python_binary = "python"
+symbol = " "
+style = "bright-blue bold"
+format = "[$symbol($version )]($style)"
 
 [nodejs]
-symbol = "⬢ "
+symbol = " "
 style = "bright-green bold"
+format = "[$symbol($version )]($style)"
 
 [golang]
-symbol = "🐹 "
+symbol = " "
+style = "bright-cyan bold"
+format = "[$symbol($version )]($style)"
 
 [rust]
-symbol = "🦀 "
+symbol = " "
+style = "bright-red bold"
+format = "[$symbol($version )]($style)"
+
+[docker_context]
+symbol = " "
+style = "bright-blue bold"
+format = "[$symbol$context]($style) "
 
 [kubernetes]
 disabled = false
-symbol = "☸️ "
+symbol = "☸ "
+style = "bright-magenta bold"
+format = "[$symbol$context( \($namespace\))]($style) "
+
+[package]
+symbol = "📦 "
+style = "bright-yellow bold"
+format = "[$symbol$version]($style) "
 
 [time]
 disabled = false
-style = "white bold"
-format = "[$time]($style)"
+style = "bright-cyan bold"
+format = "[at](bright-black) [$time]($style)"
+time_format = "%H:%M"

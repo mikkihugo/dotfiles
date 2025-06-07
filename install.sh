@@ -50,20 +50,17 @@ fi
 echo ""
 echo "⚙️  Installing configuration files..."
 
-# Install config files
-cp "$DOTFILES_DIR/config/bashrc" ~/.bashrc
-cp "$DOTFILES_DIR/config/aliases" ~/.aliases
-cp "$DOTFILES_DIR/config/tmux.conf" ~/.tmux.conf
+# Install config files (as symlinks)
+ln -sf "$DOTFILES_DIR/config/bashrc" ~/.bashrc
+ln -sf "$DOTFILES_DIR/config/aliases" ~/.aliases
+ln -sf "$DOTFILES_DIR/config/tmux.conf" ~/.tmux.conf
 
 # Create directories and install starship config
 mkdir -p ~/.config
-cp "$DOTFILES_DIR/config/starship.toml" ~/.config/
+ln -sf "$DOTFILES_DIR/config/starship.toml" ~/.config/starship.toml
 
 # Install scripts
-chmod +x "$DOTFILES_DIR/scripts/"*.sh
-cp "$DOTFILES_DIR/scripts/tmux-auto.sh" ~/.tmux-auto.sh
-cp "$DOTFILES_DIR/scripts/mosh-wrapper.sh" ~/.mosh-wrapper.sh
-cp "$DOTFILES_DIR/scripts/mosh-monitor.sh" ~/.mosh-monitor.sh
+chmod +x "$DOTFILES_DIR/.scripts/"*.sh 2>/dev/null || true
 
 echo ""
 echo "🎨 Setting up shell integrations..."

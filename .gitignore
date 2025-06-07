@@ -38,7 +38,12 @@ Thumbs.db
 .env_tokens
 config/.env.gpg
 *_GIST_ID*
+
+# Aider AI assistant files
 .aider*
+*.aider.*
+.aider/
+.aider.conf.yml
 
 # Environment files - these go to encrypted gists
 .env.*

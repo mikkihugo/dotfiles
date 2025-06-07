@@ -5,7 +5,7 @@
 set -e
 
 DOTFILES_REPO="mikkihugo/dotfiles"
-DOTFILES_DIR="$HOME/dotfiles"
+DOTFILES_DIR="$HOME/.dotfiles"
 
 echo "🚀 Bootstrapping dotfiles..."
 

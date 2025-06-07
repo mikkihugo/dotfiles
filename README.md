@@ -32,8 +32,8 @@ GitOps-style configuration management for a supercharged development environment
 ### Public Repo Installation (No Auth Required):
 ```bash
 # Clone without authentication
-git clone https://github.com/YOUR_USERNAME/dotfiles.git ~/dotfiles
-cd ~/dotfiles && ./install.sh
+git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles
+cd ~/.dotfiles && ./install.sh
 
 # Optional: Setup tokens after installation
 env-setup    # For encrypted token management
@@ -41,8 +41,8 @@ env-setup    # For encrypted token management
 
 ### Manual installation:
 ```bash
-git clone https://github.com/YOUR_USERNAME/dotfiles.git ~/dotfiles
-cd ~/dotfiles
+git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
 chmod +x install.sh
 ./install.sh
 ```
@@ -50,21 +50,22 @@ chmod +x install.sh
 ## 📁 Repository Structure
 
 ```
-dotfiles/
+.dotfiles/
 ├── .mise.toml             # Mise configuration
 ├── .tool-versions         # Legacy ASDF compatibility
 ├── install.sh             # Automated setup script
+├── bootstrap.sh           # Minimal bootstrap script
 ├── config/
 │   ├── bashrc             # Bash configuration
 │   ├── aliases            # Command aliases
 │   ├── tmux.conf          # Tmux configuration
 │   └── starship.toml      # Starship prompt config
-├── scripts/
-│   ├── tmux-auto.sh       # Auto tmux on SSH
-│   ├── mosh-wrapper.sh    # Enhanced mosh
-│   └── mosh-monitor.sh    # Connection monitoring
-└── docs/
-    └── README.md          # This file
+├── .scripts/
+│   ├── tmux-startup.sh    # Tmux session manager
+│   ├── tmux-auto-name.sh  # Auto-name sessions
+│   └── tmux-save-restore.sh # Session persistence
+├── CLAUDE.md              # AI assistant instructions
+└── README.md              # This file
 ```
 
 ## 🎯 What Gets Installed
@@ -115,7 +116,7 @@ Shows context-aware information:
 
 ### Modify configurations:
 ```bash
-cd ~/dotfiles
+cd ~/.dotfiles
 # Edit any config file
 vim config/aliases
 # Commit and push changes
@@ -136,20 +137,20 @@ vim install.sh
 
 ### Initial setup on new machine:
 ```bash
-git clone https://github.com/YOUR_USERNAME/dotfiles.git ~/dotfiles
-cd ~/dotfiles && ./install.sh
+git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles
+cd ~/.dotfiles && ./install.sh
 ```
 
 ### Update environment:
 ```bash
-cd ~/dotfiles
+cd ~/.dotfiles
 git pull
 ./install.sh  # Re-run to apply changes
 ```
 
 ### Sync changes from current machine:
 ```bash
-cd ~/dotfiles
+cd ~/.dotfiles
 # Copy updated configs
 cp ~/.bashrc config/
 cp ~/.tmux.conf config/
@@ -187,7 +188,7 @@ source ~/.tmux-auto.sh
 ### Missing Tools
 Re-run installation:
 ```bash
-cd ~/dotfiles && ./install.sh
+cd ~/.dotfiles && ./install.sh
 ```
 
 ## 🤝 Contributing

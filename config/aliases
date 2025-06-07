@@ -74,10 +74,10 @@ alias tk='tmux kill-session -t'
 alias td='tmux detach'
 
 # Environment management
-alias env-setup='~/dotfiles/scripts/env-manager.sh setup'
-alias env-edit='~/dotfiles/scripts/env-manager.sh edit'
-alias env-load='source <(~/dotfiles/scripts/env-manager.sh load)'
-alias env-backup='~/dotfiles/scripts/env-manager.sh backup'
+alias env-setup='~/.dotfiles/.scripts/env-manager.sh setup'
+alias env-edit='~/.dotfiles/.scripts/env-manager.sh edit'
+alias env-load='source <(~/.dotfiles/.scripts/env-manager.sh load)'
+alias env-backup='~/.dotfiles/.scripts/env-manager.sh backup'
 
 # Modern CLI tools
 # alias rg='ripgrep'  # Removed: 'rg' command already works, no alias needed

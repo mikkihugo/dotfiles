@@ -7,8 +7,8 @@ This repository is **public** and contains NO secrets. All sensitive data is man
 ### Quick Setup for New Machines
 ```bash
 # 1. Install dotfiles
-git clone https://github.com/mikkihugo/dotfiles ~/dotfiles
-cd ~/dotfiles && ./install.sh
+git clone https://github.com/mikkihugo/dotfiles ~/.dotfiles
+cd ~/.dotfiles && ./install.sh
 
 # 2. Login to GitHub CLI (one-time)
 gh auth login

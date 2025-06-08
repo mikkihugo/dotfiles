@@ -69,7 +69,7 @@ manage_tmux_sessions_gum() {
             ~/.scripts/tmux-save-restore.sh restore
             ;;
         "Start bash shell")
-            bash
+            exec bash --login
             ;;
     esac
 }
@@ -128,14 +128,14 @@ manage_tmux_sessions_basic() {
             ;;
         3)
             echo "Starting bash shell..."
-            bash
+            exec bash --login
             ;;
         4)
             ~/.scripts/tmux-save-restore.sh restore
             ;;
         *)
             echo "Invalid option. Starting bash shell."
-            bash
+            exec bash --login
             ;;
     esac
 }

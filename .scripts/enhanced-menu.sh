@@ -236,37 +236,83 @@ show_tools_menu() {
     esac
 }
 
-# Basic fallback menu
+# Basic fallback menu with numbered sessions
 show_basic_menu() {
     echo "
-🚀 SESSION MANAGER
+🚀 SESSION & CONNECTION MANAGER
 
-TMUX Sessions:"
-    tmux list-sessions 2>/dev/null | nl || echo "  No sessions"
+📋 TMUX SESSIONS:"
+    
+    # Show numbered sessions
+    local sessions=($(tmux list-sessions -F "#{session_name}" 2>/dev/null))
+    if [ ${#sessions[@]} -gt 0 ]; then
+        for i in "${!sessions[@]}"; do
+            local session="${sessions[$i]}"
+            local status=$(tmux list-sessions -F "#{session_name}:#{?session_attached,[ATTACHED],[FREE]}" 2>/dev/null | grep "^$session:" | cut -d: -f2)
+            local windows=$(tmux list-sessions -F "#{session_name}:#{session_windows}w" 2>/dev/null | grep "^$session:" | cut -d: -f2)
+            if [[ "$status" == "[ATTACHED]" ]]; then
+                echo "  $((i+1))) 🟢 $session $status $windows"
+            else
+                echo "  $((i+1))) 🔵 $session $status $windows"
+            fi
+        done
+    else
+        echo "  No sessions"
+    fi
     
     echo "
-Actions:
-  1) Attach to session
-  2) New session  
-  3) Plain shell
-  4) Exit
+📦 ACTIONS:
+  n) New tmux session
+  k) Kill tmux session  
+  s) Plain bash shell
+  b) Backup/Restore
+  i) System info
+  x) Exit
 "
     read -p "Choice: " choice
     
+    # Handle numbered choices (1-5 for sessions)
+    if [[ "$choice" =~ ^[1-5]$ ]] && [ -n "${sessions[$((choice-1))]}" ]; then
+        local session="${sessions[$((choice-1))]}"
+        tmux attach -t "$session" 2>/dev/null || echo "Session not found"
+        exit
+    fi
+    
     case $choice in
-        1)
-            read -p "Session name: " session
-            tmux attach -t "$session" 2>/dev/null || echo "Session not found"
-            ;;
-        2)
+        n)
             read -p "New session name: " name
-            tmux new-session -s "$name"
+            [ -n "$name" ] && tmux new-session -s "$name"
+            exit
             ;;
-        3)
+        k)
+            if [ ${#sessions[@]} -gt 0 ]; then
+                echo "Kill which session?"
+                for i in "${!sessions[@]}"; do
+                    echo "  $((i+1))) ${sessions[$i]}"
+                done
+                read -p "Session number: " num
+                if [[ "$num" =~ ^[1-5]$ ]] && [ -n "${sessions[$((num-1))]}" ]; then
+                    tmux kill-session -t "${sessions[$((num-1))]}"
+                    echo "Killed session: ${sessions[$((num-1))]}"
+                fi
+            fi
+            show_basic_menu
+            ;;
+        s)
             exec bash --login
             ;;
-        4)
+        b)
+            ~/.dotfiles/.scripts/backup-restore.sh menu
+            show_basic_menu
+            ;;
+        i)
+            show_system_info
+            ;;
+        x)
             exit 0
+            ;;
+        *)
+            show_basic_menu
             ;;
     esac
 }

@@ -136,8 +136,12 @@ handle_choice() {
             ;;
         "🔄 Sync SSH hosts")
             echo "🔄 Syncing SSH hosts..."
-            tabby-sync pull
-            echo "✅ Sync complete!"
+            if command -v tabby-sync &>/dev/null; then
+                (tabby-sync pull) && echo "✅ Sync complete!" || echo "❌ Sync failed!"
+            else
+                echo "❌ tabby-sync not found"
+            fi
+            sleep 2
             show_gum_menu
             ;;
         "⚙️  Quick tools")

@@ -27,12 +27,16 @@ show_enhanced_menu() {
         [ "${MENU_ENABLED}" = "false" ] && return
     fi
     
-    # Smart gum detection - only use if we have a real TTY
-    if command -v gum &>/dev/null && tty >/dev/null 2>&1 && [ -t 0 ] && [ -t 1 ]; then
-        # Real terminal detected - use gum
+    # Smart menu selection based on environment
+    # Use basic menu for SSH sessions or when BASIC_MENU is set
+    if [ ! -z "$SSH_CONNECTION" ] || [ "$BASIC_MENU" = "true" ]; then
+        # SSH session or forced basic - use number-based menu
+        show_basic_menu
+    elif command -v gum &>/dev/null && tty >/dev/null 2>&1 && [ -t 0 ] && [ -t 1 ]; then
+        # Local terminal with gum - use fancy menu
         show_gum_menu
     else
-        # No real TTY (Claude Code, CI/CD, etc.) - use retro menu
+        # Fallback to basic menu
         show_basic_menu
     fi
 }
@@ -92,7 +96,8 @@ show_gum_menu() {
         --header.foreground="212" \
         --cursor.foreground="212" \
         --selected.foreground="212" \
-        --height=20)
+        --height=20 \
+        --cursor-prefix="▸ ")
     
     handle_choice "$choice"
 }

@@ -98,6 +98,7 @@ export PATH="$HOME/.npm-global/bin:$PATH"
 # Enhanced session menu on startup (can be disabled with MENU_ENABLED=false)
 if [ -f "$HOME/.dotfiles/.scripts/enhanced-menu.sh" ]; then
     source "$HOME/.dotfiles/.scripts/enhanced-menu.sh"
+    show_enhanced_menu
 fi
 
 # Terminal-specific configurations

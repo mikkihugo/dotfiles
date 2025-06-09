@@ -140,14 +140,5 @@ if [ -f "$HOME/.dotfiles/.scripts/enhanced-menu.sh" ]; then
 fi
 
 # Terminal-specific configurations
-if [ ! -z "$TERMIUS_APP" ] || [[ "$SSH_CONNECTION" =~ "Termius" ]]; then
-    # Termius detected
-    export TERM=xterm-256color
-    export TERMINAL_APP="termius"
-elif [ ! -z "$WARP_IS_LOCAL_SHELL_SESSION" ]; then
-    # Warp detected
-    export TERMINAL_APP="warp"
-else
-    # Default terminal
-    export TERMINAL_APP="default"
-fi
+# Default terminal
+export TERMINAL_APP="default"

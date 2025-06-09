@@ -64,3 +64,55 @@ description = "Auto-sync dotfiles, tokens, and SSH hosts"
 [tasks.update]
 run = "mise upgrade && mise install"
 description = "Update all tools to latest versions"
+
+[tasks.gateway-backup]
+run = "./.scripts/backup-tabby-gateway.sh"
+description = "Backup Tabby gateway data to GitHub gist"
+
+[tasks.gateway-sync]
+run = "./.scripts/tabby-gateway-config.sh sync"
+description = "Sync Tabby gateway config from gist"
+
+[tasks.gateway-deploy]
+run = "./.scripts/deploy-tabby-gateway.sh"
+description = "Deploy Tabby gateway container"
+
+[tasks.gateway-schedule]
+run = """
+  echo "🕐 Setting up scheduled gateway backups..."
+  
+  # Create systemd timer for daily backups
+  cat > /tmp/tabby-gateway-backup.timer << 'EOF'
+[Unit]
+Description=Daily Tabby Gateway Backup
+Requires=tabby-gateway-backup.service
+
+[Timer]
+OnCalendar=daily
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+  cat > /tmp/tabby-gateway-backup.service << 'EOF'
+[Unit]
+Description=Backup Tabby Gateway
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/mhugo/.dotfiles/.scripts/backup-tabby-gateway.sh
+User=mhugo
+EOF
+
+  echo "Timer and service files created in /tmp/"
+  echo "To install: sudo mv /tmp/tabby-gateway-backup.* /etc/systemd/system/ && sudo systemctl enable tabby-gateway-backup.timer"
+  
+  # Alternative: cron job
+  echo ""
+  echo "Or add to crontab:"
+  echo "0 3 * * * /home/mhugo/.dotfiles/.scripts/backup-tabby-gateway.sh >> /home/mhugo/.dotfiles/logs/gateway-backup.log 2>&1"
+"""
+description = "Setup scheduled backups for Tabby gateway"

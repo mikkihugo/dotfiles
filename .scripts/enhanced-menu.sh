@@ -289,7 +289,8 @@ show_basic_menu() {
     echo -e "${magenta}${bold}┌─[ ${yellow}COMMAND CENTER${magenta} ]─────────────────────────────────────────┐${reset}"
     echo -e "${magenta}│                                                            │${reset}"
     echo -e "${magenta}│ ${yellow}[n]${reset} ${cyan}New Session${reset}     ${yellow}[k]${reset} ${cyan}Kill Session${reset}     ${yellow}[i]${reset} ${cyan}System Info${reset}    │${reset}"
-    echo -e "${magenta}│ ${yellow}[s]${reset} ${cyan}Shell${reset}           ${yellow}[b]${reset} ${cyan}Backup/Restore${reset}   ${yellow}[x]${reset} ${cyan}Exit${reset}           │${reset}"
+    echo -e "${magenta}│ ${yellow}[s]${reset} ${cyan}Shell${reset}           ${yellow}[b]${reset} ${cyan}Backup/Restore${reset}   ${yellow}[d]${reset} ${cyan}System Deps${reset}    │${reset}"
+    echo -e "${magenta}│                                            ${yellow}[x]${reset} ${cyan}Exit${reset}           │${reset}"
     echo -e "${magenta}│                                                            │${reset}"
     echo -e "${magenta}└────────────────────────────────────────────────────────────┘${reset}"
     echo ""
@@ -342,6 +343,14 @@ show_basic_menu() {
             ;;
         i)
             show_system_info
+            ;;
+        d)
+            echo -e "\n${yellow}${bold}╔═[ SYSTEM DEPENDENCIES ]═════════════════════════════════════╗${reset}"
+            echo -e "${yellow}║ Installing system packages (tmux, curl, git, build tools)  ║${reset}"
+            echo -e "${yellow}╚═════════════════════════════════════════════════════════════╝${reset}"
+            ~/.dotfiles/.scripts/install-system-deps.sh
+            read -p "Press Enter to continue..."
+            show_basic_menu
             ;;
         x)
             exit 0

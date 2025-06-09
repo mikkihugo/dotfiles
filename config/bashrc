@@ -110,8 +110,9 @@ export PATH="$HOME/.npm-global/bin:$PATH"
 
 # Auto-install system dependencies on first login (once)
 if [ -f "$HOME/.dotfiles/.scripts/install-system-deps.sh" ] && [ ! -f "$HOME/.dotfiles/.system-deps-installed" ]; then
-    echo "🔧 First login detected - installing system dependencies..."
-    (cd "$HOME/.dotfiles" && ./.scripts/install-system-deps.sh >/dev/null 2>&1 &)
+    echo "🔧 First login detected - checking system dependencies..."
+    echo "💡 Run 'mise run system-deps' if you want to install missing packages"
+    # Don't auto-install in background since it needs sudo interaction
 fi
 
 # Quick async check for dotfiles updates on login

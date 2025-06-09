@@ -13,6 +13,8 @@ if [ -f "$FLAGFILE" ]; then
 fi
 
 echo "🔧 Installing system dependencies..."
+echo "💡 This will install system packages and may require sudo password"
+echo ""
 
 # Detect package manager
 if command -v apt-get >/dev/null 2>&1; then
@@ -34,40 +36,50 @@ fi
 
 echo "📦 Detected package manager: $PKG_MANAGER"
 
-# Install tmux if not available
+# Check what we need to install
+MISSING_PACKAGES=()
+
 if ! command -v tmux >/dev/null 2>&1; then
-    echo "🖥️  Installing tmux..."
+    MISSING_PACKAGES+=("tmux")
+fi
+
+if ! command -v curl >/dev/null 2>&1; then
+    MISSING_PACKAGES+=("curl")
+fi
+
+if ! command -v git >/dev/null 2>&1; then
+    MISSING_PACKAGES+=("git")
+fi
+
+# Install missing packages
+if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
+    echo "📦 Missing packages: ${MISSING_PACKAGES[*]}"
+    echo "🔐 Please enter sudo password to install system packages..."
+    
     case $PKG_MANAGER in
         apt)
-            $INSTALL_CMD tmux
+            sudo apt-get update && sudo apt-get install -y tmux curl wget git build-essential ncurses-dev libevent-dev
             ;;
-        yum|dnf)
-            $INSTALL_CMD tmux
+        yum)
+            sudo yum install -y tmux curl wget git gcc make ncurses-devel libevent-devel
+            ;;
+        dnf)
+            sudo dnf install -y tmux curl wget git gcc make ncurses-devel libevent-devel
             ;;
         pacman)
-            $INSTALL_CMD tmux
+            sudo pacman -Sy --noconfirm tmux curl wget git base-devel ncurses libevent
             ;;
     esac
 else
-    echo "✅ tmux already installed: $(tmux -V)"
+    echo "✅ All essential packages already installed"
 fi
 
-# Install other useful system packages
-echo "📚 Installing additional system packages..."
-case $PKG_MANAGER in
-    apt)
-        $INSTALL_CMD curl wget git build-essential ncurses-dev libevent-dev
-        ;;
-    yum)
-        $INSTALL_CMD curl wget git gcc make ncurses-devel libevent-devel
-        ;;
-    dnf)
-        $INSTALL_CMD curl wget git gcc make ncurses-devel libevent-devel
-        ;;
-    pacman)
-        $INSTALL_CMD curl wget git base-devel ncurses libevent
-        ;;
-esac
+# Verify installations
+echo ""
+echo "🔍 Verifying installations..."
+command -v tmux >/dev/null 2>&1 && echo "✅ tmux: $(tmux -V)" || echo "❌ tmux: not found"
+command -v curl >/dev/null 2>&1 && echo "✅ curl: $(curl --version | head -1)" || echo "❌ curl: not found"
+command -v git >/dev/null 2>&1 && echo "✅ git: $(git --version)" || echo "❌ git: not found"
 
 echo "✅ System dependencies installed!"
 

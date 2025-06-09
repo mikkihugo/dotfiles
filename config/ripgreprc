@@ -1,0 +1,28 @@
+# Ripgrep configuration file
+# This makes ripgrep behave more like traditional grep by default
+
+# Add type definitions
+--type-add=web:*.{html,css,js,jsx,ts,tsx,vue,svelte}
+--type-add=config:*.{json,yaml,yml,toml,ini,conf,cfg}
+
+# Set default options
+--smart-case
+--hidden
+--follow
+--glob=!.git/
+--glob=!node_modules/
+--glob=!target/
+--glob=!dist/
+--glob=!build/
+--glob=!*.min.js
+--glob=!*.map
+--max-columns=150
+--max-columns-preview
+
+# Use colors
+--colors=line:fg:yellow
+--colors=line:style:bold
+--colors=path:fg:green
+--colors=path:style:bold
+--colors=match:fg:red
+--colors=match:style:bold

@@ -1,11 +1,26 @@
-# Modern CLI tool aliases
+# Force rust-based tools over traditional ones
+alias grep='rg'
+alias find='fd'
 alias ls='eza --icons --group-directories-first'
 alias ll='eza -la --icons --group-directories-first'
 alias lt='eza --tree --level=2 --icons'
 alias cat='bat'
-# alias grep='grep --color=auto'  # Commented out - grep is aliased to rg elsewhere
-# alias find='fd'  # Removed: causes conflicts with traditional find usage
-# alias ping='ping -c 5'  # Commented out - limits pings which might interfere
+alias ps='procs'
+alias du='dust'
+alias df='duf'
+alias sed='sd'
+alias top='btop'
+alias htop='btop'
+alias diff='delta'
+alias hexdump='hx'
+
+# Keep original commands accessible
+alias ogrep='/usr/bin/grep'
+alias ofind='/usr/bin/find'
+alias ols='/usr/bin/ls'
+alias ocat='/usr/bin/cat'
+alias osed='/usr/bin/sed'
+alias otop='/usr/bin/top'
 
 # Git shortcuts
 alias gs='git status'

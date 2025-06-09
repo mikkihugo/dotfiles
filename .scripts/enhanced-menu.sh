@@ -73,7 +73,7 @@ show_gum_menu() {
     # Add actions
     options+=(
         "✨ New tmux session"
-        "🔄 Kill tmux session"
+        "🗑️  Kill tmux session"
         "🐚 Plain bash shell"
         "💾 Restore tmux sessions"
         "🔄 Sync SSH hosts"
@@ -116,7 +116,7 @@ handle_choice() {
                 exit
             fi
             ;;
-        "🔄 Kill tmux session")
+        "🗑️  Kill tmux session")
             local sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null)
             if [ ! -z "$sessions" ]; then
                 local session=$(echo "$sessions" | gum choose --header "Select session to kill")

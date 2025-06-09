@@ -99,3 +99,11 @@ export PATH="$HOME/.npm-global/bin:$PATH"
 if [ -f "$HOME/.dotfiles/.scripts/tmux-startup.sh" ]; then
     source "$HOME/.dotfiles/.scripts/tmux-startup.sh"
 fi
+
+# SSH manager alias
+alias sshm="$HOME/.dotfiles/.scripts/ssh-manager.sh"
+
+# Fix for Termius mouse issues
+if [ ! -z "$TERMIUS_APP" ] || [[ "$SSH_CONNECTION" =~ "Termius" ]]; then
+    export TERM=xterm-256color
+fi

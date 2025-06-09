@@ -1,0 +1,25 @@
+{
+  "hosts": [
+    {
+      "alias": "prod-web",
+      "hostname": "192.168.1.10",
+      "user": "deploy",
+      "port": 22,
+      "key": "id_rsa_prod",
+      "forward_agent": true
+    },
+    {
+      "alias": "dev-db",
+      "hostname": "dev.example.com",
+      "user": "admin",
+      "port": 2222,
+      "proxy": "bastion"
+    },
+    {
+      "alias": "bastion",
+      "hostname": "bastion.example.com",
+      "user": "ubuntu",
+      "port": 22
+    }
+  ]
+}

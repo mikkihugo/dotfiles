@@ -7,14 +7,28 @@ set -e
 
 # Enhanced menu with SSH + tmux
 show_enhanced_menu() {
-    # Exit if not interactive or already in tmux
-    [[ $- != *i* ]] && return
-    [ ! -z "$TMUX" ] && return
+    local force="$1"
     
-    # Skip if disabled
-    [ "${MENU_ENABLED}" = "false" ] && return
+    # Debug info (comment out in production)
+    # echo "DEBUG: Interactive: $-"
+    # echo "DEBUG: TMUX: $TMUX"
+    # echo "DEBUG: MENU_ENABLED: $MENU_ENABLED"
     
-    if command -v gum &>/dev/null; then
+    # Exit if not interactive (unless forced)
+    if [ "$force" != "force" ]; then
+        [[ $- != *i* ]] && return
+        
+        # Only skip if we're actually inside a tmux pane (not just inherited TMUX var)
+        if [ ! -z "$TMUX" ] && [ ! -z "$TMUX_PANE" ]; then
+            return
+        fi
+        
+        # Skip if disabled
+        [ "${MENU_ENABLED}" = "false" ] && return
+    fi
+    
+    # Check if we have a proper TTY for gum
+    if command -v gum &>/dev/null && [ -t 0 ] && [ -t 1 ] && [ -c /dev/tty ]; then
         show_gum_menu
     else
         show_basic_menu
@@ -215,7 +229,7 @@ Actions:
 
 # Auto-run if sourced
 if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
-    show_enhanced_menu
+    show_enhanced_menu "$1"
 fi
 
 # Export for sourcing

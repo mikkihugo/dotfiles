@@ -272,19 +272,20 @@ show_basic_menu() {
     
     echo -e "${green}${bold}┌─[ ${yellow}ACTIVE SESSIONS${green} ]────────────────────────────────────────┐${reset}"
     
-    # Show numbered sessions
-    local sessions=($(tmux list-sessions -F "#{session_name}" 2>/dev/null))
-    if [ ${#sessions[@]} -gt 0 ]; then
-        for i in "${!sessions[@]}"; do
-            local session="${sessions[$i]}"
-            local status=$(tmux list-sessions -F "#{session_name}:#{?session_attached,[ATTACHED],[FREE]}" 2>/dev/null | grep "^$session:" | cut -d: -f2)
-            local windows=$(tmux list-sessions -F "#{session_name}:#{session_windows}w" 2>/dev/null | grep "^$session:" | cut -d: -f2)
+    # Show numbered sessions with proper parsing
+    local sessions_data=$(tmux list-sessions -F "#{session_name}|#{?session_attached,[ATTACHED],[FREE]}|#{session_windows}w" 2>/dev/null)
+    local sessions=()
+    if [ ! -z "$sessions_data" ]; then
+        local i=1
+        while IFS='|' read -r name status windows; do
+            sessions+=("$name")
             if [[ "$status" == "[ATTACHED]" ]]; then
-                echo -e "${green}│ ${bold}[${yellow}$((i+1))${green}]${reset} ${red}●${reset} ${bold}$session${reset} ${dim}$status $windows${reset}"
+                echo -e "${green}│ ${bold}[${yellow}$i${green}]${reset} ${red}●${reset} ${bold}$name${reset} ${dim}$status $windows${reset}"
             else
-                echo -e "${green}│ ${bold}[${yellow}$((i+1))${green}]${reset} ${blue}○${reset} ${bold}$session${reset} ${dim}$status $windows${reset}"
+                echo -e "${green}│ ${bold}[${yellow}$i${green}]${reset} ${blue}○${reset} ${bold}$name${reset} ${dim}$status $windows${reset}"
             fi
-        done
+            ((i++))
+        done <<< "$sessions_data"
     else
         echo -e "${green}│ ${dim}No active sessions${reset}"
     fi
@@ -302,8 +303,8 @@ show_basic_menu() {
     echo -e "${bold}${yellow}>>> ${reset}${dim}Enter your choice: ${reset}"
     read choice
     
-    # Handle numbered choices (1-5 for sessions)
-    if [[ "$choice" =~ ^[1-5]$ ]] && [ -n "${sessions[$((choice-1))]}" ]; then
+    # Handle numbered choices (1-9 for sessions)
+    if [[ "$choice" =~ ^[1-9]$ ]] && [ -n "${sessions[$((choice-1))]}" ]; then
         local session="${sessions[$((choice-1))]}"
         tmux attach -t "$session" 2>/dev/null || echo "Session not found"
         exit
@@ -331,7 +332,7 @@ show_basic_menu() {
                 echo -e "${red}╚═════════════════════════════════════════════════════════════╝${reset}"
                 echo -e "${yellow}>>> ${reset}${dim}Session number to terminate: ${reset}"
                 read num
-                if [[ "$num" =~ ^[1-5]$ ]] && [ -n "${sessions[$((num-1))]}" ]; then
+                if [[ "$num" =~ ^[1-9]$ ]] && [ -n "${sessions[$((num-1))]}" ]; then
                     tmux kill-session -t "${sessions[$((num-1))]}"
                     echo -e "${red}${bold}⚡ TERMINATED:${reset} ${sessions[$((num-1))]}"
                     sleep 1

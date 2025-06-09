@@ -42,6 +42,20 @@ if git pull origin main >> "$LOG_FILE" 2>&1; then
     # Reload shell configuration for active sessions
     # (Note: This only affects new shells, existing ones need manual reload)
     
+    # Auto-sync tokens and SSH hosts from gists
+    if [ -n "$TOKENS_GIST_ID" ]; then
+        if gh gist view "$TOKENS_GIST_ID" > ~/.env_tokens.new 2>/dev/null; then
+            mv ~/.env_tokens.new ~/.env_tokens
+            echo "$(date): Tokens synced from gist" >> "$LOG_FILE"
+        fi
+    fi
+    
+    if [ -n "$TABBY_GIST_ID" ]; then
+        if tabby-sync pull >> "$LOG_FILE" 2>&1; then
+            echo "$(date): SSH hosts synced" >> "$LOG_FILE"
+        fi
+    fi
+    
     echo "$(date): Dotfiles sync completed successfully" >> "$LOG_FILE"
 else
     echo "$(date): Git pull failed" >> "$LOG_FILE"

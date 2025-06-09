@@ -99,9 +99,9 @@ export PATH="$HOME/.npm-global/bin:$PATH"
 if [ -f "$HOME/.dotfiles/.scripts/quick-check.sh" ]; then
     # Quick hash check (fast, non-blocking)
     if ! "$HOME/.dotfiles/.scripts/quick-check.sh" check >/dev/null 2>&1; then
-        echo "📦 Dotfiles updates available! Run: mise run sync"
-        # Optional: Auto-sync in background
-        # (cd "$HOME/.dotfiles" && "$HOME/.dotfiles/.scripts/quick-check.sh" sync &)
+        echo "📦 Updates found! Syncing dotfiles..."
+        # Auto-sync in background
+        (cd "$HOME/.dotfiles" && "$HOME/.dotfiles/.scripts/quick-check.sh" sync >/dev/null 2>&1 &)
     fi
 fi
 

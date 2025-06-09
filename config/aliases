@@ -76,6 +76,8 @@ alias td='tmux detach'
 # Dotfiles management
 alias tabby-sync="$HOME/.dotfiles/.scripts/tabby-sync.sh"
 alias tmux-reload="tmux source-file ~/.tmux.conf"
+alias menu="$HOME/.dotfiles/.scripts/enhanced-menu.sh"
+alias m="$HOME/.dotfiles/.scripts/enhanced-menu.sh"
 
 # Modern CLI tools
 # alias rg='ripgrep'  # Removed: 'rg' command already works, no alias needed

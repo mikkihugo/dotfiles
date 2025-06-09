@@ -95,9 +95,9 @@ esac
 # pnpm end
 export PATH="$HOME/.npm-global/bin:$PATH"
 
-# Tmux session management on startup (can be disabled with TMUX_STARTUP_ENABLED=false)
-if [ -f "$HOME/.dotfiles/.scripts/tmux-startup.sh" ]; then
-    source "$HOME/.dotfiles/.scripts/tmux-startup.sh"
+# Enhanced session menu on startup (can be disabled with MENU_ENABLED=false)
+if [ -f "$HOME/.dotfiles/.scripts/enhanced-menu.sh" ]; then
+    source "$HOME/.dotfiles/.scripts/enhanced-menu.sh"
 fi
 
 # Terminal-specific configurations

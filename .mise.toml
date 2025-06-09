@@ -15,6 +15,8 @@ fzf = "0.62.0"
 eza = "latest"  # exa replacement
 hyperfine = "1.19.0"
 ripgrep = "14.1.1"
+gum = "latest"
+btop = "latest"
 
 # Development tools
 lazygit = "0.51.1"

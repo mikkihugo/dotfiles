@@ -101,7 +101,7 @@ if [ -f "$HOME/.dotfiles/.scripts/tmux-startup.sh" ]; then
 fi
 
 # SSH and Tabby sync
-alias tabby-sync="$HOME/.dotfiles/.scripts/tabby-simple-sync.sh"
+alias tabby-sync="$HOME/.dotfiles/.scripts/tabby-sync.sh"
 
 # Terminal-specific configurations
 if [ ! -z "$TERMIUS_APP" ] || [[ "$SSH_CONNECTION" =~ "Termius" ]]; then

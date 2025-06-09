@@ -40,20 +40,22 @@ show_gum_menu() {
     local options=()
     local header="🚀 SESSION & CONNECTION MANAGER"
     
-    # Add tmux sessions with better formatting
+    # Add tmux sessions with better formatting and numbers
     local sessions=$(tmux list-sessions -F "#{session_name}:#{?session_attached,[ATTACHED],[FREE]}:#{session_windows}w:#{session_created_string}" 2>/dev/null)
     if [ ! -z "$sessions" ]; then
         options+=("📋 TMUX SESSIONS")
+        local i=1
         while IFS= read -r session; do
             local name=$(echo "$session" | cut -d: -f1)
             local status=$(echo "$session" | cut -d: -f2)
             local windows=$(echo "$session" | cut -d: -f3)
             local created=$(echo "$session" | cut -d: -f4)
             if [[ "$status" == "[ATTACHED]" ]]; then
-                options+=("  🟢 $name $status $windows")
+                options+=("$i) 🟢 $name $status $windows")
             else
-                options+=("  🔵 $name $status $windows")
+                options+=("$i) 🔵 $name $status $windows")
             fi
+            ((i++))
         done <<< "$sessions"
         options+=("")
     fi
@@ -97,9 +99,9 @@ handle_choice() {
     local choice="$1"
     
     case "$choice" in
-        "  🟢 "* | "  🔵 "*)
-            # Attach to tmux session
-            local session_name=$(echo "$choice" | awk '{print $2}')
+        [0-9]")"*)
+            # Attach to tmux session by number
+            local session_name=$(echo "$choice" | awk '{print $3}')
             tmux attach-session -t "$session_name"
             exit
             ;;

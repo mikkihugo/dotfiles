@@ -9,12 +9,17 @@ echo "🔄 Migrating tmux sessions to zellij..."
 
 # Get current tmux sessions with their directories
 declare -A session_dirs
-while IFS=: read -r session_name window_name directory; do
-    session_dirs["$session_name"]="$directory"
-done < <(tmux list-sessions -F "#{session_name}" 2>/dev/null | while read session; do
-    dir=$(tmux list-windows -t "$session" -F "#{pane_current_path}" 2>/dev/null | head -1)
-    echo "$session:$dir"
-done)
+
+# Get sessions and their directories properly
+while read -r session_name; do
+    if [ -n "$session_name" ]; then
+        directory=$(tmux list-windows -t "$session_name" -F "#{pane_current_path}" 2>/dev/null | head -1)
+        if [ -z "$directory" ]; then
+            directory="$HOME"
+        fi
+        session_dirs["$session_name"]="$directory"
+    fi
+done < <(tmux list-sessions -F "#{session_name}" 2>/dev/null)
 
 echo "Found ${#session_dirs[@]} tmux sessions:"
 for session in "${!session_dirs[@]}"; do
@@ -31,9 +36,9 @@ for session_name in "${!session_dirs[@]}"; do
     echo "🚀 Creating zellij session: $session_name"
     echo "   Directory: $directory"
     
-    # Create detached zellij session in the correct directory
-    cd "$directory"
-    zellij -s "$session_name" -d
+    # Create detached zellij session in the correct directory  
+    cd "$directory" 2>/dev/null || cd "$HOME"
+    zellij --session "$session_name" --detached 2>/dev/null || echo "   ⚠️  Session may already exist"
     
     echo "   ✅ Created"
 done

@@ -133,12 +133,10 @@ if [ -f "$HOME/.dotfiles/.scripts/quick-check.sh" ]; then
     fi
 fi
 
-# Enhanced session menu on startup (can be disabled with MENU_ENABLED=false)
-# Disabled - migrating to zellij, menu was causing display issues
-# if [ -f "$HOME/.dotfiles/.scripts/enhanced-menu.sh" ]; then
-#     source "$HOME/.dotfiles/.scripts/enhanced-menu.sh"
-#     show_enhanced_menu
-# fi
+# Simple session management - no menus, just quick commands
+if [ -f "$HOME/.dotfiles/.scripts/simple-sessions.sh" ]; then
+    source "$HOME/.dotfiles/.scripts/simple-sessions.sh"
+fi
 
 # Terminal-specific configurations
 # Default terminal

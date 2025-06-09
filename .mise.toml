@@ -35,6 +35,7 @@ golangci-lint = "1.55.2"
 jq = "1.7.1"
 yq = "4.45.4"
 zoxide = "latest"
+tmux = "latest"
 
 [tasks.test]
 run = "echo 'Running tests...'"

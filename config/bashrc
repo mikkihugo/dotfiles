@@ -141,3 +141,11 @@ fi
 # Terminal-specific configurations
 # Default terminal
 export TERMINAL_APP="default"
+
+# Claude Context Commands
+alias claude-remind='bash ~/singularity-engine/.repo/scripts/claude-remind.sh'
+alias cr='claude-remind'  # Short version
+
+# Auto-reminder on new terminal sessions
+# Uncomment to auto-show reminder:
+# claude-remind

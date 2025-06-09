@@ -100,15 +100,8 @@ if [ -f "$HOME/.dotfiles/.scripts/tmux-startup.sh" ]; then
     source "$HOME/.dotfiles/.scripts/tmux-startup.sh"
 fi
 
-# SSH manager alias
-alias sshm="$HOME/.dotfiles/.scripts/ssh-manager.sh"
-alias termius-sync="$HOME/.dotfiles/.scripts/termius-sync.sh"
-alias hosts-sync="$HOME/.dotfiles/.scripts/unified-hosts-sync.sh"
-alias hs="$HOME/.dotfiles/.scripts/unified-hosts-sync.sh"
-alias tcs="$HOME/.dotfiles/.scripts/termius-cloud-sync.sh"
-alias termius-to-tabby="$HOME/.dotfiles/.scripts/termius-to-tabby.sh"
+# SSH and Tabby sync
 alias tabby-sync="$HOME/.dotfiles/.scripts/tabby-simple-sync.sh"
-alias sync-all="$HOME/.dotfiles/.scripts/complete-sync-manager.sh"
 
 # Terminal-specific configurations
 if [ ! -z "$TERMIUS_APP" ] || [[ "$SSH_CONNECTION" =~ "Termius" ]]; then

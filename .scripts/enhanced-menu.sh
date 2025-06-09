@@ -27,8 +27,14 @@ show_enhanced_menu() {
         [ "${MENU_ENABLED}" = "false" ] && return
     fi
     
-    # Always use basic menu for now (gum has TTY issues in this environment)
-    show_basic_menu
+    # Smart gum detection - only use if we have a real TTY
+    if command -v gum &>/dev/null && tty >/dev/null 2>&1 && [ -t 0 ] && [ -t 1 ]; then
+        # Real terminal detected - use gum
+        show_gum_menu
+    else
+        # No real TTY (Claude Code, CI/CD, etc.) - use retro menu
+        show_basic_menu
+    fi
 }
 
 # Gum-powered menu

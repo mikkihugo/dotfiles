@@ -1,6 +1,9 @@
 # 🚀 Ultimate Modern Development Environment
 
-Enterprise-grade dotfiles with GitOps automation, smart sync, and comprehensive tooling.
+Enterprise-grade dotfiles with GitOps automation, smart sync, Tabby gateway, and comprehensive tooling.
+
+> 📝 **Claude Code Instructions**: See CLAUDE.md in synthLANG format  
+> 🔐 **Security Note**: Tokens and sensitive configs stored in private gists
 
 ## ✨ Key Features
 
@@ -10,11 +13,11 @@ Enterprise-grade dotfiles with GitOps automation, smart sync, and comprehensive 
 - **Cross-server sync** - All machines stay updated automatically
 - **Gist integration** - Secure token & SSH host management
 
-### 🎨 Interactive Session Manager
-- **Numbered sessions** - Press 1-5 for instant tmux session switching
+### 🎨 Session & Gateway Management
+- **Simple commands** - `s/sl/sk` for tmux session management
+- **Tabby gateway** - Multi-user SSH gateway at ws://51.38.127.98:9000
 - **SSH integration** - Tabby-sync for unified host management
-- **Smart menu** - Gum-powered beautiful interface
-- **System dashboard** - Real-time system information
+- **Automated backups** - Daily gateway backups to GitHub gists
 
 ### 📦 Backup & Restore
 - **Complete state** - Tmux sessions, shell history, SSH configs
@@ -42,11 +45,20 @@ cd ~/.dotfiles && ./.scripts/setup-cron.sh
 
 ## 🎯 What You Get
 
-### Smart Navigation
+### Session Management
 ```bash
-z ~/projects      # Zoxide smart cd (learns your patterns)
-Ctrl+Alt+1-5     # Global tmux session switching
-Alt+1-5          # Window switching within session
+s [name]         # Create/attach tmux session
+sl               # List sessions
+sk [name]        # Kill session
+sa/sm/sw/st      # Quick jumps (agent/mcp/work/temp)
+```
+
+### Tabby Gateway
+```bash
+mise run gateway-deploy    # Deploy gateway container
+mise run gateway-backup    # Backup to GitHub gist
+mise run gateway-sync      # Sync config from gist
+mise run gateway-schedule  # Setup daily backups
 ```
 
 ### Productivity Aliases
@@ -193,8 +205,8 @@ cd ~/.dotfiles && ./install.sh
 # 3. Setup auto-sync
 ./.scripts/setup-cron.sh
 
-# 4. Download tokens (optional)
-gh gist view $GIST_ID > ~/.env_tokens
+# 4. Download tokens (ask team for gist ID)
+gh gist view $TOKENS_GIST_ID > ~/.env_tokens
 ```
 
 ### Daily Usage

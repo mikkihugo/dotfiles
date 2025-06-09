@@ -77,42 +77,41 @@ description = "Sync Tabby gateway config from gist"
 run = "./.scripts/deploy-tabby-gateway.sh"
 description = "Deploy Tabby gateway container"
 
+[tasks.gateway-status]
+run = "./.scripts/gateway-status.sh status"
+description = "Check Tabby gateway status on this server"
+
+[tasks.gateway-ensure]
+run = "./.scripts/gateway-status.sh ensure"
+description = "Ensure gateway is running on this server"
+
+[tasks.gateway-update]
+run = "./.scripts/gateway-status.sh update"
+description = "Update gateway status and sync to gist"
+
 [tasks.gateway-schedule]
 run = """
-  echo "🕐 Setting up scheduled gateway backups..."
+  echo "🕐 Setting up scheduled gateway tasks..."
   
-  # Create systemd timer for daily backups
-  cat > /tmp/tabby-gateway-backup.timer << 'EOF'
-[Unit]
-Description=Daily Tabby Gateway Backup
-Requires=tabby-gateway-backup.service
+  # Check if this is the gateway server
+  if ~/.dotfiles/.scripts/gateway-status.sh status | grep -q "Gateway is running"; then
+    echo "✅ This is the gateway server ($(hostname))"
+    
+    # Setup cron job for regular status checks and backups
+    (crontab -l 2>/dev/null | grep -v "gateway-status\\|backup-tabby-gateway" ; cat << EOF
+# Tabby Gateway Status Check (every 5 minutes)
+*/5 * * * * /home/mhugo/.dotfiles/.scripts/gateway-status.sh ensure >> /home/mhugo/.dotfiles/logs/gateway-status.log 2>&1
 
-[Timer]
-OnCalendar=daily
-OnCalendar=*-*-* 03:00:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target
+# Tabby Gateway Daily Backup (3 AM)
+0 3 * * * /home/mhugo/.dotfiles/.scripts/backup-tabby-gateway.sh >> /home/mhugo/.dotfiles/logs/gateway-backup.log 2>&1
 EOF
-
-  cat > /tmp/tabby-gateway-backup.service << 'EOF'
-[Unit]
-Description=Backup Tabby Gateway
-After=network.target
-
-[Service]
-Type=oneshot
-ExecStart=/home/mhugo/.dotfiles/.scripts/backup-tabby-gateway.sh
-User=mhugo
-EOF
-
-  echo "Timer and service files created in /tmp/"
-  echo "To install: sudo mv /tmp/tabby-gateway-backup.* /etc/systemd/system/ && sudo systemctl enable tabby-gateway-backup.timer"
-  
-  # Alternative: cron job
-  echo ""
-  echo "Or add to crontab:"
-  echo "0 3 * * * /home/mhugo/.dotfiles/.scripts/backup-tabby-gateway.sh >> /home/mhugo/.dotfiles/logs/gateway-backup.log 2>&1"
+    ) | crontab -
+    
+    echo "✅ Cron jobs installed"
+    crontab -l | grep gateway
+  else
+    echo "⚠️  Gateway not running on this server"
+    echo "Run 'mise run gateway-deploy' to deploy here"
+  fi
 """
-description = "Setup scheduled backups for Tabby gateway"
+description = "Setup scheduled tasks for gateway (status checks + backups)"

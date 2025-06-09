@@ -1,7 +1,7 @@
 #!/bin/bash
 # Setup cron job for auto-sync dotfiles
 
-CRON_JOB="*/5 * * * * cd ~/.dotfiles && mise run sync >/dev/null 2>&1"
+CRON_JOB="0 6 * * * cd ~/.dotfiles && mise run sync >/dev/null 2>&1"
 
 # Check if cron job already exists
 if crontab -l 2>/dev/null | grep -q "mise run sync"; then
@@ -10,7 +10,7 @@ if crontab -l 2>/dev/null | grep -q "mise run sync"; then
 else
     # Add cron job
     (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
-    echo "✅ Added cron job: Check for updates every 5 minutes"
+    echo "✅ Added cron job: Check for updates daily at 6 AM"
     echo "$CRON_JOB"
 fi
 

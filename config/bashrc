@@ -95,6 +95,14 @@ esac
 # pnpm end
 export PATH="$HOME/.npm-global/bin:$PATH"
 
+# Auto-sync dotfiles on login (once per day)
+if [ -f "$HOME/.dotfiles/.scripts/auto-sync.sh" ]; then
+    if [ ! -f "$HOME/.dotfiles/.last_sync" ] || [ "$(find "$HOME/.dotfiles/.last_sync" -mtime +1 2>/dev/null)" ]; then
+        echo "🔄 Checking for dotfiles updates..."
+        (cd "$HOME/.dotfiles" && mise run sync >/dev/null 2>&1) && touch "$HOME/.dotfiles/.last_sync"
+    fi
+fi
+
 # Enhanced session menu on startup (can be disabled with MENU_ENABLED=false)
 if [ -f "$HOME/.dotfiles/.scripts/enhanced-menu.sh" ]; then
     source "$HOME/.dotfiles/.scripts/enhanced-menu.sh"

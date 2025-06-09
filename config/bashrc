@@ -103,8 +103,20 @@ fi
 # SSH manager alias
 alias sshm="$HOME/.dotfiles/.scripts/ssh-manager.sh"
 alias termius-sync="$HOME/.dotfiles/.scripts/termius-sync.sh"
+alias hosts-sync="$HOME/.dotfiles/.scripts/unified-hosts-sync.sh"
+alias hs="$HOME/.dotfiles/.scripts/unified-hosts-sync.sh"
 
-# Fix for Termius mouse issues
+# Terminal-specific configurations
 if [ ! -z "$TERMIUS_APP" ] || [[ "$SSH_CONNECTION" =~ "Termius" ]]; then
+    # Termius detected
     export TERM=xterm-256color
+    export TERMINAL_APP="termius"
+elif [ ! -z "$WARP_IS_LOCAL_SHELL_SESSION" ]; then
+    # Warp detected
+    export TERMINAL_APP="warp"
+    # Enable mouse in tmux for Warp
+    alias tmux='tmux -f <(cat ~/.tmux.conf; echo "set -g mouse on")'
+else
+    # Default terminal
+    export TERMINAL_APP="default"
 fi

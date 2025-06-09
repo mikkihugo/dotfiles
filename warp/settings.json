@@ -1,0 +1,46 @@
+{
+  "terminal": {
+    "font_family": "MesloLGS NF",
+    "font_size": 14,
+    "cursor_shape": "block",
+    "cursor_blink": false,
+    "scrollback_lines": 50000,
+    "copy_on_select": false,
+    "paste_on_right_click": false,
+    "detect_urls": true,
+    "audible_bell": false,
+    "visual_bell": true
+  },
+  "appearance": {
+    "theme": "dark",
+    "opacity": 0.95,
+    "blur_background": true,
+    "window_decorations": "full"
+  },
+  "ai": {
+    "enabled": true,
+    "suggestions": true,
+    "error_explanations": true,
+    "command_search": true
+  },
+  "features": {
+    "blocks": true,
+    "command_palette": true,
+    "warp_drive": true,
+    "notebooks": true
+  },
+  "keybindings": {
+    "new_tab": "cmd+t",
+    "close_tab": "cmd+w",
+    "next_tab": "cmd+shift+]",
+    "prev_tab": "cmd+shift+[",
+    "split_pane_vertical": "cmd+d",
+    "split_pane_horizontal": "cmd+shift+d",
+    "toggle_ai": "cmd+g"
+  },
+  "startup": {
+    "restore_tabs": true,
+    "default_shell": "bash",
+    "working_directory": "~"
+  }
+}

@@ -1,37 +1,35 @@
-# Home Directory Management Rules
+# synthLANG: HOMEDIR_MGMT v1.0
 
-## CRITICAL: Always use dotfiles repo
-- **Repo**: `~/.dotfiles` → `github.com/mikkihugo/dotfiles`
-- **Rule**: Commit ALL home config changes immediately
-- **Command**: `cd ~/.dotfiles && git add -A && git commit -m "message" && git push`
+## CRITICAL_OPS:
+  dotfiles_repo: ~/.dotfiles → github.com/mikkihugo/dotfiles
+  commit_rule: ALL_CHANGES → IMMEDIATE_COMMIT
+  commit_cmd: cd ~/.dotfiles && git add -A && git commit -m "$MSG" && git push
 
-## FORBIDDEN: File naming
-- **NEVER use**: `enhanced`, `improved`, `better`, `v2`, `new`, `old`
-- **NEVER create**: `file_enhanced.ts`, `component_v2.tsx`, `service_better.ts`
-- **ALWAYS**: Edit the original file directly
-- **ALWAYS**: Use git for version control, not filename suffixes
+## FORBIDDEN_PATTERNS:
+  file_suffix: [enhanced, improved, better, v2, new, old]
+  examples: [file_enhanced.ts, component_v2.tsx, service_better.ts]
+  rule: ALWAYS_EDIT_ORIGINAL && USE_GIT_VERSION_CONTROL
 
-## Sensitive Data (.env files)
-- **Storage**: Private GitHub Gists (NOT in dotfiles repo)
-- **Local**: `~/.env_tokens` (downloaded from gist)
-- **Update gist**: `gh gist edit $GIST_ID ~/.env_tokens`
+## ENV_SECURITY:
+  storage: PRIVATE_GITHUB_GISTS  # NEVER in dotfiles repo
+  local_path: ~/.env_tokens
+  update_cmd: gh gist edit $GIST_ID ~/.env_tokens
 
-## Before editing ANY home config file:
-```bash
-# Check if it's already managed
-ls -la ~/.bashrc  # Look for symlink arrow →
+## CONFIG_PROTOCOL:
+  pre_edit_check: |
+    ls -la ~/.bashrc  # symlink_indicator: →
+    if !symlinked:
+      cp ~/.bashrc ~/.dotfiles/
+      ln -sf ~/.dotfiles/.bashrc ~/.bashrc
+      cd ~/.dotfiles && git add .bashrc && git commit -m "Add .bashrc"
 
-# If not symlinked, add to dotfiles:
-cp ~/.bashrc ~/.dotfiles/
-ln -sf ~/.dotfiles/.bashrc ~/.bashrc
-cd ~/.dotfiles && git add .bashrc && git commit -m "Add .bashrc"
-```
+## ACTIVE_ENV:
+  shell: bash + mise + starship
+  nx_daemon: DISABLED (NX_DAEMON=false)  # prevents_server_kills
+  sessions: tmux  # simple_cmds: s/sl/sk/sa/sm/sw/st
 
-## Active configurations:
-- **Shell**: bash with mise + starship
-- **NX**: Daemon disabled (NX_DAEMON=false) to prevent server kills
-
-## Quick reference:
-- Commit dotfiles: `cd ~/.dotfiles && git add -A && git commit -m "msg" && git push`
-- Update tokens: `gh gist edit $GIST_ID ~/.env_tokens`
-- Stop NX: `pnpm nx daemon --stop`
+## QUICK_REF:
+  dotfiles_sync: cd ~/.dotfiles && git add -A && git commit -m "$MSG" && git push
+  token_update: gh gist edit $GIST_ID ~/.env_tokens
+  nx_stop: pnpm nx daemon --stop
+  session_mgmt: {s: create/attach, sl: list, sk: kill, sa/sm/sw/st: quick_jumps}

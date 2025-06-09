@@ -93,6 +93,44 @@ push_gist() {
     echo "Pushed to gist: $GIST_ID"
 }
 
+# Sync SSH config from Termius cloud
+sync_ssh_config() {
+    echo "Syncing SSH config from Termius..."
+    
+    # Export current Termius hosts
+    termius export --output /tmp/termius-current.json
+    
+    # Generate SSH config from Termius data
+    echo "# SSH config generated from Termius" > ~/.ssh/config.new
+    echo "# Generated: $(date)" >> ~/.ssh/config.new
+    echo "" >> ~/.ssh/config.new
+    
+    # Parse Termius export and create SSH config
+    jq -r '.hosts[]? | 
+        "Host \(.label // .address)\n" +
+        "  HostName \(.address)\n" +
+        "  User \(.username // "root")\n" +
+        "  Port \(.port // 22)\n" +
+        (if .ssh_key then "  IdentityFile \(.ssh_key)\n" else "" end) +
+        "\n"' /tmp/termius-current.json >> ~/.ssh/config.new 2>/dev/null || true
+    
+    # Also process groups
+    jq -r '.groups[]?.hosts[]? | 
+        "Host \(.label // .address)\n" +
+        "  HostName \(.address)\n" +
+        "  User \(.username // "root")\n" +
+        "  Port \(.port // 22)\n" +
+        "\n"' /tmp/termius-current.json >> ~/.ssh/config.new 2>/dev/null || true
+    
+    # Backup and replace
+    [ -f ~/.ssh/config ] && cp ~/.ssh/config ~/.ssh/config.bak
+    mv ~/.ssh/config.new ~/.ssh/config
+    chmod 600 ~/.ssh/config
+    
+    rm -f /tmp/termius-current.json
+    echo "SSH config updated from Termius"
+}
+
 # Pull from gist
 pull_gist() {
     echo "Pulling from gist..."

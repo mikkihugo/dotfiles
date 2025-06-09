@@ -87,7 +87,7 @@ format = "[$symbol$context]($style) "
 disabled = false
 symbol = "☸ "
 style = "bright-magenta bold"
-format = "[$symbol$context( \($namespace\))]($style) "
+format = "[$symbol$context( \\($namespace\\))]($style) "
 
 [package]
 symbol = "📦 "

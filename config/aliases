@@ -73,11 +73,9 @@ alias tn='tmux new -s'
 alias tk='tmux kill-session -t'
 alias td='tmux detach'
 
-# Environment management
-alias env-setup='~/.dotfiles/.scripts/env-manager.sh setup'
-alias env-edit='~/.dotfiles/.scripts/env-manager.sh edit'
-alias env-load='source <(~/.dotfiles/.scripts/env-manager.sh load)'
-alias env-backup='~/.dotfiles/.scripts/env-manager.sh backup'
+# Dotfiles management
+alias tabby-sync="$HOME/.dotfiles/.scripts/tabby-sync.sh"
+alias tmux-reload="tmux source-file ~/.tmux.conf"
 
 # Modern CLI tools
 # alias rg='ripgrep'  # Removed: 'rg' command already works, no alias needed

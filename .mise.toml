@@ -31,6 +31,7 @@ golangci-lint = "1.55.2"
 
 # Utils
 jq = "1.7.1"
+yq = "latest"
 
 [tasks.test]
 run = "echo 'Running tests...'"

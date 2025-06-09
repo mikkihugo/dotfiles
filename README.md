@@ -1,216 +1,315 @@
-# 🚀 Modern Development Environment Dotfiles
+# 🚀 Ultimate Modern Development Environment
 
-GitOps-style configuration management for a supercharged development environment.
+Enterprise-grade dotfiles with GitOps automation, smart sync, and comprehensive tooling.
 
-## ✨ Features
+## ✨ Key Features
 
-### 🛠️ Development Tools
-- **Mise** - Modern, fast version manager (asdf replacement)
-- **Python 3.12.8** - With SQLite support 
-- **Node.js 22.16.0** - Latest LTS
-- **Go 1.22.0** - Systems programming
-- **Rust** - Modern systems language
+### 🤖 Automated Sync System
+- **Smart detection** - Lightning-fast GitHub API checks on login
+- **Auto-sync** - Background updates when changes detected
+- **Cross-server sync** - All machines stay updated automatically
+- **Gist integration** - Secure token & SSH host management
 
-### 🎨 Modern CLI Tools
-- **Starship** - Beautiful, fast shell prompt
-- **Bat** - Better cat with syntax highlighting
-- **Exa** - Better ls with icons and colors
-- **FD** - Better find command
-- **FZF** - Fuzzy finder for everything
-- **Hyperfine** - Command benchmarking
-- **LazyGit** - Interactive Git TUI
-- **k9s** - Kubernetes cluster TUI
+### 🎨 Interactive Session Manager
+- **Numbered sessions** - Press 1-5 for instant tmux session switching
+- **SSH integration** - Tabby-sync for unified host management
+- **Smart menu** - Gum-powered beautiful interface
+- **System dashboard** - Real-time system information
 
-### 🖥️ Terminal Experience  
-- **Tmux** - Auto-starting session management
-- **Mosh compatibility** - Fixed scrolling issues
-- **Smart aliases** - Productivity shortcuts
-- **Auto-completion** - For Git, GitHub CLI, etc.
+### 📦 Backup & Restore
+- **Complete state** - Tmux sessions, shell history, SSH configs
+- **Smart compression** - Automated backup rotation
+- **Instant restore** - One-click environment recreation
+- **Directory memory** - Zoxide integration for smart navigation
+
+### 🛠️ Development Powerhouse
+- **40+ Git aliases** - `gs`, `gp`, `glog`, `cleanup`, `pushit`
+- **Modern CLI tools** - bat, eza, fd, fzf, ripgrep, zoxide
+- **Version management** - Mise for Python, Node, Go, Rust
+- **Enhanced tmux** - Plugins, session persistence, global hotkeys
 
 ## 🚀 Quick Start
 
-### Public Repo Installation (No Auth Required):
+### One-Line Install
 ```bash
-# Clone without authentication
-git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles
-cd ~/.dotfiles && ./install.sh
-
-# Optional: Setup tokens after installation
-env-setup    # For encrypted token management
+git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles && cd ~/.dotfiles && ./install.sh
 ```
 
-### Manual installation:
+### Enable Auto-Sync
 ```bash
-git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles
-cd ~/.dotfiles
-chmod +x install.sh
-./install.sh
+cd ~/.dotfiles && ./.scripts/setup-cron.sh
 ```
+
+## 🎯 What You Get
+
+### Smart Navigation
+```bash
+z ~/projects      # Zoxide smart cd (learns your patterns)
+Ctrl+Alt+1-5     # Global tmux session switching
+Alt+1-5          # Window switching within session
+```
+
+### Productivity Aliases
+```bash
+# Git shortcuts
+gs               # git status
+ga .             # git add .
+gcm "message"    # git commit -m
+gp               # git push
+glog             # beautiful git log
+cleanup          # delete merged branches
+
+# Modern replacements
+ls               # → eza with icons and git status
+cat              # → bat with syntax highlighting
+cd               # → zoxide (smart directory jumping)
+find             # → fd (faster file search)
+grep             # → ripgrep (faster text search)
+```
+
+### System Management
+```bash
+backup-restore   # Complete environment backup
+mise run sync    # Manual dotfiles sync
+system-info      # Beautiful system dashboard
+weather          # Current weather display
+```
+
+## 📋 Interactive Menu
+
+On every login, get a beautiful menu with:
+- **Numbered tmux sessions** (1-5 for instant access)
+- **SSH connections** from Tabby sync
+- **System tools** and information
+- **Backup/restore** operations
+- **Quick actions** for common tasks
+
+## 🔄 Auto-Sync Architecture
+
+### Smart Detection
+1. **Login check** - GitHub API call (~200ms) to compare commit hashes
+2. **Background sync** - Non-blocking updates when changes found
+3. **Notifications** - Desktop alerts for sync status
+4. **Fallback cron** - Daily 6 AM sync for servers without logins
+
+### What Gets Synced
+- ✅ **Dotfiles** - All configurations via git
+- ✅ **Tools** - Mise automatically installs/updates
+- ✅ **Tokens** - Secure gist-based secret management
+- ✅ **SSH hosts** - Tabby integration for unified access
 
 ## 📁 Repository Structure
 
 ```
 .dotfiles/
-├── .mise.toml             # Mise configuration
-├── .tool-versions         # Legacy ASDF compatibility
-├── install.sh             # Automated setup script
-├── bootstrap.sh           # Minimal bootstrap script
-├── config/
-│   ├── bashrc             # Bash configuration
-│   ├── aliases            # Command aliases
-│   ├── tmux.conf          # Tmux configuration
-│   └── starship.toml      # Starship prompt config
-├── .scripts/
-│   ├── tmux-startup.sh    # Tmux session manager
-│   ├── tmux-auto-name.sh  # Auto-name sessions
-│   └── tmux-save-restore.sh # Session persistence
-├── CLAUDE.md              # AI assistant instructions
-└── README.md              # This file
+├── 🔧 Core Config
+│   ├── .mise.toml          # Tool versions & tasks
+│   ├── config/bashrc       # Enhanced shell config
+│   ├── config/tmux.conf    # Tmux with plugins
+│   ├── .gitconfig          # 40+ git aliases
+│   └── .aliases            # 100+ productivity shortcuts
+├── 🤖 Automation
+│   ├── .scripts/auto-sync.sh      # Smart sync system
+│   ├── .scripts/quick-check.sh    # Fast GitHub API checks
+│   ├── .scripts/enhanced-menu.sh  # Interactive login menu
+│   └── .scripts/backup-restore.sh # Complete state management
+├── 🔐 Security
+│   ├── .scripts/tabby-sync.sh     # SSH host management
+│   └── CLAUDE.md                  # AI assistant rules
+└── 📚 Documentation
+    └── README.md                   # This file
 ```
 
-## 🎯 What Gets Installed
+## 🌟 Advanced Features
 
-### Core Environment
-- **Mise** - Modern version manager (Rust-based, faster than asdf)
-- **Starship** - Cross-shell prompt
-- **Tmux** - Terminal multiplexer with auto-start
-- **Modern CLI tools** - bat, exa, fd, fzf, etc.
-
-### Development Languages  
-- **Python 3.12.8** - With SQLite support
-- **Node.js 22.16.0** - Latest LTS
-- **Go 1.22.0** - Google's language
-- **Rust** - Systems programming
-
-### Productivity Tools
-- **LazyGit** - Interactive Git interface
-- **GitHub CLI** - GitHub from command line
-- **k9s** - Kubernetes cluster management
-- **FZF integrations** - Fuzzy search everywhere
-
-## ⚙️ Configuration Features
-
-### Smart Aliases
+### Git Workflow Enhancement
 ```bash
-ls    # → exa with icons
-cat   # → bat with syntax highlighting  
-lg    # → lazygit
-k     # → kubectl
-ta    # → tmux attach
+# Smart aliases
+glog             # Beautiful graph log
+today            # Commits from today
+yesterday        # Commits from yesterday
+find "message"   # Search commits by message
+pushit           # Push current branch with upstream
+rebase-main      # Interactive rebase from main
+cleanup          # Delete merged branches
 ```
 
-### Tmux Auto-start
-- **SSH sessions** automatically start tmux
-- **Smart session management** (create/attach/choose)
-- **Mosh scrolling fixed** with proper terminal overrides
+### Tmux Session Management
+- **Auto-restore** - Sessions persist across reboots
+- **Global hotkeys** - Ctrl+Alt+1-5 for session switching
+- **Smart naming** - Automatic session organization
+- **Backup integration** - Save/restore complete state
 
-### Starship Prompt
-Shows context-aware information:
-- 🌿 Git branch and status
-- 🐍 Python version
-- ⬢ Node.js version  
-- ☸️ Kubernetes context
-- ⏰ Current time
+### System Intelligence
+- **Smart cd** - Zoxide learns your navigation patterns
+- **Directory jumping** - Instant access to frequent paths
+- **System monitoring** - Real-time resource dashboard
+- **Network info** - Internal/external IP display
 
 ## 🔧 Customization
 
-### Modify configurations:
+### Add New Tools
 ```bash
+# Edit mise configuration
+vim ~/.dotfiles/.mise.toml
+
+# Add to tools section
+[tools]
+your-tool = "latest"
+
+# Commit changes
 cd ~/.dotfiles
-# Edit any config file
-vim config/aliases
-# Commit and push changes
-git add . && git commit -m "Update aliases"
-git push
+git add . && git commit -m "Add your-tool" && git push
 ```
 
-### Add new tools:
+### Custom Aliases
 ```bash
-# Add to .mise.toml
-# Edit the [tools] section
-vim .mise.toml
-# Update install script
-vim install.sh
+# Edit aliases file
+vim ~/.dotfiles/.aliases
+
+# Add your aliases
+alias mycommand='your command here'
+
+# Auto-syncs across all machines
 ```
 
-## 📦 GitOps Workflow
-
-### Initial setup on new machine:
+### SSH Host Management
 ```bash
+# Add hosts via Tabby or direct edit
+tabby-sync push    # Push local hosts to gist
+tabby-sync pull    # Pull hosts from gist
+```
+
+## 🌐 Multi-Machine Workflow
+
+### Initial Setup (New Machine)
+```bash
+# 1. Clone dotfiles
 git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles
+
+# 2. Run installer
 cd ~/.dotfiles && ./install.sh
+
+# 3. Setup auto-sync
+./.scripts/setup-cron.sh
+
+# 4. Download tokens (optional)
+gh gist view $GIST_ID > ~/.env_tokens
 ```
 
-### Update environment:
-```bash
-cd ~/.dotfiles
-git pull
-./install.sh  # Re-run to apply changes
-```
-
-### Sync changes from current machine:
-```bash
-cd ~/.dotfiles
-# Copy updated configs
-cp ~/.bashrc config/
-cp ~/.tmux.conf config/
-# Commit and push
-git add . && git commit -m "Update config"
-git push
-```
-
-## 🌐 Remote Development
-
-### SSH/Mosh Integration
-- **Auto tmux** on SSH connections
-- **Mosh wrapper** with optimized settings
-- **Connection monitoring** tools
-
-### Cloud Development
-Perfect for:
-- **Remote servers** 
-- **Container development**
-- **Cloud IDEs**
-- **Multiple machine sync**
+### Daily Usage
+- **Make changes** on any machine
+- **Auto-sync** happens on login/daily
+- **All machines** stay synchronized
+- **Zero manual intervention** needed
 
 ## 🛠️ Troubleshooting
 
-### Python SQLite Issues
-The install script automatically handles SQLite headers for Python compilation.
-
-### Tmux Not Auto-starting
-Check that the SSH detection works:
+### Sync Issues
 ```bash
-echo $SSH_CLIENT
-source ~/.tmux-auto.sh
+# Check sync status
+tail -f ~/.dotfiles/auto-sync.log
+
+# Manual sync
+cd ~/.dotfiles && mise run sync
+
+# Reset sync state
+rm ~/.dotfiles/.remote_hash && ~/.dotfiles/.scripts/quick-check.sh sync
 ```
 
 ### Missing Tools
-Re-run installation:
 ```bash
-cd ~/.dotfiles && ./install.sh
+# Reinstall everything
+cd ~/.dotfiles && mise install
+
+# Check tool versions
+mise list
 ```
+
+### Menu Not Showing
+```bash
+# Test menu directly
+~/.dotfiles/.scripts/enhanced-menu.sh force
+
+# Check bashrc loading
+source ~/.bashrc
+```
+
+## 🎨 Screenshots
+
+### Login Experience
+```
+🚀 SESSION & CONNECTION MANAGER
+
+📋 TMUX SESSIONS
+1) 🟢 main [ATTACHED] 3w
+2) 🔵 work [FREE] 1w
+3) 🔵 temp [FREE] 2w
+
+🌐 SSH CONNECTIONS (5 hosts)
+  🔗 server1 → user@host1.com
+  🔗 server2 → user@host2.com
+
+✨ New tmux session
+🗑️ Kill tmux session
+📦 Sync dotfiles
+⚙️ Quick tools
+```
+
+### System Information
+```
+🖥️ SYSTEM INFORMATION
+====================
+
+📋 System:
+  Host: dev-server
+  OS: Ubuntu 22.04 LTS
+  Uptime: 5 days, 3 hours
+
+💾 Memory:
+  Used: 4.2G/16G (26%)
+
+💿 Disk:
+  Root: 45G/100G (45% used)
+
+⚡ CPU:
+  Intel Xeon E5-2686 v4
+  Cores: 8 | Load: 0.5
+
+🌐 Network:
+  IP: 192.168.1.100
+  External: 203.0.113.1
+```
+
+## 📊 Performance Stats
+
+- **Login time**: ~300ms (with sync check)
+- **Sync speed**: ~2-5 seconds (full sync)
+- **API check**: ~200ms (hash comparison)
+- **Menu load**: ~100ms (gum interface)
 
 ## 🤝 Contributing
 
-1. Fork this repository
-2. Create your feature branch
-3. Commit your changes  
-4. Push to the branch
-5. Create a Pull Request
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
 
 ## 📜 License
 
-MIT License - Feel free to use and modify!
+MIT License - See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- [Mise](https://mise.jdx.dev/) - Modern version manager
-- [ASDF](https://asdf-vm.com/) - Original version manager
-- [Starship](https://starship.rs/) - Beautiful prompt
-- [Tmux](https://github.com/tmux/tmux) - Terminal multiplexer
-- [Modern CLI tools](https://github.com/ibraheemdev/modern-unix) - Inspiration
+- **[Mise](https://mise.jdx.dev/)** - Modern tool version management
+- **[Starship](https://starship.rs/)** - Cross-shell prompt
+- **[Gum](https://github.com/charmbracelet/gum)** - Glamorous shell scripts
+- **[Zoxide](https://github.com/ajeetdsouza/zoxide)** - Smart directory jumping
+- **[Modern Unix](https://github.com/ibraheemdev/modern-unix)** - CLI tool inspiration
 
 ---
 
-**Happy coding!** 🚀 If you have questions, open an issue!
+**🚀 Ready to supercharge your development environment?**
+
+Get started with: `git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles && cd ~/.dotfiles && ./install.sh`

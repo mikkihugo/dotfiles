@@ -48,8 +48,8 @@ run = "./install.sh"
 description = "Setup development environment"
 
 [tasks.sync]
-run = "./scripts/auto-sync.sh"
-description = "Sync dotfiles from git"
+run = "./.scripts/auto-sync.sh"
+description = "Auto-sync dotfiles, tokens, and SSH hosts"
 
 [tasks.update]
 run = "mise upgrade && mise install"

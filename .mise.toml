@@ -35,7 +35,7 @@ golangci-lint = "1.55.2"
 jq = "1.7.1"
 yq = "4.45.4"
 zoxide = "latest"
-tmux = "latest"
+# tmux = "latest"  # Comment out - needs system libs (ncurses-dev), better to use system package
 
 [tasks.test]
 run = "echo 'Running tests...'"
@@ -48,6 +48,10 @@ description = "Lint all files"
 [tasks.setup]
 run = "./install.sh"
 description = "Setup development environment"
+
+[tasks.system-deps]
+run = "./.scripts/install-system-deps.sh"
+description = "Install system dependencies (tmux, build tools, etc.)"
 
 [tasks.sync]
 run = "./.scripts/auto-sync.sh"

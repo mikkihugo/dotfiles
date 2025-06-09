@@ -27,12 +27,8 @@ show_enhanced_menu() {
         [ "${MENU_ENABLED}" = "false" ] && return
     fi
     
-    # Check if we have gum available (simplified TTY check)
-    if command -v gum &>/dev/null && [ "$force" = "force" -o -t 1 ]; then
-        show_gum_menu
-    else
-        show_basic_menu
-    fi
+    # Always use basic menu for now (gum has TTY issues in this environment)
+    show_basic_menu
 }
 
 # Gum-powered menu

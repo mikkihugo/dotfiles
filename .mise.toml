@@ -46,8 +46,12 @@ run = ["shellcheck scripts/*.sh", "yamllint ."]
 description = "Lint all files"
 
 [tasks.setup]
-run = ["./.scripts/install-system-deps.sh", "./install.sh"]
-description = "Setup development environment (system deps + mise tools)"
+run = ["./.scripts/auto-install.sh", "./.scripts/install-system-deps.sh"]
+description = "Complete setup - auto-install everything possible"
+
+[tasks.auto-install]
+run = "./.scripts/auto-install.sh"
+description = "Install everything possible without sudo"
 
 [tasks.system-deps]
 run = "./.scripts/install-system-deps.sh"

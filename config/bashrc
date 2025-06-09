@@ -108,11 +108,19 @@ esac
 # pnpm end
 export PATH="$HOME/.npm-global/bin:$PATH"
 
-# Auto-install system dependencies on first login (once)
-if [ -f "$HOME/.dotfiles/.scripts/install-system-deps.sh" ] && [ ! -f "$HOME/.dotfiles/.system-deps-installed" ]; then
-    echo "🔧 First login detected - checking system dependencies..."
-    echo "💡 Run 'mise run system-deps' if you want to install missing packages"
-    # Don't auto-install in background since it needs sudo interaction
+# Auto-install everything possible on first login (once)
+if [ ! -f "$HOME/.dotfiles/.auto-install-done" ]; then
+    if [ -f "$HOME/.dotfiles/.scripts/auto-install.sh" ]; then
+        echo "🚀 First login detected - auto-installing everything possible..."
+        echo "⏳ This will take a few minutes but only happens once..."
+        (cd "$HOME/.dotfiles" && ./.scripts/auto-install.sh > ~/.dotfiles/auto-install.log 2>&1 && touch ~/.dotfiles/.auto-install-done) &
+        echo "📋 Installation running in background. Check: tail -f ~/.dotfiles/auto-install.log"
+    fi
+fi
+
+# Check for system dependencies
+if [ ! -f "$HOME/.dotfiles/.system-deps-installed" ]; then
+    echo "💡 System packages needed. Run: mise run system-deps"
 fi
 
 # Quick async check for dotfiles updates on login

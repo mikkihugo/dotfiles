@@ -78,6 +78,14 @@ show_gum_menu() {
         fi
     fi
     
+    # Add Claude sessions
+    options+=(
+        "🤖 CLAUDE SESSIONS"
+        "  🚀 Singularity Engine (Claude)"
+        "  🏗️  Architect MCP (Claude)"
+        ""
+    )
+    
     # Add actions
     options+=(
         "✨ New tmux session"
@@ -107,6 +115,12 @@ handle_choice() {
     local choice="$1"
     
     case "$choice" in
+        "  🚀 Singularity Engine (Claude)")
+            handle_claude_session "singularity-engine" "/home/mhugo/singularity-engine"
+            ;;
+        "  🏗️  Architect MCP (Claude)")
+            handle_claude_session "architect-mcp" "/home/mhugo/architect-mcp"
+            ;;
         [0-9]")"*)
             # Attach to tmux session by number
             local session_name=$(echo "$choice" | awk '{print $3}')
@@ -294,6 +308,7 @@ show_basic_menu() {
     echo ""
     echo -e "${magenta}${bold}┌─[ ${yellow}COMMAND CENTER${magenta} ]─────────────────────────────────────────┐${reset}"
     echo -e "${magenta}│                                                            │${reset}"
+    echo -e "${magenta}│ ${yellow}[c1]${reset} ${cyan}Claude: Singularity${reset}  ${yellow}[c2]${reset} ${cyan}Claude: Architect${reset}          │${reset}"
     echo -e "${magenta}│ ${yellow}[n]${reset} ${cyan}New Session${reset}     ${yellow}[k]${reset} ${cyan}Kill Session${reset}     ${yellow}[i]${reset} ${cyan}System Info${reset}    │${reset}"
     echo -e "${magenta}│ ${yellow}[s]${reset} ${cyan}Shell${reset}           ${yellow}[b]${reset} ${cyan}Backup/Restore${reset}   ${yellow}[d]${reset} ${cyan}System Deps${reset}    │${reset}"
     echo -e "${magenta}│                                            ${yellow}[x]${reset} ${cyan}Exit${reset}           │${reset}"
@@ -311,6 +326,14 @@ show_basic_menu() {
     fi
     
     case $choice in
+        c1)
+            handle_claude_session "singularity-engine" "/home/mhugo/singularity-engine"
+            exit
+            ;;
+        c2)
+            handle_claude_session "architect-mcp" "/home/mhugo/architect-mcp"
+            exit
+            ;;
         n)
             echo -e "\n${green}${bold}╔═[ CREATE NEW SESSION ]══════════════════════════════════════╗${reset}"
             echo -e "${green}║                                                            ║${reset}"
@@ -456,5 +479,138 @@ show_system_info() {
     show_tools_menu
 }
 
+# Handle Claude sessions with proper tmux/worktree management
+handle_claude_session() {
+    local session_name="$1"
+    local project_path="$2"
+    
+    # Check if directory exists
+    if [ ! -d "$project_path" ]; then
+        echo "❌ Directory not found: $project_path"
+        read -p "Press Enter to continue..."
+        show_gum_menu
+        return
+    fi
+    
+    # Create or attach to tmux session
+    if tmux has-session -t "$session_name" 2>/dev/null; then
+        echo "📋 Attaching to existing session: $session_name"
+        tmux attach-session -t "$session_name"
+    else
+        echo "✨ Creating new session: $session_name"
+        # Create new tmux session and run Claude with session name
+        tmux new-session -s "$session_name" -c "$project_path" \
+            "echo '🤖 Starting Claude session: $session_name' && \
+             echo '📁 Working directory: $project_path' && \
+             echo '' && \
+             claude --name '$session_name' || \
+             handle_claude_exit '$project_path' '$session_name'"
+    fi
+}
+
+# Handle Claude exit with git worktree safety checks
+handle_claude_exit() {
+    local project_path="$1"
+    local session_name="$2"
+    
+    cd "$project_path"
+    
+    # Check if we're in a git worktree
+    if git rev-parse --git-dir >/dev/null 2>&1 && [ -f "$(git rev-parse --git-dir)/gitdir" ]; then
+        echo ""
+        echo "🌳 Git worktree detected!"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        
+        # Check git status
+        local has_changes=false
+        local has_unpushed=false
+        
+        if ! git diff --quiet || ! git diff --cached --quiet; then
+            has_changes=true
+        fi
+        
+        if [ "$(git rev-list @{u}..HEAD 2>/dev/null | wc -l)" -gt 0 ]; then
+            has_unpushed=true
+        fi
+        
+        if [ "$has_changes" = true ] || [ "$has_unpushed" = true ]; then
+            echo "⚠️  WARNING: Uncommitted changes or unpushed commits detected!"
+            git status --short
+            echo ""
+            echo "🛑 Cannot safely remove worktree. Options:"
+            echo "  1) Return to Claude to commit/push changes"
+            echo "  2) Drop to bash shell to handle manually"
+            echo "  3) Force remove (LOSES ALL WORK!)"
+            echo ""
+            read -p "Choose [1/2/3]: " choice
+            
+            case $choice in
+                1)
+                    claude --name "$session_name"
+                    handle_claude_exit "$project_path" "$session_name"
+                    ;;
+                2)
+                    echo "🐚 Dropping to bash. Type 'exit' when done."
+                    bash
+                    handle_claude_exit "$project_path" "$session_name"
+                    ;;
+                3)
+                    echo "⚠️  Type YES to force remove and LOSE ALL WORK:"
+                    read confirm
+                    if [ "$confirm" = "YES" ]; then
+                        cd ..
+                        git worktree remove --force "$project_path"
+                        echo "💥 Worktree forcefully removed!"
+                        sleep 2
+                    else
+                        echo "❌ Aborted"
+                        handle_claude_exit "$project_path" "$session_name"
+                    fi
+                    ;;
+                *)
+                    handle_claude_exit "$project_path" "$session_name"
+                    ;;
+            esac
+        else
+            # All clean, safe to remove
+            echo "✅ Worktree is clean!"
+            echo "🗑️  Safe to remove worktree? [y/N]:"
+            read -p "" remove_choice
+            if [[ "$remove_choice" =~ ^[Yy]$ ]]; then
+                cd ..
+                git worktree remove "$project_path"
+                echo "✅ Worktree removed successfully!"
+                sleep 2
+            fi
+        fi
+    else
+        echo ""
+        echo "📋 Claude session ended: $session_name"
+        echo "Options:"
+        echo "  1) Restart Claude"
+        echo "  2) Drop to bash shell"
+        echo "  3) Exit tmux session"
+        echo ""
+        read -p "Choose [1/2/3]: " exit_choice
+        
+        case $exit_choice in
+            1)
+                claude --name "$session_name"
+                handle_claude_exit "$project_path" "$session_name"
+                ;;
+            2)
+                echo "🐚 Dropping to bash. Type 'exit' to close session."
+                bash
+                ;;
+            3)
+                exit
+                ;;
+            *)
+                exit
+                ;;
+        esac
+    fi
+}
+
 # Export for sourcing
-export -f show_enhanced_menu show_system_info
+export -f show_enhanced_menu show_system_info handle_claude_session handle_claude_exit

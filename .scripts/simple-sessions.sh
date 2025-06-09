@@ -37,8 +37,8 @@ alias sm='s mcp && cd ~/architecturemcp'
 alias sw='s work && cd ~/.dotfiles'
 alias st='s temp'
 
-# Only show this message on first login, not every command
-if [ -z "$SIMPLE_SESSIONS_LOADED" ]; then
+# Only show this message on SSH login, not local bash
+if [ -z "$SIMPLE_SESSIONS_LOADED" ] && [ -n "$SSH_CONNECTION" ]; then
     export SIMPLE_SESSIONS_LOADED=1
     echo "🎛️  Simple session commands loaded:"
     echo "  s [name]  - Create/attach session (defaults to current dir name)"

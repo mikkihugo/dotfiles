@@ -106,6 +106,7 @@ alias termius-sync="$HOME/.dotfiles/.scripts/termius-sync.sh"
 alias hosts-sync="$HOME/.dotfiles/.scripts/unified-hosts-sync.sh"
 alias hs="$HOME/.dotfiles/.scripts/unified-hosts-sync.sh"
 alias tcs="$HOME/.dotfiles/.scripts/termius-cloud-sync.sh"
+alias termius-to-tabby="$HOME/.dotfiles/.scripts/termius-to-tabby.sh"
 
 # Terminal-specific configurations
 if [ ! -z "$TERMIUS_APP" ] || [[ "$SSH_CONNECTION" =~ "Termius" ]]; then

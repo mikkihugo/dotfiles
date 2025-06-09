@@ -1,0 +1,67 @@
+[alias]
+    # Quick shortcuts
+    s = status
+    a = add
+    c = commit
+    co = checkout
+    b = branch
+    p = push
+    pl = pull
+    f = fetch
+    
+    # Advanced shortcuts
+    cm = commit -m
+    cam = commit -am
+    amend = commit --amend
+    unstage = reset HEAD --
+    last = log -1 HEAD
+    visual = !gitk
+    
+    # Logging
+    lg = log --oneline --graph --decorate
+    ll = log --graph --pretty=format:'%C(yellow)%h%Creset -%C(auto)%d%Creset %s %C(green)(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+    today = log --since="6am"
+    yesterday = log --since="yesterday" --until="6am"
+    
+    # Diff shortcuts
+    d = diff
+    dc = diff --cached
+    ds = diff --stat
+    
+    # Stash shortcuts
+    sl = stash list
+    sa = stash apply
+    ss = stash save
+    sp = stash pop
+    
+    # Branch management
+    br = branch -v
+    bra = branch -va
+    bd = branch -d
+    bdd = branch -D
+    
+    # Remote management
+    rv = remote -v
+    ra = remote add
+    rr = remote rm
+    
+    # Clean up
+    cleanup = "!git branch --merged | grep -v '\\*\\|main\\|master\\|develop' | xargs -n 1 git branch -d"
+    
+    # Undo last commit but keep changes
+    undo = reset --soft HEAD~1
+    
+    # Hard reset (dangerous!)
+    nuke = reset --hard HEAD
+    
+    # Show files in a commit
+    show-files = diff-tree --no-commit-id --name-only -r
+    
+    # Find commits by message
+    find = "!f() { git log --all --grep=\"$1\" --oneline; }; f"
+    
+    # Quick push current branch
+    pushit = "!git push -u origin $(git branch --show-current)"
+    
+    # Interactive rebase from main
+    rebase-main = "!git rebase -i $(git merge-base HEAD main)"

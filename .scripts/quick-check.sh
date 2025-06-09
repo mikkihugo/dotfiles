@@ -37,15 +37,30 @@ check_only() {
 sync_and_update() {
     echo "$(date): Starting sync..." >> "$LOG_FILE"
     
+    # Send notification if available
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send "Dotfiles" "🔄 Syncing updates..." -t 2000
+    fi
+    
     # Run the full sync
     cd "$HOME/.dotfiles"
     if mise run sync >> "$LOG_FILE" 2>&1; then
         # Update hash file with new remote hash
         get_remote_hash > "$HASH_FILE"
         echo "$(date): Sync completed" >> "$LOG_FILE"
+        
+        # Success notification
+        if command -v notify-send >/dev/null 2>&1; then
+            notify-send "Dotfiles" "✅ Sync completed successfully!" -t 3000
+        fi
         return 0
     else
         echo "$(date): Sync failed" >> "$LOG_FILE"
+        
+        # Failure notification
+        if command -v notify-send >/dev/null 2>&1; then
+            notify-send "Dotfiles" "❌ Sync failed!" -t 3000 -u critical
+        fi
         return 1
     fi
 }

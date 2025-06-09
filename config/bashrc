@@ -54,6 +54,12 @@ else
   echo "starship not found, skipping prompt setup"
 fi
 
+# zoxide (smart cd)
+if command -v zoxide &> /dev/null; then
+  eval "$(zoxide init bash)"
+  alias cd="z"
+fi
+
 # API Keys moved to ~/.env_tokens for security
 
 # Add custom paths if needed
@@ -62,8 +68,10 @@ export PATH="$PATH:/home/mhugo/.local/bin:/home/mhugo/bin"
 # SQLite3 library path for Python
 export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
 
-# Load aliases
-if [ -f "$HOME/.aliases" ]; then
+# Load aliases (dotfiles version)
+if [ -f "$HOME/.dotfiles/.aliases" ]; then
+    source "$HOME/.dotfiles/.aliases"
+elif [ -f "$HOME/.aliases" ]; then
     source "$HOME/.aliases"
 fi
 
@@ -82,6 +90,11 @@ if [ -f ".env" ] && [ "$PWD" != "$HOME" ]; then
     set -a
     source ".env"
     set +a
+fi
+
+# Load git config from dotfiles
+if [ -f "$HOME/.dotfiles/.gitconfig" ]; then
+    git config --global include.path "$HOME/.dotfiles/.gitconfig"
 fi
 alias claude="/home/mhugo/.claude/local/claude"
 alias claude-unsafe="/home/mhugo/claude-unsafe/safety-wrapper.sh"

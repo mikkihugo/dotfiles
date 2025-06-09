@@ -1,0 +1,107 @@
+# Enhanced aliases for productivity
+
+# Basic shortcuts
+alias ll='eza -la --git --time-style=relative'
+alias la='eza -a'
+alias l='eza -l --git'
+alias tree='eza --tree'
+alias cat='bat --paging=never'
+alias grep='rg'
+alias find='fd'
+
+# Git shortcuts (supplement .gitconfig)
+alias g='git'
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git pull'
+alias gd='git diff'
+alias gco='git checkout'
+alias gb='git branch'
+alias glog='git log --oneline --graph --decorate'
+
+# Directory navigation  
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias ~='cd ~'
+alias -- -='cd -'
+
+# System info
+alias df='df -h'
+alias du='du -sh'
+alias free='free -h'
+alias top='btop'
+alias ps='ps aux'
+
+# Network
+alias ports='netstat -tuln'
+alias ping='ping -c 5'
+alias wget='wget -c'
+
+# File operations
+alias cp='cp -i'
+alias mv='mv -i'
+alias rm='rm -i'
+alias mkdir='mkdir -p'
+
+# Development
+alias serve='python3 -m http.server'
+alias myip='curl -s https://httpbin.org/ip | jq -r .origin'
+alias weather='curl -s "wttr.in/$(curl -s https://ipinfo.io/city)" | head -20'
+
+# Docker shortcuts
+alias d='docker'
+alias dc='docker-compose'
+alias dps='docker ps'
+alias di='docker images'
+alias drm='docker rm $(docker ps -aq)'
+alias drmi='docker rmi $(docker images -q)'
+
+# Kubernetes
+alias k='kubectl'
+alias kgp='kubectl get pods'
+alias kgs='kubectl get services'
+alias kgd='kubectl get deployments'
+
+# Tmux shortcuts
+alias ta='tmux attach'
+alias tls='tmux list-sessions'
+alias tn='tmux new-session'
+alias tk='tmux kill-session'
+
+# Quick edits
+alias bashrc='${EDITOR:-nano} ~/.bashrc && source ~/.bashrc'
+alias aliases='${EDITOR:-nano} ~/.aliases && source ~/.aliases'
+alias dotfiles='cd ~/.dotfiles && ${EDITOR:-nano} .'
+
+# System maintenance
+alias update='sudo apt update && sudo apt upgrade'
+alias install='sudo apt install'
+alias search='apt search'
+alias clean='sudo apt autoremove && sudo apt autoclean'
+
+# Mise shortcuts
+alias mi='mise install'
+alias mu='mise use'
+alias ml='mise list'
+alias mr='mise run'
+
+# Quick system checks
+alias diskspace='df -h | grep -E "^(/dev/|tmpfs)" | sort'
+alias meminfo='free -h && echo "" && ps aux --sort=-%mem | head'
+alias cpuinfo='lscpu | grep -E "^(Model name|CPU\(s\)|Thread|Core)" && echo "" && top -bn1 | grep "Cpu(s)"'
+
+# Reload shell
+alias reload='exec $SHELL -l'
+
+# Safety nets
+alias chown='chown --preserve-root'
+alias chmod='chmod --preserve-root' 
+alias chgrp='chgrp --preserve-root'
+
+# Fun stuff
+alias matrix='cmatrix -s'
+alias starwars='telnet towel.blinkenlights.nl'
+alias weather-full='curl -s "wttr.in/$(curl -s https://ipinfo.io/city)"'

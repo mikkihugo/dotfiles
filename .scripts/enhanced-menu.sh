@@ -182,9 +182,10 @@ handle_choice() {
 # Tools submenu
 show_tools_menu() {
     local tools_options=(
-        "📊 System info (htop/btop)"
+        "📊 System info"
         "📁 File manager (ranger/lf)"
         "🔍 Find files (fzf)"
+        "💾 Backup/Restore"
         "📝 Edit dotfiles"
         "🏠 Back to main menu"
     )
@@ -195,13 +196,7 @@ show_tools_menu() {
     
     case "$tool_choice" in
         "📊 System info"*)
-            if command -v btop &>/dev/null; then
-                btop
-            elif command -v htop &>/dev/null; then
-                htop
-            else
-                top
-            fi
+            show_system_info
             ;;
         "📁 File manager"*)
             if command -v ranger &>/dev/null; then
@@ -225,6 +220,10 @@ show_tools_menu() {
                 read -p "Press Enter to continue..."
             fi
             show_gum_menu
+            ;;
+        "💾 Backup/Restore")
+            ~/.dotfiles/.scripts/backup-restore.sh menu
+            show_tools_menu
             ;;
         "📝 Edit dotfiles")
             cd ~/.dotfiles
@@ -277,5 +276,89 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
     show_enhanced_menu "$1"
 fi
 
+# System info display
+show_system_info() {
+    clear
+    echo "🖥️  SYSTEM INFORMATION"
+    echo "===================="
+    echo ""
+    
+    # Basic system info
+    echo "📋 System:"
+    echo "  Host: $(hostname)"
+    echo "  OS: $(lsb_release -d 2>/dev/null | cut -f2 || cat /etc/os-release | grep PRETTY_NAME | cut -d= -f2 | tr -d '"')"
+    echo "  Uptime: $(uptime -p 2>/dev/null || uptime | cut -d, -f1 | cut -d' ' -f3-)"
+    echo ""
+    
+    # Memory info
+    echo "💾 Memory:"
+    free -h | awk 'NR==2{printf "  Used: %s/%s (%.0f%%)\n", $3,$2,$3*100/$2}'
+    echo ""
+    
+    # Disk info
+    echo "💿 Disk:"
+    df -h / | awk 'NR==2{printf "  Root: %s/%s (%s used)\n", $3,$2,$5}'
+    if [ -d /home ] && df /home >/dev/null 2>&1; then
+        df -h /home | awk 'NR==2{printf "  Home: %s/%s (%s used)\n", $3,$2,$5}'
+    fi
+    echo ""
+    
+    # CPU info
+    echo "⚡ CPU:"
+    if command -v lscpu >/dev/null 2>&1; then
+        lscpu | grep "Model name" | cut -d: -f2 | sed 's/^ */  /'
+        echo "  Cores: $(nproc) | Load: $(uptime | awk -F'load average:' '{print $2}' | cut -d, -f1 | sed 's/^ *//')"
+    fi
+    echo ""
+    
+    # Network info
+    echo "🌐 Network:"
+    if command -v ip >/dev/null 2>&1; then
+        ip route get 1 2>/dev/null | awk '{print "  IP: " $7; exit}'
+    fi
+    if command -v curl >/dev/null 2>&1; then
+        echo "  External: $(curl -s --max-time 3 https://ipinfo.io/ip 2>/dev/null || echo 'Unable to fetch')"
+    fi
+    echo ""
+    
+    # Tmux sessions
+    if command -v tmux >/dev/null 2>&1 && tmux list-sessions >/dev/null 2>&1; then
+        echo "📋 Tmux Sessions:"
+        tmux list-sessions -F "  #{session_name}: #{session_windows} windows #{?session_attached,(attached),(detached)}"
+        echo ""
+    fi
+    
+    # Quick system status
+    echo "🚦 Quick Status:"
+    if command -v systemctl >/dev/null 2>&1; then
+        failed_services=$(systemctl --failed --no-legend | wc -l)
+        echo "  Failed services: $failed_services"
+    fi
+    echo "  Last login: $(last -n 1 $USER 2>/dev/null | head -1 | awk '{print $4, $5, $6}' || echo 'Unknown')"
+    
+    echo ""
+    if command -v gum &>/dev/null; then
+        gum choose "📊 Open htop/btop" "🔄 Refresh" "🏠 Back to menu" | case "$(cat)" in
+            "📊 Open htop/btop")
+                if command -v btop &>/dev/null; then
+                    btop
+                elif command -v htop &>/dev/null; then
+                    htop
+                else
+                    top
+                fi
+                ;;
+            "🔄 Refresh")
+                show_system_info
+                return
+                ;;
+        esac
+    else
+        read -p "Press Enter to continue..."
+    fi
+    
+    show_tools_menu
+}
+
 # Export for sourcing
-export -f show_enhanced_menu
+export -f show_enhanced_menu show_system_info

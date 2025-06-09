@@ -40,15 +40,20 @@ show_gum_menu() {
     local options=()
     local header="🚀 SESSION & CONNECTION MANAGER"
     
-    # Add tmux sessions
-    local sessions=$(tmux list-sessions -F "#{session_name}:#{?session_attached,[ATTACHED],[FREE]}:#{session_windows}w" 2>/dev/null)
+    # Add tmux sessions with better formatting
+    local sessions=$(tmux list-sessions -F "#{session_name}:#{?session_attached,[ATTACHED],[FREE]}:#{session_windows}w:#{session_created_string}" 2>/dev/null)
     if [ ! -z "$sessions" ]; then
         options+=("📋 TMUX SESSIONS")
         while IFS= read -r session; do
             local name=$(echo "$session" | cut -d: -f1)
             local status=$(echo "$session" | cut -d: -f2)
             local windows=$(echo "$session" | cut -d: -f3)
-            options+=("  🖥️  $name $status $windows")
+            local created=$(echo "$session" | cut -d: -f4)
+            if [[ "$status" == "[ATTACHED]" ]]; then
+                options+=("  🟢 $name $status $windows")
+            else
+                options+=("  🔵 $name $status $windows")
+            fi
         done <<< "$sessions"
         options+=("")
     fi
@@ -68,10 +73,12 @@ show_gum_menu() {
     # Add actions
     options+=(
         "✨ New tmux session"
+        "🔄 Kill tmux session"
         "🐚 Plain bash shell"
         "💾 Restore tmux sessions"
         "🔄 Sync SSH hosts"
         "⚙️  Quick tools"
+        "🧹 Clear screen"
         "❌ Exit"
     )
     
@@ -90,7 +97,7 @@ handle_choice() {
     local choice="$1"
     
     case "$choice" in
-        "  🖥️  "*)
+        "  🟢 "* | "  🔵 "*)
             # Attach to tmux session
             local session_name=$(echo "$choice" | awk '{print $2}')
             tmux attach-session -t "$session_name"
@@ -109,6 +116,18 @@ handle_choice() {
                 exit
             fi
             ;;
+        "🔄 Kill tmux session")
+            local sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null)
+            if [ ! -z "$sessions" ]; then
+                local session=$(echo "$sessions" | gum choose --header "Select session to kill")
+                if [ ! -z "$session" ]; then
+                    tmux kill-session -t "$session"
+                    echo "🗑️  Killed session: $session"
+                    sleep 1
+                fi
+            fi
+            show_gum_menu
+            ;;
         "🐚 Plain bash shell")
             exec bash --login
             ;;
@@ -123,6 +142,10 @@ handle_choice() {
             ;;
         "⚙️  Quick tools")
             show_tools_menu
+            ;;
+        "🧹 Clear screen")
+            clear
+            show_gum_menu
             ;;
         "❌ Exit")
             exit 0

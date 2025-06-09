@@ -102,6 +102,7 @@ fi
 
 # SSH manager alias
 alias sshm="$HOME/.dotfiles/.scripts/ssh-manager.sh"
+alias termius-sync="$HOME/.dotfiles/.scripts/termius-sync.sh"
 
 # Fix for Termius mouse issues
 if [ ! -z "$TERMIUS_APP" ] || [[ "$SSH_CONNECTION" =~ "Termius" ]]; then

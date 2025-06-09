@@ -139,11 +139,16 @@ handle_choice() {
         "🔄 Sync SSH hosts")
             echo "🔄 Syncing SSH hosts..."
             if command -v tabby-sync &>/dev/null; then
-                (tabby-sync pull) && echo "✅ Sync complete!" || echo "❌ Sync failed!"
+                if [ -z "$TABBY_GIST_ID" ] && [ -z "$UNIFIED_HOSTS_GIST_ID" ]; then
+                    echo "❌ No TABBY_GIST_ID set in ~/.env_tokens"
+                    echo "💡 Set TABBY_GIST_ID=your_gist_id in ~/.env_tokens"
+                else
+                    (tabby-sync pull) && echo "✅ Sync complete!" || echo "❌ Sync failed!"
+                fi
             else
                 echo "❌ tabby-sync not found"
             fi
-            sleep 2
+            sleep 3
             show_gum_menu
             ;;
         "⚙️  Quick tools")

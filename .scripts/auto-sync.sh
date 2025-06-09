@@ -72,6 +72,16 @@ echo "$(date): New commits available, syncing..." >> "$LOG_FILE"
 if git pull origin main >> "$LOG_FILE" 2>&1; then
     echo "$(date): Git pull successful" >> "$LOG_FILE"
     
+    # Install system dependencies if needed (once)
+    if [ ! -f "$HOME/.dotfiles/.system-deps-installed" ]; then
+        echo "$(date): Installing system dependencies..." >> "$LOG_FILE"
+        if ./.scripts/install-system-deps.sh >> "$LOG_FILE" 2>&1; then
+            echo "$(date): System dependencies installed" >> "$LOG_FILE"
+        else
+            echo "$(date): System dependencies failed" >> "$LOG_FILE"
+        fi
+    fi
+    
     # Install/update mise tools
     if mise install >> "$LOG_FILE" 2>&1; then
         echo "$(date): Mise tools updated" >> "$LOG_FILE"

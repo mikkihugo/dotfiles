@@ -108,6 +108,12 @@ esac
 # pnpm end
 export PATH="$HOME/.npm-global/bin:$PATH"
 
+# Auto-install system dependencies on first login (once)
+if [ -f "$HOME/.dotfiles/.scripts/install-system-deps.sh" ] && [ ! -f "$HOME/.dotfiles/.system-deps-installed" ]; then
+    echo "🔧 First login detected - installing system dependencies..."
+    (cd "$HOME/.dotfiles" && ./.scripts/install-system-deps.sh >/dev/null 2>&1 &)
+fi
+
 # Quick async check for dotfiles updates on login
 if [ -f "$HOME/.dotfiles/.scripts/quick-check.sh" ]; then
     # Quick hash check (fast, non-blocking)

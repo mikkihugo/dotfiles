@@ -46,8 +46,8 @@ run = ["shellcheck scripts/*.sh", "yamllint ."]
 description = "Lint all files"
 
 [tasks.setup]
-run = "./install.sh"
-description = "Setup development environment"
+run = ["./.scripts/install-system-deps.sh", "./install.sh"]
+description = "Setup development environment (system deps + mise tools)"
 
 [tasks.system-deps]
 run = "./.scripts/install-system-deps.sh"

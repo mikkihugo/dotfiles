@@ -3,6 +3,15 @@
 
 set -e
 
+FLAGFILE="$HOME/.dotfiles/.system-deps-installed"
+
+# Check if already installed
+if [ -f "$FLAGFILE" ]; then
+    echo "✅ System dependencies already installed (flagfile exists)"
+    echo "💡 To force reinstall: rm $FLAGFILE && mise run system-deps"
+    exit 0
+fi
+
 echo "🔧 Installing system dependencies..."
 
 # Detect package manager
@@ -61,3 +70,7 @@ case $PKG_MANAGER in
 esac
 
 echo "✅ System dependencies installed!"
+
+# Create flagfile to prevent re-running
+echo "$(date): System dependencies installed successfully" > "$FLAGFILE"
+echo "📝 Created flagfile: $FLAGFILE"

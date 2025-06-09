@@ -1,4 +1,4 @@
-# synthLANG: HOMEDIR_MGMT v1.1
+# synthLANG: HOMEDIR_MGMT v1.2
 
 ## CRITICAL_OPS:
   dotfiles_repo: ~/.dotfiles → github.com/mikkihugo/dotfiles
@@ -9,6 +9,20 @@
   file_suffix: [enhanced, improved, better, v2, new, old]
   examples: [file_enhanced.ts, component_v2.tsx, service_better.ts]
   rule: ALWAYS_EDIT_ORIGINAL && USE_GIT_VERSION_CONTROL
+
+## TEMP_SCRIPTS:
+  location: ~/.tmp/  # NOT in home directory
+  cleanup: ALWAYS_DELETE_AFTER_USE
+  pattern: ~/.tmp/test-*.sh → execute → rm
+  example: |
+    mkdir -p ~/.tmp
+    cat > ~/.tmp/test-gateway.sh << 'EOF'
+    #!/bin/bash
+    echo "test"
+    EOF
+    chmod +x ~/.tmp/test-gateway.sh
+    ~/.tmp/test-gateway.sh
+    rm ~/.tmp/test-gateway.sh
 
 ## ENV_SECURITY:
   storage: PRIVATE_GITHUB_GISTS  # NEVER in dotfiles repo

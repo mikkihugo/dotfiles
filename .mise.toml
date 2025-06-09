@@ -1,7 +1,7 @@
 [tools]
 # Languages
 python = "3.12.8"
-node = "22.16.0"
+node = "latest"
 go = "1.22.0"
 rust = "latest"
 

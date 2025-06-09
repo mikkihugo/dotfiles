@@ -1,68 +1,79 @@
-# synthLANG: HOMEDIR_MGMT v1.2
+# CLAUDE.md - Claude-specific configuration
 
-## CRITICAL_OPS:
-  dotfiles_repo: ~/.dotfiles → github.com/mikkihugo/dotfiles
-  commit_rule: ALL_CHANGES → IMMEDIATE_COMMIT
-  commit_cmd: cd ~/.dotfiles && git add -A && git commit -m "$MSG" && git push
+## RUST TOOLS ENFORCEMENT
+**ALWAYS use these commands instead of traditional Unix tools:**
+- **NEVER use `find`** → Always use `fd`
+- **NEVER use `grep`** → Always use `rg` (ripgrep)
+- **NEVER use `ls`** → Always use `eza`
+- **NEVER use `cat`** → Always use `bat`
+- **NEVER use `sed`** → Always use `sd` when available
+- **NEVER use `ps`** → Always use `procs` when available
+- **NEVER use `du`** → Always use `dust` when available
+- **NEVER use `top/htop`** → Always use `btop` when available
 
-## FORBIDDEN_PATTERNS:
-  file_suffix: [enhanced, improved, better, v2, new, old]
-  examples: [file_enhanced.ts, component_v2.tsx, service_better.ts]
-  rule: ALWAYS_EDIT_ORIGINAL && USE_GIT_VERSION_CONTROL
+## TOOL PATHS (if commands fail)
+- ripgrep: `/home/mhugo/.local/share/mise/installs/ripgrep/14.1.1/ripgrep-14.1.1-x86_64-unknown-linux-musl/rg`
+- fd: `fd` (mise-managed)
+- eza: `eza` (mise-managed)
+- bat: `bat` (mise-managed)
 
-## TEMP_SCRIPTS:
-  location: ~/.tmp/  # NOT in home directory
-  cleanup: ALWAYS_DELETE_AFTER_USE
-  pattern: ~/.tmp/test-*.sh → execute → rm
-  example: |
-    mkdir -p ~/.tmp
-    cat > ~/.tmp/test-gateway.sh << 'EOF'
-    #!/bin/bash
-    echo "test"
-    EOF
-    chmod +x ~/.tmp/test-gateway.sh
-    ~/.tmp/test-gateway.sh
-    rm ~/.tmp/test-gateway.sh
+## COMMON PATTERNS
+```bash
+# Search for files
+fd "pattern"                    # NOT: find . -name "*pattern*"
+fd -e js -e ts                  # NOT: find . -name "*.js" -o -name "*.ts"
+fd -t f -x echo {}              # NOT: find . -type f -exec echo {} \;
 
-## ENV_SECURITY:
-  storage: PRIVATE_GITHUB_GISTS  # NEVER in dotfiles repo
-  local_path: ~/.env_tokens
-  update_cmd: gh gist edit $GIST_ID ~/.env_tokens
-  gist_ids:
-    tokens: 51169297e2acfc6da7d22b16d5e5c53b
-    gateway_backup: a1549caf1eece0a9896fd4027cd1881e
+# Search in files  
+rg "pattern"                    # NOT: grep -r "pattern" .
+rg -t js "function"             # NOT: grep --include="*.js" -r "function" .
+rg -l "pattern"                 # NOT: grep -l "pattern" *
 
-## TABBY_GATEWAY:
-  url: ws://51.38.127.98:9000
-  token: STORED_IN_GIST  # See .env_tokens
-  backup: mise run gateway-backup
-  deploy: mise run gateway-deploy
-  schedule: mise run gateway-schedule
+# List files
+eza -la                         # NOT: ls -la
+eza --tree --level=2            # NOT: tree -L 2
+```
 
-## CONFIG_PROTOCOL:
-  pre_edit_check: |
-    ls -la ~/.bashrc  # symlink_indicator: →
-    if !symlinked:
-      cp ~/.bashrc ~/.dotfiles/
-      ln -sf ~/.dotfiles/.bashrc ~/.bashrc
-      cd ~/.dotfiles && git add .bashrc && git commit -m "Add .bashrc"
+## HOME DIRECTORY MANAGEMENT
 
-## ACTIVE_ENV:
-  shell: bash + mise + starship
-  terminal: tabby (not termius/warp)
-  nx_daemon: DISABLED (NX_DAEMON=false)  # prevents_server_kills
-  sessions: tmux  # simple_cmds: s/sl/sk/sa/sm/sw/st
+### CRITICAL: Always use dotfiles repo
+- **Repo**: `~/.dotfiles` → `github.com/mikkihugo/dotfiles`
+- **Rule**: Commit ALL home config changes immediately
+- **Command**: `cd ~/.dotfiles && git add -A && git commit -m "message" && git push`
 
-## MISE_TASKS:
-  gateway-backup: Backup gateway to gist
-  gateway-sync: Sync config from gist
-  gateway-deploy: Deploy gateway container
-  gateway-schedule: Setup daily backups
-  sync: Sync dotfiles + tokens + SSH
-  setup: Complete environment setup
+### FORBIDDEN: File naming
+- **NEVER use**: `enhanced`, `improved`, `better`, `v2`, `new`, `old`
+- **NEVER create**: `file_enhanced.ts`, `component_v2.tsx`, `service_better.ts`
+- **ALWAYS**: Edit the original file directly
+- **ALWAYS**: Use git for version control, not filename suffixes
 
-## QUICK_REF:
-  dotfiles_sync: cd ~/.dotfiles && git add -A && git commit -m "$MSG" && git push
-  token_update: gh gist edit $GIST_ID ~/.env_tokens
-  nx_stop: pnpm nx daemon --stop
-  session_mgmt: {s: create/attach, sl: list, sk: kill, sa/sm/sw/st: quick_jumps}
+### Shell Aliases to Avoid
+- **find**: Aliased to `fd` - causes command failures
+- **grep**: Aliased to `rg` - use `rg` directly instead
+- **Use instead**: `fd` for finding files, `rg` for searching content
+
+### Sensitive Data (.env files)
+- **Storage**: Private GitHub Gists (NOT in dotfiles repo)
+- **Local**: `~/.env_tokens` (downloaded from gist)
+- **Update gist**: `gh gist edit $GIST_ID ~/.env_tokens`
+
+### Before editing ANY home config file:
+```bash
+# Check if it's already managed
+ls -la ~/.bashrc  # Look for symlink arrow →
+
+# If not symlinked, add to dotfiles:
+cp ~/.bashrc ~/.dotfiles/
+ln -sf ~/.dotfiles/.bashrc ~/.bashrc
+cd ~/.dotfiles && git add .bashrc && git commit -m "Add .bashrc"
+```
+
+### Active configurations:
+- **Shell**: bash with mise + starship
+- **Terminal**: tabby
+- **NX**: Daemon disabled (NX_DAEMON=false) to prevent server kills
+
+### Quick reference:
+- Commit dotfiles: `cd ~/.dotfiles && git add -A && git commit -m "msg" && git push`
+- Update tokens: `gh gist edit $GIST_ID ~/.env_tokens`
+- Stop NX: `pnpm nx daemon --stop`

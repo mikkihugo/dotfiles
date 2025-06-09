@@ -95,11 +95,13 @@ esac
 # pnpm end
 export PATH="$HOME/.npm-global/bin:$PATH"
 
-# Auto-sync dotfiles on login (once per day)
-if [ -f "$HOME/.dotfiles/.scripts/auto-sync.sh" ]; then
-    if [ ! -f "$HOME/.dotfiles/.last_sync" ] || [ "$(find "$HOME/.dotfiles/.last_sync" -mtime +1 2>/dev/null)" ]; then
-        echo "🔄 Checking for dotfiles updates..."
-        (cd "$HOME/.dotfiles" && mise run sync >/dev/null 2>&1) && touch "$HOME/.dotfiles/.last_sync"
+# Quick async check for dotfiles updates on login
+if [ -f "$HOME/.dotfiles/.scripts/quick-check.sh" ]; then
+    # Quick hash check (fast, non-blocking)
+    if ! "$HOME/.dotfiles/.scripts/quick-check.sh" check >/dev/null 2>&1; then
+        echo "📦 Dotfiles updates available! Run: mise run sync"
+        # Optional: Auto-sync in background
+        # (cd "$HOME/.dotfiles" && "$HOME/.dotfiles/.scripts/quick-check.sh" sync &)
     fi
 fi
 

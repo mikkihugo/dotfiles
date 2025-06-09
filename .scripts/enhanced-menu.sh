@@ -79,6 +79,7 @@ show_gum_menu() {
         "🐚 Plain bash shell"
         "💾 Restore tmux sessions"
         "🔄 Sync SSH hosts"
+        "📦 Sync dotfiles"
         "⚙️  Quick tools"
         "🧹 Clear screen"
         "❌ Exit"
@@ -149,6 +150,16 @@ handle_choice() {
                 echo "❌ tabby-sync not found"
             fi
             sleep 3
+            show_gum_menu
+            ;;
+        "📦 Sync dotfiles")
+            echo "📦 Syncing dotfiles..."
+            if ~/.dotfiles/.scripts/quick-check.sh sync; then
+                echo "✅ Dotfiles synced successfully!"
+            else
+                echo "❌ Sync failed!"
+            fi
+            sleep 2
             show_gum_menu
             ;;
         "⚙️  Quick tools")

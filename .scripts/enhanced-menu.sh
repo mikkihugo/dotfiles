@@ -232,12 +232,34 @@ show_tools_menu() {
     esac
 }
 
-# Basic fallback menu with numbered sessions
+# Retro-styled menu with ASCII art
 show_basic_menu() {
-    echo "
-🚀 SESSION & CONNECTION MANAGER
-
-📋 TMUX SESSIONS:"
+    clear
+    local cyan='\033[96m'
+    local green='\033[92m'
+    local yellow='\033[93m'
+    local blue='\033[94m'
+    local magenta='\033[95m'
+    local red='\033[91m'
+    local reset='\033[0m'
+    local bold='\033[1m'
+    local dim='\033[2m'
+    
+    echo -e "${cyan}${bold}"
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║                                                              ║"
+    echo "║  ████████ ███    ███ ██    ██ ██   ██     ██   ██ ██    ██  ║"
+    echo "║     ██    ████  ████ ██    ██  ██ ██      ██   ██ ██    ██  ║"
+    echo "║     ██    ██ ████ ██ ██    ██   ███       ███████ ██    ██  ║"
+    echo "║     ██    ██  ██  ██ ██    ██  ██ ██      ██   ██ ██    ██  ║"
+    echo "║     ██    ██      ██  ██████  ██   ██     ██   ██  ██████   ║"
+    echo "║                                                              ║"
+    echo "║                ${yellow}⚡ RETRO SESSION MANAGER ⚡${cyan}                ║"
+    echo "║                                                              ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo -e "${reset}"
+    
+    echo -e "${green}${bold}┌─[ ${yellow}ACTIVE SESSIONS${green} ]────────────────────────────────────────┐${reset}"
     
     # Show numbered sessions
     local sessions=($(tmux list-sessions -F "#{session_name}" 2>/dev/null))
@@ -247,25 +269,26 @@ show_basic_menu() {
             local status=$(tmux list-sessions -F "#{session_name}:#{?session_attached,[ATTACHED],[FREE]}" 2>/dev/null | grep "^$session:" | cut -d: -f2)
             local windows=$(tmux list-sessions -F "#{session_name}:#{session_windows}w" 2>/dev/null | grep "^$session:" | cut -d: -f2)
             if [[ "$status" == "[ATTACHED]" ]]; then
-                echo "  $((i+1))) 🟢 $session $status $windows"
+                echo -e "${green}│ ${bold}[${yellow}$((i+1))${green}]${reset} ${red}●${reset} ${bold}$session${reset} ${dim}$status $windows${reset}"
             else
-                echo "  $((i+1))) 🔵 $session $status $windows"
+                echo -e "${green}│ ${bold}[${yellow}$((i+1))${green}]${reset} ${blue}○${reset} ${bold}$session${reset} ${dim}$status $windows${reset}"
             fi
         done
     else
-        echo "  No sessions"
+        echo -e "${green}│ ${dim}No active sessions${reset}"
     fi
     
-    echo "
-📦 ACTIONS:
-  n) New tmux session
-  k) Kill tmux session  
-  s) Plain bash shell
-  b) Backup/Restore
-  i) System info
-  x) Exit
-"
-    read -p "Choice: " choice
+    echo -e "${green}└────────────────────────────────────────────────────────────┘${reset}"
+    echo ""
+    echo -e "${magenta}${bold}┌─[ ${yellow}COMMAND CENTER${magenta} ]─────────────────────────────────────────┐${reset}"
+    echo -e "${magenta}│                                                            │${reset}"
+    echo -e "${magenta}│ ${yellow}[n]${reset} ${cyan}New Session${reset}     ${yellow}[k]${reset} ${cyan}Kill Session${reset}     ${yellow}[i]${reset} ${cyan}System Info${reset}    │${reset}"
+    echo -e "${magenta}│ ${yellow}[s]${reset} ${cyan}Shell${reset}           ${yellow}[b]${reset} ${cyan}Backup/Restore${reset}   ${yellow}[x]${reset} ${cyan}Exit${reset}           │${reset}"
+    echo -e "${magenta}│                                                            │${reset}"
+    echo -e "${magenta}└────────────────────────────────────────────────────────────┘${reset}"
+    echo ""
+    echo -e "${bold}${yellow}>>> ${reset}${dim}Enter your choice: ${reset}"
+    read choice
     
     # Handle numbered choices (1-5 for sessions)
     if [[ "$choice" =~ ^[1-5]$ ]] && [ -n "${sessions[$((choice-1))]}" ]; then
@@ -276,20 +299,30 @@ show_basic_menu() {
     
     case $choice in
         n)
-            read -p "New session name: " name
-            [ -n "$name" ] && tmux new-session -s "$name"
+            echo -e "\n${green}${bold}╔═[ CREATE NEW SESSION ]══════════════════════════════════════╗${reset}"
+            echo -e "${green}║                                                            ║${reset}"
+            echo -e "${green}╚═════════════════════════════════════════════════════════════╝${reset}"
+            echo -e "${yellow}>>> ${reset}${dim}Session name: ${reset}"
+            read name
+            if [ -n "$name" ]; then
+                echo -e "${green}${bold}⚡ LAUNCHING:${reset} $name"
+                tmux new-session -s "$name"
+            fi
             exit
             ;;
         k)
             if [ ${#sessions[@]} -gt 0 ]; then
-                echo "Kill which session?"
+                echo -e "\n${red}${bold}╔═[ TERMINATE SESSION ]═══════════════════════════════════════╗${reset}"
                 for i in "${!sessions[@]}"; do
-                    echo "  $((i+1))) ${sessions[$i]}"
+                    echo -e "${red}║ ${yellow}[$((i+1))]${reset} ${sessions[$i]}${reset}"
                 done
-                read -p "Session number: " num
+                echo -e "${red}╚═════════════════════════════════════════════════════════════╝${reset}"
+                echo -e "${yellow}>>> ${reset}${dim}Session number to terminate: ${reset}"
+                read num
                 if [[ "$num" =~ ^[1-5]$ ]] && [ -n "${sessions[$((num-1))]}" ]; then
                     tmux kill-session -t "${sessions[$((num-1))]}"
-                    echo "Killed session: ${sessions[$((num-1))]}"
+                    echo -e "${red}${bold}⚡ TERMINATED:${reset} ${sessions[$((num-1))]}"
+                    sleep 1
                 fi
             fi
             show_basic_menu

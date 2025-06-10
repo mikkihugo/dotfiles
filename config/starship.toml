@@ -1,101 +1,99 @@
-# Dark Retro Theme - Inspired by 80s terminals with neon accents
+# Clean and Simple Starship Theme
 
-# Format string with custom separators
+# Format string with simple layout
 format = """
-[╭─](bright-black) $username$hostname[─](bright-black)$directory$git_branch$git_status
-[│](bright-black)  $python$nodejs$golang$rust$docker$kubernetes$package
-[╰─](bright-black)$character
-"""
+$username$hostname$directory$git_branch$git_status$line_break\
+$python$nodejs$golang$rust$docker$kubernetes$package$character """
 
 # Right-side prompt
-right_format = """$cmd_duration[─](bright-black)$time"""
+right_format = """$cmd_duration $time"""
 
 [character]
-success_symbol = "[▸](bold bright-cyan)"
-error_symbol = "[▸](bold bright-red)"
-vicmd_symbol = "[▸](bold bright-magenta)"
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vicmd_symbol = "[❮](bold yellow)"
 
 [username]
-style_user = "bright-magenta bold"
-style_root = "bright-red bold"
-format = "[┌─](bright-black)[$user]($style)"
+style_user = "bold blue"
+style_root = "bold red"
+format = "[$user]($style) "
 show_always = true
 
 [hostname]
-style = "bright-cyan bold"
+style = "bold green"
 format = "[@$hostname]($style) "
 disabled = false
 
 [directory]
-style = "bright-green bold"
+style = "bold cyan"
 truncation_length = 3
 truncate_to_repo = true
-format = "[in](bright-black) [$path]($style)[$read_only]($read_only_style) "
-read_only = " "
-read_only_style = "bright-red"
+format = "[$path]($style)[$read_only]($read_only_style) "
+read_only = " 🔒"
+read_only_style = "red"
 
 [git_branch]
-symbol = " "
-style = "bright-yellow bold"
-format = "[on](bright-black) [$symbol$branch(:$remote_branch)]($style) "
+symbol = ""
+style = "bold purple"
+format = "[$symbol$branch(:$remote_branch)]($style) "
 
 [git_status]
-style = "bright-red bold"
+style = "bold red"
 format = "([$all_status$ahead_behind]($style) )"
-conflicted = "⚔️ "
+conflicted = "="
 ahead = "⇡${count}"
 behind = "⇣${count}"
 diverged = "⇕⇡${ahead_count}⇣${behind_count}"
 untracked = "?"
-stashed = "≡"
+stashed = "$"
 modified = "!"
 staged = "+"
 renamed = "»"
 deleted = "✘"
 
 [cmd_duration]
-style = "bright-yellow bold"
-format = "[took](bright-black) [$duration]($style) "
+style = "bold yellow"
+format = "[$duration]($style)"
 min_time = 2_000
 
 [python]
-symbol = " "
-style = "bright-blue bold"
+symbol = "🐍 "
+style = "yellow"
 format = "[$symbol($version )]($style)"
 
 [nodejs]
-symbol = " "
-style = "bright-green bold"
+symbol = "⬢ "
+style = "green"
 format = "[$symbol($version )]($style)"
 
 [golang]
-symbol = " "
-style = "bright-cyan bold"
+symbol = "🐹 "
+style = "cyan"
 format = "[$symbol($version )]($style)"
 
 [rust]
-symbol = " "
-style = "bright-red bold"
+symbol = "🦀 "
+style = "red"
 format = "[$symbol($version )]($style)"
 
 [docker_context]
-symbol = " "
-style = "bright-blue bold"
+symbol = "🐳 "
+style = "blue"
 format = "[$symbol$context]($style) "
 
 [kubernetes]
 disabled = false
 symbol = "☸ "
-style = "bright-magenta bold"
+style = "bold blue"
 format = "[$symbol$context( \\($namespace\\))]($style) "
 
 [package]
 symbol = "📦 "
-style = "bright-yellow bold"
+style = "208"
 format = "[$symbol$version]($style) "
 
 [time]
 disabled = false
-style = "bright-cyan bold"
-format = "[at](bright-black) [$time]($style)"
+style = "bold dimmed"
+format = "[$time]($style)"
 time_format = "%H:%M"

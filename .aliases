@@ -71,10 +71,15 @@ alias tls='tmux list-sessions'
 alias tn='tmux new-session'
 alias tk='tmux kill-session'
 
+# Editors
+alias vim='~/.local/share/mise/installs/helix/25.01.1/hx'
+alias hx='~/.local/share/mise/installs/helix/25.01.1/hx'
+alias vi='~/.local/share/mise/installs/helix/25.01.1/hx'
+
 # Quick edits
-alias bashrc='${EDITOR:-nano} ~/.bashrc && source ~/.bashrc'
-alias aliases='${EDITOR:-nano} ~/.aliases && source ~/.aliases'
-alias dotfiles='cd ~/.dotfiles && ${EDITOR:-nano} .'
+alias bashrc='${EDITOR:-hx} ~/.bashrc && source ~/.bashrc'
+alias aliases='${EDITOR:-hx} ~/.aliases && source ~/.aliases'
+alias dotfiles='cd ~/.dotfiles && ${EDITOR:-hx} .'
 
 # System maintenance
 alias update='sudo apt update && sudo apt upgrade'

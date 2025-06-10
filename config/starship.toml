@@ -1,99 +1,89 @@
-# Clean and Simple Starship Theme
-
-# Format string with simple layout
+# Starship configuration
 format = """
-$username$hostname$directory$git_branch$git_status$line_break\
-$python$nodejs$golang$rust$docker$kubernetes$package$character """
-
-# Right-side prompt
-right_format = """$cmd_duration $time"""
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_status\
+$python\
+$nodejs\
+$deno\
+$golang\
+$rust\
+$package\
+$kubernetes\
+$memory_usage\
+$custom\
+$cmd_duration\
+$time\
+$line_break\
+$character"""
 
 [character]
 success_symbol = "[❯](bold green)"
 error_symbol = "[❯](bold red)"
-vicmd_symbol = "[❮](bold yellow)"
-
-[username]
-style_user = "bold blue"
-style_root = "bold red"
-format = "[$user]($style) "
-show_always = true
-
-[hostname]
-style = "bold green"
-format = "[@$hostname]($style) "
-disabled = false
 
 [directory]
-style = "bold cyan"
+style = "blue bold"
 truncation_length = 3
-truncate_to_repo = true
-format = "[$path]($style)[$read_only]($read_only_style) "
-read_only = " 🔒"
-read_only_style = "red"
+truncate_to_repo = false
 
 [git_branch]
-symbol = ""
-style = "bold purple"
-format = "[$symbol$branch(:$remote_branch)]($style) "
+symbol = "🌿 "
+style = "bright-green bold"
 
 [git_status]
-style = "bold red"
-format = "([$all_status$ahead_behind]($style) )"
-conflicted = "="
-ahead = "⇡${count}"
-behind = "⇣${count}"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-untracked = "?"
-stashed = "$"
-modified = "!"
-staged = "+"
-renamed = "»"
-deleted = "✘"
-
-[cmd_duration]
-style = "bold yellow"
-format = "[$duration]($style)"
-min_time = 2_000
+style = "red bold"
 
 [python]
 symbol = "🐍 "
-style = "yellow"
-format = "[$symbol($version )]($style)"
+python_binary = "python"
 
 [nodejs]
 symbol = "⬢ "
-style = "green"
-format = "[$symbol($version )]($style)"
+style = "bright-green bold"
+detect_extensions = ["js", "mjs", "cjs", "jsx", "tsx", "ts"]
+not_capable_style = "bold red"
+# Hide Node.js if Deno is detected
+detect_files = ["package.json", ".node-version", ".nvmrc"]
+# Only show Node when package.json is in the directory (not for global node)
+detect_folders = []
+
+[deno]
+symbol = "🦕 "
+style = "green bold"
+detect_extensions = ["ts", "tsx", "js", "jsx"]
+detect_files = ["deno.json", "deno.jsonc", "mod.ts", "deps.ts", "lock.json"]
 
 [golang]
 symbol = "🐹 "
-style = "cyan"
-format = "[$symbol($version )]($style)"
 
 [rust]
 symbol = "🦀 "
-style = "red"
-format = "[$symbol($version )]($style)"
-
-[docker_context]
-symbol = "🐳 "
-style = "blue"
-format = "[$symbol$context]($style) "
 
 [kubernetes]
 disabled = false
-symbol = "☸ "
-style = "bold blue"
-format = "[$symbol$context( \\($namespace\\))]($style) "
+symbol = "☸️ "
 
-[package]
-symbol = "📦 "
-style = "208"
-format = "[$symbol$version]($style) "
+[memory_usage]
+disabled = false
+threshold = 75
+style = "bold dimmed green"
+format = "$symbol[${ram}( | ${swap})]($style) "
+
+[custom.processes]
+command = "echo -n \"PROC: $(ps -e --no-header | wc -l)/$(ulimit -u)\""
+when = "true"
+style = "bold yellow"
+format = "[$output]($style) "
+
+[custom.cpu]
+command = "top -bn1 | grep 'Cpu(s)' | awk '{print $2+$4 \"%\"}'"
+when = "true"
+style = "bold dimmed green"
+format = "CPU: [$output]($style) "
 
 [time]
 disabled = false
-style = "bold dimmed"
+style = "white bold"
 format = "[$time]($style)"
-time_format = "%H:%M"

@@ -4,6 +4,41 @@
 if [ -f "$HOME/.local/bin/mise" ]; then
   eval "$("$HOME/.local/bin/mise" activate bash)"
   export PATH="$HOME/.local/share/mise/shims:$PATH"
+  
+  # Auto-install missing tools (async to avoid blocking login)
+  if [ -z "$MISE_AUTO_INSTALL_DONE" ]; then
+    export MISE_AUTO_INSTALL_DONE=1
+    (
+      # Critical tools that should always be available
+      critical_tools="node python pnpm jq"
+      missing_critical=""
+      
+      for tool in $critical_tools; do
+        if ! mise ls --installed | rg -q "^$tool@" 2>/dev/null; then
+          missing_critical="$missing_critical $tool"
+        fi
+      done
+      
+      if [ -n "$missing_critical" ]; then
+        echo "🔧 Installing critical mise tools:$missing_critical"
+        for tool in $missing_critical; do
+          echo "  Installing $tool..."
+          mise install "$tool@latest" >> ~/.mise_auto_install.log 2>&1 && echo "  ✅ $tool installed" || echo "  ❌ $tool failed"
+        done
+      fi
+      
+      # Install other missing tools if there aren't too many
+      other_missing=$(mise ls --missing --quiet 2>/dev/null | head -10)
+      missing_count=$(echo "$other_missing" | wc -w)
+      
+      if [ -n "$other_missing" ] && [ "$missing_count" -le 5 ]; then
+        echo "🔧 Installing remaining tools in background..."
+        mise install >> ~/.mise_auto_install.log 2>&1 && echo "✅ All mise tools updated" || echo "⚠️  Some tools failed (check ~/.mise_auto_install.log)"
+      elif [ "$missing_count" -gt 5 ]; then
+        echo "💡 Many tools missing. Run 'mise install' manually when ready."
+      fi
+    ) &
+  fi
 else
   echo "mise not found, installing automatically..."
   # Create installer script
@@ -145,6 +180,14 @@ export TERMINAL_APP="default"
 # Claude Context Commands
 alias claude-remind='bash ~/singularity-engine/.repo/scripts/claude-remind.sh'
 alias cr='claude-remind'  # Short version
+
+# Retro Login Tool
+alias rl='bash ~/.dotfiles/.scripts/retro-login.sh'
+alias retro='bash ~/.dotfiles/.scripts/retro-login.sh'
+
+# Mise quick commands
+alias mise-fix='unset MISE_AUTO_INSTALL_DONE && source ~/.bashrc'
+alias mise-log='tail -f ~/.mise_auto_install.log'
 
 # Auto-reminder on new terminal sessions
 # Uncomment to auto-show reminder:

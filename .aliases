@@ -26,7 +26,7 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
 alias ~='cd ~'
-alias -- '-=cd -'
+# Previous directory navigation (removed problematic alias)
 
 # System info
 alias df='df -h'

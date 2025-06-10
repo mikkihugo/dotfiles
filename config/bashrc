@@ -9,33 +9,29 @@ if [ -f "$HOME/.local/bin/mise" ]; then
   if [ -z "$MISE_AUTO_INSTALL_DONE" ]; then
     export MISE_AUTO_INSTALL_DONE=1
     (
-      # Critical tools that should always be available
-      critical_tools="node python pnpm jq"
-      missing_critical=""
+      # Get all missing tools
+      all_missing=$(mise ls --missing --quiet 2>/dev/null)
+      missing_count=$(echo "$all_missing" | wc -w)
       
-      for tool in $critical_tools; do
-        if ! mise ls --installed | rg -q "^$tool@" 2>/dev/null; then
-          missing_critical="$missing_critical $tool"
-        fi
-      done
-      
-      if [ -n "$missing_critical" ]; then
-        echo "🔧 Installing critical mise tools:$missing_critical"
-        for tool in $missing_critical; do
-          echo "  Installing $tool..."
-          mise install "$tool@latest" >> ~/.mise_auto_install.log 2>&1 && echo "  ✅ $tool installed" || echo "  ❌ $tool failed"
+      if [ -n "$all_missing" ] && [ "$missing_count" -gt 0 ]; then
+        echo "🔧 Auto-installing $missing_count missing mise tools..."
+        
+        # Install all missing tools at once (faster)
+        mise install >> ~/.mise_auto_install.log 2>&1 && {
+          echo "✅ All mise tools installed successfully"
+        } || {
+          echo "⚠️  Some tools failed to install (check ~/.mise_auto_install.log)"
+          echo "   Failed tools may need manual installation"
+        }
+        
+        # Update to latest versions for critical tools if they were just installed
+        critical_tools="node python"
+        echo "🔄 Updating critical tools to latest..."
+        for tool in $critical_tools; do
+          mise install "$tool@latest" >> ~/.mise_auto_install.log 2>&1 && echo "  ✅ $tool@latest" || echo "  ⚠️ $tool update failed"
         done
-      fi
-      
-      # Install other missing tools if there aren't too many
-      other_missing=$(mise ls --missing --quiet 2>/dev/null | head -10)
-      missing_count=$(echo "$other_missing" | wc -w)
-      
-      if [ -n "$other_missing" ] && [ "$missing_count" -le 5 ]; then
-        echo "🔧 Installing remaining tools in background..."
-        mise install >> ~/.mise_auto_install.log 2>&1 && echo "✅ All mise tools updated" || echo "⚠️  Some tools failed (check ~/.mise_auto_install.log)"
-      elif [ "$missing_count" -gt 5 ]; then
-        echo "💡 Many tools missing. Run 'mise install' manually when ready."
+      else
+        echo "✅ All mise tools are up to date"
       fi
     ) &
   fi

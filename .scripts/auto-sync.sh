@@ -108,6 +108,29 @@ if git pull origin main >> "$LOG_FILE" 2>&1; then
     echo "$(git rev-parse HEAD)" > "$LAST_COMMIT_FILE"
     
     echo "$(date): Auto-sync completed successfully" >> "$LOG_FILE"
+    
+    # Weekly tool updates (once per week after sync)
+    LAST_UPDATE_FILE="$HOME/.dotfiles/.last-tool-update"
+    CURRENT_TIME=$(date +%s)
+    
+    if [ -f "$LAST_UPDATE_FILE" ]; then
+        LAST_UPDATE=$(cat "$LAST_UPDATE_FILE")
+        DAYS_SINCE=$((($CURRENT_TIME - $LAST_UPDATE) / 86400))
+        
+        if [ $DAYS_SINCE -ge 7 ]; then
+            echo "$(date): Running weekly tool updates (last update: $DAYS_SINCE days ago)..." >> "$LOG_FILE"
+            if mise run update >> "$LOG_FILE" 2>&1; then
+                echo "$(date): Tool updates completed" >> "$LOG_FILE"
+                echo "$CURRENT_TIME" > "$LAST_UPDATE_FILE"
+            else
+                echo "$(date): Tool updates failed" >> "$LOG_FILE"
+            fi
+        fi
+    else
+        # First run
+        echo "$CURRENT_TIME" > "$LAST_UPDATE_FILE"
+        echo "$(date): Weekly tool updates scheduled (will run next week)" >> "$LOG_FILE"
+    fi
 else
     echo "$(date): Git pull failed" >> "$LOG_FILE"
     exit 1

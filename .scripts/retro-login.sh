@@ -65,60 +65,173 @@ get_servers() {
     rg -v '^#|^$' "$CONNECTIONS_FILE" 2>/dev/null || grep -v '^#\|^$' "$CONNECTIONS_FILE"
 }
 
-# Show server menu
+# Modern quick menu with sessions prominently displayed
 show_server_menu() {
     local servers
     mapfile -t servers < <(get_servers)
     
-    if [[ ${#servers[@]} -eq 0 ]]; then
-        echo "❌ No servers found in $CONNECTIONS_FILE"
-        return 1
-    fi
-    
     echo "┌─────────────────────────────────────────────────────────────────────────────┐"
-    echo "│                              SERVER SELECTION                               │"
+    echo "│                           🚀 MODERN TERMINAL HUB                           │"
     echo "├─────────────────────────────────────────────────────────────────────────────┤"
     
-    local i=1
-    for server in "${servers[@]}"; do
-        IFS='|' read -r name type host port user key desc <<< "$server"
-        printf "│ %-2d │ %-15s │ %-8s │ %-20s │ %s\n" "$i" "$name" "$type" "$host" "$desc"
-        ((i++))
-    done
+    # Show active sessions prominently
+    local active_sessions=()
+    if command -v tmux >/dev/null 2>&1; then
+        echo "│                                                                             │"
+        echo "│                             🎛️  ACTIVE SESSIONS:                           │"
+        mapfile -t active_sessions < <(tmux list-sessions -F "#{session_name}" 2>/dev/null || true)
+        
+        if [[ ${#active_sessions[@]} -gt 0 ]]; then
+            local i=1
+            for session in "${active_sessions[@]}"; do
+                printf "│             %-2d  📎 %-20s (press number to attach)                │\n" "$i" "$session"
+                ((i++))
+            done
+        else
+            echo "│                            No active sessions                              │"
+        fi
+        echo "│                                                                             │"
+    fi
     
+    echo "│                    ⚡ INSTANT ACTIONS (single key):                        │"
+    echo "│                                                                             │"
+    echo "│       N New Session      │  A Agent Session     │  M MCP Session           │"
+    echo "│       W Work Session     │  T Temp Session      │  🤖 C Claude             │"
+    echo "│       📊 B Btop          │  📁 F Files          │  🌳 G Git Tree           │"
+    echo "│       🔧 M Mise Tools    │  💡 ? Help           │  ❌ Q Quit               │"
+    echo "│                                                                             │"
+    
+    if [[ ${#servers[@]} -gt 0 ]]; then
+        echo "│                              📡 SSH SERVERS:                              │"
+        echo "│                                                                             │"
+        local s=1
+        for server in "${servers[@]}"; do
+            IFS='|' read -r name type host port user key desc <<< "$server"
+            printf "│  S%-2d %-15s │ %-8s │ %-35s │\n" "$s" "$name" "$type" "$desc"
+            ((s++))
+        done
+        echo "│                                                                             │"
+        echo "│         +  Add Server    │   E  Edit Config   │   P  Tabby Sync          │"
+    fi
+    
+    echo "│                                                                             │"
     echo "└─────────────────────────────────────────────────────────────────────────────┘"
     echo ""
-    echo "🎯 Quick Actions:"
-    echo "  [s]essions - tmux/zellij management (MAIN FEATURE)"
-    echo "  [c]laude tools - context and reminders" 
-    echo "  [g]it tree - project navigation"
-    echo ""
-    if [[ ${#servers[@]} -gt 0 ]]; then
-        echo "📡 Servers:"
-        echo "  [1-${#servers[@]}] Connect to server"
-        echo "  [a]dd server  [e]dit config  [t]abby sync"
-        echo ""
-    fi
-    echo "  [q]uit"
-    echo ""
-    read -rp "Selection: " choice
+    echo -n "Press any key: "
+    
+    # Read single character without Enter
+    local choice
+    read -n 1 -s choice
+    echo "" # New line after key press
     
     case "$choice" in
-        [1-9]*) 
-            if [[ $choice -le ${#servers[@]} ]]; then
-                connect_server "${servers[$((choice-1))]}"
+        # Session attachment (1-9)
+        [1-9]) 
+            if [[ $choice -le ${#active_sessions[@]} ]]; then
+                local selected_session="${active_sessions[$((choice-1))]}"
+                echo "📎 Attaching to: $selected_session"
+                tmux attach-session -t "$selected_session"
+                exit 0
             else
-                echo "❌ Invalid selection"
+                echo "❌ Invalid session selection"
+                sleep 1
             fi
             ;;
-        a|A) add_server ;;
-        e|E) edit_config ;;
-        s|S) show_sessions ;;
-        t|T) tabby_menu ;;
-        c|C) claude_tools_menu ;;
-        g|G) git_tree_menu ;;
-        q|Q) echo "👋 Goodbye!"; exit 0 ;;
-        *) echo "❌ Invalid option" ;;
+        # Session creation shortcuts
+        n|N) 
+            local session_name=$(basename "$(pwd)")
+            echo "🚀 Creating session: $session_name"
+            tmux new-session -s "$session_name"
+            exit 0
+            ;;
+        a|A) 
+            echo "🚀 Starting agent session..."
+            (cd ~/singularity-engine 2>/dev/null && tmux new-session -s "agent" -c ~/singularity-engine) || echo "❌ Directory not found"
+            exit 0
+            ;;
+        m|M) 
+            echo "🚀 Starting MCP session..."
+            (cd ~/architecturemcp 2>/dev/null && tmux new-session -s "mcp" -c ~/architecturemcp) || echo "❌ Directory not found"
+            exit 0
+            ;;
+        w|W) 
+            echo "🚀 Starting work session..."
+            (cd ~/.dotfiles && tmux new-session -s "work" -c ~/.dotfiles)
+            exit 0
+            ;;
+        t|T) 
+            echo "🚀 Starting temp session..."
+            tmux new-session -s "temp"
+            exit 0
+            ;;
+        # Tool shortcuts
+        c|C) 
+            echo "🤖 Opening Claude Tools..."
+            claude_tools_menu ;;
+        g|G) 
+            echo "🌳 Opening Git Tree..."
+            git_tree_menu ;;
+        b|B) 
+            echo "📊 Launching btop..."
+            if command -v btop >/dev/null 2>&1; then
+                btop
+            else
+                echo "❌ btop not installed. Installing..."
+                mise install btop && btop
+            fi
+            ;;
+        f|F) 
+            echo "📁 Opening file browser..."
+            if command -v eza >/dev/null 2>&1; then
+                eza --long --all --tree --level=2
+            else
+                ls -la
+            fi
+            read -n 1 -s -p "Press any key to continue..."
+            ;;
+        m|M) 
+            echo "🔧 Mise Tools Menu..."
+            mise_tools_menu ;;
+        h|H) 
+            echo "🏠 Going home..."
+            cd "$HOME"
+            echo "📁 Current directory: $PWD"
+            read -n 1 -s -p "Press any key to continue..."
+            ;;
+        # Server management
+        '+') 
+            echo "➕ Adding new server..."
+            add_server ;;
+        e|E) 
+            echo "📝 Editing config..."
+            edit_config ;;
+        p|P) 
+            echo "📱 Tabby sync..."
+            tabby_menu ;;
+        # Server connections (s1, s2, etc.)
+        s[1-9]*) 
+            local server_num="${choice#s}"
+            if [[ $server_num -le ${#servers[@]} ]]; then
+                echo "🔗 Connecting to server $server_num..."
+                connect_server "${servers[$((server_num-1))]}"
+            else
+                echo "❌ Invalid server selection"
+                sleep 1
+            fi
+            ;;
+        # Help and quit
+        '?') 
+            show_help ;;
+        q|Q) 
+            echo "👋 Goodbye!"; 
+            exit 0 ;;
+        '') 
+            # Enter pressed - refresh menu
+            ;;
+        *) 
+            echo "❌ Invalid key: '$choice'"
+            sleep 1
+            ;;
     esac
 }
 
@@ -272,51 +385,53 @@ edit_config() {
     "${EDITOR:-nano}" "$CONNECTIONS_FILE"
 }
 
-# Show sessions (main feature)
+# Show sessions (main feature) - modernized with instant keys
 show_sessions() {
     while true; do
         clear
-        echo "🎛️  SESSION MANAGEMENT (MAIN FEATURE)"
-        echo "═══════════════════════════════════════"
+        echo "┌─────────────────────────────────────────────────────────────────────────────┐"
+        echo "│                           🎛️  SESSION MANAGEMENT                           │"
+        echo "├─────────────────────────────────────────────────────────────────────────────┤"
         
         # Show active sessions with quick access
         local active_sessions=()
         if command -v tmux >/dev/null 2>&1; then
-            echo "📋 Active tmux sessions:"
+            echo "│                                                                             │"
+            echo "│                             📋 ACTIVE SESSIONS:                            │"
             mapfile -t active_sessions < <(tmux list-sessions -F "#{session_name}" 2>/dev/null || true)
             
             if [[ ${#active_sessions[@]} -gt 0 ]]; then
                 local i=1
                 for session in "${active_sessions[@]}"; do
-                    echo "  [$i] 📎 $session (attach)"
+                    printf "│             %-2d  📎 %-20s (press number to attach)                │\n" "$i" "$session"
                     ((i++))
                 done
             else
-                echo "   No active sessions"
+                echo "│                            No active sessions                              │"
             fi
         fi
         
         # Check for zellij
         if command -v zellij >/dev/null 2>&1; then
-            echo ""
-            echo "🎯 Zellij available (experimental)"
+            echo "│                                                                             │"
+            echo "│  🎯 Zellij available (experimental)                                        │"
         fi
         
+        echo "│                                                                             │"
+        echo "│                            ⚡ INSTANT ACTIONS:                            │"
+        echo "│                                                                             │"
+        echo "│     N New Session     │  A Agent Session     │  M MCP Session              │"
+        echo "│     W Work Session    │  T Temp Session      │  C Claude Session           │"
+        echo "│                                                                             │"
+        echo "│     K Kill Session    │  L List All          │  B Back to Main             │"
+        echo "│                                                                             │"
+        echo "└─────────────────────────────────────────────────────────────────────────────┘"
         echo ""
-        echo "🚀 Quick Session Actions:"
-        echo "  [n] New session (current directory)"
-        echo "  [a] sa - singularity-engine session"
-        echo "  [m] sm - architecturemcp session"  
-        echo "  [w] sw - dotfiles work session"
-        echo "  [t] st - temp session"
-        echo ""
-        echo "🤖 Claude Sessions:"
-        echo "  [ca] Claude agent session"
-        echo "  [cc] Claude context/remind"
-        echo ""
-        echo "  [k] Kill session  [l] List all  [b] Back to main"
+        echo -n "Press any key: "
         
-        read -rp "Choice: " session_choice
+        local session_choice
+        read -n 1 -s session_choice
+        echo "" # New line after key press
         
         case "$session_choice" in
             [1-9]*)
@@ -1060,16 +1175,27 @@ sync_to_tabby() {
         echo "📱 Connection '$name' already exists in Tabby"
     else
         # Add connection to Tabby config
-        if rg -q "connections: \[\]" "$TABBY_CONFIG" 2>/dev/null; then
-            # Replace empty connections array
-            sd "connections: \[\]" "connections:$connection_entry" "$TABBY_CONFIG"
-        elif rg -q "connections:" "$TABBY_CONFIG" 2>/dev/null; then
-            # Append to existing connections
-            sd "(connections:.*?)\n(\w)" "\$1$connection_entry\n\$2" "$TABBY_CONFIG"
+        if command -v sd >/dev/null 2>&1; then
+            # Use sd if available
+            if rg -q "connections: \[\]" "$TABBY_CONFIG" 2>/dev/null; then
+                sd "connections: \[\]" "connections:$connection_entry" "$TABBY_CONFIG"
+            elif rg -q "connections:" "$TABBY_CONFIG" 2>/dev/null; then
+                sd "(connections:.*?)\n(\w)" "\$1$connection_entry\n\$2" "$TABBY_CONFIG"
+            else
+                echo "ssh:" >> "$TABBY_CONFIG"
+                echo "  connections:$connection_entry" >> "$TABBY_CONFIG"
+            fi
         else
-            # Add ssh section with connections
-            echo "ssh:" >> "$TABBY_CONFIG"
-            echo "  connections:$connection_entry" >> "$TABBY_CONFIG"
+            # Fallback to sed/awk if sd not available
+            if rg -q "connections: \[\]" "$TABBY_CONFIG" 2>/dev/null; then
+                sed -i "s/connections: \[\]/connections:$connection_entry/" "$TABBY_CONFIG"
+            elif rg -q "connections:" "$TABBY_CONFIG" 2>/dev/null; then
+                # Simple append to ssh connections section
+                echo "$connection_entry" >> "$TABBY_CONFIG"
+            else
+                echo "ssh:" >> "$TABBY_CONFIG"
+                echo "  connections:$connection_entry" >> "$TABBY_CONFIG"
+            fi
         fi
         echo "✅ Added '$name' to Tabby config"
     fi

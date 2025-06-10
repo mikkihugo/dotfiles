@@ -65,3 +65,33 @@
     
     # Interactive rebase from main
     rebase-main = "!git rebase -i $(git merge-base HEAD main)"
+
+[core]
+    pager = delta
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+    light = false
+    syntax-theme = Nord
+    line-numbers = true
+    side-by-side = false
+    plus-style = syntax "#A3BE8C"
+    minus-style = syntax "#BF616A"
+    plus-emph-style = syntax "#A3BE8C"
+    minus-emph-style = syntax "#BF616A"
+    line-numbers-plus-style = "#A3BE8C"
+    line-numbers-minus-style = "#BF616A"
+    line-numbers-zero-style = "#4C566A"
+    file-style = "#81A1C1"
+    file-decoration-style = "#81A1C1" ul
+    hunk-header-style = "#88C0D0"
+    hunk-header-decoration-style = "#88C0D0" box
+
+[merge]
+    conflictstyle = diff3
+
+[diff]
+    colorMoved = default

@@ -325,3 +325,6 @@ npx() {
 # Export functions so they're available in subshells
 export -f npm
 export -f npx
+
+# Re-apply Deno aliases at the very end to ensure they take precedence over mise shims
+alias node='deno'

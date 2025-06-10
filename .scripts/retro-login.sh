@@ -46,26 +46,7 @@ init_config() {
 # Current servers
 gateway|ssh|51.38.127.98|22|mhugo|~/.ssh/id_rsa|Tabby Gateway Server
 
-# Production servers (examples)
-prod-api|ssh|prod-api.company.com|22|admin|~/.ssh/prod_key|Production API server
-prod-db|ssh|prod-db.company.com|22|admin|~/.ssh/prod_key|Production database
-
-# Development (examples)
-dev-api|ssh|dev-api.company.com|22|developer|~/.ssh/dev_key|Development API
-dev-db|ssh|dev-db.company.com|22|developer|~/.ssh/dev_key|Development database
-
-# Cloud providers
-aws-prod|aws|us-east-1|443|admin||AWS Production
-gcp-dev|gcp|us-central1|443|admin||GCP Development  
-azure-prod|azure|subscription-id|443|admin||Azure Production
-
-# Kubernetes
-local-k8s|k8s|localhost|8001|kubectl||Local K8s cluster
-prod-k8s|k8s|prod-cluster|8001|kubectl||Production K8s
-
-# Databases
-redis-cache|redis|redis.company.com|6379|admin|password|Redis cache cluster
-postgres-main|postgres|db.company.com|5432|admin|password|Main PostgreSQL
+# Add your real servers here - edit with 'retro edit'
 EOF
         
         echo "📝 Created initial config at: $CONNECTIONS_FILE"
@@ -107,14 +88,17 @@ show_server_menu() {
     
     echo "└─────────────────────────────────────────────────────────────────────────────┘"
     echo ""
-    echo "Options:"
-    echo "  [1-${#servers[@]}] Connect to server"
-    echo "  [a]dd new server"
-    echo "  [e]dit config"
-    echo "  [s]essions - show tmux/zellij sessions"
-    echo "  [t]abby sync - sync with Tabby config"
-    echo "  [c]laude tools - context and reminders"
+    echo "🎯 Quick Actions:"
+    echo "  [s]essions - tmux/zellij management (MAIN FEATURE)"
+    echo "  [c]laude tools - context and reminders" 
     echo "  [g]it tree - project navigation"
+    echo ""
+    if [[ ${#servers[@]} -gt 0 ]]; then
+        echo "📡 Servers:"
+        echo "  [1-${#servers[@]}] Connect to server"
+        echo "  [a]dd server  [e]dit config  [t]abby sync"
+        echo ""
+    fi
     echo "  [q]uit"
     echo ""
     read -rp "Selection: " choice
@@ -288,33 +272,129 @@ edit_config() {
     "${EDITOR:-nano}" "$CONNECTIONS_FILE"
 }
 
-# Show sessions (integrate with simple-sessions.sh)
+# Show sessions (main feature)
 show_sessions() {
-    echo ""
-    echo "🎛️  Active Sessions"
-    echo "─────────────────"
-    
-    # Check for tmux sessions
-    if command -v tmux >/dev/null 2>&1; then
-        echo "📋 Tmux sessions:"
-        tmux list-sessions 2>/dev/null || echo "   No tmux sessions"
-    fi
-    
-    # Check for zellij sessions  
-    if command -v zellij >/dev/null 2>&1; then
+    while true; do
+        clear
+        echo "🎛️  SESSION MANAGEMENT (MAIN FEATURE)"
+        echo "═══════════════════════════════════════"
+        
+        # Show active sessions with quick access
+        local active_sessions=()
+        if command -v tmux >/dev/null 2>&1; then
+            echo "📋 Active tmux sessions:"
+            mapfile -t active_sessions < <(tmux list-sessions -F "#{session_name}" 2>/dev/null || true)
+            
+            if [[ ${#active_sessions[@]} -gt 0 ]]; then
+                local i=1
+                for session in "${active_sessions[@]}"; do
+                    echo "  [$i] 📎 $session (attach)"
+                    ((i++))
+                done
+            else
+                echo "   No active sessions"
+            fi
+        fi
+        
+        # Check for zellij
+        if command -v zellij >/dev/null 2>&1; then
+            echo ""
+            echo "🎯 Zellij available (experimental)"
+        fi
+        
         echo ""
-        echo "🎯 Zellij sessions:"
-        zellij list-sessions 2>/dev/null || echo "   No zellij sessions"
-    fi
-    
-    echo ""
-    echo "💡 Session commands (from simple-sessions.sh):"
-    echo "   s [name]  - Create/attach session"
-    echo "   sl        - List sessions"
-    echo "   sk <name> - Kill session"
-    echo "   sa/sm/sw/st - Quick shortcuts"
-    
-    read -rp "Press Enter to continue..."
+        echo "🚀 Quick Session Actions:"
+        echo "  [n] New session (current directory)"
+        echo "  [a] sa - singularity-engine session"
+        echo "  [m] sm - architecturemcp session"  
+        echo "  [w] sw - dotfiles work session"
+        echo "  [t] st - temp session"
+        echo ""
+        echo "🤖 Claude Sessions:"
+        echo "  [ca] Claude agent session"
+        echo "  [cc] Claude context/remind"
+        echo ""
+        echo "  [k] Kill session  [l] List all  [b] Back to main"
+        
+        read -rp "Choice: " session_choice
+        
+        case "$session_choice" in
+            [1-9]*)
+                if [[ $session_choice -le ${#active_sessions[@]} ]]; then
+                    local selected_session="${active_sessions[$((session_choice-1))]}"
+                    echo "📎 Attaching to: $selected_session"
+                    tmux attach-session -t "$selected_session"
+                    return
+                else
+                    echo "❌ Invalid selection"
+                fi
+                ;;
+            n|N)
+                local session_name
+                session_name=$(basename "$(pwd)")
+                echo "🚀 Creating session: $session_name"
+                tmux new-session -s "$session_name"
+                return
+                ;;
+            a|A)
+                echo "🚀 Starting singularity-engine session..."
+                (cd ~/singularity-engine 2>/dev/null && tmux new-session -s "agent" -c ~/singularity-engine) || echo "❌ Directory not found"
+                return
+                ;;
+            m|M)
+                echo "🚀 Starting architecturemcp session..."
+                (cd ~/architecturemcp 2>/dev/null && tmux new-session -s "mcp" -c ~/architecturemcp) || echo "❌ Directory not found"
+                return
+                ;;
+            w|W)
+                echo "🚀 Starting dotfiles work session..."
+                (cd ~/.dotfiles && tmux new-session -s "work" -c ~/.dotfiles)
+                return
+                ;;
+            t|T)
+                echo "🚀 Starting temp session..."
+                tmux new-session -s "temp"
+                return
+                ;;
+            ca|CA)
+                echo "🤖 Starting Claude agent session..."
+                (cd ~/singularity-engine 2>/dev/null && tmux new-session -s "claude-agent" -c ~/singularity-engine) || echo "❌ Directory not found"
+                return
+                ;;
+            cc|CC)
+                echo "🧠 Claude context:"
+                if command -v claude-remind >/dev/null 2>&1; then
+                    claude-remind
+                elif [[ -f "$HOME/singularity-engine/.repo/scripts/claude-remind.sh" ]]; then
+                    bash "$HOME/singularity-engine/.repo/scripts/claude-remind.sh"
+                else
+                    echo "❌ Claude remind script not found"
+                fi
+                ;;
+            k|K)
+                echo "Available sessions to kill:"
+                tmux list-sessions 2>/dev/null || echo "No sessions"
+                read -rp "Session name to kill: " kill_name
+                if [[ -n "$kill_name" ]]; then
+                    tmux kill-session -t "$kill_name" 2>/dev/null && echo "🗑️  Killed: $kill_name" || echo "❌ Failed"
+                fi
+                ;;
+            l|L)
+                echo "📋 All sessions:"
+                tmux list-sessions 2>/dev/null || echo "No sessions"
+                ;;
+            b|B)
+                return
+                ;;
+            *)
+                echo "❌ Invalid option"
+                ;;
+        esac
+        
+        if [[ "$session_choice" != "ca" && "$session_choice" != "CA" && "$session_choice" != "a" && "$session_choice" != "A" && "$session_choice" != "m" && "$session_choice" != "M" && "$session_choice" != "w" && "$session_choice" != "W" && "$session_choice" != "t" && "$session_choice" != "T" && "$session_choice" != "n" && "$session_choice" != "N" ]]; then
+            read -rp "Press Enter to continue..."
+        fi
+    done
 }
 
 # Main menu loop
@@ -686,6 +766,24 @@ git_tree_menu() {
     local repos=()
     local common_dirs=("$HOME/singularity-engine" "$HOME/.dotfiles" "$HOME/architecturemcp")
     
+    # Show existing sessions first
+    echo "🎛️  Active Sessions (quick access):"
+    local active_sessions=()
+    if command -v tmux >/dev/null 2>&1; then
+        mapfile -t active_sessions < <(tmux list-sessions -F "#{session_name}" 2>/dev/null || true)
+    fi
+    
+    if [[ ${#active_sessions[@]} -gt 0 ]]; then
+        local s=1
+        for session in "${active_sessions[@]}"; do
+            echo "  [s$s] 📎 Attach to session: $session"
+            ((s++))
+        done
+    else
+        echo "  No active sessions"
+    fi
+    
+    echo ""
     echo "📁 Available repositories:"
     local i=1
     for dir in "${common_dirs[@]}"; do
@@ -715,6 +813,18 @@ git_tree_menu() {
     read -rp "Selection: " git_choice
     
     case "$git_choice" in
+        s[1-9]*)
+            # Handle session selection (s1, s2, etc.)
+            local session_num="${git_choice#s}"
+            if [[ $session_num -le ${#active_sessions[@]} ]]; then
+                local selected_session="${active_sessions[$((session_num-1))]}"
+                echo "📎 Attaching to session: $selected_session"
+                tmux attach-session -t "$selected_session"
+                return  # Exit after attaching
+            else
+                echo "❌ Invalid session selection"
+            fi
+            ;;
         [1-9]*)
             if [[ $git_choice -le ${#repos[@]} ]]; then
                 local selected_repo="${repos[$((git_choice-1))]}"

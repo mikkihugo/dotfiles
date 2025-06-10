@@ -277,6 +277,9 @@ ulimit -u 4096 2>/dev/null || true
 # Node -> Deno
 alias node='deno'
 
+# Unset any existing npm alias before defining the function
+unalias npm 2>/dev/null || true
+
 # NPM -> Deno function for better command handling
 npm() {
     case "$1" in
@@ -304,6 +307,9 @@ npm() {
             ;;
     esac
 }
+
+# Unset any existing npx alias before defining the function
+unalias npx 2>/dev/null || true
 
 # NPX -> Deno run with permissions
 npx() {

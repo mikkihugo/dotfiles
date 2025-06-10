@@ -91,6 +91,51 @@ if command -v zoxide &> /dev/null; then
   alias cd="z"
 fi
 
+# FZF configuration
+if command -v fzf &> /dev/null; then
+  # Source FZF bash integration
+  eval "$(fzf --bash)"
+  
+  # Load custom FZF config
+  if [ -f "$HOME/.config/fzf/config.sh" ]; then
+    source "$HOME/.config/fzf/config.sh"
+  fi
+fi
+
+# Enhanced bash completion
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
+
+# Better history search (only in interactive mode)
+if [[ $- == *i* ]]; then
+  bind '"\e[A": history-search-backward' 2>/dev/null || true
+  bind '"\e[B": history-search-forward' 2>/dev/null || true
+  bind '"\C-p": history-search-backward' 2>/dev/null || true
+  bind '"\C-n": history-search-forward' 2>/dev/null || true
+fi
+
+# Enhanced history settings
+export HISTSIZE=50000
+export HISTFILESIZE=50000
+export HISTCONTROL=ignoreboth:erasedups
+export HISTIGNORE="ls:cd:cd -:pwd:exit:date:* --help"
+shopt -s histappend
+shopt -s cmdhist
+
+# Better cd behavior
+shopt -s autocd
+shopt -s cdspell
+shopt -s dirspell
+
+# Terminal settings for better colors
+export TERM=xterm-256color
+export COLORTERM=truecolor
+
 # API Keys moved to ~/.env_tokens for security
 
 # Add custom paths if needed
@@ -224,3 +269,12 @@ if false && [ -n "$SSH_CONNECTION" ] && [ -z "$RETRO_LOGIN_LAUNCHED" ]; then
         esac
     fi
 fi
+
+# Fix resource limits for thread pools
+ulimit -u 4096 2>/dev/null || true
+alias npm="deno task"
+alias npx="deno run -A"
+
+# Map npm/npx to Deno
+alias npm="deno task"
+alias npx="deno run -A"

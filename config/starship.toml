@@ -20,20 +20,20 @@ $line_break\
 $character"""
 
 [character]
-success_symbol = "[❯](bold green)"
-error_symbol = "[❯](bold red)"
+success_symbol = "[❯](bold #A3BE8C)"
+error_symbol = "[❯](bold #BF616A)"
 
 [directory]
-style = "blue bold"
+style = "#81A1C1 bold"
 truncation_length = 3
 truncate_to_repo = false
 
 [git_branch]
 symbol = "🌿 "
-style = "bright-green bold"
+style = "#A3BE8C bold"
 
 [git_status]
-style = "red bold"
+style = "#BF616A bold"
 
 [python]
 symbol = "🐍 "
@@ -41,7 +41,7 @@ python_binary = "python"
 
 [nodejs]
 symbol = "⬢ "
-style = "bright-green bold"
+style = "#A3BE8C bold"
 detect_extensions = ["js", "mjs", "cjs", "jsx", "tsx", "ts"]
 not_capable_style = "bold red"
 # Hide Node.js if Deno is detected
@@ -51,7 +51,7 @@ detect_folders = []
 
 [deno]
 symbol = "🦕 "
-style = "green bold"
+style = "#A3BE8C bold"
 detect_extensions = ["ts", "tsx", "js", "jsx"]
 detect_files = ["deno.json", "deno.jsonc", "mod.ts", "deps.ts", "lock.json"]
 

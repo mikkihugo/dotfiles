@@ -272,9 +272,51 @@ fi
 
 # Fix resource limits for thread pools
 ulimit -u 4096 2>/dev/null || true
-alias npm="deno task"
-alias npx="deno run -A"
 
-# Map npm/npx to Deno
-alias npm="deno task"
-alias npx="deno run -A"
+# Deno aliases and functions to replace npm/node/npx
+# Node -> Deno
+alias node='deno'
+
+# NPM -> Deno function for better command handling
+npm() {
+    case "$1" in
+        install|i)
+            # For npm install, we don't need to do anything with Deno
+            echo "ℹ️  Deno automatically downloads dependencies on first use"
+            echo "   No installation step needed!"
+            ;;
+        run)
+            # npm run <script> -> deno task <script>
+            shift
+            deno task "$@"
+            ;;
+        start)
+            # npm start -> deno task start
+            deno task start
+            ;;
+        test)
+            # npm test -> deno task test
+            deno task test
+            ;;
+        *)
+            # Default: try to run as a deno task
+            deno task "$@"
+            ;;
+    esac
+}
+
+# NPX -> Deno run with permissions
+npx() {
+    # Check if it's an npm package
+    if [[ "$1" == *"@"* ]] || [[ "$1" =~ ^[a-zA-Z0-9-]+$ ]]; then
+        # It's likely an npm package, use npm: specifier
+        deno run -A "npm:$@"
+    else
+        # It's a file or URL
+        deno run -A "$@"
+    fi
+}
+
+# Export functions so they're available in subshells
+export -f npm
+export -f npx

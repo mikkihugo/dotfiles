@@ -273,58 +273,32 @@ fi
 # Fix resource limits for thread pools
 ulimit -u 4096 2>/dev/null || true
 
-# Deno aliases and functions to replace npm/node/npx
-# Unset any existing aliases first
+# Deno configuration (disabled - using Node.js instead)
+# To re-enable Deno as Node replacement, uncomment the functions below
+
+# Ensure node/npm/npx use actual Node.js, not Deno
 unalias node 2>/dev/null || true
 unalias npm 2>/dev/null || true
 unalias npx 2>/dev/null || true
 
-# Node -> Deno
-alias node='deno'
-
-# NPM -> Deno function for better command handling
-npm() {
-    case "$1" in
-        install|i)
-            # For npm install, we don't need to do anything with Deno
-            echo "ℹ️  Deno automatically downloads dependencies on first use"
-            echo "   No installation step needed!"
-            ;;
-        run)
-            # npm run <script> -> deno task <script>
-            shift
-            deno task "$@"
-            ;;
-        start)
-            # npm start -> deno task start
-            deno task start
-            ;;
-        test)
-            # npm test -> deno task test
-            deno task test
-            ;;
-        *)
-            # Default: try to run as a deno task
-            deno task "$@"
-            ;;
-    esac
-}
-
-# NPX -> Deno run with permissions
-npx() {
-    # Check if it's an npm package
-    if [[ "$1" == *"@"* ]] || [[ "$1" =~ ^[a-zA-Z0-9-]+$ ]]; then
-        # It's likely an npm package, use npm: specifier
-        deno run -A "npm:$@"
+# Claude CLI completion
+_claude_completions() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+    
+    if [[ ${COMP_CWORD} -eq 1 ]]; then
+        # First argument - show main commands
+        COMPREPLY=( $(compgen -W "update claude-yolo --help --version --model --config --memory --mode" -- "${cur}") )
+    elif [[ ${prev} == "--model" || ${prev} == "-m" ]]; then
+        # Model completion
+        COMPREPLY=( $(compgen -W "claude-opus-4-20250514 claude-3-5-sonnet-20241022 claude-3-5-haiku-20241022" -- "${cur}") )
+    elif [[ ${prev} == "--mode" ]]; then
+        # Mode completion
+        COMPREPLY=( $(compgen -W "code architect" -- "${cur}") )
     else
-        # It's a file or URL
-        deno run -A "$@"
+        # Default to file completion
+        COMPREPLY=( $(compgen -f -- "${cur}") )
     fi
 }
 
-# Export functions so they're available in subshells
-export -f npm
-export -f npx
-
-# Re-apply Deno aliases at the very end to ensure they take precedence over mise shims
-alias node='deno'
+complete -F _claude_completions claude

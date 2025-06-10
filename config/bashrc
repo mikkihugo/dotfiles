@@ -188,3 +188,39 @@ alias mise-log='tail -f ~/.mise_auto_install.log'
 # Auto-reminder on new terminal sessions
 # Uncomment to auto-show reminder:
 # claude-remind
+
+# Tabby working directory reporting (for SFTP and copy path features)
+if [ -n "$TABBY_SESSION_ID" ] || [ -n "$TERM_PROGRAM" ]; then
+    export PS1="$PS1\[\e]1337;CurrentDir="'$(pwd)\a\]'
+fi
+
+# Auto-launch retro login on SSH login (desktop only) - TEMPORARILY DISABLED
+if false && [ -n "$SSH_CONNECTION" ] && [ -z "$RETRO_LOGIN_LAUNCHED" ]; then
+    # Check if we're on a desktop (screen width detection)
+    if command -v tput >/dev/null 2>&1; then
+        screen_width=$(tput cols 2>/dev/null || echo "0")
+        
+        # Only launch if screen is wide enough (desktop)
+        if [ "$screen_width" -ge 80 ]; then
+            export RETRO_LOGIN_LAUNCHED=1
+            echo "🚀 Launching Retro Login..."
+            bash ~/.dotfiles/.scripts/retro-login.sh
+        else
+            echo "📱 Mobile screen detected (${screen_width} cols) - skipping retro login"
+            echo "💡 Use 'rl' or 'retro' to launch manually"
+        fi
+    else
+        # Fallback - check TERM for mobile indicators
+        case "$TERM" in
+            *mobile*|*android*|*iphone*)
+                echo "📱 Mobile terminal detected - skipping retro login"
+                echo "💡 Use 'rl' or 'retro' to launch manually"
+                ;;
+            *)
+                export RETRO_LOGIN_LAUNCHED=1
+                echo "🚀 Launching Retro Login..."
+                bash ~/.dotfiles/.scripts/retro-login.sh
+                ;;
+        esac
+    fi
+fi

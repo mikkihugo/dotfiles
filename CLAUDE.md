@@ -52,6 +52,10 @@ eza --tree --level=2            # NOT: tree -L 2
 - **grep**: Aliased to `rg` - use `rg` directly instead
 - **Use instead**: `fd` for finding files, `rg` for searching content
 
+### Fixed Issues
+- **alias: --: not found**: Fixed problematic `alias -- '-=cd -'` in .aliases file
+- **Line 153 error**: Appears in current session but fixed for new terminals
+
 ### Sensitive Data (.env files)
 - **Storage**: Private GitHub Gists (NOT in dotfiles repo)
 - **Local**: `~/.env_tokens` (downloaded from gist)

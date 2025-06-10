@@ -32,12 +32,21 @@ zoxide = "latest"    # better cd
 # Development tools
 lazygit = "latest"
 github-cli = "latest"
-k9s = "latest"
-dive = "latest"
 starship = "latest"
 direnv = "latest"
 just = "latest"
 watchexec = "latest"
+
+# Kubernetes tools
+k9s = "latest"         # Kubernetes TUI
+kubectl = "latest"     # Kubernetes CLI
+kind = "latest"        # Kubernetes in Docker
+helm = "latest"        # Package manager for Kubernetes
+kubectx = "latest"     # Switch between clusters/namespaces
+kustomize = "latest"   # Kubernetes config management
+dive = "latest"        # Docker image explorer
+stern = "latest"       # Multi-pod log tailing
+# flux = "latest"        # not in mise, install manually
 
 # TUI tools
 gum = "latest"
@@ -56,6 +65,7 @@ actionlint = "latest"
 jq = "latest"
 yq = "latest"
 gron = "latest"      # make JSON greppable
+sqlite = "latest"    # SQLite database
 # jaq = "latest"       # not in mise, use: cargo install jaq
 # tmux = "latest"    # needs system libs
 

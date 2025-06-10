@@ -66,6 +66,7 @@ jq = "latest"
 yq = "latest"
 gron = "latest"      # make JSON greppable
 sqlite = "latest"    # SQLite database
+pipx = "latest"
 # jaq = "latest"       # not in mise, use: cargo install jaq
 # tmux = "latest"    # needs system libs
 

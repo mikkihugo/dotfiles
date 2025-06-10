@@ -13,10 +13,21 @@ alias top='btop'
 alias htop='btop'
 alias diff='delta'
 alias hexdump='hx'
-alias dig='dog'
-alias ping='gping'
+alias dig='doggo'
 alias time='hyperfine'
 alias tree='eza --tree'
+# alias curl='xh'  # Not in mise, install with: cargo install xh
+# alias http='xh'  # Not in mise, install with: cargo install xh
+alias cd='z'  # zoxide
+# alias man='tldr'  # Not in mise, install with: cargo install tealdeer
+alias vi='hx'  # helix
+alias vim='hx'  # helix
+alias wc='tokei'
+alias watch='watchexec'
+
+# Additional modern tools
+alias json='gron'  # make JSON greppable
+alias jq='jaq'     # faster jq
 
 # Keep original commands accessible
 alias ogrep='/usr/bin/grep'
@@ -28,6 +39,15 @@ alias otop='/usr/bin/top'
 alias odig='/usr/bin/dig'
 alias oping='/usr/bin/ping'
 alias otime='/usr/bin/time'
+alias otree='/usr/bin/tree'
+alias ocurl='/usr/bin/curl'
+alias ocd='builtin cd'
+alias oman='/usr/bin/man'
+alias ovi='/usr/bin/vi'
+alias ovim='/usr/bin/vim'
+alias owc='/usr/bin/wc'
+alias owatch='/usr/bin/watch'
+alias ojq='/usr/bin/jq'
 
 # Git shortcuts
 alias gs='git status'

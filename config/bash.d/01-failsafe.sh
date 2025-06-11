@@ -47,17 +47,23 @@ fi
 # Ensure shell-guardian is installed
 if [ ! -f "$HOME/.local/bin/shell-guardian" ]; then
   # Try using pre-compiled binary first
-  if [ -f "$HOME/.dotfiles/.scripts/shell-guardian.bin" ]; then
+  if [ -f "$HOME/.dotfiles/.scripts/guardian/shell-guardian.bin" ]; then
     mkdir -p "$HOME/.local/bin"
-    cp "$HOME/.dotfiles/.scripts/shell-guardian.bin" "$HOME/.local/bin/shell-guardian"
+    cp "$HOME/.dotfiles/.scripts/guardian/shell-guardian.bin" "$HOME/.local/bin/shell-guardian"
     chmod +x "$HOME/.local/bin/shell-guardian"
     echo "✅ Shell Guardian restored from backup"
-  # If no binary, prompt for installation
-  elif [ -f "$HOME/.dotfiles/.scripts/install-shell-guardian.sh" ]; then
+  # Try bash fallback
+  elif [ -f "$HOME/.dotfiles/.scripts/guardian/bash-guardian-fallback.sh" ]; then
+    mkdir -p "$HOME/.local/bin"
+    cp "$HOME/.dotfiles/.scripts/guardian/bash-guardian-fallback.sh" "$HOME/.local/bin/shell-guardian"
+    chmod +x "$HOME/.local/bin/shell-guardian"
+    echo "✅ Shell Guardian fallback activated"
+  # If no options, prompt for installation
+  elif [ -f "$HOME/.dotfiles/.scripts/guardian/install-shell-guardian.sh" ]; then
     echo "🔒 Shell Guardian not found. Install now? (y/n)"
     read -r install_guardian
     if [[ "$install_guardian" =~ ^[Yy]$ ]]; then
-      "$HOME/.dotfiles/.scripts/install-shell-guardian.sh"
+      "$HOME/.dotfiles/.scripts/guardian/install-shell-guardian.sh"
     fi
   fi
 fi

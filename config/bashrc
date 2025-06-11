@@ -1,10 +1,13 @@
-# Cleaned and optimized .bashrc
+# Cleaned and optimized .bashrc with failsafe design
+# This is the core bashrc file that won't be modified frequently
 
 # Exit early if not running interactively
 [[ $- != *i* ]] && return
 
-# FAILSAFE CONFIGURATION
-# This minimal configuration will always run, even if the rest of .bashrc fails
+#################################
+# FAILSAFE CORE CONFIGURATION
+# This minimal configuration will always run and should rarely be modified
+#################################
 
 # Essential environment variables
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.local/bin:$PATH"
@@ -20,9 +23,54 @@ HISTFILESIZE=2000
 HISTCONTROL=ignoreboth
 shopt -s histappend
 
-# Try to run the extended configuration in a subshell
-# Any errors won't crash the main shell
-if ( source <(cat << 'EXTENDED_CONFIG'
+# Module loading function - loads a module safely in a subshell
+load_module() {
+  local module_path="$1"
+  local module_name="$(basename "$module_path")"
+  
+  if [ -f "$module_path" ]; then
+    # Try to load the module in a subshell
+    if ( source "$module_path" ) 2>/dev/null; then
+      # Module loaded successfully
+      return 0
+    else
+      # Module failed to load
+      echo "⚠️ Error in module: $module_name - skipping"
+      return 1
+    fi
+  fi
+  return 0
+}
+
+# Load all modules from the bash.d directory in alphabetical order
+load_modules() {
+  local module_dir="$1"
+  
+  if [ -d "$module_dir" ]; then
+    for module in "$module_dir"/*.sh; do
+      if [ -f "$module" ]; then
+        load_module "$module"
+      fi
+    done
+  fi
+}
+
+#################################
+# EXTENDED CONFIGURATION
+# Load extended modules using the failsafe loader
+#################################
+
+# Create the bash.d directory if it doesn't exist
+mkdir -p "$HOME/.dotfiles/config/bash.d"
+
+# Initialize with essential modules if bash.d is empty
+if [ -z "$(ls -A "$HOME/.dotfiles/config/bash.d" 2>/dev/null)" ]; then
+  # Extract modules from existing config
+  echo "📦 Creating initial bash modules..."
+  
+  # Create 10-core.sh module
+  cat > "$HOME/.dotfiles/config/bash.d/10-core.sh" << 'EOF'
+# Core module - essential tools and functions
 
 # mise activation
 if [ -f "$HOME/.local/bin/mise" ]; then
@@ -62,7 +110,7 @@ if [ -f "$HOME/.local/bin/mise" ]; then
 else
   echo "mise not found, installing automatically..."
   # Create installer script
-  cat > "$HOME/.mise_installer.sh" << 'EOF'
+  cat > "$HOME/.mise_installer.sh" << 'EOFMISE'
 #!/bin/bash
 set -e
 MISE_DEST="$HOME/.local/bin/mise"
@@ -86,7 +134,7 @@ fi
 chmod +x install.sh
 ./install.sh
 rm -rf "$MISE_TEMP"
-EOF
+EOFMISE
   
   # Make executable and run
   chmod +x "$HOME/.mise_installer.sh"
@@ -101,6 +149,11 @@ fi
 
 # unset mise function if it exists (to use the binary instead)
 unset -f mise 2>/dev/null || true
+EOF
+
+  # Create 20-prompt.sh module
+  cat > "$HOME/.dotfiles/config/bash.d/20-prompt.sh" << 'EOF'
+# Prompt module - terminal appearance and prompt
 
 # starship prompt
 if command -v starship &> /dev/null; then
@@ -108,6 +161,26 @@ if command -v starship &> /dev/null; then
 else
   echo "starship not found, skipping prompt setup"
 fi
+
+# Terminal settings for better colors
+export TERM=xterm-256color
+export COLORTERM=truecolor
+
+# Disable mouse reporting to prevent garbage characters
+printf '\e[?1000l' 2>/dev/null || true
+
+# Disable paging for continuous scrolling
+export PAGER=cat
+EOF
+
+  # Create 30-navigation.sh module
+  cat > "$HOME/.dotfiles/config/bash.d/30-navigation.sh" << 'EOF'
+# Navigation module - directory navigation and file management
+
+# Better cd behavior
+shopt -s autocd
+shopt -s cdspell
+shopt -s dirspell
 
 # zoxide (smart cd)
 if command -v zoxide &> /dev/null; then
@@ -134,6 +207,11 @@ if ! shopt -oq posix; then
     . /etc/bash_completion
   fi
 fi
+EOF
+
+  # Create 40-history.sh module
+  cat > "$HOME/.dotfiles/config/bash.d/40-history.sh" << 'EOF'
+# History module - history settings and search
 
 # Better history search (only in interactive mode)
 if [[ $- == *i* ]]; then
@@ -150,29 +228,40 @@ export HISTCONTROL=ignoreboth:erasedups
 export HISTIGNORE="ls:cd:cd -:pwd:exit:date:* --help"
 shopt -s histappend
 shopt -s cmdhist
+EOF
 
-# Better cd behavior
-shopt -s autocd
-shopt -s cdspell
-shopt -s dirspell
-
-# Disable mouse reporting to prevent garbage characters
-printf '\e[?1000l' 2>/dev/null || true
-
-# Disable paging for continuous scrolling
-export PAGER=cat
-
-# Terminal settings for better colors
-export TERM=xterm-256color
-export COLORTERM=truecolor
-
-# API Keys moved to ~/.env_tokens for security
+  # Create 50-paths.sh module
+  cat > "$HOME/.dotfiles/config/bash.d/50-paths.sh" << 'EOF'
+# Paths module - PATH and environment variables
 
 # Add custom paths if needed
 export PATH="$PATH:/home/mhugo/.local/bin:/home/mhugo/bin"
 
 # SQLite3 library path for Python
 export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
+
+# Add dotfiles scripts to PATH
+export PATH="$HOME/.dotfiles/.scripts:$PATH"
+
+# pnpm
+export PNPM_HOME="/home/mhugo/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+# Fix resource limits for thread pools
+ulimit -u 4096 2>/dev/null || true
+
+# Fix Node.js MaxListenersExceededWarning
+export NODE_OPTIONS="--max-old-space-size=4096 --max-listeners=20"
+EOF
+
+  # Create 60-aliases.sh module
+  cat > "$HOME/.dotfiles/config/bash.d/60-aliases.sh" << 'EOF'
+# Aliases module - command aliases and shortcuts
 
 # Load aliases (dotfiles version)
 if [ -f "$HOME/.dotfiles/.aliases" ]; then
@@ -181,8 +270,47 @@ elif [ -f "$HOME/.aliases" ]; then
     source "$HOME/.aliases"
 fi
 
-# Add dotfiles scripts to PATH
-export PATH="$HOME/.dotfiles/.scripts:$PATH"
+# Claude CLI completion
+_claude_completions() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+    
+    if [[ ${COMP_CWORD} -eq 1 ]]; then
+        # First argument - show main commands
+        COMPREPLY=( $(compgen -W "update claude-yolo --help --version --model --config --memory --mode" -- "${cur}") )
+    elif [[ ${prev} == "--model" || ${prev} == "-m" ]]; then
+        # Model completion
+        COMPREPLY=( $(compgen -W "claude-opus-4-20250514 claude-3-5-sonnet-20241022 claude-3-5-haiku-20241022" -- "${cur}") )
+    elif [[ ${prev} == "--mode" ]]; then
+        # Mode completion
+        COMPREPLY=( $(compgen -W "code architect" -- "${cur}") )
+    else
+        # Default to file completion
+        COMPREPLY=( $(compgen -f -- "${cur}") )
+    fi
+}
+
+complete -F _claude_completions claude
+
+# Claude aliases
+alias claude="/home/mhugo/.claude/local/claude"
+alias claude-unsafe="/home/mhugo/claude-unsafe/safety-wrapper.sh"
+alias claude-remind='bash ~/singularity-engine/.repo/scripts/claude-remind.sh'
+alias cr='claude-remind'  # Short version
+alias claude-yolo="~/.dotfiles/.scripts/claude-yolo-cached"
+
+# Mise quick commands
+alias mise-fix='unset MISE_AUTO_INSTALL_DONE && source ~/.bashrc'
+alias mise-log='tail -f ~/.mise_auto_install.log'
+
+# Retro Login Tool
+alias rl='bash ~/.dotfiles/.scripts/retro-login.sh'
+alias retro='bash ~/.dotfiles/.scripts/retro-login.sh'
+EOF
+
+  # Create 70-projects.sh module
+  cat > "$HOME/.dotfiles/config/bash.d/70-projects.sh" << 'EOF'
+# Projects module - project-specific configurations
 
 # Auto-load tokens from ~/.env_tokens (all API keys)
 if [ -f "$HOME/.env_tokens" ]; then
@@ -202,17 +330,6 @@ fi
 if [ -f "$HOME/.dotfiles/.gitconfig" ]; then
     git config --global include.path "$HOME/.dotfiles/.gitconfig"
 fi
-alias claude="/home/mhugo/.claude/local/claude"
-alias claude-unsafe="/home/mhugo/claude-unsafe/safety-wrapper.sh"
-
-# pnpm
-export PNPM_HOME="/home/mhugo/.local/share/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
-export PATH="$HOME/.npm-global/bin:$PATH"
 
 # Auto-install everything possible on first login (once)
 if [ ! -f "$HOME/.dotfiles/.auto-install-done" ]; then
@@ -247,26 +364,31 @@ fi
 # Terminal-specific configurations
 # Default terminal
 export TERMINAL_APP="default"
+EOF
 
-# Claude Context Commands
-alias claude-remind='bash ~/singularity-engine/.repo/scripts/claude-remind.sh'
-alias cr='claude-remind'  # Short version
+  # Create 80-shells.sh module
+  cat > "$HOME/.dotfiles/config/bash.d/80-shells.sh" << 'EOF'
+# Shells module - shell-specific configurations
 
-# Retro Login Tool
-alias rl='bash ~/.dotfiles/.scripts/retro-login.sh'
-alias retro='bash ~/.dotfiles/.scripts/retro-login.sh'
+# Auto-upgrade to preferred shell (zsh) if available
+# Only in interactive sessions, not in scripts or subshells
+AUTO_UPGRADE_SHELL=${AUTO_UPGRADE_SHELL:-false}
+if [[ "$AUTO_UPGRADE_SHELL" == "true" ]] && [[ $- == *i* ]] && [[ ! "$SHELL_UPGRADED" == "true" ]]; then
+    if command -v zsh &>/dev/null && [[ ! "$SHELL" =~ zsh ]]; then
+        export SHELL_UPGRADED=true
+        echo "🚀 Upgrading to zsh..."
+        exec zsh -l
+    fi
+fi
 
-# Mise quick commands
-alias mise-fix='unset MISE_AUTO_INSTALL_DONE && source ~/.bashrc'
-alias mise-log='tail -f ~/.mise_auto_install.log'
+# SSH Login Zellij Session Manager
+if [ -n "$SSH_CONNECTION" ] && [ -f "$HOME/.dotfiles/.scripts/ssh_login_zellij.sh" ]; then
+    source "$HOME/.dotfiles/.scripts/ssh_login_zellij.sh"
+fi
 
-# Auto-reminder on new terminal sessions
-# Uncomment to auto-show reminder:
-# claude-remind
-
-# Tabby working directory reporting (for SFTP and copy path features)
-if [ -n "$TABBY_SESSION_ID" ] || [ -n "$TERM_PROGRAM" ]; then
-    export PS1="$PS1\[\e]1337;CurrentDir="'$(pwd)\a\]'
+# Zellij tab completion
+if [ -f "$HOME/.dotfiles/.scripts/zellij-completion.bash" ]; then
+    source "$HOME/.dotfiles/.scripts/zellij-completion.bash"
 fi
 
 # Auto-launch retro login on SSH login (desktop only) - TEMPORARILY DISABLED
@@ -299,61 +421,11 @@ if false && [ -n "$SSH_CONNECTION" ] && [ -z "$RETRO_LOGIN_LAUNCHED" ]; then
         esac
     fi
 fi
+EOF
 
-# Fix resource limits for thread pools
-ulimit -u 4096 2>/dev/null || true
-
-# Deno configuration (disabled - using Node.js instead)
-# To re-enable Deno as Node replacement, uncomment the functions below
-
-# Ensure node/npm/npx use actual Node.js, not Deno
-unalias node 2>/dev/null || true
-unalias npm 2>/dev/null || true
-unalias npx 2>/dev/null || true
-
-# Claude CLI completion
-_claude_completions() {
-    local cur="${COMP_WORDS[COMP_CWORD]}"
-    local prev="${COMP_WORDS[COMP_CWORD-1]}"
-    
-    if [[ ${COMP_CWORD} -eq 1 ]]; then
-        # First argument - show main commands
-        COMPREPLY=( $(compgen -W "update claude-yolo --help --version --model --config --memory --mode" -- "${cur}") )
-    elif [[ ${prev} == "--model" || ${prev} == "-m" ]]; then
-        # Model completion
-        COMPREPLY=( $(compgen -W "claude-opus-4-20250514 claude-3-5-sonnet-20241022 claude-3-5-haiku-20241022" -- "${cur}") )
-    elif [[ ${prev} == "--mode" ]]; then
-        # Mode completion
-        COMPREPLY=( $(compgen -W "code architect" -- "${cur}") )
-    else
-        # Default to file completion
-        COMPREPLY=( $(compgen -f -- "${cur}") )
-    fi
-}
-
-complete -F _claude_completions claude
-
-# SSH Login Zellij Session Manager
-if [ -n "$SSH_CONNECTION" ] && [ -f "$HOME/.dotfiles/.scripts/ssh_login_zellij.sh" ]; then
-    source "$HOME/.dotfiles/.scripts/ssh_login_zellij.sh"
-fi
-
-# Zellij tab completion
-if [ -f "$HOME/.dotfiles/.scripts/zellij-completion.bash" ]; then
-    source "$HOME/.dotfiles/.scripts/zellij-completion.bash"
-fi
-
-# Auto-upgrade to preferred shell (zsh) if available
-# Only in interactive sessions, not in scripts or subshells
-AUTO_UPGRADE_SHELL=${AUTO_UPGRADE_SHELL:-false}
-if [[ "$AUTO_UPGRADE_SHELL" == "true" ]] && [[ $- == *i* ]] && [[ ! "$SHELL_UPGRADED" == "true" ]]; then
-    if command -v zsh &>/dev/null && [[ ! "$SHELL" =~ zsh ]]; then
-        export SHELL_UPGRADED=true
-        echo "🚀 Upgrading to zsh..."
-        exec zsh -l
-    fi
-fi
-
+  # Create 90-services.sh module
+  cat > "$HOME/.dotfiles/config/bash.d/90-services.sh" << 'EOF'
+# Services module - background services and daemons
 
 # Claude auth caching - prevent OAuth timeouts
 if [ -f "$HOME/.dotfiles/.scripts/claude-auth-cache.sh" ]; then
@@ -361,17 +433,22 @@ if [ -f "$HOME/.dotfiles/.scripts/claude-auth-cache.sh" ]; then
     ~/.dotfiles/.scripts/claude-auth-cache.sh auto >/dev/null 2>&1
 fi
 
-# Override claude-yolo to use cached version
-alias claude-yolo="~/.dotfiles/.scripts/claude-yolo-cached"
+# Tabby working directory reporting (for SFTP and copy path features)
+if [ -n "$TABBY_SESSION_ID" ] || [ -n "$TERM_PROGRAM" ]; then
+    export PS1="$PS1\[\e]1337;CurrentDir="'$(pwd)\a\]'
+fi
+EOF
 
-# Fix Node.js MaxListenersExceededWarning
-export NODE_OPTIONS="--max-old-space-size=4096 --max-listeners=20"
-EXTENDED_CONFIG
-) 2>/dev/null; then
-  # Extended config loaded successfully
-  true
+fi
+
+# Load all modules from the bash.d directory
+echo "📦 Loading bash modules..."
+load_modules "$HOME/.dotfiles/config/bash.d"
+
+# Report any loading errors
+if [ $? -ne 0 ]; then
+  echo "⚠️ Some modules failed to load"
+  echo "💡 Tip: You can edit modules without breaking the failsafe core"
 else
-  # Extended config failed to load
-  echo "⚠️ Error in extended configuration - running in FAILSAFE mode"
-  echo "💡 Check your bashrc for syntax errors"
+  echo "✅ All modules loaded successfully"
 fi

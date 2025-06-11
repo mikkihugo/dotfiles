@@ -316,3 +316,19 @@ complete -F _claude_completions claude
 if [ -n "$SSH_CONNECTION" ] && [ -f "$HOME/.dotfiles/.scripts/ssh_login_zellij.sh" ]; then
     source "$HOME/.dotfiles/.scripts/ssh_login_zellij.sh"
 fi
+
+# Zellij tab completion
+if [ -f "$HOME/.dotfiles/.scripts/zellij-completion.bash" ]; then
+    source "$HOME/.dotfiles/.scripts/zellij-completion.bash"
+fi
+
+# Auto-upgrade to preferred shell (zsh) if available
+# Only in interactive sessions, not in scripts or subshells
+AUTO_UPGRADE_SHELL=${AUTO_UPGRADE_SHELL:-false}
+if [[ "$AUTO_UPGRADE_SHELL" == "true" ]] && [[ $- == *i* ]] && [[ ! "$SHELL_UPGRADED" == "true" ]]; then
+    if command -v zsh &>/dev/null && [[ ! "$SHELL" =~ zsh ]]; then
+        export SHELL_UPGRADED=true
+        echo "🚀 Upgrading to zsh..."
+        exec zsh -l
+    fi
+fi

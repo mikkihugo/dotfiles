@@ -112,19 +112,58 @@ alias matrix='cmatrix -s'
 alias starwars='telnet towel.blinkenlights.nl'
 alias weather-full='curl -s "wttr.in/$(curl -s https://ipinfo.io/city)"'
 
-# Code navigation with frequency-based selection
-ca() {
-    local selected
-    # If zoxide is available, use it for frequency-sorted results
-    if command -v zoxide &> /dev/null && [ -d "$HOME/code" ]; then
-        # Query zoxide for directories under ~/code, sorted by frecency
-        selected=$(zoxide query -l | grep "^$HOME/code/" | sed "s|^$HOME/code/||" | fzf --reverse --height=40% --prompt="Select repo: ")
-    else
-        # Fallback to simple directory listing
-        selected=$(ls -1 "$HOME/code" 2>/dev/null | fzf --reverse --height=40% --prompt="Select repo: ")
+# Smart code navigation - type c<pattern> to fuzzy match repos
+# This creates aliases for all repos and a fallback for fuzzy matching
+_setup_code_aliases() {
+    # Only set up if ~/code exists
+    [ -d "$HOME/code" ] || return
+    
+    # For each directory in ~/code, create an alias if it doesn't conflict
+    for dir in "$HOME/code"/*; do
+        if [ -d "$dir" ]; then
+            local repo_name=$(basename "$dir")
+            local alias_name="c${repo_name}"
+            
+            # Only create alias if command doesn't exist
+            if ! command -v "$alias_name" &> /dev/null 2>&1; then
+                alias "$alias_name"="cd '$dir'"
+            fi
+        fi
+    done
+}
+
+# Smart fuzzy code navigation
+c() {
+    # If no argument, just go to ~/code
+    if [ $# -eq 0 ]; then
+        cd ~/code
+        return
     fi
     
-    if [ -n "$selected" ]; then
-        cd "$HOME/code/$selected" || return 1
+    local pattern="$1"
+    local matches=()
+    
+    # Find all directories matching the pattern using fd (rust tool)
+    if [ -d "$HOME/code" ]; then
+        while IFS= read -r dir; do
+            matches+=("$dir")
+        done < <(fd -t d -d 1 "${pattern}" "$HOME/code" --base-directory "$HOME/code" 2>/dev/null)
+    fi
+    
+    # Handle results
+    if [ ${#matches[@]} -eq 0 ]; then
+        echo "No repos matching '$pattern'"
+        return 1
+    elif [ ${#matches[@]} -eq 1 ]; then
+        cd "$HOME/code/${matches[0]}"
+    else
+        # Multiple matches - use fzf to select
+        local selected=$(printf '%s\n' "${matches[@]}" | fzf --reverse --height=40% --prompt="Multiple matches for '$pattern': ")
+        if [ -n "$selected" ]; then
+            cd "$HOME/code/$selected"
+        fi
     fi
 }
+
+# Set up aliases on shell start
+_setup_code_aliases

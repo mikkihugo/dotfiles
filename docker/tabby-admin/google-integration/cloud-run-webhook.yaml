@@ -1,0 +1,72 @@
+# Cloud Run service for webhook processing (free tier)
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: admin-webhook
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '0'  # Scale to zero
+    spec:
+      serviceAccountName: admin-stack@hugo-admin-stack.iam.gserviceaccount.com
+      containers:
+      - image: gcr.io/hugo-admin-stack/webhook:latest
+        env:
+        - name: PROJECT_ID
+          value: hugo-admin-stack
+        resources:
+          limits:
+            cpu: '1'
+            memory: 512Mi
+---
+# Webhook handler code (index.js)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhook-code
+data:
+  index.js: |
+    const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+    const express = require('express');
+    
+    const app = express();
+    const client = new SecretManagerServiceClient();
+    
+    app.post('/webhook/github', async (req, res) => {
+      // Handle GitHub webhooks
+      const event = req.headers['x-github-event'];
+      
+      if (event === 'push') {
+        // Trigger admin stack update
+        console.log('Triggering update from GitHub push');
+        // Call Cloud Build or update service
+      }
+      
+      res.json({ status: 'ok' });
+    });
+    
+    app.post('/webhook/unlock', async (req, res) => {
+      // Remote unlock endpoint
+      const { token, host } = req.body;
+      
+      // Verify token
+      const [secret] = await client.accessSecretVersion({
+        name: `projects/hugo-admin-stack/secrets/unlock-token/versions/latest`,
+      });
+      
+      if (token === secret.payload.data.toString()) {
+        // Unlock approved
+        res.json({ status: 'unlocked' });
+      } else {
+        res.status(401).json({ error: 'Invalid token' });
+      }
+    });
+    
+    const port = process.env.PORT || 8080;
+    app.listen(port, () => {
+      console.log(`Webhook handler listening on port ${port}`);
+    });

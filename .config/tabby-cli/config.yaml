@@ -1,0 +1,36 @@
+# Tabby CLI Configuration
+# For headless/server operation
+
+# Server settings
+server:
+  host: localhost
+  port: 9090
+  headless: true
+  
+# Session persistence
+sessions:
+  persist: true
+  directory: ~/.config/tabby-cli/sessions
+  
+# Connection sync
+sync:
+  enabled: true
+  gist_id: "${TABBY_SYNC_GIST_ID}"
+  interval: 300  # 5 minutes
+  
+# SSH multiplexing
+ssh:
+  control_master: true
+  control_path: ~/.ssh/tabby-%r@%h:%p
+  control_persist: 10m
+  
+# Logging
+logging:
+  level: info
+  file: ~/.config/tabby-cli/tabby.log
+  
+# Plugins
+plugins:
+  - ssh
+  - serial
+  - telnet

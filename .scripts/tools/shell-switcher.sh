@@ -3,14 +3,10 @@
 
 # Available shells with descriptions
 declare -A SHELLS=(
-    ["bash"]="Bash - Bourne Again Shell (default)"
-    ["zsh"]="Z Shell - Extended bash with more features"
+    ["bash"]="Bash - Bourne Again Shell (default/fallback)"
+    ["zsh"]="Z Shell - Extended bash with better features"
     ["fish"]="Fish - Friendly Interactive Shell"
     ["nu"]="Nushell - Modern shell with structured data"
-    ["dunesh"]="Dune Shell - A shell by the beach 🏖️"
-    ["ion"]="Ion Shell - Modern system shell from Redox"
-    ["elvish"]="Elvish - Expressive programming language and shell"
-    ["sh"]="POSIX Shell - Minimal shell"
 )
 
 # Colors

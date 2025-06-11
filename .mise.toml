@@ -95,8 +95,24 @@ run = "./.mise/tasks/failsafe-check.sh"
 description = "Verify and repair shell failsafe systems"
 
 [tasks.failsafe-schedule]
-run = "./.scripts/schedule-failsafe-checks.sh"
+run = "./.scripts/guardian/schedule-failsafe-checks.sh"
 description = "Schedule periodic failsafe integrity checks"
+
+[tasks.guardian-protect]
+run = "./.scripts/guardian/guardian-protect.sh protect"
+description = "Apply filesystem-level protection to guardian files"
+
+[tasks.guardian-unprotect]
+run = "./.scripts/guardian/guardian-protect.sh unprotect"
+description = "Remove filesystem-level protection (for updates)"
+
+[tasks.guardian-status]
+run = "./.scripts/guardian/guardian-protect.sh status"
+description = "Check current protection status of guardian files"
+
+[tasks.guardian-recovery]
+run = "./.scripts/guardian/guardian-protect.sh recovery"
+description = "Create emergency recovery script"
 
 [tasks.sync]
 run = "./.scripts/auto-sync.sh"

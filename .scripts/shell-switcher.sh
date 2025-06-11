@@ -8,6 +8,8 @@ declare -A SHELLS=(
     ["fish"]="Fish - Friendly Interactive Shell"
     ["nu"]="Nushell - Modern shell with structured data"
     ["dunesh"]="Dune Shell - A shell by the beach 🏖️"
+    ["ion"]="Ion Shell - Modern system shell from Redox"
+    ["elvish"]="Elvish - Expressive programming language and shell"
     ["sh"]="POSIX Shell - Minimal shell"
 )
 
@@ -82,8 +84,20 @@ case "$shell_name" in
         XDG_CONFIG_HOME="$HOME/.dotfiles/config" exec nu
         ;;
     dunesh)
-        # Dune shell
-        exec dunesh
+        # Dune shell with config
+        if [ -f "$HOME/.dotfiles/config/dunesh/config.lisp" ]; then
+            DUNE_CONFIG="$HOME/.dotfiles/config/dunesh/config.lisp" exec dunesh
+        else
+            exec dunesh
+        fi
+        ;;
+    ion)
+        # Ion shell
+        exec ion
+        ;;
+    elvish)
+        # Elvish with config directory
+        XDG_CONFIG_HOME="$HOME/.dotfiles/config" exec elvish
         ;;
     *)
         exec "$shell_name"

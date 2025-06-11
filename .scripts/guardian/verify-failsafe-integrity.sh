@@ -69,6 +69,29 @@ echo -e "${BLUE}🔍 Checking integrity...${NC}"
 
 integrity_issue=false
 
+# Check if filesystem-level protection is active (if chattr available)
+if command -v lsattr &>/dev/null; then
+    echo -e "${BLUE}🔍 Checking filesystem protection...${NC}"
+    
+    # Check if files have the immutable attribute
+    immutable_count=0
+    for file in "${PROTECTED_DIR}"/*; do
+        if [ -f "$file" ]; then
+            if lsattr "$file" 2>/dev/null | grep -q "i"; then
+                immutable_count=$((immutable_count + 1))
+            fi
+        fi
+    done
+    
+    # If no immutable files found, suggest enabling protection
+    if [ "$immutable_count" -eq 0 ]; then
+        echo -e "${YELLOW}⚠️ Filesystem-level protection not active${NC}"
+        echo -e "${YELLOW}💡 Consider running: ~/.dotfiles/.scripts/guardian/guardian-protect.sh protect${NC}"
+    else
+        echo -e "${GREEN}✅ Filesystem-level protection active on $immutable_count files${NC}"
+    fi
+fi
+
 # Check if guardian binary exists
 if [ ! -f "${GUARDIAN_BIN}" ] && [ -f "${GUARDIAN_RS}" ] && [ -f "${INSTALLER}" ]; then
     echo -e "${YELLOW}⚠️ Shell Guardian binary missing, rebuilding...${NC}"

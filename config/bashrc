@@ -1,5 +1,50 @@
 # Cleaned and optimized .bashrc
 
+# Failsafe mechanism - if called with FAILSAFE=1, load minimal config
+if [ "$FAILSAFE" = "1" ]; then
+  echo "⚠️ Running in FAILSAFE mode - minimal configuration loaded"
+  PS1="\[\033[01;31m\][FAILSAFE]\[\033[00m\] \w \$ "
+  PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.local/bin"
+  return
+fi
+
+# Create a wrapper script to automatically detect and recover from errors
+if [ ! -f "$HOME/.bashrc_failsafe" ]; then
+  cat > "$HOME/.bashrc_failsafe" << 'EOF'
+#!/bin/bash
+
+# Test if .bashrc has syntax errors
+bash -n "$HOME/.bashrc" >/dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+  echo "⚠️ Error detected in .bashrc - starting in FAILSAFE mode"
+  FAILSAFE=1 bash
+  exit
+fi
+
+# Check if last login crashed (creates a canary file and removes it on clean exit)
+if [ -f "$HOME/.bashrc_crash" ]; then
+  echo "⚠️ Previous session crashed - starting in FAILSAFE mode"
+  rm -f "$HOME/.bashrc_crash"
+  FAILSAFE=1 bash
+  exit
+fi
+
+# Create canary file - will be removed on clean exit
+touch "$HOME/.bashrc_crash"
+
+# Start normal bash (which will source .bashrc)
+bash "$@"
+status=$?
+
+# Remove canary file on clean exit
+rm -f "$HOME/.bashrc_crash"
+exit $status
+EOF
+
+  chmod +x "$HOME/.bashrc_failsafe"
+fi
+
 # Exit early if not running interactively
 [[ $- != *i* ]] && return
 
@@ -332,3 +377,16 @@ if [[ "$AUTO_UPGRADE_SHELL" == "true" ]] && [[ $- == *i* ]] && [[ ! "$SHELL_UPGR
         exec zsh -l
     fi
 fi
+
+
+# Claude auth caching - prevent OAuth timeouts
+if [ -f "$HOME/.dotfiles/.scripts/claude-auth-cache.sh" ]; then
+    # Auto-check credentials on login
+    ~/.dotfiles/.scripts/claude-auth-cache.sh auto >/dev/null 2>&1
+fi
+
+# Override claude-yolo to use cached version
+alias claude-yolo="~/.dotfiles/.scripts/claude-yolo-cached"
+
+# Fix Node.js MaxListenersExceededWarning
+export NODE_OPTIONS="--max-old-space-size=4096 --max-listeners=20"

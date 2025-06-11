@@ -114,6 +114,22 @@ description = "Check current protection status of guardian files"
 run = "./.scripts/guardian/guardian-protect.sh recovery"
 description = "Create emergency recovery script"
 
+[tasks.guardian-compile]
+run = "./.scripts/guardian/compile-guardian.sh"
+description = "Compile hardened shell guardian with integrity verification"
+
+[tasks.guardian-verify]
+run = "verify-guardian"
+description = "Verify shell guardian binary integrity"
+
+[tasks.guardian-emergency]
+run = "bash ./.guardian-shell/emergency-recovery.sh"
+description = "Enter emergency recovery mode"
+
+[tasks.guardian-service]
+run = "./.scripts/guardian/setup-guardian-service.sh"
+description = "Setup systemd service for regular integrity verification"
+
 [tasks.sync]
 run = "./.scripts/auto-sync.sh"
 description = "Auto-sync dotfiles, tokens, and SSH hosts"

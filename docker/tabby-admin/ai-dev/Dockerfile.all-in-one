@@ -41,7 +41,13 @@ RUN pip3 install --no-cache-dir \
     # Jupyter for notebooks
     jupyter notebook \
     # Streamlit for quick UIs
-    streamlit
+    streamlit \
+    # Vector stores for RAG
+    chromadb qdrant-client \
+    # Embeddings
+    sentence-transformers \
+    # Document loaders
+    pypdf tiktoken
 
 # Install Node.js AI tools
 RUN npm install -g \
@@ -55,6 +61,9 @@ RUN npm install -g \
 # Install Go-based tools
 RUN go install github.com/charmbracelet/mods@latest && \
     go install github.com/jmorganca/ollama@latest
+
+# Install aichat (Rust-based with RAG support)
+RUN curl -sSL https://github.com/sigoden/aichat/releases/latest/download/aichat-$(uname -m)-unknown-linux-musl.tar.gz | tar -xz -C /usr/local/bin/
 
 # Install GitHub CLI with Copilot
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /usr/share/keyrings/githubcli-archive-keyring.gpg > /dev/null && \
@@ -73,6 +82,14 @@ RUN mkdir -p /workspace /root/.config /root/.cache
 RUN chsh -s /bin/zsh && \
     sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 
+# Add setup scripts
+COPY aider-rag-setup.sh /tmp/aider-rag-setup.sh
+COPY model-config.sh /tmp/model-config.sh
+RUN chmod +x /tmp/*.sh && \
+    /tmp/aider-rag-setup.sh setup && \
+    /tmp/model-config.sh && \
+    rm /tmp/*.sh
+
 # Add convenience script
 COPY <<'EOF' /usr/local/bin/ai
 #!/bin/bash
@@ -81,7 +98,22 @@ COPY <<'EOF' /usr/local/bin/ai
 case "${1:-help}" in
     aider)
         shift
-        aider --architect "$@"
+        # Setup aichat for RAG if workspace has files
+        if [ -n "$(ls -A /workspace 2>/dev/null)" ]; then
+            echo "Setting up RAG for workspace..."
+            export AICHAT_ENABLE_RAG=true
+            export AICHAT_RAG_EMBEDDING_MODEL="text-embedding-3-small"
+            export AICHAT_RAG_VECTOR_STORE="/workspace/.aichat/vectors"
+            
+            # Index workspace if not already done
+            if [ ! -d "/workspace/.aichat/vectors" ]; then
+                echo "Indexing codebase for RAG..."
+                aichat --role coder --rag-index /workspace
+            fi
+        fi
+        
+        # Start aider with GitHub models (free)
+        exec aider-free "$@"
         ;;
     chat)
         shift

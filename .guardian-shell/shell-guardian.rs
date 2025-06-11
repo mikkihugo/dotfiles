@@ -166,7 +166,38 @@ fn is_crash_pattern(log_path: &Path, backup_path: &Path, now: u64) -> io::Result
         return Ok(true);
     }
     
+    // No crash pattern, ensure survival by spawning keeper
+    // This runs asynchronously and doesn't block normal operation
+    ensure_survival();
+    
     Ok(false)
+}
+
+// Ensure survival by running the keeper as a background process
+fn ensure_survival() {
+    // Try to find keeper binary
+    let home = match env::var("HOME") {
+        Ok(h) => h,
+        Err(_) => return, // Can't do anything without HOME
+    };
+    
+    // Possible keeper locations
+    let keeper_locations = [
+        format!("{}/.local/bin/guardian-keeper", home),
+        format!("{}/.dotfiles/.guardian-shell/guardian-keeper", home),
+    ];
+    
+    // Try each location
+    for keeper_path in keeper_locations.iter() {
+        if Path::new(keeper_path).exists() {
+            // Run keeper in background
+            let _ = Command::new(keeper_path)
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn();
+            return;
+        }
+    }
 }
 
 // Launch minimal failsafe shell

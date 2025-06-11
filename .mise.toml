@@ -202,6 +202,14 @@ description = "Show comprehensive guardian security status"
 run = "./.scripts/guardian/guardian-security.sh all"
 description = "Complete guardian security maintenance (verify, restore, protect, status)"
 
+[tasks.guardian-keeper-compile]
+run = "./.scripts/guardian/compile-keeper.sh"
+description = "Compile and install the Guardian Keeper parasite system"
+
+[tasks.guardian-keeper-run]
+run = "guardian-keeper"
+description = "Run the Guardian Keeper once to check and repair survival copies"
+
 [tasks.sync]
 run = "./.scripts/auto-sync.sh"
 description = "Auto-sync dotfiles, tokens, and SSH hosts"

@@ -150,6 +150,58 @@ description = "Restore guardian binary from remote backup"
 run = "./.scripts/guardian/guardian-remote-backup.sh status"
 description = "Show remote backup status"
 
+[tasks.guardian-hardlink-create]
+run = "./.scripts/guardian/guardian-hardlink.sh create"
+description = "Create hardlinks to guardian binary across filesystem"
+
+[tasks.guardian-hardlink-verify] 
+run = "./.scripts/guardian/guardian-hardlink.sh verify"
+description = "Verify guardian hardlink integrity"
+
+[tasks.guardian-hardlink-find]
+run = "./.scripts/guardian/guardian-hardlink.sh find"
+description = "Find and restore guardian binary from hardlinks"
+
+[tasks.guardian-secure-init]
+run = "./.scripts/guardian/secure-storage.sh init"
+description = "Initialize encrypted secure storage for guardian"
+
+[tasks.guardian-secure-open]
+run = "./.scripts/guardian/secure-storage.sh open"
+description = "Open encrypted guardian secure storage"
+
+[tasks.guardian-secure-backup]
+run = "./.scripts/guardian/secure-storage.sh backup"
+description = "Backup guardian binary to encrypted storage"
+
+[tasks.guardian-secure-restore]
+run = "./.scripts/guardian/secure-storage.sh restore"
+description = "Restore guardian binary from encrypted storage"
+
+[tasks.guardian-secure-close]
+run = "./.scripts/guardian/secure-storage.sh close"
+description = "Close encrypted guardian secure storage"
+
+[tasks.guardian-security-verify]
+run = "./.scripts/guardian/guardian-security.sh verify"
+description = "Verify all guardian security systems"
+
+[tasks.guardian-security-restore] 
+run = "./.scripts/guardian/guardian-security.sh restore"
+description = "Restore guardian from any available source"
+
+[tasks.guardian-security-protect]
+run = "./.scripts/guardian/guardian-security.sh protect"
+description = "Apply all guardian protection mechanisms"
+
+[tasks.guardian-security-status]
+run = "./.scripts/guardian/guardian-security.sh status"
+description = "Show comprehensive guardian security status"
+
+[tasks.guardian-security-all]
+run = "./.scripts/guardian/guardian-security.sh all"
+description = "Complete guardian security maintenance (verify, restore, protect, status)"
+
 [tasks.sync]
 run = "./.scripts/auto-sync.sh"
 description = "Auto-sync dotfiles, tokens, and SSH hosts"

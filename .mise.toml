@@ -113,7 +113,7 @@ run = """
   echo ""
   echo "🚀 Installing missing rust tools..."
   # Install tools not available in mise
-  for tool in procs gping tealdeer broot xh jaq; do
+  for tool in procs gping tealdeer broot xh jaq nu; do
     if ! command -v $tool >/dev/null 2>&1; then
       echo "Installing $tool..."
       cargo install $tool

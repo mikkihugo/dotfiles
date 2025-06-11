@@ -12,6 +12,7 @@ setup_aichat_free_models() {
 # AIChat configuration - Free models only
 
 # Default to GitHub Models (free with GitHub token)
+# This gives you GPT-4o access without needing OpenAI API!
 model: github:gpt-4o
 
 # Model configurations
@@ -105,15 +106,20 @@ models:
     model: codellama:70b
     base_url: http://localhost:11434
 
-# RAG settings optimized for free tier
+# RAG settings optimized for CPU and free tier
 rag:
   enabled: true
-  # Use smaller embedding model for efficiency
-  embedding_model: BAAI/bge-small-en-v1.5
-  embedding_provider: local  # Uses sentence-transformers locally
-  chunk_size: 1500
-  chunk_overlap: 150
-  top_k: 5  # Fewer results to save tokens
+  # Use tiny embedding model for CPU efficiency
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  embedding_provider: local  # Uses sentence-transformers locally (CPU)
+  # Alternative even smaller model: sentence-transformers/all-MiniLM-L12-v2
+  chunk_size: 1000  # Smaller chunks for faster processing
+  chunk_overlap: 100
+  top_k: 3  # Fewer results for speed and token savings
+  
+  # Use small local model for RAG reranking (optional)
+  rerank_model: ms-marco-MiniLM-L-6-v2
+  rerank_enabled: false  # Disable if too slow on CPU
 
 # Clients settings
 clients:

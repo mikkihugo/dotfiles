@@ -257,5 +257,18 @@ chmod +x "${BIN_DIR}/verify-guardian"
 echo -e "${YELLOW}🔍 Verifying installation...${NC}"
 "${BIN_DIR}/verify-guardian"
 
+# Check if keeper should be compiled too
+echo -e "${YELLOW}🔄 Would you like to compile the Guardian Keeper too? (y/n)${NC}"
+read -r compile_keeper
+
+if [[ "$compile_keeper" =~ ^[Yy]$ ]]; then
+    # Compile keeper
+    if [ -f "${SCRIPT_DIR}/compile-keeper.sh" ]; then
+        "${SCRIPT_DIR}/compile-keeper.sh"
+    else
+        echo -e "${RED}❌ Keeper compilation script not found${NC}"
+    fi
+fi
+
 echo -e "${GREEN}✅ Guardian compiled and installed successfully${NC}"
 echo -e "${BLUE}💡 Verify integrity at any time with: verify-guardian${NC}"

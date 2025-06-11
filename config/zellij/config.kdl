@@ -268,7 +268,7 @@ load_plugins {
 //   - true
 //   - false (Default)
 // 
-// simplified_ui true
+simplified_ui true
  
 // Choose the theme that is specified in the themes section.
 // Default: default
@@ -454,3 +454,11 @@ show_startup_tips false
 // Default: true
 // 
 // show_release_notes false
+
+
+ui {
+    pane_frames {
+        rounded_corners false
+        hide_session_name true
+    }
+}

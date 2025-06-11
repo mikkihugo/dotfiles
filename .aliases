@@ -111,3 +111,20 @@ alias chgrp='chgrp --preserve-root'
 alias matrix='cmatrix -s'
 alias starwars='telnet towel.blinkenlights.nl'
 alias weather-full='curl -s "wttr.in/$(curl -s https://ipinfo.io/city)"'
+
+# Code navigation with frequency-based selection
+ca() {
+    local selected
+    # If zoxide is available, use it for frequency-sorted results
+    if command -v zoxide &> /dev/null && [ -d "$HOME/code" ]; then
+        # Query zoxide for directories under ~/code, sorted by frecency
+        selected=$(zoxide query -l | grep "^$HOME/code/" | sed "s|^$HOME/code/||" | fzf --reverse --height=40% --prompt="Select repo: ")
+    else
+        # Fallback to simple directory listing
+        selected=$(ls -1 "$HOME/code" 2>/dev/null | fzf --reverse --height=40% --prompt="Select repo: ")
+    fi
+    
+    if [ -n "$selected" ]; then
+        cd "$HOME/code/$selected" || return 1
+    fi
+}

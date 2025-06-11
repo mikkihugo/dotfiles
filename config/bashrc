@@ -312,14 +312,7 @@ _claude_completions() {
 
 complete -F _claude_completions claude
 
-# Auto-attach to zellij session on login (SSH only)
-if [ -n "$SSH_CONNECTION" ] && [ -z "$ZELLIJ" ] && command -v zellij &> /dev/null; then
-    # Only attach if not already in a zellij session
-    if ! zellij list-sessions 2>/dev/null | grep -q "claude-session"; then
-        echo "🚀 Starting zellij claude session..."
-        exec zellij --session claude-session
-    else
-        echo "📋 Attaching to existing zellij claude session..."
-        exec zellij attach claude-session
-    fi
+# SSH Login Zellij Session Manager
+if [ -n "$SSH_CONNECTION" ] && [ -f "$HOME/.dotfiles/.scripts/ssh_login_zellij.sh" ]; then
+    source "$HOME/.dotfiles/.scripts/ssh_login_zellij.sh"
 fi

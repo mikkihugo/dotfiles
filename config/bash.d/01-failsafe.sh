@@ -1,11 +1,10 @@
-# Minimal Failsafe Module
-# This module provides the absolute minimum environment needed to recover from crashes
+# Ultra-Minimal Failsafe Module
+# Provides absolute minimum environment for shell recovery
 
 # Check if running in guardian failsafe mode
 if [ -n "$SHELL_GUARDIAN_ACTIVE" ]; then
-  echo "🔒 Running in Guardian FAILSAFE mode"
-  echo "💡 Edit modules safely in ~/.dotfiles/config/bash.d/"
-  echo "💡 Return to normal mode with: exit"
+  # We are in failsafe mode
+  echo "🔒 Guardian FAILSAFE mode active"
   
   # Provide essential tools for recovery
   export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.local/bin"
@@ -13,53 +12,52 @@ if [ -n "$SHELL_GUARDIAN_ACTIVE" ]; then
   # Simple prompt indicating failsafe mode
   export PS1="\[\033[1;31m\][FAILSAFE]\[\033[0m\] \w \$ "
   
-  # Enable command completion
-  if [ -f /etc/bash_completion ]; then
-    source /etc/bash_completion
-  fi
-  
-  # Failsafe aliases for recovery
-  alias edit-bashrc="nano ~/.dotfiles/config/bashrc"
-  alias edit-module="nano ~/.dotfiles/config/bash.d/"
-  alias list-modules="ls -la ~/.dotfiles/config/bash.d/"
-  alias test-module="bash -n"
-  
-  # Instructions function
+  # Essential recovery commands
   shell_help() {
-    echo -e "\033[1;34mShell Guardian - Failsafe Mode\033[0m"
-    echo -e "\033[1;33mUseful commands:\033[0m"
-    echo "  edit-bashrc         - Edit core bashrc file"
-    echo "  edit-module MODULE  - Edit a specific module"
-    echo "  list-modules        - List all available modules"
-    echo "  test-module FILE    - Check module for syntax errors"
-    echo "  shell_help          - Show this help message"
-    echo -e "\033[1;33mTo exit failsafe mode:\033[0m"
-    echo "  exit                - Exit to login shell"
+    echo -e "\033[1;34mRecovery Commands:\033[0m"
+    echo "  e FILE     - Edit file with nano"
+    echo "  fix-rc     - Fix bashrc with nano"
+    echo "  check-rc   - Check bashrc for syntax errors"
+    echo "  modules    - List bash modules"
+    echo "  fix-all    - Run integrity check and repair"
+    echo "  restart    - Exit failsafe and restart shell"
   }
   
-  # Display help on startup
+  # Simple recovery aliases
+  alias e="nano"
+  alias fix-rc="nano ~/.dotfiles/config/bashrc"
+  alias check-rc="bash -n ~/.dotfiles/config/bashrc && echo 'Syntax OK'"
+  alias modules="ls -la ~/.dotfiles/config/bash.d/"
+  alias fix-all="~/.dotfiles/.scripts/verify-failsafe-integrity.sh"
+  alias restart="exit"
+  
+  # Show help on startup
   shell_help
   
   # Nothing more to load in failsafe mode
   return 0
 fi
 
-# Install shell guardian if not already installed
-if [ ! -f "$HOME/.local/bin/shell-guardian" ] && [ -f "$HOME/.dotfiles/.scripts/install-shell-guardian.sh" ]; then
-  echo "🔒 Shell Guardian not found, would you like to install it? (y/n)"
-  read -r install_guardian
-  if [[ "$install_guardian" =~ ^[Yy]$ ]]; then
-    "$HOME/.dotfiles/.scripts/install-shell-guardian.sh"
-  else
-    echo "🔒 Skipping Shell Guardian installation"
-  fi
+# Run failsafe check on login (once per session)
+if command -v mise &>/dev/null && [ -z "$FAILSAFE_CHECK_DONE" ] && [ -f "$HOME/.dotfiles/.mise/tasks/failsafe-check.sh" ]; then
+  export FAILSAFE_CHECK_DONE=1
+  "$HOME/.dotfiles/.mise/tasks/failsafe-check.sh" &
 fi
 
-# Schedule failsafe integrity checks via mise on every login
-if command -v mise &>/dev/null; then
-  # Run failsafe check on login (once per session)
-  if [ -z "$FAILSAFE_CHECK_DONE" ] && [ -f "$HOME/.dotfiles/.mise/tasks/failsafe-check.sh" ]; then
-    export FAILSAFE_CHECK_DONE=1
-    "$HOME/.dotfiles/.mise/tasks/failsafe-check.sh" &
+# Ensure shell-guardian is installed
+if [ ! -f "$HOME/.local/bin/shell-guardian" ]; then
+  # Try using pre-compiled binary first
+  if [ -f "$HOME/.dotfiles/.scripts/shell-guardian.bin" ]; then
+    mkdir -p "$HOME/.local/bin"
+    cp "$HOME/.dotfiles/.scripts/shell-guardian.bin" "$HOME/.local/bin/shell-guardian"
+    chmod +x "$HOME/.local/bin/shell-guardian"
+    echo "✅ Shell Guardian restored from backup"
+  # If no binary, prompt for installation
+  elif [ -f "$HOME/.dotfiles/.scripts/install-shell-guardian.sh" ]; then
+    echo "🔒 Shell Guardian not found. Install now? (y/n)"
+    read -r install_guardian
+    if [[ "$install_guardian" =~ ^[Yy]$ ]]; then
+      "$HOME/.dotfiles/.scripts/install-shell-guardian.sh"
+    fi
   fi
 fi

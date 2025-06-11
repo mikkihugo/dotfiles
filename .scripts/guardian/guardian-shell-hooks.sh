@@ -16,9 +16,9 @@ echo -e "${BLUE}🔄 Creating universal shell hooks for guardian...${NC}"
 # Check if shell-guardian exists and set up appropriate version
 mkdir -p "$HOME/.local/bin"
 
-# Get directory of this script
+# Get directory of this script and protected directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-GUARDIAN_DIR="${SCRIPT_DIR}"
+GUARDIAN_DIR="${HOME}/.dotfiles/.guardian-shell"
 
 if [ ! -f "$HOME/.local/bin/shell-guardian" ]; then
     # First try to use a pre-compiled binary

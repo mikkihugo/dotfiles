@@ -14,7 +14,8 @@ echo -e "${BLUE}📦 Installing Minimal Shell Guardian...${NC}"
 
 # Paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-GUARDIAN_RS="${SCRIPT_DIR}/shell-guardian.rs"
+GUARDIAN_DIR="${HOME}/.dotfiles/.guardian-shell"
+GUARDIAN_RS="${GUARDIAN_DIR}/shell-guardian.rs"
 GUARDIAN_BIN="${HOME}/.local/bin/shell-guardian"
 BIN_DIR="${HOME}/.local/bin"
 
@@ -42,10 +43,10 @@ echo -e "${YELLOW}🔧 Compiling Shell Guardian...${NC}"
 rustc -O "${GUARDIAN_RS}" -o "${GUARDIAN_BIN}"
 chmod +x "${GUARDIAN_BIN}"
 
-# Keep a backup copy in the dotfiles repo for preservation
-echo -e "${YELLOW}🔧 Saving compiled binary to dotfiles...${NC}"
-cp "${GUARDIAN_BIN}" "${SCRIPT_DIR}/shell-guardian.bin"
-chmod +x "${SCRIPT_DIR}/shell-guardian.bin"
+# Keep a backup copy in the protected directory for preservation
+echo -e "${YELLOW}🔧 Saving compiled binary to protected directory...${NC}"
+cp "${GUARDIAN_BIN}" "${GUARDIAN_DIR}/shell-guardian.bin"
+chmod +x "${GUARDIAN_DIR}/shell-guardian.bin"
 
 # Create shell hooks
 echo -e "${YELLOW}🔧 Setting up shell hooks...${NC}"

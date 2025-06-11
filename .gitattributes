@@ -1,0 +1,16 @@
+# Git attributes for dotfiles
+
+# Mark the guardian shell directory as read-only in git
+# This prevents accidental modifications to critical files
+.guardian-shell/* -diff
+.guardian-shell/* -merge
+.guardian-shell/* linguist-vendored
+
+# Ensure shell scripts have LF line endings
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+*.fish text eol=lf
+
+# Consider compiled binary files as binary
+*.bin binary

@@ -1,0 +1,131 @@
+FROM ubuntu:22.04
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Install base dependencies
+RUN apt-get update && apt-get install -y \
+    # Basic tools
+    curl wget git vim nano \
+    # Build tools
+    build-essential cmake \
+    # Python
+    python3 python3-pip python3-venv \
+    # Node.js
+    nodejs npm \
+    # Docker CLI
+    docker.io \
+    # Go (for some tools)
+    golang-go \
+    # SSH and Git
+    openssh-client \
+    # System tools
+    htop tmux screen \
+    # Terminal tools
+    zsh fish \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install AI development tools
+RUN pip3 install --no-cache-dir \
+    # Aider - AI pair programming
+    aider-chat \
+    # OpenAI & Anthropic
+    openai anthropic \
+    # LiteLLM - use any LLM API
+    litellm \
+    # Langchain
+    langchain langchain-community \
+    # Code analysis
+    tree-sitter \
+    # Jupyter for notebooks
+    jupyter notebook \
+    # Streamlit for quick UIs
+    streamlit
+
+# Install Node.js AI tools
+RUN npm install -g \
+    # AI commit messages
+    aicommits \
+    # Code generation
+    @builder.io/ai-shell \
+    # Continue.dev CLI
+    @continuedev/continue
+
+# Install Go-based tools
+RUN go install github.com/charmbracelet/mods@latest && \
+    go install github.com/jmorganca/ollama@latest
+
+# Install GitHub CLI with Copilot
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /usr/share/keyrings/githubcli-archive-keyring.gpg > /dev/null && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y gh && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install code-server (VS Code in browser)
+RUN curl -fsSL https://code-server.dev/install.sh | sh
+
+# Create directories
+RUN mkdir -p /workspace /root/.config /root/.cache
+
+# Setup shell
+RUN chsh -s /bin/zsh && \
+    sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+
+# Add convenience script
+COPY <<'EOF' /usr/local/bin/ai
+#!/bin/bash
+# AI Development Assistant Launcher
+
+case "${1:-help}" in
+    aider)
+        shift
+        aider --architect "$@"
+        ;;
+    chat)
+        shift
+        litellm "$@"
+        ;;
+    commit)
+        aicommits
+        ;;
+    code)
+        code-server --bind-addr 0.0.0.0:8080 --auth none /workspace
+        ;;
+    jupyter)
+        jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+        ;;
+    shell)
+        bash
+        ;;
+    *)
+        echo "AI Development Environment"
+        echo ""
+        echo "Usage: ai {command}"
+        echo ""
+        echo "Commands:"
+        echo "  aider   - Start Aider AI pair programmer"
+        echo "  chat    - Start AI chat interface"
+        echo "  commit  - Generate AI commit message"
+        echo "  code    - Start VS Code server"
+        echo "  jupyter - Start Jupyter notebook"
+        echo "  shell   - Start interactive shell"
+        echo ""
+        echo "Environment variables:"
+        echo "  OPENAI_API_KEY     - OpenAI API key"
+        echo "  ANTHROPIC_API_KEY  - Anthropic Claude API key"
+        echo "  GITHUB_TOKEN       - GitHub token"
+        ;;
+esac
+EOF
+RUN chmod +x /usr/local/bin/ai
+
+# Default working directory
+WORKDIR /workspace
+
+# Expose common ports
+EXPOSE 8080 8888 3000
+
+# Start with menu
+CMD ["/usr/local/bin/ai"]

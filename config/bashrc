@@ -1,52 +1,28 @@
 # Cleaned and optimized .bashrc
 
-# Failsafe mechanism - if called with FAILSAFE=1, load minimal config
-if [ "$FAILSAFE" = "1" ]; then
-  echo "⚠️ Running in FAILSAFE mode - minimal configuration loaded"
-  PS1="\[\033[01;31m\][FAILSAFE]\[\033[00m\] \w \$ "
-  PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.local/bin"
-  return
-fi
-
-# Create a wrapper script to automatically detect and recover from errors
-if [ ! -f "$HOME/.bashrc_failsafe" ]; then
-  cat > "$HOME/.bashrc_failsafe" << 'EOF'
-#!/bin/bash
-
-# Test if .bashrc has syntax errors
-bash -n "$HOME/.bashrc" >/dev/null 2>&1
-
-if [ $? -ne 0 ]; then
-  echo "⚠️ Error detected in .bashrc - starting in FAILSAFE mode"
-  FAILSAFE=1 bash
-  exit
-fi
-
-# Check if last login crashed (creates a canary file and removes it on clean exit)
-if [ -f "$HOME/.bashrc_crash" ]; then
-  echo "⚠️ Previous session crashed - starting in FAILSAFE mode"
-  rm -f "$HOME/.bashrc_crash"
-  FAILSAFE=1 bash
-  exit
-fi
-
-# Create canary file - will be removed on clean exit
-touch "$HOME/.bashrc_crash"
-
-# Start normal bash (which will source .bashrc)
-bash "$@"
-status=$?
-
-# Remove canary file on clean exit
-rm -f "$HOME/.bashrc_crash"
-exit $status
-EOF
-
-  chmod +x "$HOME/.bashrc_failsafe"
-fi
-
 # Exit early if not running interactively
 [[ $- != *i* ]] && return
+
+# FAILSAFE CONFIGURATION
+# This minimal configuration will always run, even if the rest of .bashrc fails
+
+# Essential environment variables
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.local/bin:$PATH"
+export TERM=xterm-256color
+export LANG=en_US.UTF-8
+
+# Basic prompt with error status
+PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+# Basic history settings
+HISTSIZE=1000
+HISTFILESIZE=2000
+HISTCONTROL=ignoreboth
+shopt -s histappend
+
+# Try to run the extended configuration in a subshell
+# Any errors won't crash the main shell
+if ( source <(cat << 'EXTENDED_CONFIG'
 
 # mise activation
 if [ -f "$HOME/.local/bin/mise" ]; then
@@ -390,3 +366,12 @@ alias claude-yolo="~/.dotfiles/.scripts/claude-yolo-cached"
 
 # Fix Node.js MaxListenersExceededWarning
 export NODE_OPTIONS="--max-old-space-size=4096 --max-listeners=20"
+EXTENDED_CONFIG
+) 2>/dev/null; then
+  # Extended config loaded successfully
+  true
+else
+  # Extended config failed to load
+  echo "⚠️ Error in extended configuration - running in FAILSAFE mode"
+  echo "💡 Check your bashrc for syntax errors"
+fi

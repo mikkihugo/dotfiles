@@ -26,6 +26,7 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
 alias ~='cd ~'
+alias r='cd ~/r'
 # Previous directory navigation (removed problematic alias)
 
 # System info

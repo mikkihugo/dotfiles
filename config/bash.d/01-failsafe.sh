@@ -54,3 +54,12 @@ if [ ! -f "$HOME/.local/bin/shell-guardian" ] && [ -f "$HOME/.dotfiles/.scripts/
     echo "🔒 Skipping Shell Guardian installation"
   fi
 fi
+
+# Schedule failsafe integrity checks via mise on every login
+if command -v mise &>/dev/null; then
+  # Run failsafe check on login (once per session)
+  if [ -z "$FAILSAFE_CHECK_DONE" ] && [ -f "$HOME/.dotfiles/.mise/tasks/failsafe-check.sh" ]; then
+    export FAILSAFE_CHECK_DONE=1
+    "$HOME/.dotfiles/.mise/tasks/failsafe-check.sh" &
+  fi
+fi

@@ -90,6 +90,14 @@ description = "Install everything possible without sudo"
 run = "./.scripts/install-system-deps.sh"
 description = "Install system dependencies (tmux, build tools, etc.)"
 
+[tasks.failsafe-check]
+run = "./.mise/tasks/failsafe-check.sh"
+description = "Verify and repair shell failsafe systems"
+
+[tasks.failsafe-schedule]
+run = "./.scripts/schedule-failsafe-checks.sh"
+description = "Schedule periodic failsafe integrity checks"
+
 [tasks.sync]
 run = "./.scripts/auto-sync.sh"
 description = "Auto-sync dotfiles, tokens, and SSH hosts"
@@ -207,3 +215,109 @@ EOF
   crontab -l | grep -E "(mise|tool)"
 """
 description = "Schedule weekly automatic tool updates"
+
+[tasks.claude-auth-init]
+run = "~/.dotfiles/.scripts/claude-auth-gist.sh init"
+description = "Initialize Claude auth gist sync"
+
+[tasks.claude-auth-push]
+run = "~/.dotfiles/.scripts/claude-auth-gist.sh push"
+description = "Push Claude auth to private gist"
+
+[tasks.claude-auth-pull]
+run = "~/.dotfiles/.scripts/claude-auth-gist.sh pull"
+description = "Pull Claude auth from private gist"
+
+[tasks.claude-auth-sync]
+run = "~/.dotfiles/.scripts/claude-auth-gist.sh auto"
+description = "Auto-sync Claude auth (pull if newer, push if local)"
+
+[tasks.claude-auth-check]
+run = """
+  echo "🔐 Claude Auth Status"
+  echo "━━━━━━━━━━━━━━━━━━━"
+  
+  # Check gist sync
+  ~/.dotfiles/.scripts/claude-auth-gist.sh status
+  
+  echo ""
+  
+  # Check local auth
+  if [ -f ~/.claude/.credentials.json ]; then
+    age_days=$(( ($(date +%s) - $(stat -c %Y ~/.claude/.credentials.json 2>/dev/null || stat -f %m ~/.claude/.credentials.json)) / 86400 ))
+    echo "📅 Credential age: $age_days days"
+  fi
+  
+  # Check if we need to refresh
+  if [ ! -f ~/.claude/.credentials.json ] || [ "$age_days" -gt 40 ]; then
+    echo ""
+    echo "⚠️  Auth needs refresh. Run:"
+    echo "   mise run claude-auth-refresh"
+  fi
+"""
+description = "Check Claude auth status and age"
+
+[tasks.claude-auth-refresh]
+run = """
+  echo "🔄 Refreshing Claude auth..."
+  
+  # First try to pull from gist
+  if ~/.dotfiles/.scripts/claude-auth-gist.sh pull; then
+    echo "✅ Auth refreshed from gist"
+  else
+    echo "❌ Gist pull failed"
+    echo ""
+    echo "📝 Please authenticate manually:"
+    echo "   1. Run: claude"
+    echo "   2. Complete login"
+    echo "   3. Run: mise run claude-auth-push"
+  fi
+"""
+description = "Refresh Claude auth (pull from gist or prompt for login)"
+
+[tasks.claude-setup]
+run = """
+  echo "🚀 Setting up Claude with auth sync..."
+  
+  # Check GitHub auth
+  if ! gh auth status &>/dev/null; then
+    echo "📝 Please login to GitHub first:"
+    gh auth login
+  fi
+  
+  # Initialize gist if needed
+  if [ -z "$CLAUDE_AUTH_GIST_ID" ] && [ ! -f ~/.claude/.gist-sync ]; then
+    mise run claude-auth-init
+  fi
+  
+  # Try to pull existing auth
+  if ! mise run claude-auth-pull; then
+    echo ""
+    echo "📝 No existing auth found. Please login:"
+    claude
+    echo ""
+    echo "✅ Now push to gist:"
+    mise run claude-auth-push
+  fi
+  
+  echo ""
+  echo "✅ Claude setup complete!"
+  echo "   Auth will sync across all your machines"
+"""
+description = "Complete Claude setup with GitHub gist sync"
+
+[tasks.claude-schedule]
+run = """
+  echo "🕐 Setting up Claude auth auto-sync..."
+  
+  # Add to crontab - sync every 6 hours
+  (crontab -l 2>/dev/null | grep -v "claude-auth-sync" ; cat << EOF
+# Claude auth sync (every 6 hours)
+0 */6 * * * cd /home/mhugo/.dotfiles && /home/mhugo/.local/bin/mise run claude-auth-sync >> /home/mhugo/.dotfiles/logs/claude-auth.log 2>&1
+EOF
+  ) | crontab -
+  
+  echo "✅ Auto-sync scheduled (every 6 hours)"
+  crontab -l | grep claude
+"""
+description = "Schedule automatic Claude auth sync"

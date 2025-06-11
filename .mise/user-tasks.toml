@@ -1,0 +1,26 @@
+# User Development Tasks
+# Only tasks you actively use for development work
+
+[tasks.test]
+run = "echo 'Running tests...'"
+description = "Run project tests"
+
+[tasks.lint]
+run = "./.mise/tasks/lint-all.sh"
+description = "Run all linters and code quality checks"
+
+[tasks.dev]
+run = "echo 'Starting development environment...'"
+description = "Start development environment"
+
+[tasks.build]
+run = "echo 'Building project...'"
+description = "Build project artifacts"
+
+[tasks.format]
+run = "echo 'Formatting code...'"
+description = "Format all code files"
+
+[tasks.clean]
+run = "echo 'Cleaning build artifacts...'"
+description = "Clean build artifacts and caches"

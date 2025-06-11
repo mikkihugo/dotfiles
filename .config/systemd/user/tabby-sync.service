@@ -1,0 +1,13 @@
+[Unit]
+Description=Tabby Configuration Sync
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/bash -c '/home/mhugo/.dotfiles/.system/scripts/ops-host-manager.sh status | grep -q "SHOULD run"'
+ExecStart=/home/mhugo/.dotfiles/.system/auto/tabby-sync.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

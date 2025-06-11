@@ -1,0 +1,49 @@
+name: Auto Build Admin Stack
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/tabby-admin/**'
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday 2am
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        
+      - name: Build images
+        run: |
+          cd docker/tabby-admin
+          docker-compose build
+          
+      - name: Build Tabby clients
+        run: |
+          cd docker/tabby-admin
+          docker-compose --profile build run tabby-builder
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: tabby-clients
+          path: docker/tabby-admin/builds/*
+          
+      - name: Deploy to server
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.SSH_KEY }}" > /tmp/ssh_key
+          chmod 600 /tmp/ssh_key
+          
+          ssh -i /tmp/ssh_key -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+            cd ~/.dotfiles
+            git pull
+            cd docker/tabby-admin
+            docker-compose pull
+            docker-compose up -d
+          EOF

@@ -20,10 +20,12 @@ temperature: 0.7
 # RAG settings
 rag:
   enabled: true
-  embedding_model: text-embedding-3-small
-  chunk_size: 2000
-  chunk_overlap: 200
-  top_k: 10
+  # MiniLM-L6 is only 22MB and very fast on CPU
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  embedding_provider: local
+  chunk_size: 1000
+  chunk_overlap: 100
+  top_k: 5
   
   # Vector store
   vector_store:

@@ -130,6 +130,26 @@ description = "Enter emergency recovery mode"
 run = "./.scripts/guardian/setup-guardian-service.sh"
 description = "Setup systemd service for regular integrity verification"
 
+[tasks.guardian-prompt]
+run = "source ./.scripts/guardian/guardian-status.sh prompt"
+description = "Add guardian status indicator to prompt"
+
+[tasks.guardian-backup-init]
+run = "./.scripts/guardian/guardian-remote-backup.sh init"
+description = "Initialize remote backup of guardian binary"
+
+[tasks.guardian-backup-update]
+run = "./.scripts/guardian/guardian-remote-backup.sh update"
+description = "Update remote backup of guardian binary"
+
+[tasks.guardian-backup-restore]
+run = "./.scripts/guardian/guardian-remote-backup.sh restore"
+description = "Restore guardian binary from remote backup"
+
+[tasks.guardian-backup-status]
+run = "./.scripts/guardian/guardian-remote-backup.sh status"
+description = "Show remote backup status"
+
 [tasks.sync]
 run = "./.scripts/auto-sync.sh"
 description = "Auto-sync dotfiles, tokens, and SSH hosts"

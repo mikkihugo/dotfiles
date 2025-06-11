@@ -19,9 +19,14 @@ const RECOVERY_SHELL: &str = "bash";  // Default recovery shell
 const FALLBACK_DIR: &str = "/tmp"; // Fallback if HOME not found
 
 // Self-verification checksum
-// This is a checksum of the compiled binary, updated during build
-// If the binary is corrupted or tampered with, this will not match
-const BINARY_CHECKSUM: &str = "CHECKSUM_PLACEHOLDER";
+// This is a checksum of the source code, updated during build
+// If the binary is corrupted or tampered with, this won't be used directly,
+// but serves as a build-time validation mechanism
+const SOURCE_CHECKSUM: &str = "CHECKSUM_PLACEHOLDER";
+
+// Binary build timestamp, updated during compilation
+// Used to detect if binary was modified after compilation
+const BUILD_TIMESTAMP: &str = "TIMESTAMP_PLACEHOLDER";
 
 // Recover from any panic with a failsafe shell
 fn main() {

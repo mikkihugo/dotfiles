@@ -1,0 +1,95 @@
+# System/Backend Tasks - Hidden from daily development workflow
+# Use: mise -f .system/mise/system-tasks.toml run <task>
+
+[tasks.setup]
+run = ["./.scripts/auto-install.sh", "./.scripts/install-system-deps.sh"]
+description = "Complete setup - auto-install everything possible"
+
+[tasks.auto-install]
+run = "./.scripts/auto-install.sh"
+description = "Auto-install all development tools and dependencies"
+
+[tasks.system-deps]
+run = "./.scripts/install-system-deps.sh"
+description = "Install system dependencies and packages"
+
+[tasks.failsafe-check]
+run = "./.mise/tasks/failsafe-check.sh"
+description = "Verify and repair shell failsafe systems"
+
+[tasks.failsafe-schedule]
+run = "./.scripts/schedule-failsafe-checks.sh"
+description = "Schedule regular failsafe checks via cron"
+
+# Guardian tasks (protection system)
+[tasks.guardian-protect]
+run = "./.scripts/guardian/guardian-protect.sh protect"
+description = "Apply filesystem-level protection to guardian files"
+
+[tasks.guardian-unprotect]
+run = "./.scripts/guardian/guardian-protect.sh unprotect"
+description = "Remove filesystem-level protection (for updates)"
+
+[tasks.guardian-status]
+run = "./.scripts/guardian/guardian-protect.sh status"
+description = "Check current protection status of guardian files"
+
+[tasks.guardian-compile]
+run = "./.scripts/guardian/compile-guardian.sh"
+description = "Compile hardened shell guardian with integrity verification"
+
+[tasks.guardian-verify]
+run = "verify-guardian"
+description = "Verify shell guardian binary integrity"
+
+# Backup and sync tasks
+[tasks.backup-init]
+run = "./.scripts/backup-init.sh"
+description = "Initialize backup systems and remote storage"
+
+[tasks.backup-create]
+run = "./.scripts/backup-create.sh"
+description = "Create incremental backup of dotfiles and configs"
+
+[tasks.sync]
+run = "./.scripts/auto-sync.sh"
+description = "Sync dotfiles with remote repositories"
+
+[tasks.sync-force]
+run = "./.scripts/auto-sync.sh --force"
+description = "Force sync ignoring conflicts"
+
+# Auth and token management
+[tasks.auth-init]
+run = "./.scripts/auth-init.sh"
+description = "Initialize authentication systems and token storage"
+
+[tasks.auth-refresh]
+run = "./.scripts/auth-refresh.sh"
+description = "Refresh authentication tokens and credentials"
+
+[tasks.tokens-sync]
+run = "./.scripts/tokens-sync.sh"
+description = "Sync API tokens between systems via secure gists"
+
+# Service management
+[tasks.services-status]
+run = "systemctl --user status"
+description = "Check status of all user services"
+
+[tasks.services-restart]
+run = "./.scripts/restart-user-services.sh"
+description = "Restart all user services safely"
+
+# Update tasks
+[tasks.update-all]
+run = ["./.scripts/update-system.sh", "./.scripts/update-tools.sh"]
+description = "Update system packages and development tools"
+
+[tasks.update-mise]
+run = "mise self-update && mise upgrade"
+description = "Update mise and all managed tools"
+
+[tasks.schedule-updates]
+run = "./.scripts/schedule-updates.sh"
+description = "Schedule automatic updates via cron"

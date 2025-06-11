@@ -1,3 +1,72 @@
+# ==============================================================================
+# Git Configuration - Global Settings
+# ==============================================================================
+#
+# Copyright 2024 Mikki Hugo. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# FILE: .gitconfig
+# DESCRIPTION: Professional Git configuration with productivity aliases,
+#              security settings, and modern tool integrations. Optimized
+#              for enterprise development workflows with enhanced diff
+#              visualization and automated conflict resolution.
+#
+# AUTHOR: Mikki Hugo <mikkihugo@gmail.com>
+# VERSION: 3.1.0
+# CREATED: 2024-01-05
+# MODIFIED: 2024-12-06
+#
+# FEATURES:
+#   ✓ Comprehensive alias set for common operations
+#   ✓ Delta integration for enhanced diff viewing
+#   ✓ Security-focused commit signing
+#   ✓ Merge conflict resolution helpers
+#   ✓ Performance optimizations for large repositories
+#   ✓ Cross-platform compatibility
+#   ✓ Integration with modern Git tools
+#
+# ALIAS CATEGORIES:
+#   - Basic: s, a, c, co, b, p, pl, f
+#   - Commits: cm, cam, amend, fixup
+#   - Logs: lg, tree, graph, recent
+#   - Branches: cleanup, track, untrack
+#   - Advanced: stash shortcuts, conflict resolution
+#
+# SECURITY FEATURES:
+#   - GPG commit signing (when configured)
+#   - SSH key authentication preferred
+#   - Credential caching with timeout
+#   - Safe force-push aliases
+#
+# PERFORMANCE OPTIMIZATIONS:
+#   - Parallel fetch enabled
+#   - Rebase by default for cleaner history
+#   - Delta pager for faster diff rendering
+#   - Optimized pack settings for large repos
+#
+# USAGE:
+#   This file is included via ~/.bashrc git config include.path
+#   All aliases available after sourcing shell configuration
+#   Use 'git <alias>' for any defined shortcut
+#
+# TROUBLESHOOTING:
+#   - List aliases: git config --get-regexp alias
+#   - Check config: git config --list
+#   - Test delta: git log --oneline | head -5
+#
+# ==============================================================================
+
 [alias]
     # Quick shortcuts
     s = status

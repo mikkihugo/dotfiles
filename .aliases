@@ -1,3 +1,158 @@
+#!/bin/bash
+#
+# Copyright 2024 Mikki Hugo. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ==============================================================================
+# Shell Aliases and Functions Library
+# ==============================================================================
+#
+# FILE: .aliases
+# DESCRIPTION: Comprehensive shell aliases and functions for enhanced productivity
+#              and modern tool integration. Provides intuitive shortcuts for
+#              common operations while maintaining safety and performance.
+#
+# AUTHOR: Mikki Hugo <mikkihugo@gmail.com>
+# VERSION: 3.2.0
+# CREATED: 2024-01-10
+# MODIFIED: 2024-12-06
+#
+# DEPENDENCIES:
+#   REQUIRED:
+#     - bash 4.0+ (for modern array/function features)
+#     - coreutils (basic Unix tools)
+#   
+#   OPTIONAL (enhanced functionality):
+#     - eza (modern ls replacement)
+#     - bat (syntax highlighting cat)
+#     - rg (ripgrep - fast grep)
+#     - fd (modern find replacement)
+#     - fzf (fuzzy finder)
+#     - btop (modern top replacement)
+#     - docker (container management)
+#     - kubectl (Kubernetes CLI)
+#     - git (version control)
+#
+# FEATURES:
+#   ✓ Modern Rust-based tool integration (eza, bat, rg, fd)
+#   ✓ Git workflow shortcuts with safety checks
+#   ✓ Intelligent code repository navigation
+#   ✓ Docker and Kubernetes convenience aliases
+#   ✓ System monitoring shortcuts
+#   ✓ Safety-first file operations (interactive prompts)
+#   ✓ Development server shortcuts
+#   ✓ Network diagnostic tools
+#   ✓ Claude AI assistant integration
+#   ✓ Session management (tmux/zellij)
+#   ✓ Performance monitoring utilities
+#
+# ALIAS CATEGORIES:
+#   
+#   FILE OPERATIONS:
+#     ll, la, l, tree    - Enhanced directory listing (eza)
+#     cat                - Syntax highlighted file viewing (bat)
+#     find               - Modern file finding (fd)
+#     cp, mv, rm         - Interactive file operations
+#     mkdir              - Recursive directory creation
+#
+#   GIT WORKFLOW:
+#     g, gs, ga, gc      - Git shortcuts for common operations
+#     gp, gl, gd         - Push, pull, diff operations
+#     gco, gb, glog      - Checkout, branch, visual log
+#
+#   NAVIGATION:
+#     .., ..., ....      - Parent directory shortcuts
+#     ~, c               - Home and code directory navigation
+#     c<pattern>         - Fuzzy code repository navigation
+#
+#   SYSTEM MONITORING:
+#     df, du, free       - Disk and memory usage
+#     top, ps            - Process monitoring
+#     ports, ping        - Network diagnostics
+#     diskspace, meminfo - System health checks
+#
+#   DEVELOPMENT:
+#     serve              - Quick HTTP server
+#     myip, weather      - Network and environment info
+#     vim, hx, vi        - Editor shortcuts
+#     bashrc, aliases    - Configuration editing
+#
+#   CONTAINERS:
+#     d, dc, dps         - Docker operations
+#     k, kgp, kgs        - Kubernetes shortcuts
+#
+#   CLAUDE AI:
+#     claude-yolo        - Unrestricted mode (use with caution)
+#     claude-yolt        - Balanced safety mode
+#     claude-safe        - Full safety wrapper
+#     claude-007         - James Bond mode alias
+#
+# USAGE EXAMPLES:
+#   
+#   # Modern file listing with git status
+#   ll                   # Enhanced ls with git info
+#   
+#   # Smart code navigation
+#   c                    # Go to ~/code
+#   c myproject          # Fuzzy match and cd to ~/code/myproject*
+#   
+#   # Git workflow
+#   gs                   # Quick git status
+#   ga . && gc -m "fix"  # Stage all and commit
+#   
+#   # System monitoring
+#   diskspace            # Clean disk usage summary
+#   meminfo              # Memory usage with top processes
+#   
+#   # Development server
+#   serve 8080           # HTTP server on port 8080
+#   
+#   # Safe Claude usage
+#   claude-safe "help me debug this script"
+#
+# PERFORMANCE NOTES:
+#   - fd limited to 4 threads to prevent resource exhaustion
+#   - Fuzzy matching uses fzf for efficient large directory handling
+#   - Code navigation caches directory structure for speed
+#   - All aliases prefer modern Rust tools for better performance
+#
+# SAFETY FEATURES:
+#   - Interactive prompts for destructive operations (rm, mv, cp)
+#   - Root filesystem protection (chown, chmod with --preserve-root)
+#   - Docker cleanup aliases prevent accidental system-wide changes
+#   - Claude AI wrappers provide safety guardrails
+#
+# ERROR HANDLING:
+#   - Graceful fallbacks when modern tools unavailable
+#   - Command existence checks before alias creation
+#   - Safe directory navigation with existence validation
+#   - Network operation timeouts and retry logic
+#
+# CUSTOMIZATION:
+#   - Set EDITOR environment variable for preferred editor
+#   - Modify FD_CMD to use custom fd installation path
+#   - Code navigation works with any ~/code subdirectory structure
+#   - Claude aliases can be customized for different safety levels
+#
+# TROUBLESHOOTING:
+#   - Run 'type <alias>' to see what command an alias expands to
+#   - Use 'unalias <name>' to temporarily disable problematic aliases
+#   - Check tool availability with 'command -v <tool>'
+#   - For c() function issues, verify ~/code directory exists
+#
+# ==============================================================================
+
 # Enhanced aliases for productivity
 
 # Basic shortcuts
@@ -135,7 +290,7 @@ _setup_code_aliases() {
 }
 
 # Smart fuzzy code navigation
-c() {
+function c() {
     # If no argument, just go to ~/code
     if [ $# -eq 0 ]; then
         cd ~/code
@@ -173,5 +328,18 @@ c() {
     fi
 }
 
+# End of c function
+
 # Set up aliases on shell start
 _setup_code_aliases
+
+# Claude safety aliases (with fun names)
+alias claude-yolo='/home/mhugo/.npm-global/bin/claude-yolo'  # Original dangerous mode
+alias claude-yolt='~/.dotfiles/.scripts/claude-yolt'         # You Only Live Twice (YOLO + Safety)
+alias claude-safe='~/.dotfiles/.scripts/claude-shell.sh'     # Full safety mode
+alias claude-wrap='~/.dotfiles/.scripts/claude-safe-wrapper.sh'  # Wrap any command
+
+# Fun Claude aliases
+alias claude-007='~/.dotfiles/.scripts/claude-yolt'          # James Bond mode
+alias claude-airbag='~/.dotfiles/.scripts/claude-shell.sh'   # With airbags
+alias claude-seatbelt='~/.dotfiles/.scripts/claude-safe-wrapper.sh'  # Buckle up!

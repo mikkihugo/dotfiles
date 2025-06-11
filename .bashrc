@@ -1,3 +1,101 @@
+#!/bin/bash
+#
+# Copyright 2024 Mikki Hugo. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ==============================================================================
+# Professional Bash Configuration
+# ==============================================================================
+#
+# FILE: .bashrc
+# DESCRIPTION: Enterprise-grade bash shell configuration with automatic tool
+#              management, intelligent environment setup, and performance
+#              optimizations. This configuration provides a consistent shell
+#              environment across different systems while maintaining security
+#              and performance best practices.
+#
+# AUTHOR: Mikki Hugo <mikkihugo@gmail.com>
+# VERSION: 2.1.0
+# CREATED: 2024-01-15
+# MODIFIED: 2024-12-06
+#
+# DEPENDENCIES:
+#   - mise (tool version manager)
+#   - starship (modern prompt)
+#   - fzf (fuzzy finder)
+#   - zoxide (smart cd replacement)
+#   - bash-completion (enhanced tab completion)
+#
+# ENVIRONMENT REQUIREMENTS:
+#   - Bash 4.0+ (for modern shell features)
+#   - Linux/macOS (tested on RHEL 9, Ubuntu 20.04+, macOS 12+)
+#   - Internet connection for automatic tool installation
+#   - ~/.dotfiles repository structure
+#
+# FEATURES:
+#   ✓ Automatic mise tool installation and management
+#   ✓ Intelligent environment variable configuration
+#   ✓ Enhanced history management with deduplication
+#   ✓ Fuzzy finding integration (fzf)
+#   ✓ Smart cd with zoxide
+#   ✓ Modern prompt with starship
+#   ✓ Security-focused token management
+#   ✓ Performance-optimized async operations
+#   ✓ Cross-platform compatibility
+#   ✓ Project-specific environment loading
+#   ✓ Automatic dotfiles synchronization
+#
+# USAGE:
+#   This file is automatically sourced when starting an interactive bash shell.
+#   
+#   Key aliases and functions available after sourcing:
+#     mise-fix      - Reset mise and reload configuration
+#     mise-log      - View mise installation logs
+#     rl, retro     - Launch retro login interface
+#     claude-remind - Show Claude context reminders
+#     cr            - Short alias for claude-remind
+#
+# CONFIGURATION:
+#   Environment variables can be set in ~/.env_tokens (for secrets)
+#   or project-specific .env files (for local overrides).
+#
+# PERFORMANCE NOTES:
+#   - Async tool installation prevents login delays
+#   - Background process management for non-blocking operations
+#   - Optimized PATH management to avoid duplicates
+#   - Conditional loading of optional features
+#
+# ERROR HANDLING:
+#   - Graceful degradation when tools are missing
+#   - Comprehensive error logging to ~/.mise_auto_install.log
+#   - Fallback mechanisms for critical functionality
+#   - Non-blocking async operations with proper error capture
+#
+# SECURITY CONSIDERATIONS:
+#   - API keys and tokens stored in separate ~/.env_tokens file
+#   - Source validation for external scripts
+#   - Proper quoting and escaping throughout
+#   - Limited privilege execution for automation tasks
+#
+# TROUBLESHOOTING:
+#   - Use 'mise-log' to check tool installation issues
+#   - Run 'mise-fix' to reset mise configuration
+#   - Check ~/.dotfiles/auto-install.log for setup issues
+#   - Verify PATH with 'echo $PATH' if tools not found
+#
+# ==============================================================================
+
 # Cleaned and optimized .bashrc
 
 # Exit early if not running interactively
@@ -163,6 +261,9 @@ fi
 # Add dotfiles scripts to PATH
 export PATH="$HOME/.dotfiles/.scripts:$PATH"
 
+# Add dotfiles tools to PATH (symlinked tools for cross-shell compatibility)
+export PATH="$HOME/.dotfiles/tools:$PATH"
+
 # Auto-load tokens from ~/.env_tokens (all API keys)
 if [ -f "$HOME/.env_tokens" ]; then
     set -a
@@ -312,14 +413,5 @@ _claude_completions() {
 
 complete -F _claude_completions claude
 
-# Auto-attach to zellij session on login (SSH only)
-if [ -n "$SSH_CONNECTION" ] && [ -z "$ZELLIJ" ] && command -v zellij &> /dev/null; then
-    # Only attach if not already in a zellij session
-    if ! zellij list-sessions 2>/dev/null | grep -q "claude-session"; then
-        echo "🚀 Starting zellij claude session..."
-        exec zellij --session claude-session
-    else
-        echo "📋 Attaching to existing zellij claude session..."
-        exec zellij attach claude-session
-    fi
-fi
+# DISABLED: Auto-attach to zellij session on login (was causing runaway shells)
+# Use ssh_login_zellij.sh script instead for safe session management

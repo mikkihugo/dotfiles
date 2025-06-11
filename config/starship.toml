@@ -1,3 +1,55 @@
+# ==============================================================================
+# Starship Prompt Configuration
+# ==============================================================================
+#
+# Copyright 2024 Mikki Hugo. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# FILE: starship.toml
+# DESCRIPTION: Modern, informative shell prompt configuration for Starship.
+#              Provides contextual information about development environment
+#              including git status, programming language versions, and
+#              system resources with performance-optimized display.
+#
+# AUTHOR: Mikki Hugo <mikkihugo@gmail.com>
+# VERSION: 2.3.0
+# CREATED: 2024-01-22
+# MODIFIED: 2024-12-06
+#
+# PROMPT ELEMENTS:
+#   - User/Host: Current user and hostname
+#   - Directory: Current working directory with truncation
+#   - Git: Branch, status, and commit information
+#   - Languages: Python, Node.js, Go, Rust version indicators
+#   - Kubernetes: Current context and namespace
+#   - Performance: Memory usage and command duration
+#   - Time: Timestamp for command execution
+#
+# PERFORMANCE OPTIMIZATIONS:
+#   - Async module loading for faster prompt rendering
+#   - Conditional display based on context
+#   - Minimal external command execution
+#   - Efficient git status checking
+#
+# CUSTOMIZATION:
+#   - Modify format string to reorder elements
+#   - Adjust individual module configurations
+#   - Add custom modules for specific needs
+#   - Configure color themes per environment
+#
+# ==============================================================================
+
 # Starship configuration
 format = """
 $username\

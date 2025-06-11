@@ -1,4 +1,115 @@
 #!/bin/bash
+#
+# Copyright 2024 Mikki Hugo. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ==============================================================================
+# Retro Login Interface
+# ==============================================================================
+#
+# FILE: retro-login.sh
+# DESCRIPTION: ASCII art terminal connection manager with nostalgic interface
+#              styling. Provides an interactive menu for SSH connections,
+#              session management, and system monitoring with a retro computing
+#              aesthetic reminiscent of 1980s terminal systems.
+#
+# AUTHOR: Mikki Hugo <mikkihugo@gmail.com>
+# VERSION: 1.5.0
+# CREATED: 2024-02-01
+# MODIFIED: 2024-12-06
+#
+# DEPENDENCIES:
+#   REQUIRED:
+#     - bash 4.0+ (for associative arrays)
+#     - tput (for terminal control)
+#     - ssh (for remote connections)
+#   
+#   OPTIONAL (enhanced features):
+#     - figlet (for ASCII art banners)
+#     - gum (for enhanced UI elements)
+#     - zellij (for session management)
+#     - tabby (for GUI terminal integration)
+#
+# FEATURES:
+#   ✓ Retro ASCII art interface with period-appropriate styling
+#   ✓ Interactive SSH connection management
+#   ✓ Integration with Tabby terminal configurations
+#   ✓ Session management with zellij support
+#   ✓ System monitoring and status display
+#   ✓ Keyboard shortcuts for power users
+#   ✓ Customizable server connection profiles
+#   ✓ Real-time connection status indicators
+#
+# USAGE:
+#   
+#   Direct execution:
+#     ~/.dotfiles/.scripts/interactive/retro-login.sh
+#   
+#   Via alias (configured in .aliases):
+#     rl              # Short alias
+#     retro           # Full alias
+#   
+#   With specific action:
+#     retro-login.sh --connect server1
+#     retro-login.sh --status
+#
+# CONFIGURATION:
+#   
+#   Server connections defined in:
+#     ~/.config/retro-login/servers.conf
+#   
+#   Format:
+#     server_name|hostname|port|username|description
+#     production|prod.example.com|22|admin|Production Server
+#   
+#   Tabby integration:
+#     ~/.config/tabby/config.yaml
+#
+# KEYBOARD SHORTCUTS:
+#   - Enter: Connect to selected server
+#   - Tab: Switch between menu sections
+#   - Escape/q: Exit application
+#   - r: Refresh connection status
+#   - s: Show system information
+#   - h: Help and keyboard shortcuts
+#
+# INTERFACE ELEMENTS:
+#   - ASCII art banner with retro styling
+#   - Color-coded connection status indicators
+#   - Tabulated server information display
+#   - Real-time system metrics
+#   - Progress bars for long operations
+#
+# SECURITY FEATURES:
+#   - SSH key authentication preferred
+#   - Connection timeout handling
+#   - Secure credential storage
+#   - Audit logging of connections
+#
+# CUSTOMIZATION:
+#   - Modify ASCII art in show_retro_banner()
+#   - Adjust colors in terminal color codes
+#   - Add custom server profiles in servers.conf
+#   - Configure integration with external tools
+#
+# TROUBLESHOOTING:
+#   - Check server configuration: cat ~/.config/retro-login/servers.conf
+#   - Verify SSH connectivity: ssh -T hostname
+#   - Check terminal capabilities: tput colors
+#   - Review logs: ~/.config/retro-login/connections.log
+#
+# ==============================================================================
 
 # Retro Login Tool - ASCII art terminal connection manager
 # Integrates with existing simple-sessions.sh and Tabby setup

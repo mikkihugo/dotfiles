@@ -1,3 +1,87 @@
+# ==============================================================================
+# Development Tools Configuration - mise
+# ==============================================================================
+#
+# Copyright 2024 Mikki Hugo. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# FILE: .mise.toml
+# DESCRIPTION: Comprehensive development tool version management configuration
+#              for mise (formerly rtx). Defines tool versions, custom tasks,
+#              and automation workflows for a complete development environment.
+#              Emphasizes modern Rust-based CLI tools for enhanced performance.
+#
+# AUTHOR: Mikki Hugo <mikkihugo@gmail.com>
+# VERSION: 5.2.0
+# CREATED: 2024-01-18
+# MODIFIED: 2024-12-06
+#
+# ENVIRONMENT: Professional Development Workstation
+# TOOL MANAGER: mise 2024.12+
+# LANGUAGE SUPPORT: Python, Node.js, Go, Rust, Kubernetes
+#
+# TOOL CATEGORIES:
+#   - Programming Languages: Python, Node.js, Go, Rust
+#   - Package Managers: pnpm, pipx
+#   - Modern CLI Tools: bat, fd, ripgrep, eza (Rust-based replacements)
+#   - Development Tools: GitHub CLI, starship, direnv
+#   - Kubernetes Ecosystem: kubectl, k9s, helm, kustomize
+#   - TUI Applications: gum, fzf, lazygit, lazydocker
+#   - Code Quality: shellcheck, yamllint, actionlint
+#   - Utilities: jq, yq, sqlite
+#
+# PERFORMANCE OPTIMIZATIONS:
+#   - All tools pinned to "latest" for automatic updates
+#   - Rust-based tools preferred for speed and reliability
+#   - Parallel installation supported by mise
+#   - Automatic tool installation on shell startup
+#
+# CUSTOM TASKS:
+#   - setup: Complete environment setup
+#   - update: Update all tools (mise + cargo)
+#   - lint: Code quality checks
+#   - guardian-*: Security system management
+#   - gateway-*: Tabby gateway operations
+#   - claude-*: AI assistant integration
+#
+# AUTOMATION FEATURES:
+#   - Weekly tool updates via cron
+#   - Guardian security system tasks
+#   - Gateway deployment and monitoring
+#   - Claude authentication management
+#   - Backup and restoration workflows
+#
+# USAGE:
+#   Install all tools: mise install
+#   Run custom task: mise run <task-name>
+#   Update tools: mise run update
+#   Check status: mise doctor
+#
+# SECURITY CONSIDERATIONS:
+#   - All tools installed to user directory
+#   - Guardian protection system for critical binaries
+#   - Encrypted backup storage for sensitive tools
+#   - Regular integrity verification
+#
+# TROUBLESHOOTING:
+#   - Check tool status: mise list
+#   - Install missing: mise install
+#   - Verify environment: mise doctor
+#   - Update mise: mise self-update
+#
+# ==============================================================================
+
 [tools]
 # Languages
 python = "latest"

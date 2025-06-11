@@ -210,6 +210,14 @@ description = "Compile and install the Guardian Keeper parasite system"
 run = "guardian-keeper"
 description = "Run the Guardian Keeper once to check and repair survival copies"
 
+[tasks.guardian-minimal]
+run = "./.scripts/guardian/minimal-compile.sh"
+description = "Compile minimal self-repairing guardian"
+
+[tasks.guardian-emergency]
+run = "bash ./.guardian-shell/emergency.sh"
+description = "Emergency guardian restoration script"
+
 [tasks.sync]
 run = "./.scripts/auto-sync.sh"
 description = "Auto-sync dotfiles, tokens, and SSH hosts"

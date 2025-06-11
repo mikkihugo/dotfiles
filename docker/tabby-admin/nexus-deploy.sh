@@ -47,6 +47,25 @@ check_prereqs() {
     echo ""
     echo -e "${BLUE}Optional services setup:${NC}"
     
+    # Google AI keys - check multiple possible names
+    GOOGLE_KEY_FOUND=false
+    for key_name in GOOGLE_AI GOOGLE_AI_KEY GOOGLE_API_KEY GOOGLE_AI_STUDIO_KEY GOOGLE_GENERATIVE_AI_API_KEY GEMINI_API_KEY; do
+        if [ -n "${!key_name:-}" ]; then
+            echo -e "${GREEN}✓ Google AI key found: $key_name${NC}"
+            GOOGLE_KEY_FOUND=true
+            export GOOGLE_AI_KEY="${!key_name}"
+            break
+        fi
+    done
+    
+    if [ "$GOOGLE_KEY_FOUND" = false ]; then
+        echo -e "${YELLOW}⚠ No Google AI key found${NC}"
+        echo "  To enable Google Gemini models, set one of:"
+        echo "    export GOOGLE_AI_KEY=your_key"
+        echo "    export GOOGLE_AI_STUDIO_KEY=your_key"
+        echo "  Get free key at: https://makersuite.google.com/app/apikey"
+    fi
+    
     # Google login
     if command -v gcloud &>/dev/null && gcloud auth list 2>/dev/null | grep -q "ACTIVE"; then
         echo -e "${GREEN}✓ Google account authenticated${NC}"
@@ -114,9 +133,9 @@ services:
     container_name: nexus-ai
     restart: unless-stopped
     ports:
-      - "8080:8080"  # VS Code
-      - "8888:8888"  # Jupyter
-      - "3000:3000"  # AI Chat
+      - "10080:8080"  # VS Code
+      - "10888:8888"  # Jupyter
+      - "13000:3000"  # AI Chat
     volumes:
       - ~/code:/workspace
       - ~/.gitconfig:/root/.gitconfig:ro
@@ -139,7 +158,7 @@ services:
     container_name: nexus-vault
     restart: unless-stopped
     ports:
-      - "8200:8200"
+      - "10200:8200"
     cap_add:
       - IPC_LOCK
     volumes:
@@ -159,7 +178,7 @@ setup_vault() {
     echo -e "${YELLOW}Setting up Vault with tokens...${NC}"
     
     # Wait for Vault to be ready
-    until curl -s http://localhost:8200/v1/sys/health | grep -q "initialized"; do
+    until curl -s http://localhost:10200/v1/sys/health | grep -q "initialized"; do
         echo "Waiting for Vault..."
         sleep 2
     done
@@ -243,6 +262,12 @@ path "secret/data/anthropic" {
   capabilities = ["read"]
 }
 path "secret/data/cloudflare" {
+  capabilities = ["read"]
+}
+path "secret/data/google/ai" {
+  capabilities = ["read"]
+}
+path "secret/data/google/cloud" {
   capabilities = ["read"]
 }
 EOF
@@ -342,13 +367,13 @@ show_info() {
     echo -e "${BLUE}🎉 Nexus AI Stack is running!${NC}"
     echo ""
     echo "Access your services:"
-    echo "  • VS Code:  http://localhost:8080"
+    echo "  • VS Code:  http://localhost:10080"
     echo "    Password: ${CODE_SERVER_PASSWORD:-nexus123}"
     echo ""
-    echo "  • Jupyter:  http://localhost:8888"
+    echo "  • Jupyter:  http://localhost:10888"
     echo "    Token: Check logs with: docker logs nexus-ai"
     echo ""
-    echo "  • Vault:    http://localhost:8200"
+    echo "  • Vault:    http://localhost:10200"
     echo "    Token: nexus-root-token"
     echo ""
     echo "Available AI tools:"

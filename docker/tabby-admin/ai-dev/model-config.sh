@@ -16,34 +16,48 @@ model: github:gpt-4o
 
 # Model configurations
 models:
-  # GitHub Models (free with GitHub token)
+  # GitHub Models (Azure-hosted, free with GitHub token)
   - name: github:gpt-4o
-    provider: github
+    provider: openai
     base_url: https://models.inference.ai.azure.com
     api_key_env: GITHUB_TOKEN
     
   - name: github:gpt-4o-mini
-    provider: github  
+    provider: openai
     base_url: https://models.inference.ai.azure.com
     api_key_env: GITHUB_TOKEN
     
   - name: github:llama-3.2-90b
-    provider: github
+    provider: openai
     base_url: https://models.inference.ai.azure.com
     api_key_env: GITHUB_TOKEN
     
   - name: github:mistral-large
-    provider: github
+    provider: openai
+    base_url: https://models.inference.ai.azure.com
+    api_key_env: GITHUB_TOKEN
+    
+  - name: github:phi-3-medium
+    provider: openai
     base_url: https://models.inference.ai.azure.com
     api_key_env: GITHUB_TOKEN
 
-  # GitHub Copilot endpoint (different from Models)
+  # GitHub Copilot Chat API (different endpoint, different models)
   - name: copilot:gpt-4
     provider: openai
     base_url: https://api.githubcopilot.com
     api_key_env: GITHUB_TOKEN
     headers:
       X-GitHub-Api-Version: "2022-11-28"
+      Accept: "application/vnd.github.copilot-chat+json"
+      
+  - name: copilot:gpt-3.5-turbo
+    provider: openai
+    base_url: https://api.githubcopilot.com
+    api_key_env: GITHUB_TOKEN
+    headers:
+      X-GitHub-Api-Version: "2022-11-28"
+      Accept: "application/vnd.github.copilot-chat+json"
       
   # OpenRouter free models
   - name: openrouter:mythomist
@@ -61,21 +75,24 @@ models:
     model: qwen/qwen-2.5-72b-instruct:free
     api_key_env: OPENROUTER_API_KEY
     
-  # Google AI Platform / Vertex AI (if authenticated)
+  # Google AI Studio (free tier - 60 requests/minute)
   - name: google:gemini-pro
-    provider: google
+    provider: openai
+    base_url: https://generativelanguage.googleapis.com/v1beta
     model: gemini-pro
-    api_key_env: GOOGLE_AI_API_KEY
+    api_key_env: GOOGLE_AI_STUDIO_KEY
     
-  - name: google:gemini-1.5-pro
-    provider: google
-    model: gemini-1.5-pro-latest
-    api_key_env: GOOGLE_AI_API_KEY
+  - name: google:gemini-1.5-flash
+    provider: openai  
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    model: gemini-1.5-flash-latest
+    api_key_env: GOOGLE_AI_STUDIO_KEY
     
-  - name: google:palm-2
-    provider: google
-    model: text-bison-001
-    api_key_env: GOOGLE_AI_API_KEY
+  # Google via OpenRouter (if available)
+  - name: openrouter:gemini
+    provider: openrouter
+    model: google/gemini-pro
+    api_key_env: OPENROUTER_API_KEY
     
   # Local models via Ollama
   - name: ollama:deepseek-coder
@@ -232,11 +249,15 @@ create_model_tester() {
 echo "🧪 Testing Free AI Models"
 echo ""
 
-# Test GitHub Models
+# Test GitHub Models (Azure endpoint)
 if [ -n "${GITHUB_TOKEN:-}" ]; then
-    echo "Testing GitHub Models..."
+    echo "Testing GitHub Models (Azure)..."
     echo "Hello, respond with 'OK'" | aichat -m github:gpt-4o-mini && echo "✅ GitHub GPT-4o-mini works"
     echo "Hello, respond with 'OK'" | aichat -m github:llama-3.2-90b && echo "✅ GitHub Llama 3.2 works"
+    
+    echo ""
+    echo "Testing GitHub Copilot Chat API..."
+    echo "Hello, respond with 'OK'" | aichat -m copilot:gpt-4 && echo "✅ Copilot GPT-4 works"
 else
     echo "❌ No GITHUB_TOKEN - skipping GitHub Models"
 fi

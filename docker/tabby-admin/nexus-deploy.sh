@@ -215,10 +215,16 @@ setup_vault() {
                 account="$(gcloud config get-value account 2>/dev/null)"
         fi
         
-        # If user has AI Platform API key
+        # Check for various Google AI API keys
         if [ -n "${GOOGLE_AI_API_KEY:-}" ]; then
             docker exec nexus-vault vault kv put secret/google/ai \
                 api_key="$GOOGLE_AI_API_KEY"
+        elif [ -n "${GOOGLE_AI_STUDIO_KEY:-}" ]; then
+            docker exec nexus-vault vault kv put secret/google/ai \
+                studio_key="$GOOGLE_AI_STUDIO_KEY"
+        elif [ -n "${GOOGLE_GENERATIVE_AI_API_KEY:-}" ]; then
+            docker exec nexus-vault vault kv put secret/google/ai \
+                generative_key="$GOOGLE_GENERATIVE_AI_API_KEY"
         fi
     fi
     
@@ -306,6 +312,13 @@ OPENAI_API_KEY=$(vault kv get -field=api_key secret/openai 2>/dev/null)
 
 ANTHROPIC_API_KEY=$(vault kv get -field=api_key secret/anthropic 2>/dev/null)
 [ -n "$ANTHROPIC_API_KEY" ] && export ANTHROPIC_API_KEY
+
+# Google AI keys
+GOOGLE_AI_STUDIO_KEY=$(vault kv get -field=studio_key secret/google/ai 2>/dev/null)
+[ -n "$GOOGLE_AI_STUDIO_KEY" ] && export GOOGLE_AI_STUDIO_KEY
+
+GOOGLE_GENERATIVE_AI_API_KEY=$(vault kv get -field=generative_key secret/google/ai 2>/dev/null)
+[ -n "$GOOGLE_GENERATIVE_AI_API_KEY" ] && export GOOGLE_GENERATIVE_AI_API_KEY
 
 echo "✓ Tokens loaded from Vault"
 EOF'

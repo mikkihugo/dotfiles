@@ -1,0 +1,149 @@
+# Zsh Configuration
+# ~/.dotfiles/config/zshrc
+
+# Enable Powerlevel10k instant prompt
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# History configuration
+HISTFILE=~/.zsh_history
+HISTSIZE=50000
+SAVEHIST=50000
+setopt EXTENDED_HISTORY
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_VERIFY
+setopt SHARE_HISTORY
+
+# Zsh options
+setopt AUTO_CD
+setopt AUTO_PUSHD
+setopt PUSHD_IGNORE_DUPS
+setopt PUSHD_SILENT
+setopt CORRECT
+setopt COMPLETE_IN_WORD
+setopt GLOB_DOTS
+setopt EXTENDED_GLOB
+setopt NO_BEEP
+
+# Key bindings
+bindkey -e  # Emacs key bindings
+bindkey '^[[1;5C' forward-word
+bindkey '^[[1;5D' backward-word
+
+# Source common configs
+[[ -f ~/.dotfiles/config/common/env.sh ]] && source ~/.dotfiles/config/common/env.sh
+[[ -f ~/.dotfiles/config/common/aliases.sh ]] && source ~/.dotfiles/config/common/aliases.sh
+
+# Mise integration
+if command -v mise &> /dev/null; then
+    eval "$(mise activate zsh)"
+fi
+
+# Starship prompt (or Powerlevel10k if preferred)
+if command -v starship &> /dev/null; then
+    eval "$(starship init zsh)"
+fi
+
+# Zoxide (smart cd)
+if command -v zoxide &> /dev/null; then
+    eval "$(zoxide init zsh --cmd cd)"
+fi
+
+# FZF integration
+if command -v fzf &> /dev/null; then
+    source <(fzf --zsh)
+fi
+
+# Completion system
+autoload -Uz compinit
+compinit
+
+# Completion options
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*:descriptions' format '%B%d%b'
+
+# Smart repo navigation (Zsh version with completion)
+c() {
+    if [[ $# -eq 0 ]]; then
+        cd ~/code
+        return
+    fi
+    
+    local pattern="$1"
+    local matches=()
+    
+    # Find matching directories
+    while IFS= read -r dir; do
+        matches+=("$dir")
+    done < <(fd -t d -d 1 "*${pattern}*" ~/code --base-directory ~/code 2>/dev/null)
+    
+    case ${#matches[@]} in
+        0)
+            echo "No repos matching '$pattern'"
+            return 1
+            ;;
+        1)
+            cd "$HOME/code/${matches[1]}"
+            ;;
+        *)
+            local selected
+            selected=$(printf '%s\n' "${matches[@]}" | fzf --reverse --height=40% --prompt="Multiple matches for '$pattern': ")
+            [[ -n "$selected" ]] && cd "$HOME/code/$selected"
+            ;;
+    esac
+}
+
+# Dynamic repo aliases
+_setup_code_aliases() {
+    [[ -d "$HOME/code" ]] || return
+    
+    local dir repo_name alias_name
+    for dir in $(fd -t d -d 1 . "$HOME/code" --base-directory "$HOME/code" 2>/dev/null); do
+        repo_name="$dir"
+        alias_name="c${repo_name}"
+        
+        # Only create alias if command doesn't exist
+        if ! command -v "$alias_name" &> /dev/null 2>&1; then
+            alias "$alias_name"="cd '$HOME/code/$repo_name'"
+        fi
+    done
+}
+_setup_code_aliases
+
+# Completion for c function
+_c_completion() {
+    local -a repos
+    repos=($(fd -t d -d 1 . "$HOME/code" --base-directory "$HOME/code" 2>/dev/null))
+    _describe 'repository' repos
+}
+compdef _c_completion c
+
+# Claude safety aliases
+alias claude-shell='~/.dotfiles/.scripts/claude-shell.sh'
+alias safe-run='~/.dotfiles/.scripts/claude-safe-wrapper.sh'
+
+# Plugins (if using a plugin manager like zinit, zplug, etc.)
+# Example with zinit:
+# zinit light zsh-users/zsh-autosuggestions
+# zinit light zsh-users/zsh-syntax-highlighting
+# zinit light zsh-users/zsh-completions
+
+# Auto-suggestions configuration (if installed)
+if [[ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
+    source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#666666"
+fi
+
+# Syntax highlighting (if installed)
+if [[ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
+    source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
+
+# Local config
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

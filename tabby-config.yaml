@@ -29,6 +29,11 @@ terminal:
       - "#ECEFF4"
 ssh:
   connections: []
+groups:
+  - name: "Dual Zellij"
+    profiles:
+      - "Zellij Shared - Gateway"
+      - "Zellij Shared - Gateway"
 profiles:
   - name: "Zellij Shared - Gateway"
     type: ssh

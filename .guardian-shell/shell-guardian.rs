@@ -5,9 +5,11 @@ use std::env;
 use std::path::Path;
 use std::process::{Command, exit};
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Write, Read};
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
+use std::io::{self, Write, Read, BufRead, BufReader};
+use std::time::{SystemTime, UNIX_EPOCH, Duration, Instant};
 use std::collections::VecDeque;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 // Guardian settings
 const LOG_FILE: &str = ".shell-guardian.log";
@@ -17,6 +19,8 @@ const CRASH_TIME: u64 = 10;        // Within N seconds
 const MAX_LOG_SIZE: u64 = 10240;   // 10KB maximum log size
 const RECOVERY_SHELL: &str = "bash";  // Default recovery shell
 const FALLBACK_DIR: &str = "/tmp"; // Fallback if HOME not found
+const HEARTBEAT_INTERVAL: u64 = 5; // seconds
+const MIN_FREE_DISK_MB: u64 = 100; // Minimum free disk space
 
 // Self-verification checksum
 // This is a checksum of the source code, updated during build
@@ -28,12 +32,26 @@ const SOURCE_CHECKSUM: &str = "CHECKSUM_PLACEHOLDER";
 // Used to detect if binary was modified after compilation
 const BUILD_TIMESTAMP: &str = "TIMESTAMP_PLACEHOLDER";
 
+// SpaceX-style event tracking
+#[derive(Debug, Clone)]
+enum Event {
+    Startup(u64),
+    CrashDetected(u64),
+    FailsafeLaunched(u64),
+}
+
+// Global event counter
+static EVENT_COUNT: AtomicU64 = AtomicU64::new(0);
+
 // Recover from any panic with a failsafe shell
 fn main() {
     // Set up panic handler to ensure we always get a shell even on panic
     std::panic::set_hook(Box::new(|_| {
         eprintln!("\x1b[31m⚠️  Shell guardian crashed!\x1b[0m");
         eprintln!("\x1b[33m💡 Launching minimal environment\x1b[0m");
+        
+        // Log panic event
+        EVENT_COUNT.fetch_add(1, Ordering::Relaxed);
         
         // Launch bash as a last resort
         let _ = Command::new("bash")
@@ -77,6 +95,11 @@ fn run() -> io::Result<()> {
         .unwrap_or_else(|_| Duration::from_secs(0))
         .as_secs();
 
+    // Pre-flight checks
+    if let Err(e) = preflight_check() {
+        eprintln!("\x1b[33m⚠️ Pre-flight: {}\x1b[0m", e);
+    }
+
     // Check if we're in crash pattern
     if is_crash_pattern(&log_path, &backup_log_path, now)? {
         run_failsafe_shell();
@@ -86,12 +109,29 @@ fn run() -> io::Result<()> {
         // Log startup time
         append_to_log(&log_path, now.to_string())?;
         
+        // Spawn keeper in background
+        ensure_survival();
+        
+        // SpaceX-style heartbeat thread
+        let heartbeat_path = Path::new(&home).join(".guardian-heartbeat");
+        let heartbeat_path_clone = heartbeat_path.clone();
+        std::thread::spawn(move || {
+            loop {
+                let timestamp = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+                let _ = fs::write(&heartbeat_path_clone, timestamp.to_string());
+                std::thread::sleep(Duration::from_secs(HEARTBEAT_INTERVAL));
+            }
+        });
+        
         // Run normal shell
         let status = Command::new(command)
             .args(command_args)
             .status()?;
         
-        exit(status.code().unwrap_or(0));
+        exit(status.code().unwrap_or(1)); // Default to error
     }
 }
 
@@ -120,6 +160,27 @@ fn append_to_log(log_path: &Path, content: String) -> io::Result<()> {
     
     writeln!(file, "{}", content)?;
     file.sync_all()?;
+    Ok(())
+}
+
+// Pre-flight checks - SpaceX style
+fn preflight_check() -> Result<(), String> {
+    // Check disk space
+    if let Ok(output) = Command::new("df")
+        .args(&["-BM", "/tmp"])
+        .output() {
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        if let Some(line) = output_str.lines().nth(1) {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() > 3 {
+                if let Ok(available) = parts[3].trim_end_matches('M').parse::<u64>() {
+                    if available < MIN_FREE_DISK_MB {
+                        return Err(format!("Low disk: {}MB", available));
+                    }
+                }
+            }
+        }
+    }
     Ok(())
 }
 
@@ -160,15 +221,17 @@ fn is_crash_pattern(log_path: &Path, backup_path: &Path, now: u64) -> io::Result
     
     // If threshold reached, mark as crash pattern
     if crash_count >= CRASH_THRESHOLD - 1 {
-        // Log crash detection
+        // Log crash detection with atomic append (BSD fix)
         let crash_msg = format!("CRASH_DETECTED_{}", now);
-        let _ = File::create(log_path)?.write_all(crash_msg.as_bytes());
+        if let Ok(mut file) = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_path) {
+            let _ = writeln!(file, "{}", crash_msg);
+            let _ = file.sync_all();
+        }
         return Ok(true);
     }
-    
-    // No crash pattern, ensure survival by spawning keeper
-    // This runs asynchronously and doesn't block normal operation
-    ensure_survival();
     
     Ok(false)
 }
@@ -204,6 +267,13 @@ fn ensure_survival() {
 fn run_failsafe_shell() -> ! {
     eprintln!("\x1b[31m⚠️  Shell crash detected!\x1b[0m");
     eprintln!("\x1b[33m💡 Launching minimal environment\x1b[0m");
+    
+    // SpaceX-style Sol counter
+    let sol = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() / 86400;
+    eprintln!("\x1b[90m🚀 Sol {}: Entering safe mode...\x1b[0m", sol);
     
     // Try to get login shell from environment
     let shell = env::var("SHELL")

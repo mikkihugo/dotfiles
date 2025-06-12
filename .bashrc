@@ -76,3 +76,14 @@ fi
 if [ -d "$HOME/.dotfiles/tools" ]; then
     export PATH="$HOME/.dotfiles/tools:$PATH"
 fi
+# AI API Keys - Added by Nexus setup
+export GITHUB_TOKEN=$(gh auth token 2>/dev/null)
+export GOOGLE_AI_PERSONAL_FREE="AIzaSyA5Di0rwS2vLRbzgyRdGlF7V-tTTVBck_0"
+export CF_API_TOKEN="4d8d4b4c4ab849f6934face0f36e201f7bddc"
+
+# Aliases for the keys with common names
+export GOOGLE_AI="$GOOGLE_AI_PERSONAL_FREE"
+export GOOGLE_AI_KEY="$GOOGLE_AI_PERSONAL_FREE"
+export CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"
+EOF < /dev/null
+export PATH="$HOME/.npm-global/bin:$PATH"

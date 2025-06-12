@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # Nexus AI Environment
+  nexus-ai:
+    build:
+      context: ./ai-dev
+      dockerfile: Dockerfile.all-in-one
+    container_name: nexus-ai
+    restart: unless-stopped
+    volumes:
+      - ~/code:/workspace
+      - ~/.gitconfig:/root/.gitconfig:ro
+      - ~/.ssh:/root/.ssh:ro
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    networks:
+      - nexus
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nexus-ai.rule=Host(`code.nexus.hugo.dk`)"
+      - "traefik.http.services.nexus-ai.loadbalancer.server.port=8080"
+
+  # Vault for secrets
+  vault:
+    image: hashicorp/vault:latest
+    container_name: nexus-vault
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-data:/vault/file
+      - ./vault/config.hcl:/vault/config/config.hcl:ro
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
+    command: server
+    networks:
+      - nexus
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vault.rule=Host(`vault.nexus.hugo.dk`)"
+      - "traefik.http.services.vault.loadbalancer.server.port=8200"
+
+  # Cloudflare Tunnel
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    environment:
+      - CF_API_TOKEN=${CF_API_TOKEN}
+      - CF_ACCOUNT_ID=${CF_ACCOUNT_ID}
+    command: >
+      sh -c "
+        cloudflared tunnel login --url && 
+        cloudflared tunnel create nexus-docker &&
+        cloudflared tunnel route dns nexus-docker code.nexus.hugo.dk &&
+        cloudflared tunnel route dns nexus-docker vault.nexus.hugo.dk &&
+        cloudflared tunnel run nexus-docker --config /etc/cloudflared/config.yml
+      "
+    volumes:
+      - cloudflared-config:/etc/cloudflared
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+    networks:
+      - nexus
+
+volumes:
+  vault-data:
+  cloudflared-config:
+
+networks:
+  nexus:
+    driver: bridge

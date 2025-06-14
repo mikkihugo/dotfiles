@@ -1,0 +1,94 @@
+# Lite version of LiteLLM without llama.cpp for quick testing
+FROM python:3.11-slim
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install LiteLLM with UI
+RUN pip install --no-cache-dir \
+    litellm[proxy] \
+    litellm[ui] \
+    openai
+
+WORKDIR /app
+
+# Create dynamic LiteLLM config
+RUN mkdir -p /app/config && \
+    cat > /app/config/litellm_config.yaml << 'EOF'
+# Dynamic model discovery enabled
+model_list:
+  # Placeholder - will be populated by startup script
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  cache: true
+  cache_ttl: 3600
+  enable_preview_features: true
+  
+router_settings:
+  model_group_alias:
+    "chat": ["github/*", "openrouter/*:free", "google/*"]
+    "code": ["github/gpt-4*", "openrouter/deepseek*", "google/gemini*"]
+    "free": ["openrouter/*:free", "google/gemini-1.5-flash*"]
+  
+  routing_strategy: "cost-based-routing"
+  
+  fallbacks:
+    "anthropic/*": ["openrouter/mistral-7b-instruct:free", "google/gemini-1.5-flash"]
+    "openai/*": ["github/gpt-4o-mini", "google/gemini-1.5-flash"]
+
+general_settings:
+  master_key: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+  database_url: ${DATABASE_URL:-sqlite:////app/litellm.db}
+  load_from_env: true
+  scan_providers_on_startup: true
+EOF
+
+# Create supervisor config for LiteLLM only
+RUN cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
+[supervisord]
+nodaemon=true
+logfile=/app/logs/supervisord.log
+
+[program:litellm]
+command=/app/scripts/litellm-startup.sh
+directory=/app
+autostart=true
+autorestart=true
+stderr_logfile=/app/logs/litellm.err.log
+stdout_logfile=/app/logs/litellm.out.log
+environment=LITELLM_LOG_LEVEL="INFO"
+priority=1
+
+[program:litellm-ui]
+command=python -m litellm.proxy.ui --host 0.0.0.0 --port 4001
+directory=/app
+autostart=true
+autorestart=true
+stderr_logfile=/app/logs/litellm-ui.err.log
+stdout_logfile=/app/logs/litellm-ui.out.log
+priority=2
+EOF
+
+# Copy startup script
+COPY scripts/litellm-startup.sh /app/scripts/
+RUN chmod +x /app/scripts/litellm-startup.sh
+
+# Create directories
+RUN mkdir -p /app/logs
+
+# Expose LiteLLM ports
+EXPOSE 4000 4001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:4000/health || exit 1
+
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

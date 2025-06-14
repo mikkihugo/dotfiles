@@ -1,0 +1,143 @@
+# Unified LLM inference container with LiteLLM + llama.cpp
+FROM python:3.11-slim
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    build-essential \
+    git \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install LiteLLM with UI
+RUN pip install --no-cache-dir \
+    litellm[proxy] \
+    litellm[ui] \
+    gradio \
+    openai
+
+# Download pre-built llama.cpp server or build with cmake
+WORKDIR /app
+RUN apt-get update && apt-get install -y cmake libcurl4-openssl-dev && \
+    git clone https://github.com/ggerganov/llama.cpp.git && \
+    cd llama.cpp && \
+    cmake -B build -DLLAMA_CURL=OFF && \
+    cmake --build build --config Release -t llama-server && \
+    cp build/bin/llama-server /usr/local/bin/ && \
+    cd .. && rm -rf llama.cpp && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create dynamic LiteLLM config
+RUN mkdir -p /app/config && \
+    cat > /app/config/litellm_config.yaml << 'EOF'
+# Dynamic model discovery enabled
+model_list:
+  # Local llama.cpp models (always available)
+  - model_name: local/codellama
+    litellm_params:
+      model: openai/codellama-7b-instruct
+      api_base: http://localhost:8081/v1
+      api_key: none
+      custom_llm_provider: openai
+    
+  - model_name: local/embeddings
+    litellm_params:
+      model: openai/nomic-embed-text-v1.5
+      api_base: http://localhost:8082/v1
+      api_key: none
+      custom_llm_provider: openai
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  cache: true
+  cache_ttl: 3600
+  # Auto-discover models from providers
+  enable_preview_features: true
+  
+router_settings:
+  model_group_alias:
+    "chat": ["local/codellama", "openrouter/mistral-7b-instruct", "openrouter/capybara-7b", "groq/*"]
+    "code": ["local/codellama", "openrouter/mistral-7b-instruct"]
+    "embeddings": ["local/embeddings"]
+    "free": ["local/*", "openrouter/*:free"]
+  
+  # Prefer free models
+  routing_strategy: "cost-based-routing"
+  
+  # Fallback routing
+  fallbacks:
+    "anthropic/*": ["openrouter/mistral-7b-instruct", "local/codellama"]
+    "openai/*": ["openrouter/mistral-7b-instruct", "local/codellama"]
+    "default": ["local/codellama"]
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+  # Dynamic provider loading
+  load_from_env: true
+  scan_providers_on_startup: true
+EOF
+
+# Create supervisor config
+RUN cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
+[supervisord]
+nodaemon=true
+logfile=/app/logs/supervisord.log
+
+[program:llamacpp]
+command=/usr/local/bin/llama-server --host 127.0.0.1 --port 8081 --models-path /models --ctx-size 4096 --threads 4 --embedding --parallel 2
+directory=/app
+autostart=true
+autorestart=true
+stderr_logfile=/app/logs/llamacpp.err.log
+stdout_logfile=/app/logs/llamacpp.out.log
+priority=1
+environment=LLAMA_ARG_MODEL_ALIAS="codellama=codellama-7b-instruct.Q4_K_M.gguf,phi3=phi-3-mini.Q4_K_M.gguf,deepseek=deepseek-coder-1.3b.Q4_K_M.gguf"
+
+[program:llamacpp-embeddings]
+command=/usr/local/bin/llama-server --host 127.0.0.1 --port 8082 --models-path /models --embedding --pooling mean --threads 2 --model-alias "embeddings=nomic-embed-text-v1.5.Q4_K_M.gguf"
+directory=/app
+autostart=false
+autorestart=true
+stderr_logfile=/app/logs/llama-embed.err.log
+stdout_logfile=/app/logs/llama-embed.out.log
+priority=2
+
+[program:litellm]
+command=/app/scripts/litellm-startup.sh
+directory=/app
+autostart=true
+autorestart=true
+stderr_logfile=/app/logs/litellm.err.log
+stdout_logfile=/app/logs/litellm.out.log
+environment=LITELLM_LOG_LEVEL="INFO"
+priority=2
+
+[program:litellm-ui]
+command=python -m litellm.proxy.ui --host 0.0.0.0 --port 4001
+directory=/app
+autostart=true
+autorestart=true
+stderr_logfile=/app/logs/litellm-ui.err.log
+stdout_logfile=/app/logs/litellm-ui.out.log
+priority=3
+EOF
+
+# Copy startup script
+COPY scripts/litellm-startup.sh /app/scripts/
+RUN chmod +x /app/scripts/litellm-startup.sh
+
+# Create directories
+RUN mkdir -p /app/logs /models
+
+# Expose LiteLLM ports (NOT llama.cpp)
+EXPOSE 4000 4001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:4000/health || exit 1
+
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

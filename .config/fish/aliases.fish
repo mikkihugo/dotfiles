@@ -69,8 +69,10 @@ if command -v delta &>/dev/null
     alias diff 'delta'
 end
 
+# Cannot alias 'time' in fish - it's a reserved keyword
+# Use 'bench' instead
 if command -v hyperfine &>/dev/null
-    alias time 'hyperfine'
+    alias bench 'hyperfine'
 end
 
 if command -v tokei &>/dev/null
@@ -171,7 +173,9 @@ alias .. 'cd ..'
 alias ... 'cd ../..'
 alias .... 'cd ../../..'
 alias ..... 'cd ../../../..'
-alias ~ 'cd ~'
+# Cannot use ~ as alias name in fish
+# Use 'home' instead
+alias home 'cd ~'
 alias c 'cd ~/code'
 
 # Safety nets

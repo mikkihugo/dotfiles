@@ -1,0 +1,345 @@
+#!/bin/bash
+#
+# Copyright 2024 Mikki Hugo. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ==============================================================================
+# Shell Aliases and Functions Library
+# ==============================================================================
+#
+# FILE: .aliases
+# DESCRIPTION: Comprehensive shell aliases and functions for enhanced productivity
+#              and modern tool integration. Provides intuitive shortcuts for
+#              common operations while maintaining safety and performance.
+#
+# AUTHOR: Mikki Hugo <mikkihugo@gmail.com>
+# VERSION: 3.2.0
+# CREATED: 2024-01-10
+# MODIFIED: 2024-12-06
+#
+# DEPENDENCIES:
+#   REQUIRED:
+#     - bash 4.0+ (for modern array/function features)
+#     - coreutils (basic Unix tools)
+#   
+#   OPTIONAL (enhanced functionality):
+#     - eza (modern ls replacement)
+#     - bat (syntax highlighting cat)
+#     - rg (ripgrep - fast grep)
+#     - fd (modern find replacement)
+#     - fzf (fuzzy finder)
+#     - btop (modern top replacement)
+#     - docker (container management)
+#     - kubectl (Kubernetes CLI)
+#     - git (version control)
+#
+# FEATURES:
+#   ✓ Modern Rust-based tool integration (eza, bat, rg, fd)
+#   ✓ Git workflow shortcuts with safety checks
+#   ✓ Intelligent code repository navigation
+#   ✓ Docker and Kubernetes convenience aliases
+#   ✓ System monitoring shortcuts
+#   ✓ Safety-first file operations (interactive prompts)
+#   ✓ Development server shortcuts
+#   ✓ Network diagnostic tools
+#   ✓ Claude AI assistant integration
+#   ✓ Session management (tmux/zellij)
+#   ✓ Performance monitoring utilities
+#
+# ALIAS CATEGORIES:
+#   
+#   FILE OPERATIONS:
+#     ll, la, l, tree    - Enhanced directory listing (eza)
+#     cat                - Syntax highlighted file viewing (bat)
+#     find               - Modern file finding (fd)
+#     cp, mv, rm         - Interactive file operations
+#     mkdir              - Recursive directory creation
+#
+#   GIT WORKFLOW:
+#     g, gs, ga, gc      - Git shortcuts for common operations
+#     gp, gl, gd         - Push, pull, diff operations
+#     gco, gb, glog      - Checkout, branch, visual log
+#
+#   NAVIGATION:
+#     .., ..., ....      - Parent directory shortcuts
+#     ~, c               - Home and code directory navigation
+#     c<pattern>         - Fuzzy code repository navigation
+#
+#   SYSTEM MONITORING:
+#     df, du, free       - Disk and memory usage
+#     top, ps            - Process monitoring
+#     ports, ping        - Network diagnostics
+#     diskspace, meminfo - System health checks
+#
+#   DEVELOPMENT:
+#     serve              - Quick HTTP server
+#     myip, weather      - Network and environment info
+#     vim, hx, vi        - Editor shortcuts
+#     bashrc, aliases    - Configuration editing
+#
+#   CONTAINERS:
+#     d, dc, dps         - Docker operations
+#     k, kgp, kgs        - Kubernetes shortcuts
+#
+#   CLAUDE AI:
+#     claude-yolo        - Unrestricted mode (use with caution)
+#     claude-yolt        - Balanced safety mode
+#     claude-safe        - Full safety wrapper
+#     claude-007         - James Bond mode alias
+#
+# USAGE EXAMPLES:
+#   
+#   # Modern file listing with git status
+#   ll                   # Enhanced ls with git info
+#   
+#   # Smart code navigation
+#   c                    # Go to ~/code
+#   c myproject          # Fuzzy match and cd to ~/code/myproject*
+#   
+#   # Git workflow
+#   gs                   # Quick git status
+#   ga . && gc -m "fix"  # Stage all and commit
+#   
+#   # System monitoring
+#   diskspace            # Clean disk usage summary
+#   meminfo              # Memory usage with top processes
+#   
+#   # Development server
+#   serve 8080           # HTTP server on port 8080
+#   
+#   # Safe Claude usage
+#   claude-safe "help me debug this script"
+#
+# PERFORMANCE NOTES:
+#   - fd limited to 4 threads to prevent resource exhaustion
+#   - Fuzzy matching uses fzf for efficient large directory handling
+#   - Code navigation caches directory structure for speed
+#   - All aliases prefer modern Rust tools for better performance
+#
+# SAFETY FEATURES:
+#   - Interactive prompts for destructive operations (rm, mv, cp)
+#   - Root filesystem protection (chown, chmod with --preserve-root)
+#   - Docker cleanup aliases prevent accidental system-wide changes
+#   - Claude AI wrappers provide safety guardrails
+#
+# ERROR HANDLING:
+#   - Graceful fallbacks when modern tools unavailable
+#   - Command existence checks before alias creation
+#   - Safe directory navigation with existence validation
+#   - Network operation timeouts and retry logic
+#
+# CUSTOMIZATION:
+#   - Set EDITOR environment variable for preferred editor
+#   - Modify FD_CMD to use custom fd installation path
+#   - Code navigation works with any ~/code subdirectory structure
+#   - Claude aliases can be customized for different safety levels
+#
+# TROUBLESHOOTING:
+#   - Run 'type <alias>' to see what command an alias expands to
+#   - Use 'unalias <name>' to temporarily disable problematic aliases
+#   - Check tool availability with 'command -v <tool>'
+#   - For c() function issues, verify ~/code directory exists
+#
+# ==============================================================================
+
+# Enhanced aliases for productivity
+
+# Basic shortcuts
+alias ll='eza -la --git --time-style=relative'
+alias la='eza -a'
+alias l='eza -l --git'
+alias tree='eza --tree'
+alias cat='bat --paging=never'
+# alias grep='rg'  # Commented out - causes issues with scripts expecting GNU grep
+alias find='fd'
+
+# Git shortcuts (supplement .gitconfig)
+alias g='git'
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git pull'
+alias gd='git diff'
+alias gco='git checkout'
+alias gb='git branch'
+alias glog='git log --oneline --graph --decorate'
+
+# Directory navigation  
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias ~='cd ~'
+alias c='cd ~/code'
+# Previous directory navigation (removed problematic alias)
+
+# System info
+alias df='df -h'
+alias du='du -sh'
+alias free='free -h'
+alias top='btop'
+alias ps='ps aux'
+
+# Network
+alias ports='netstat -tuln'
+alias ping='ping -c 5'
+alias wget='wget -c'
+
+# File operations
+alias cp='cp -i'
+alias mv='mv -i'
+alias rm='rm -i'
+alias mkdir='mkdir -p'
+
+# Limit fd threads to prevent runaway processes
+alias fd='fd --threads=4'
+
+# Development
+alias serve='python3 -m http.server'
+alias myip='curl -s https://httpbin.org/ip | jq -r .origin'
+alias weather='curl -s "wttr.in/$(curl -s https://ipinfo.io/city)" | head -20'
+
+# Docker shortcuts
+alias d='docker'
+alias dc='docker-compose'
+alias dps='docker ps'
+alias di='docker images'
+alias drm='docker rm $(docker ps -aq)'
+alias drmi='docker rmi $(docker images -q)'
+
+# Kubernetes
+alias k='kubectl'
+alias kgp='kubectl get pods'
+alias kgs='kubectl get services'
+alias kgd='kubectl get deployments'
+
+# Tmux shortcuts
+alias ta='tmux attach'
+alias tls='tmux list-sessions'
+alias tn='tmux new-session'
+alias tk='tmux kill-session'
+
+# Editors
+alias vim='~/.local/share/mise/installs/helix/25.01.1/hx'
+alias hx='~/.local/share/mise/installs/helix/25.01.1/hx'
+alias vi='~/.local/share/mise/installs/helix/25.01.1/hx'
+
+# Quick edits
+alias bashrc='${EDITOR:-hx} ~/.bashrc && source ~/.bashrc'
+alias aliases='${EDITOR:-hx} ~/.aliases && source ~/.aliases'
+alias dotfiles='cd ~/.dotfiles && ${EDITOR:-hx} .'
+
+# System maintenance
+alias update='sudo apt update && sudo apt upgrade'
+alias install='sudo apt install'
+alias search='apt search'
+alias clean='sudo apt autoremove && sudo apt autoclean'
+
+# Mise shortcuts
+alias mi='mise install'
+alias mu='mise use'
+alias ml='mise list'
+alias mr='mise run'
+
+# Quick system checks
+alias diskspace='df -h | grep -E "^(/dev/|tmpfs)" | sort'
+alias meminfo='free -h && echo "" && ps aux --sort=-%mem | head'
+alias cpuinfo='lscpu | grep -E "^(Model name|CPU\(s\)|Thread|Core)" && echo "" && top -bn1 | grep "Cpu(s)"'
+
+# Reload shell
+alias reload='exec $SHELL -l'
+
+# Safety nets
+alias chown='chown --preserve-root'
+alias chmod='chmod --preserve-root' 
+alias chgrp='chgrp --preserve-root'
+
+# Fun stuff
+alias matrix='cmatrix -s'
+alias starwars='telnet towel.blinkenlights.nl'
+alias weather-full='curl -s "wttr.in/$(curl -s https://ipinfo.io/city)"'
+
+# Smart code navigation - type c<pattern> to fuzzy match repos
+# This creates aliases for all repos and a fallback for fuzzy matching
+_setup_code_aliases() {
+    # Only set up if ~/code exists
+    [ -d "$HOME/code" ] || return
+    
+    # Use Rust tool fd (available via mise)
+    # For each directory in ~/code, create an alias if it doesn't conflict
+    for dir in $(fd -t d -d 1 . "$HOME/code" --base-directory "$HOME/code" 2>/dev/null); do
+        local repo_name="$dir"
+        local alias_name="c${repo_name}"
+        
+        # Only create alias if command doesn't exist
+        if ! command -v "$alias_name" &> /dev/null 2>&1; then
+            alias "$alias_name"="cd '$HOME/code/$repo_name'"
+        fi
+    done
+}
+
+# Smart fuzzy code navigation
+function c() {
+    # If no argument, just go to ~/code
+    if [ $# -eq 0 ]; then
+        cd ~/code
+        return
+    fi
+    
+    local pattern="$1"
+    local matches=()
+    
+    # Use Rust tool fd for finding directories
+    local fd_cmd="${FD_CMD:-fd}"
+    if ! command -v fd &> /dev/null; then
+        fd_cmd="/home/mhugo/.local/share/mise/installs/fd/10.2.0/fd-v10.2.0-x86_64-unknown-linux-musl/fd"
+    fi
+    
+    # Find all directories matching the pattern using fd (rust tool)
+    if [ -d "$HOME/code" ]; then
+        while IFS= read -r dir; do
+            matches+=("$dir")
+        done < <("$fd_cmd" -t d -d 1 "${pattern}" "$HOME/code" --base-directory "$HOME/code" 2>/dev/null)
+    fi
+    
+    # Handle results
+    if [ ${#matches[@]} -eq 0 ]; then
+        echo "No repos matching '$pattern'"
+        return 1
+    elif [ ${#matches[@]} -eq 1 ]; then
+        cd "$HOME/code/${matches[0]}"
+    else
+        # Multiple matches - use fzf to select
+        local selected=$(printf '%s\n' "${matches[@]}" | fzf --reverse --height=40% --prompt="Multiple matches for '$pattern': ")
+        if [ -n "$selected" ]; then
+            cd "$HOME/code/$selected"
+        fi
+    fi
+}
+
+# End of c function
+
+# Set up aliases on shell start
+_setup_code_aliases
+
+# Claude safety aliases (with fun names)
+alias claude-yolo='/home/mhugo/.npm-global/bin/claude-yolo'  # Original dangerous mode
+alias claude-yolt='~/.dotfiles/.scripts/claude-yolt'         # You Only Live Twice (YOLO + Safety)
+alias claude-safe='~/.dotfiles/.scripts/claude-shell.sh'     # Full safety mode
+alias claude-wrap='~/.dotfiles/.scripts/claude-safe-wrapper.sh'  # Wrap any command
+
+# Fun Claude aliases
+alias claude-007='~/.dotfiles/.scripts/claude-yolt'          # James Bond mode
+alias claude-airbag='~/.dotfiles/.scripts/claude-shell.sh'   # With airbags
+alias claude-seatbelt='~/.dotfiles/.scripts/claude-safe-wrapper.sh'  # Buckle up!

@@ -101,3 +101,16 @@ fi
 if [ -f "$HOME/.claude/local/claude" ]; then
     alias claude="$HOME/.claude/local/claude"
 fi
+
+# Load bash.d modules (except guardian which can interfere)
+if [ -d "$HOME/.dotfiles/config/bash.d" ]; then
+    for module in "$HOME/.dotfiles/config/bash.d"/*.sh; do
+        if [ -r "$module" ]; then
+            # Skip loading guardian module unless explicitly enabled
+            if [[ "$(basename "$module")" == "01-failsafe.sh" ]] && [ "$ENABLE_SHELL_GUARDIAN" != "1" ]; then
+                continue
+            fi
+            source "$module"
+        fi
+    done
+fi

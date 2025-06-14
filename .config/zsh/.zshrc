@@ -51,6 +51,29 @@ if [ -d "$HOME/.dotfiles/tools" ]; then
   export PATH="$HOME/.dotfiles/tools:$PATH"
 fi
 
+# Add all mise tool paths to PATH
+for tool_path in $HOME/.local/share/mise/installs/*/*; do
+  if [ -d "$tool_path" ] && [ -x "$tool_path" ]; then
+    case "$tool_path" in
+      */bin) export PATH="$tool_path:$PATH" ;;
+      *) export PATH="$tool_path:$PATH" ;;
+    esac
+  fi
+done
+
+# Initialize tools that need it BEFORE loading aliases
+if command -v zoxide &>/dev/null; then
+  eval "$(zoxide init zsh)"
+fi
+
+if command -v starship &>/dev/null; then
+  eval "$(starship init zsh)"
+fi
+
+if command -v direnv &>/dev/null; then
+  eval "$(direnv hook zsh)"
+fi
+
 # Load aliases if available
 if [ -f "$HOME/.dotfiles/.aliases" ]; then
   source "$HOME/.dotfiles/.aliases" 2>/dev/null || true

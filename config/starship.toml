@@ -125,19 +125,17 @@ format = "$symbol[${ram}( | ${swap})]($style) "
 
 [custom.processes]
 command = "echo -n \"PROC: $(ps -e --no-header | wc -l)/$(ulimit -u)\""
-when = "true"
+when = false
 style = "bold yellow"
 format = "[$output]($style) "
-command_timeout = 2000
-ignore_timeout = true
+disabled = true
 
 [custom.cpu]
 command = "top -bn1 | grep 'Cpu(s)' | awk '{print $2+$4 \"%\"}'"
-when = "true"
+when = false
 style = "bold dimmed green"
 format = "CPU: [$output]($style) "
-command_timeout = 2000
-ignore_timeout = true
+disabled = true
 
 [time]
 disabled = false

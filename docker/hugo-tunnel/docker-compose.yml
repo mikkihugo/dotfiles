@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  hugo-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: hugo-tunnel
+    restart: unless-stopped
+    
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    
+    network_mode: host
+    
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

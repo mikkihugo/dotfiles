@@ -143,20 +143,32 @@ services:
     networks:
       - tabby-net
       
-  # Cloudflare Tunnel
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflared
+  # Nexus Docker-in-Docker with Cloudflare Tunnel
+  nexus-hugo-dk:
+    build: ../nexus-dind
+    container_name: nexus-hugo-dk
     restart: unless-stopped
-    command: tunnel run
+    privileged: true
+    ports:
+      - "2376:2376"  # Docker daemon
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
     volumes:
-      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - nexus-data:/var/lib/docker
     environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+      - DOCKER_TLS_CERTDIR=/certs
       - VAULT_ADDR=http://vault:8200
     depends_on:
       - vault
     networks:
       - tabby-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
       
   # Monitoring & Heartbeat
   monitor:
@@ -203,6 +215,7 @@ volumes:
   gitea-data:
   drone-data:
   monitor-data:
+  nexus-data:
 
 networks:
   tabby-net:

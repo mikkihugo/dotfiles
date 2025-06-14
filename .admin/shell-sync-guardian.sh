@@ -32,6 +32,27 @@ CORE_PATHS=(
     "\$HOME/.local/share/mise/shims"
 )
 
+# Rust utilities that should have consistent aliases
+RUST_UTILS=(
+    "rg:grep"
+    "fd:find"
+    "eza:ls"
+    "bat:cat"
+    "bottom:top"
+    "dust:du"
+    "duf:df"
+    "sd:sed"
+    "delta:diff"
+    "hyperfine:time"
+    "tokei:wc"
+    "xh:http"
+    "gitui:gg"
+    "lazygit:lg"
+    "yazi:fm"
+    "helix:vim"
+    "zellij:tmux"
+)
+
 # Tools that need initialization
 INIT_TOOLS=(
     "mise:activate"
@@ -83,6 +104,55 @@ EOF
     done
 }
 
+# Generate Rust utility aliases for specific shell
+generate_rust_aliases() {
+    local shell=$1
+    
+    echo -e "\n# Rust utility aliases (auto-generated)"
+    
+    for util_spec in "${RUST_UTILS[@]}"; do
+        IFS=':' read -r tool alias_name <<< "$util_spec"
+        
+        if [ "$shell" = "fish" ]; then
+            echo "if command -v $tool &>/dev/null"
+            echo "    alias $alias_name '$tool'"
+            echo "end"
+        else
+            echo "if command -v $tool &>/dev/null; then"
+            echo "    alias $alias_name='$tool'"
+            echo "fi"
+        fi
+        echo ""
+    done
+    
+    # Special handling for eza/ls
+    if [ "$shell" = "fish" ]; then
+        cat << 'EOF'
+if command -v eza &>/dev/null
+    alias ll 'eza -la --icons --group-directories-first --git'
+    alias lt 'eza --tree --level=2 --icons'
+    alias tree 'eza --tree --icons'
+else
+    alias ll 'ls -alF'
+    alias la 'ls -A'
+    alias l 'ls -CF'
+end
+EOF
+    else
+        cat << 'EOF'
+if command -v eza &>/dev/null; then
+    alias ll='eza -la --icons --group-directories-first --git'
+    alias lt='eza --tree --level=2 --icons'
+    alias tree='eza --tree --icons'
+else
+    alias ll='ls -alF'
+    alias la='ls -A'
+    alias l='ls -CF'
+fi
+EOF
+    fi
+}
+
 # Sync bashrc
 sync_bash() {
     log "Syncing bash configuration..."
@@ -114,6 +184,13 @@ fi
 if [ -f "$HOME/.dotfiles/.aliases" ]; then
     source "$HOME/.dotfiles/.aliases" 2>/dev/null || true
 fi
+
+EOF
+    
+    # Add Rust utility aliases
+    generate_rust_aliases bash >> "$bash_config"
+    
+    cat >> "$bash_config" << 'EOF'
 
 # Claude CLI
 if [ -f "$HOME/.claude/local/claude" ]; then
@@ -173,6 +250,13 @@ fi
 if [ -f "$HOME/.dotfiles/.aliases" ]; then
   source "$HOME/.dotfiles/.aliases" 2>/dev/null || true
 fi
+
+EOF
+    
+    # Add Rust utility aliases
+    generate_rust_aliases zsh >> "$zsh_config"
+    
+    cat >> "$zsh_config" << 'EOF'
 
 # Claude aliases
 if [ -f "$HOME/.npm-global/bin/claude-yolo" ]; then
@@ -244,6 +328,13 @@ if test -f "$HOME/.dotfiles/.config/fish/aliases.fish"
     source "$HOME/.dotfiles/.config/fish/aliases.fish"
 end
 
+EOF
+    
+    # Add Rust utility aliases
+    generate_rust_aliases fish >> "$fish_config"
+    
+    cat >> "$fish_config" << 'EOF'
+
 # Claude CLI
 if test -f "$HOME/.claude/local/claude"
     alias claude="$HOME/.claude/local/claude"
@@ -310,13 +401,75 @@ main() {
     fi
 }
 
-# Run with --auto to skip confirmation
-if [[ "${1:-}" == "--auto" ]]; then
-    sync_bash
-    sync_zsh
-    sync_fish
-    update_configs
-    log "Automatic sync completed"
-else
-    main
-fi
+# Setup automatic sync via cron
+setup_auto_sync() {
+    log "Setting up automatic shell sync..."
+    
+    # Create cron entry
+    local cron_cmd="0 */6 * * * $ADMIN_DIR/shell-sync-guardian.sh --auto >> $ADMIN_DIR/sync.log 2>&1"
+    
+    # Check if already in crontab
+    if crontab -l 2>/dev/null | grep -q "shell-sync-guardian"; then
+        echo "Auto-sync already configured in crontab"
+    else
+        # Add to crontab
+        (crontab -l 2>/dev/null; echo "$cron_cmd") | crontab -
+        log "Added auto-sync to crontab (runs every 6 hours)"
+        echo "✓ Automatic shell sync configured!"
+    fi
+}
+
+# Show current sync status
+show_status() {
+    echo "=== Shell Sync Guardian Status ==="
+    echo ""
+    echo "Last sync: $(grep "Starting shell sync" "$LOG_FILE" 2>/dev/null | tail -1 || echo "Never")"
+    echo ""
+    echo "Current tool versions:"
+    for util_spec in "${RUST_UTILS[@]}"; do
+        IFS=':' read -r tool alias_name <<< "$util_spec"
+        if command -v $tool &>/dev/null; then
+            echo "  ✓ $tool → $alias_name"
+        else
+            echo "  ✗ $tool (not installed)"
+        fi
+    done
+    echo ""
+    if crontab -l 2>/dev/null | grep -q "shell-sync-guardian"; then
+        echo "Auto-sync: ✓ Enabled (every 6 hours)"
+    else
+        echo "Auto-sync: ✗ Disabled"
+    fi
+}
+
+# Parse command line arguments
+case "${1:-}" in
+    --auto)
+        sync_bash
+        sync_zsh
+        sync_fish
+        update_configs
+        log "Automatic sync completed"
+        ;;
+    --setup-auto)
+        setup_auto_sync
+        ;;
+    --status)
+        show_status
+        ;;
+    --help)
+        echo "Shell Sync Guardian - Keep bash, zsh, and fish in sync"
+        echo ""
+        echo "Usage: $0 [option]"
+        echo ""
+        echo "Options:"
+        echo "  (none)        Interactive sync with confirmation"
+        echo "  --auto        Run sync without confirmation"
+        echo "  --setup-auto  Setup automatic sync via cron"
+        echo "  --status      Show sync status and tool availability"
+        echo "  --help        Show this help message"
+        ;;
+    *)
+        main
+        ;;
+esac

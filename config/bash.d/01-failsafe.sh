@@ -44,35 +44,17 @@ if command -v mise &>/dev/null && [ -z "$FAILSAFE_CHECK_DONE" ] && [ -f "$HOME/.
   "$HOME/.dotfiles/.mise/tasks/failsafe-check.sh" &
 fi
 
-# Ensure shell-guardian is installed
-if [ ! -f "$HOME/.local/bin/shell-guardian" ]; then
+# Guardian is currently disabled to prevent interference
+# To enable guardian protection, set ENABLE_SHELL_GUARDIAN=1
+if [ "$ENABLE_SHELL_GUARDIAN" = "1" ] && [ ! -f "$HOME/.local/bin/shell-guardian" ]; then
   # Protected directory for critical files
   GUARDIAN_DIR="$HOME/.dotfiles/.guardian-shell"
   
   # Try using pre-compiled binary first
-  if [ -f "${GUARDIAN_DIR}/shell-guardian.bin" ]; then
+  if [ -f "${GUARDIAN_DIR}/shell-guardian" ]; then
     mkdir -p "$HOME/.local/bin"
-    cp "${GUARDIAN_DIR}/shell-guardian.bin" "$HOME/.local/bin/shell-guardian"
+    cp "${GUARDIAN_DIR}/shell-guardian" "$HOME/.local/bin/shell-guardian"
     chmod +x "$HOME/.local/bin/shell-guardian"
-    echo "✅ Shell Guardian restored from protected backup"
-  # Try bash fallback
-  elif [ -f "${GUARDIAN_DIR}/bash-guardian-fallback.sh" ]; then
-    mkdir -p "$HOME/.local/bin"
-    cp "${GUARDIAN_DIR}/bash-guardian-fallback.sh" "$HOME/.local/bin/shell-guardian"
-    chmod +x "$HOME/.local/bin/shell-guardian"
-    echo "✅ Shell Guardian fallback activated"
-  # If no protected options, try script directory
-  elif [ -f "$HOME/.dotfiles/.scripts/guardian/bash-guardian-fallback.sh" ]; then
-    mkdir -p "$HOME/.local/bin"
-    cp "$HOME/.dotfiles/.scripts/guardian/bash-guardian-fallback.sh" "$HOME/.local/bin/shell-guardian"
-    chmod +x "$HOME/.local/bin/shell-guardian"
-    echo "✅ Shell Guardian fallback activated from scripts"
-  # If no options, prompt for installation
-  elif [ -f "$HOME/.dotfiles/.scripts/guardian/install-shell-guardian.sh" ]; then
-    echo "🔒 Shell Guardian not found. Install now? (y/n)"
-    read -r install_guardian
-    if [[ "$install_guardian" =~ ^[Yy]$ ]]; then
-      "$HOME/.dotfiles/.scripts/guardian/install-shell-guardian.sh"
-    fi
+    echo "✅ Shell Guardian activated"
   fi
 fi

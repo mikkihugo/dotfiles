@@ -10,6 +10,10 @@ setopt no_global_rcs
 # Essential PATH only
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.local/bin:$HOME/bin"
 
+# Add npm global bin and scripts
+export PATH="$HOME/.npm-global/bin:$PATH"
+export PATH="$HOME/.scripts:$PATH"
+
 # Basic environment
 export EDITOR=${EDITOR:-nano}
 export PAGER=${PAGER:-less}
@@ -32,6 +36,7 @@ alias grep='grep --color=auto'
 # Load mise if available
 if [ -f "$HOME/.local/bin/mise" ]; then
   eval "$("$HOME/.local/bin/mise" activate zsh)" 2>/dev/null || true
+  export PATH="$HOME/.local/share/mise/shims:$PATH"
 fi
 
 # Load tokens if available
@@ -44,6 +49,20 @@ fi
 # Add dotfiles tools
 if [ -d "$HOME/.dotfiles/tools" ]; then
   export PATH="$HOME/.dotfiles/tools:$PATH"
+fi
+
+# Load aliases if available
+if [ -f "$HOME/.dotfiles/.aliases" ]; then
+  source "$HOME/.dotfiles/.aliases" 2>/dev/null || true
+fi
+
+# Claude aliases
+if [ -f "$HOME/.npm-global/bin/claude-yolo" ]; then
+  alias claude-yolo="$HOME/.npm-global/bin/claude-yolo"
+fi
+
+if [ -f "$HOME/.claude/local/claude" ]; then
+  alias claude="$HOME/.claude/local/claude"
 fi
 
 # Enable fzf if available

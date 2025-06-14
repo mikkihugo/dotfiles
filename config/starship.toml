@@ -128,12 +128,16 @@ command = "echo -n \"PROC: $(ps -e --no-header | wc -l)/$(ulimit -u)\""
 when = "true"
 style = "bold yellow"
 format = "[$output]($style) "
+command_timeout = 2000
+ignore_timeout = true
 
 [custom.cpu]
 command = "top -bn1 | grep 'Cpu(s)' | awk '{print $2+$4 \"%\"}'"
 when = "true"
 style = "bold dimmed green"
 format = "CPU: [$output]($style) "
+command_timeout = 2000
+ignore_timeout = true
 
 [time]
 disabled = false

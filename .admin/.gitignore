@@ -1,0 +1,3 @@
+# Keep admin logs and auth private
+.auth
+admin.log

@@ -1,0 +1,16 @@
+# Clean minimal starship prompt
+format = """$directory$git_branch$character"""
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+[directory]
+style = "cyan bold"
+truncation_length = 2
+truncate_to_repo = false
+
+[git_branch]
+symbol = " "
+style = "purple bold"
+format = "[$symbol$branch]($style) "

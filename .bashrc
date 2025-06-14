@@ -44,14 +44,15 @@ alias grep='grep --color=auto'
 if [ -n "$SSH_CONNECTION" ] && [ -z "$SHELL_UPGRADED" ]; then
     export SHELL_UPGRADED=1
     
-    # Try zsh first, then fish, then stay in bash
-    if command -v zsh >/dev/null 2>&1; then
-        echo "🚀 Upgrading to zsh..."
-        exec zsh
-    elif command -v fish >/dev/null 2>&1; then
+    # Prefer fish first (if available), then zsh, then stay in bash
+    if command -v fish >/dev/null 2>&1; then
         echo "🐟 Upgrading to fish..."
         exec fish
+    elif command -v zsh >/dev/null 2>&1; then
+        echo "🚀 Upgrading to zsh..."
+        exec zsh
     fi
+    # If neither fish nor zsh available, stay in bash
 fi
 
 # mise activation (lightweight check)
@@ -76,14 +77,27 @@ fi
 if [ -d "$HOME/.dotfiles/tools" ]; then
     export PATH="$HOME/.dotfiles/tools:$PATH"
 fi
-# AI API Keys - Added by Nexus setup
-export GITHUB_TOKEN=$(gh auth token 2>/dev/null)
-export GOOGLE_AI_PERSONAL_FREE="AIzaSyA5Di0rwS2vLRbzgyRdGlF7V-tTTVBck_0"
-export CF_API_TOKEN="4d8d4b4c4ab849f6934face0f36e201f7bddc"
 
-# Aliases for the keys with common names
-export GOOGLE_AI="$GOOGLE_AI_PERSONAL_FREE"
-export GOOGLE_AI_KEY="$GOOGLE_AI_PERSONAL_FREE"
-export CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"
-EOF < /dev/null
+# Add npm global bin
 export PATH="$HOME/.npm-global/bin:$PATH"
+
+# Add scripts to PATH
+export PATH="$HOME/.scripts:$PATH"
+
+# SQLite3 library path for Python
+export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
+
+# Initialize starship if available
+if command -v starship &>/dev/null; then
+  eval "$(starship init bash)"
+fi
+
+# Initialize zoxide if available
+if command -v zoxide &>/dev/null; then
+  eval "$(zoxide init bash)"
+fi
+
+# Claude CLI
+if [ -f "$HOME/.claude/local/claude" ]; then
+    alias claude="$HOME/.claude/local/claude"
+fi

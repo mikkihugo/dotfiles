@@ -81,12 +81,21 @@ fi
 
 # Claude aliases
 if [ -f "$HOME/.npm-global/bin/claude-yolo" ]; then
-  alias claude-yolo="$HOME/.npm-global/bin/claude-yolo"
+  # Package managers handled by mise/pnpm
 fi
 
 if [ -f "$HOME/.claude/local/claude" ]; then
-  alias claude="$HOME/.claude/local/claude"
+  # claude now handled by global package manager
 fi
+
+# Use pnpm instead of npm/npx/yarn
+alias npm="echo 'Use pnpm instead!' && false"
+alias npx="echo 'Use pnpm dlx instead!' && false"
+alias yarn="echo 'Use pnpm instead!' && false"
+
+# pnpm shortcuts
+alias pn="pnpm"
+alias pnx="pnpm dlx"
 
 # Enable fzf if available
 if command -v fzf &>/dev/null; then

@@ -85,9 +85,23 @@ end
 
 # Claude
 if test -f "$HOME/.claude/local/claude"
-    alias claude="$HOME/.claude/local/claude"
+    # claude now handled by global package manager
 end
 
 if test -f "$HOME/.npm-global/bin/claude-yolo"
-    alias claude-yolo="$HOME/.npm-global/bin/claude-yolo"
+    # Package managers handled by mise/pnpm
+end
+
+# Use pnpm instead of npm/npx/yarn
+alias npm="echo 'Use pnpm instead!' && false"
+alias npx="echo 'Use pnpm dlx instead!' && false"
+alias yarn="echo 'Use pnpm instead!' && false"
+
+# pnpm shortcuts
+alias pn="pnpm"
+alias pnx="pnpm dlx"
+
+# Ensure mise shims are in PATH for proper command interception
+if test -d "$HOME/.local/share/mise/shims"
+    set -gx PATH "$HOME/.local/share/mise/shims" $PATH
 end

@@ -113,7 +113,9 @@ if [ -d "$HOME/.dotfiles/config/bash.d" ]; then
             source "$module"
         fi
     done
-fiexport COMPOSE_PROJECT_NAME=hugo-server
+fi
+
+export COMPOSE_PROJECT_NAME=hugo-server
 # Use pnpm instead of npm/npx/yarn
 alias npm="echo 'Use pnpm instead!' && false"
 alias npx="echo 'Use pnpm dlx instead!' && false"

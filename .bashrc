@@ -99,7 +99,7 @@ fi
 
 # Claude CLI
 if [ -f "$HOME/.claude/local/claude" ]; then
-    alias claude="$HOME/.claude/local/claude"
+    # claude now handled by npm global (via pnpm)
 fi
 
 # Load bash.d modules (except guardian which can interfere)
@@ -113,4 +113,12 @@ if [ -d "$HOME/.dotfiles/config/bash.d" ]; then
             source "$module"
         fi
     done
-fi
+fiexport COMPOSE_PROJECT_NAME=hugo-server
+# Use pnpm instead of npm/npx/yarn
+alias npm="echo 'Use pnpm instead!' && false"
+alias npx="echo 'Use pnpm dlx instead!' && false"
+alias yarn="echo 'Use pnpm instead!' && false"
+
+# pnpm shortcuts
+alias pn="pnpm"
+alias pnx="pnpm dlx"

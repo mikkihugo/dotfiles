@@ -189,6 +189,12 @@ alias bashrc='${EDITOR:-nano} ~/.bashrc && source ~/.bashrc'
 alias aliases='${EDITOR:-nano} ~/.aliases && source ~/.aliases'
 alias reload='source ~/.bashrc'
 
+# AI Code Review
+alias ai-lint='~/.scripts/ai-lint.sh'
+alias ai-detect='~/.scripts/detect-ai-code.sh'
+alias ai-review='aider --lint --no-git --model openrouter/mistralai/mistral-7b-instruct:free'
+alias ai-fix='aider --lint --model openrouter/mistralai/mistral-7b-instruct:free --yes'
+
 # Mise shortcuts (if available)
 if command -v mise &>/dev/null; then
     alias mi='mise install'

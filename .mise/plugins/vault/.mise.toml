@@ -1,0 +1,51 @@
+[tools]
+# Core development tools
+node = "latest"
+python = "latest"
+rust = "latest"
+go = "latest"
+deno = "latest"
+
+# CLI tools
+gh = "latest"
+glab = "latest"
+kubectl = "latest"
+terraform = "latest"
+jq = "latest"
+fzf = "latest"
+lazygit = "latest"
+neovim = "latest"
+
+[env]
+# Load vault plugins automatically
+MISE_VAULT_PLUGINS = "$HOME/code/hugo-server/mise-plugins"
+
+[hooks]
+# Run vault setup on entering directory
+enter = """
+#!/bin/bash
+echo "🔐 Loading Hugo Vault configurations..."
+
+# Source all vault plugins
+for plugin in $MISE_VAULT_PLUGINS/mise-vault-*.sh; do
+    if [ -f "$plugin" ]; then
+        source "$plugin" setup
+    fi
+done
+
+echo "✅ All vault configurations loaded!"
+"""
+
+[plugins]
+# Custom Hugo vault plugins
+vault-ai = "$MISE_VAULT_PLUGINS/mise-vault-ai.sh"
+vault-cloud = "$MISE_VAULT_PLUGINS/mise-vault-cloud.sh"
+vault-git = "$MISE_VAULT_PLUGINS/mise-vault-git.sh"
+vault-dev = "$MISE_VAULT_PLUGINS/mise-vault-dev.sh"
+vault-monitoring = "$MISE_VAULT_PLUGINS/mise-vault-monitoring.sh"
+
+[alias]
+# Shortcuts for vault operations
+vault = "vault-client"
+vault-setup = "for p in $MISE_VAULT_PLUGINS/mise-vault-*.sh; do $p setup; done"
+vault-install = "for p in $MISE_VAULT_PLUGINS/mise-vault-*.sh; do $p install; done"

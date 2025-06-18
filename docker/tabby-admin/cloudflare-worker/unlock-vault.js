@@ -2,7 +2,7 @@
 // Deploy to: unlock.hugo.dk
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url);
     
     // Handle unlock request
@@ -25,7 +25,7 @@ export default {
     
     // Handle approval page
     if (url.pathname.startsWith('/approve/')) {
-      const token = url.pathname.split('/')[2];
+      const _token = url.pathname.split('/')[2];
       
       // Show approval page with auth
       return new Response(APPROVAL_HTML, {

@@ -106,6 +106,7 @@ symbol = "🦕 "
 style = "#A3BE8C bold"
 detect_extensions = ["ts", "tsx", "js", "jsx"]
 detect_files = ["deno.json", "deno.jsonc", "mod.ts", "deps.ts", "lock.json"]
+format = "via [$symbol($version )]($style)"
 
 [golang]
 symbol = "🐹 "

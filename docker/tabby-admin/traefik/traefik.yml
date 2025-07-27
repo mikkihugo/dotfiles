@@ -1,3 +1,4 @@
+---
 # Traefik configuration with Let's Encrypt via Cloudflare DNS
 
 api:

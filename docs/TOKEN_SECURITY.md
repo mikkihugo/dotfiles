@@ -61,4 +61,4 @@ When you rotate API tokens:
 Run the security scanner manually:
 ```bash
 .scripts/check-secrets.sh
-```
+```# Test hook functionality

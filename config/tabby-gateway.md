@@ -1,7 +1,7 @@
 # Tabby Gateway Configuration
 
 ## Gateway Details
-- **Token**: `BNgh9981doggy!!`
+- **Token**: `YOUR_GATEWAY_TOKEN`
 - **Port**: 9000
 - **Container**: tabby-gateway
 

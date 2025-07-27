@@ -4,7 +4,7 @@
 
 # Function to create or attach to session
 s() {
-    local session_name="${1:-$(basename $(pwd))}"
+    local session_name="${1:-$(basename "$(pwd)")}"
     
     if tmux has-session -t "$session_name" 2>/dev/null; then
         echo "📎 Attaching to existing session: $session_name"

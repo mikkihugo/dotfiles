@@ -19,7 +19,7 @@ show_enhanced_menu() {
         [[ $- != *i* ]] && return
         
         # Only skip if we're actually inside a tmux pane (not just inherited TMUX var)
-        if [ ! -z "$TMUX" ] && [ ! -z "$TMUX_PANE" ]; then
+        if [ -n "$TMUX" ] && [ -n "$TMUX_PANE" ]; then
             return
         fi
         
@@ -29,7 +29,7 @@ show_enhanced_menu() {
     
     # Smart menu selection based on environment
     # Use basic menu for SSH sessions or when BASIC_MENU is set
-    if [ ! -z "$SSH_CONNECTION" ] || [ "$BASIC_MENU" = "true" ]; then
+    if [ -n "$SSH_CONNECTION" ] || [ "$BASIC_MENU" = "true" ]; then
         # SSH session or forced basic - use number-based menu
         show_basic_menu
     elif command -v gum &>/dev/null && tty >/dev/null 2>&1 && [ -t 0 ] && [ -t 1 ]; then
@@ -47,15 +47,18 @@ show_gum_menu() {
     local header="🚀 SESSION & CONNECTION MANAGER"
     
     # Add tmux sessions with better formatting and numbers
-    local sessions=$(tmux list-sessions -F "#{session_name}:#{?session_attached,[ATTACHED],[FREE]}:#{session_windows}w:#{session_created_string}" 2>/dev/null)
-    if [ ! -z "$sessions" ]; then
+    local sessions
+    sessions=$(tmux list-sessions -F "#{session_name}:#{?session_attached,[ATTACHED],[FREE]}:#{session_windows}w:#{session_created_string}" 2>/dev/null)
+    if [ -n "$sessions" ]; then
         options+=("📋 TMUX SESSIONS")
         local i=1
         while IFS= read -r session; do
-            local name=$(echo "$session" | cut -d: -f1)
-            local status=$(echo "$session" | cut -d: -f2)
-            local windows=$(echo "$session" | cut -d: -f3)
-            local created=$(echo "$session" | cut -d: -f4)
+            local name
+            local status
+            local windows
+            name=$(echo "$session" | cut -d: -f1)
+            status=$(echo "$session" | cut -d: -f2)
+            windows=$(echo "$session" | cut -d: -f3)
             if [[ "$status" == "[ATTACHED]" ]]; then
                 options+=("$i) 🟢 $name $status $windows")
             else
@@ -68,7 +71,8 @@ show_gum_menu() {
     
     # Add SSH hosts from tabby-sync
     if [ -f "$HOME/.tabby-hosts.json" ]; then
-        local ssh_count=$(jq -r '.hosts | length' "$HOME/.tabby-hosts.json" 2>/dev/null || echo "0")
+        local ssh_count
+        ssh_count=$(jq -r '.hosts | length' "$HOME/.tabby-hosts.json" 2>/dev/null || echo "0")
         if [ "$ssh_count" -gt 0 ]; then
             options+=("🌐 SSH CONNECTIONS ($ssh_count hosts)")
             jq -r '.hosts[] | "  🔗 \(.alias) → \(.user)@\(.hostname)"' "$HOME/.tabby-hosts.json" 2>/dev/null | head -10 | while read -r host; do
@@ -99,7 +103,8 @@ show_gum_menu() {
         "❌ Exit"
     )
     
-    local choice=$(printf '%s\n' "${options[@]}" | gum choose \
+    local choice
+    choice=$(printf '%s\n' "${options[@]}" | gum choose \
         --header "$header" \
         --header.foreground="212" \
         --cursor.foreground="212" \
@@ -123,19 +128,22 @@ handle_choice() {
             ;;
         [0-9]")"*)
             # Attach to tmux session by number
-            local session_name=$(echo "$choice" | awk '{print $3}')
+            local session_name
+            session_name=$(echo "$choice" | awk '{print $3}')
             tmux attach-session -t "$session_name"
             exit
             ;;
         "  🔗 "*)
             # SSH connection
-            local alias=$(echo "$choice" | sed 's/.*🔗 \([^ ]*\) →.*/\1/')
+            local alias
+            alias=$(echo "$choice" | sed 's/.*🔗 \([^ ]*\) →.*/\1/')
             echo "🔗 Connecting to $alias..."
             ssh "$alias"
             ;;
         "✨ New tmux session")
-            local name=$(gum input --placeholder "Session name" --header "New TMUX Session")
-            if [ ! -z "$name" ]; then
+            local name
+            name=$(gum input --placeholder "Session name" --header "New TMUX Session")
+            if [ -n "$name" ]; then
                 tmux new-session -s "$name"
                 exit
             fi

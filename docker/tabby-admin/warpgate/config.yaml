@@ -1,3 +1,4 @@
+---
 # Warpgate Configuration for Hugo.dk Admin
 # Advanced SSH bastion with recording and web UI
 
@@ -5,18 +6,18 @@
 http:
   enable: true
   listen: 0.0.0.0:8888
-  
-# SSH configuration  
+
+# SSH configuration
 ssh:
   enable: true
   listen: 0.0.0.0:2222
   host_key_path: /data/host_key
-  
+
 # MySQL recording storage (optional, uses SQLite by default)
 recordings:
   enable: true
   path: /data/recordings
-  
+
 # Authentication
 auth:
   # Local users
@@ -24,14 +25,14 @@ auth:
     - username: admin
       password_hash: "$argon2id$..."  # Set via environment
       roles: [admin]
-      
+
   # SSO via GitHub (for Singularity later)
   providers:
     - type: oauth2
       name: github
       client_id: ${GITHUB_CLIENT_ID}
       client_secret: ${GITHUB_CLIENT_SECRET}
-      
+
 # Targets (SSH hosts)
 targets:
   # Local Docker services
@@ -40,33 +41,33 @@ targets:
     port: 22
     username: root
     auth: publickey
-    
+
   - name: gitea
     host: gitea
     port: 22
     username: git
     auth: publickey
-    
+
   # External servers (added dynamically)
   # Managed via API/UI
-  
+
 # Access control
 roles:
   - name: admin
     permissions:
       - target:*
       - admin:*
-      
+
   - name: developer
     permissions:
       - target:dev-*
       - session:*
-      
+
 # Session recording
 session_recording:
   enable: true
   compress: true
-  
+
 # Web UI customization
 web_ui:
   title: "Hugo.dk Admin Portal"

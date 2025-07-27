@@ -19,10 +19,10 @@ spec:
           env:
             - name: PROJECT_ID
               value: hugo-admin-stack
-        resources:
-          limits:
-            cpu: '1'
-            memory: 512Mi
+          resources:
+            limits:
+              cpu: '1'
+              memory: 512Mi
 ---
 # Webhook handler code (index.js)
 apiVersion: v1
@@ -31,7 +31,7 @@ metadata:
   name: webhook-code
 data:
   index.js: |
-    const { SecretManagerServiceClient } = 
+    const { SecretManagerServiceClient } =
       require('@google-cloud/secret-manager');
     const express = require('express');
 

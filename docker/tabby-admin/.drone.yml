@@ -1,3 +1,4 @@
+---
 kind: pipeline
 type: docker
 name: deploy-dotfiles
@@ -16,7 +17,7 @@ steps:
     commands:
       - git pull origin main
       - ./scripts/sync-to-servers.sh
-      
+
   # Update Docker services if changed
   - name: update-services
     image: docker/compose
@@ -31,13 +32,13 @@ steps:
       paths:
         include:
           - docker/**
-          
+
   # Run tests
   - name: test
     image: alpine
     commands:
       - ./scripts/test-admin-stack.sh
-      
+
   # Backup after changes
   - name: backup
     image: alpine
@@ -57,14 +58,14 @@ name: update-tabby-gateway
 trigger:
   event:
     - custom
-    
+
 steps:
   - name: deploy
     image: alpine
     commands:
       - cd docker/tabby-admin
       - docker-compose up -d tabby-gateway
-      
+
   - name: health-check
     image: alpine
     commands:

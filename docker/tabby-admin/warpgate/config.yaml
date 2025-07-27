@@ -48,8 +48,8 @@ targets:
     username: git
     auth: publickey
 
-  # External servers (added dynamically)
-  # Managed via API/UI
+    # External servers (added dynamically)
+    # Managed via API/UI
 
 # Access control
 roles:

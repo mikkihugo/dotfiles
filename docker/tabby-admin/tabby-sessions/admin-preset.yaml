@@ -10,21 +10,21 @@ profiles:
       host: localhost
       port: 2222
       username: admin
-      
+
   - id: local-gitea
     name: "Gitea"
     type: local
     icon: fas fa-code-branch
     options:
       command: docker exec -it gitea bash
-      
+
   - id: drone-logs
     name: "CI Logs"
     type: local
     icon: fas fa-tasks
     options:
       command: docker logs -f drone
-      
+
 sessions:
   # Admin layout - auto-opens on start
   - name: "Admin Dashboard"
@@ -46,7 +46,7 @@ sessions:
         - type: tab
           title: "Logs"
           profile: drone-logs
-          
+
   # Development layout
   - name: "Development"
     layout:
@@ -58,17 +58,17 @@ sessions:
           command: /bin/bash
         - title: "Git"
           command: gitui
-          
+
 # Hotkeys
 hotkeys:
   - key: "Ctrl+Shift+A"
     action: "new-tab"
     profile: "warpgate-ssh"
-    
+
   - key: "Ctrl+Shift+G"
     action: "new-tab"
     profile: "local-gitea"
-    
+
   - key: "Ctrl+Shift+L"
     action: "split-right"
     profile: "drone-logs"

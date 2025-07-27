@@ -68,7 +68,7 @@ if [ -n "$sessions" ]; then
     echo "  - Enter 'q' to continue without Zellij"
     echo ""
     
-    read -p "Your choice: " choice
+    read -r -p "Your choice: " choice
     
     case "$choice" in
         q|Q)
@@ -101,7 +101,7 @@ echo ""
 
 # Default session name
 default_name="ssh-$(date +%Y%m%d-%H%M%S)"
-read -p "Session name (default: $default_name): " session_name
+read -r -p "Session name (default: $default_name): " session_name
 session_name="${session_name:-$default_name}"
 
 # Check if we're in a git repository
@@ -119,7 +119,7 @@ echo "4. Single pane with normal bash"
 echo "5. Custom commands for each pane"
 echo ""
 
-read -p "Choose layout (1-5): " layout_choice
+read -r -p "Choose layout (1-5): " layout_choice
 
 case "$layout_choice" in
     1)
@@ -155,9 +155,9 @@ case "$layout_choice" in
     5)
         # Custom commands
         echo ""
-        read -p "Left pane command (default: bash): " left_cmd
+        read -r -p "Left pane command (default: bash): " left_cmd
         left_cmd="${left_cmd:-bash}"
-        read -p "Right pane command (default: bash): " right_cmd
+        read -r -p "Right pane command (default: bash): " right_cmd
         right_cmd="${right_cmd:-bash}"
         echo -e "${GREEN}Creating dual-pane session with custom commands...${NC}"
         create_dual_pane_session "$session_name" "$left_cmd" "$right_cmd"

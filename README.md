@@ -1,22 +1,135 @@
-# 🚀 Ultimate Modern Development Environment
+# 🔧 Mikki's Dotfiles
 
-Enterprise-grade dotfiles with GitOps automation, smart sync, Tabby gateway, and comprehensive tooling.
+Modern, cross-shell dotfiles with automatic environment synchronization via GitHub Gists.
 
-> 📝 **Claude Code Instructions**: See CLAUDE.md in synthLANG format  
-> 🔐 **Security Note**: Tokens and sensitive configs stored in private gists
+## 🚀 Quick Setup
 
-## ✨ Key Features
+### One-Liner Installation (Recommended)
 
-### 🤖 Automated Sync System
-- **Smart detection** - Lightning-fast GitHub API checks on login
-- **Auto-sync** - Background updates when changes detected
-- **Cross-server sync** - All machines stay updated automatically
-- **Gist integration** - Secure token & SSH host management
+```bash
+# Full installation with tools and environment sync
+curl -fsSL https://raw.githubusercontent.com/mikkihugo/dotfiles/main/install.sh | bash
+
+# Then run bootstrap for environment sync
+~/.dotfiles/bootstrap-new-machine.sh
+```
+
+Or with wget:
+```bash
+# Full installation with tools and environment sync  
+wget -qO- https://raw.githubusercontent.com/mikkihugo/dotfiles/main/install.sh | bash
+
+# Then run bootstrap for environment sync
+~/.dotfiles/bootstrap-new-machine.sh
+```
+
+### Quick Environment Sync Only
+
+If you only want the multi-environment sync system:
+
+```bash
+# Environment sync only (lightweight)
+curl -fsSL https://raw.githubusercontent.com/mikkihugo/dotfiles/main/quick-sync-install.sh | bash
+```
+
+Or manual:
+```bash
+# Clone repo and run bootstrap only
+git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles
+~/.dotfiles/bootstrap-new-machine.sh
+```
+
+**New Multi-Environment Features:**
+- Cross-shell environment loading (bash/zsh/fish)
+- Automatic file watcher for instant sync
+- Separate gists for different secret types
+- Interactive TUI for secret management
+
+### Manual Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles
+
+# 2. Run bootstrap script  
+~/.dotfiles/bootstrap-new-machine.sh
+```
+
+## ✨ Features
+
+### 🤖 AI Guardian System
+- **Claude Safety Wrapper** - Prevents destructive commands
+- **AI Code Review** - Automated linting and security checks
+- **Smart Command Filtering** - Blocks dangerous operations
+- **Rollback Protection** - Atomic operations with fallbacks
+
+### 🐚 Multi-Shell Support
+- **Bash** (`~/.bashrc`) - Enterprise-grade configuration
+- **Zsh** (`~/.zshrc`) - Modern shell with completions  
+- **Fish** (`~/.config/fish/config.fish`) - User-friendly shell
+- **Cross-shell aliases** - Same commands in all shells
+
+### 🔐 Environment Management
+- **5 Environment Files** synced via private GitHub Gists:
+  - `~/.env_tokens` - Personal API keys and tokens (most sensitive)
+  - `~/.env_ai` - AI service configurations  
+  - `~/.env_docker` - Container and infrastructure configs
+  - `~/.env_repos` - Repository paths and Git settings
+  - `~/.env_local` - Machine-specific settings (never synced)
+
+### 🔄 Automatic Synchronization
+- **File Watcher** - Instant sync when environment files change
+- **Periodic Sync** - Every 30 minutes via systemd timer
+- **Cross-Machine** - All your environment variables everywhere
+- **Conflict Resolution** - Smart merge with backup creation
+
+### 🛠️ Modern Development Tools
+- **Rust-based alternatives** - `exa`, `bat`, `ripgrep`, `fd`, `dust`
+- **Smart navigation** - `zoxide` for intelligent cd
+- **Git integration** - `lazygit`, `delta` diffs, `gitui`
+- **Terminal enhancement** - `starship` prompt, `fzf` fuzzy finder
+
+### 🖥️ Session & Gateway Management  
+- **Tmux integration** - Smart session management
+- **Warp gateway** - Modern terminal and SSH management
+- **Session persistence** - Resume work across reboots
+- **Multi-server sync** - Keep all machines in sync
+
+### 🔍 Terminal UI Tools
+- **Secret TUI** - Interactive secret management
+- **Environment TUI** - Visual environment file editor
+- **Sync Manager** - Real-time sync status and controls
+- **File Browser** - `yazi` modern file manager
+
+### 📦 Package Management
+- **Mise integration** - Version management for all languages
+- **Auto-installation** - Missing tools installed automatically  
+- **Version pinning** - Reproducible environments
+- **Cross-platform** - Works on Linux, macOS, WSL
+
+### 🔒 Security Features
+- **Private gists** - All secrets stored securely
+- **Permission management** - Different access levels
+- **Audit trails** - Track all configuration changes
+- **Backup systems** - Multiple layers of protection
+
+## 🔐 Authentication Options
+
+The bootstrap script offers two authentication methods:
+
+### 1. Browser Authentication (Recommended)
+- Opens your browser for GitHub OAuth
+- Automatically requests gist permissions
+- Most secure and user-friendly
+
+### 2. Personal Access Token (PAT)
+- For headless servers or automation
+- Requires manual PAT creation with `gist` scope
+- Get your PAT at: https://github.com/settings/tokens
 
 ### 🎨 Session & Gateway Management
 - **Simple commands** - `s/sl/sk` for tmux session management
-- **Tabby gateway** - Multi-user SSH gateway at ws://51.38.127.98:9000
-- **SSH integration** - Tabby-sync for unified host management
+- **Warp gateway** - Modern terminal and SSH management
 - **Automated backups** - Daily gateway backups to GitHub gists
 
 ### 📦 Backup & Restore
@@ -53,12 +166,10 @@ sk [name]        # Kill session
 sa/sm/sw/st      # Quick jumps (agent/mcp/work/temp)
 ```
 
-### Tabby Gateway
+### Container Management
 ```bash
-mise run gateway-deploy    # Deploy gateway container
-mise run gateway-backup    # Backup to GitHub gist
-mise run gateway-sync      # Sync config from gist
-mise run gateway-schedule  # Setup daily backups
+mise run docker-setup      # Setup container environment
+mise run container-backup  # Backup container data
 ```
 
 ### Productivity Aliases
@@ -91,7 +202,7 @@ weather          # Current weather display
 
 On every login, get a beautiful menu with:
 - **Numbered tmux sessions** (1-5 for instant access)
-- **SSH connections** from Tabby sync
+- **SSH connections** with Warp integration
 - **System tools** and information
 - **Backup/restore** operations
 - **Quick actions** for common tasks
@@ -108,7 +219,7 @@ On every login, get a beautiful menu with:
 - ✅ **Dotfiles** - All configurations via git
 - ✅ **Tools** - Mise automatically installs/updates
 - ✅ **Tokens** - Secure gist-based secret management
-- ✅ **SSH hosts** - Tabby integration for unified access
+- ✅ **SSH hosts** - Warp integration for unified access
 
 ## 📁 Repository Structure
 
@@ -126,7 +237,7 @@ On every login, get a beautiful menu with:
 │   ├── .scripts/enhanced-menu.sh  # Interactive login menu
 │   └── .scripts/backup-restore.sh # Complete state management
 ├── 🔐 Security
-│   ├── .scripts/tabby-sync.sh     # SSH host management
+│   ├── .scripts/ssh-sync.sh       # SSH host management
 │   └── CLAUDE.md                  # AI assistant rules
 └── 📚 Documentation
     └── README.md                   # This file
@@ -187,9 +298,8 @@ alias mycommand='your command here'
 
 ### SSH Host Management
 ```bash
-# Add hosts via Tabby or direct edit
-tabby-sync push    # Push local hosts to gist
-tabby-sync pull    # Pull hosts from gist
+# Modern SSH management with Warp
+# Configuration managed via Warp terminal
 ```
 
 ## 🌐 Multi-Machine Workflow

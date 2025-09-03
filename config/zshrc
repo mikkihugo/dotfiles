@@ -33,6 +33,31 @@ bindkey -e  # Emacs key bindings
 bindkey '^[[1;5C' forward-word
 bindkey '^[[1;5D' backward-word
 
+# Multi-environment file loader (Zsh version)  
+load_env_file() {
+    local env_file="$1"
+    if [[ -f "$env_file" ]]; then
+        # Export all variables from the file
+        while IFS= read -r line; do
+            # Skip comments and empty lines
+            [[ "$line" =~ '^[[:space:]]*#' ]] || [[ -z "$line" ]] && continue
+            # Export the variable
+            if [[ "$line" =~ '^[[:space:]]*export[[:space:]]+' ]]; then
+                eval "$line"
+            fi
+        done < "$env_file"
+        return 0
+    fi
+    return 1
+}
+
+# Load environment files
+load_env_file ~/.env_tokens
+load_env_file ~/.env_ai  
+load_env_file ~/.env_docker
+load_env_file ~/.env_repos
+load_env_file ~/.env_local
+
 # Source common configs
 [[ -f ~/.dotfiles/config/common/env.sh ]] && source ~/.dotfiles/config/common/env.sh
 [[ -f ~/.dotfiles/config/common/aliases.sh ]] && source ~/.dotfiles/config/common/aliases.sh

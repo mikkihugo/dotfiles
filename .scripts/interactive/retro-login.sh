@@ -155,7 +155,7 @@ init_config() {
 # Format: name|type|host|port|user|key|description
 
 # Current servers
-gateway|ssh|51.38.127.98|22|mhugo|~/.ssh/id_rsa|Tabby Gateway Server
+gateway|ssh|YOUR_GATEWAY_IP|22|mhugo|~/.ssh/id_rsa|Tabby Gateway Server
 
 # Add your real servers here - edit with 'retro edit'
 EOF

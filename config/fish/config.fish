@@ -6,6 +6,41 @@ if test -f ~/.dotfiles/config/common/env.sh
     bass source ~/.dotfiles/config/common/env.sh
 end
 
+# Multi-environment file loader (Fish version)
+function load_env_file
+    set env_file $argv[1]
+    if test -f "$env_file"
+        # Read each line and set environment variables
+        while read -la line
+            set line (string trim "$line")
+            # Skip comments and empty lines
+            if string match -q '#*' "$line"; or test -z "$line"
+                continue
+            end
+            # Process export statements
+            if string match -q 'export *' "$line"
+                set var_assignment (string replace 'export ' '' "$line")
+                set var_name (string split -m1 '=' "$var_assignment")[1]
+                set var_value (string split -m1 '=' "$var_assignment")[2]
+                # Remove quotes from value if present
+                set var_value (string trim -c '"' "$var_value")
+                set var_value (string trim -c "'" "$var_value")
+                # Set the environment variable
+                set -gx "$var_name" "$var_value"
+            end
+        end < "$env_file"
+        return 0
+    end
+    return 1
+end
+
+# Load environment files
+load_env_file ~/.env_tokens
+load_env_file ~/.env_ai
+load_env_file ~/.env_docker
+load_env_file ~/.env_repos
+load_env_file ~/.env_local
+
 # Mise integration
 if command -v mise &> /dev/null
     mise activate fish | source

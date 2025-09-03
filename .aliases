@@ -203,10 +203,23 @@ if command -v mise &>/dev/null; then
     alias mr='mise run'
 fi
 
-# Claude CLI (if available)
-if [ -f "$HOME/.claude/local/claude" ]; then
-    alias claude="$HOME/.claude/local/claude"
+# Claude CLI aliases
+if [ -f "/usr/local/bin/claude" ]; then
+    alias claude="/usr/local/bin/claude"
+    alias claude-yolo="/usr/local/bin/claude --dangerously-skip-permissions"
 fi
+
+# Environment management aliases
+alias env-status='~/.dotfiles/.scripts/multi-env-sync.sh status'
+alias env-sync='~/.dotfiles/.scripts/multi-env-sync.sh'
+alias env-push='~/.dotfiles/.scripts/multi-env-sync.sh push'
+alias env-pull='~/.dotfiles/.scripts/multi-env-sync.sh pull'
+alias env-auto='~/.dotfiles/.scripts/multi-env-sync.sh auto'
+alias env-bootstrap='~/.dotfiles/.scripts/multi-env-sync.sh bootstrap'
+alias env-watcher='systemctl --user status env-file-watcher.service'
+alias gh-secrets='~/.dotfiles/.scripts/gh-secrets-sync.sh'
+alias secret-tui='cd ~/.dotfiles/tools/secret-tui && node index.js'
+alias env-tui='cd ~/.dotfiles/tools/secret-tui && node index.js'
 
 # Smart code navigation function (from original)
 function c() {

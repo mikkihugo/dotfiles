@@ -9,7 +9,7 @@ If team gist contains personal tokens, everyone sees everyone's private keys!
 ```yaml
 # gist: team-dotfiles-config
 content:
-  - gateway_url: ws://51.38.127.98:9000
+  - gateway_url: ws://YOUR_GATEWAY_IP:9000
   - gateway_token: YOUR_GATEWAY_TOKEN  # OK - shared resource
   - ssh_hosts: [shared servers]      # OK - team servers
   - NOT: personal_tokens, api_keys

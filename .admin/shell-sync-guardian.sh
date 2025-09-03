@@ -192,9 +192,10 @@ EOF
     
     cat >> "$bash_config" << 'EOF'
 
-# Claude CLI
-if [ -f "$HOME/.claude/local/claude" ]; then
-    alias claude="$HOME/.claude/local/claude"
+# Claude CLI aliases
+if [ -f "/usr/local/bin/claude" ]; then
+    alias claude="/usr/local/bin/claude"
+    alias claude-yolo="/usr/local/bin/claude --dangerously-skip-permissions"
 fi
 
 # Shell upgrade for SSH (fish > zsh > bash)
@@ -259,12 +260,10 @@ EOF
     cat >> "$zsh_config" << 'EOF'
 
 # Claude aliases
-if [ -f "$HOME/.npm-global/bin/claude-yolo" ]; then
-  alias claude-yolo="$HOME/.npm-global/bin/claude-yolo"
-fi
-
-if [ -f "$HOME/.claude/local/claude" ]; then
-  alias claude="$HOME/.claude/local/claude"
+# Claude CLI aliases
+if [ -f "/usr/local/bin/claude" ]; then
+  alias claude="/usr/local/bin/claude"
+  alias claude-yolo="/usr/local/bin/claude --dangerously-skip-permissions"
 fi
 
 # FZF
@@ -335,9 +334,10 @@ EOF
     
     cat >> "$fish_config" << 'EOF'
 
-# Claude CLI
-if test -f "$HOME/.claude/local/claude"
-    alias claude="$HOME/.claude/local/claude"
+# Claude CLI aliases
+if test -f "/usr/local/bin/claude"
+    alias claude "/usr/local/bin/claude"
+    alias claude-yolo "/usr/local/bin/claude --dangerously-skip-permissions"
 end
 EOF
     

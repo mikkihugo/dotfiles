@@ -15,19 +15,18 @@
 # limitations under the License.
 #
 # ==============================================================================
-# Development Environment Installation Script
+# Mikki's Dotfiles One-Liner Installer  
 # ==============================================================================
 #
 # FILE: install.sh
-# DESCRIPTION: Comprehensive development environment setup script that creates
-#              symlinks, installs tools, and configures a modern shell environment.
-#              Implements GitOps principles with atomic operations and rollback
-#              capability for safe installation and updates.
+# DESCRIPTION: One-liner installer for modern dotfiles with multi-shell support
+#              and automatic environment synchronization via GitHub Gists.
+#              Usage: curl -fsSL https://raw.githubusercontent.com/mikkihugo/dotfiles/main/install.sh | bash
 #
 # AUTHOR: Mikki Hugo <mikkihugo@gmail.com>
-# VERSION: 3.1.0
+# VERSION: 4.0.0
 # CREATED: 2024-01-12
-# MODIFIED: 2024-12-06
+# MODIFIED: 2025-09-03
 #
 # DEPENDENCIES:
 #   REQUIRED:

@@ -76,3 +76,4 @@ fi
 if [ -d "$HOME/.dotfiles/tools" ]; then
     export PATH="$HOME/.dotfiles/tools:$PATH"
 fi
+eval "$(mise activate bash)"

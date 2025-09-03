@@ -63,7 +63,8 @@ if [ -f "$HOME/.aliases" ]; then
     source "$HOME/.aliases"
 fi
 
-# Claude CLI
-if [ -f "$HOME/.claude/local/claude" ]; then
-    alias claude="$HOME/.claude/local/claude"
+# Claude CLI aliases
+if [ -f "/usr/local/bin/claude" ]; then
+    alias claude="/usr/local/bin/claude"
+    alias claude-yolo="/usr/local/bin/claude --dangerously-skip-permissions"
 fi

@@ -61,12 +61,24 @@ if [ -f "$HOME/.local/bin/mise" ]; then
   export PATH="$HOME/.local/share/mise/shims:$PATH"
 fi
 
-# Auto-load tokens from gist backup (if available)
-if [ -f "$HOME/.env_tokens" ]; then
-    set -a
-    source "$HOME/.env_tokens" 2>/dev/null || true
-    set +a
-fi
+# Multi-Environment File Loading
+# Load in priority order: base configs → specific configs → local overrides
+
+# Function to safely load environment files
+load_env_file() {
+    if [ -f "$1" ]; then
+        set -a  # Auto-export all variables
+        source "$1" 2>/dev/null || echo "Warning: Failed to load $1" >&2
+        set +a
+    fi
+}
+
+# Load environment files in order (later files override earlier ones)
+load_env_file "$HOME/.env_tokens"    # Personal tokens (from private gist)
+load_env_file "$HOME/.env_ai"        # AI service configurations  
+load_env_file "$HOME/.env_docker"    # Container & Docker configs
+load_env_file "$HOME/.env_repos"     # Repository & project paths
+load_env_file "$HOME/.env_local"     # Local machine overrides (not synced)
 
 # Load dotfiles if available (but don't fail if missing)
 if [ -f "$HOME/.dotfiles/.aliases" ]; then

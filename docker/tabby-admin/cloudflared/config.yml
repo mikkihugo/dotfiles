@@ -1,6 +1,0 @@
-ingress:
-  - hostname: code.nexus.hugo.dk
-    service: http://nexus-ai:8080
-  - hostname: vault.nexus.hugo.dk
-    service: http://nexus-vault:8200
-  - service: http_status:404

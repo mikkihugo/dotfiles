@@ -197,9 +197,10 @@ if command -v mise &>/dev/null; then
     alias mr='mise run'
 fi
 
-# Claude CLI (if available)
-if [ -f "$HOME/.claude/local/claude" ]; then
-    alias claude="$HOME/.claude/local/claude"
+# Claude CLI aliases
+if [ -f "/usr/local/bin/claude" ]; then
+    alias claude="/usr/local/bin/claude"
+    alias claude-yolo="/usr/local/bin/claude --dangerously-skip-permissions"
 fi
 
 # Smart code navigation function (from original)

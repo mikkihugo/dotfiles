@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Claude OAuth-Only Wrapper
+# Forces Claude Code to use OAuth token by unsetting ANTHROPIC_API_KEY
+
+unset ANTHROPIC_API_KEY
+exec claude "$@"

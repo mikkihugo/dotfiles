@@ -17,6 +17,12 @@ Thumbs.db
 .env.test.local
 .env.production.local
 
+# Claude-specific directories (never commit)
+.claude-zen/
+.claude-zen
+*/.claude-zen/
+*/.claude-zen
+
 # IDE files
 .vscode/
 .idea/

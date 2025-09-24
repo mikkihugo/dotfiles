@@ -56,3 +56,8 @@ config/.env.gpg
 *.env
 !.env.example
 !.env.template
+
+# SOPS private keys - NEVER commit these
+.config/sops/age/keys.txt
+**/sops/age/keys.txt
+age-keys.txt

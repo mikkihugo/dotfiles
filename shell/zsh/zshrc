@@ -1,0 +1,19 @@
+#!/bin/zsh
+# Primary interactive Zsh configuration
+
+export DOTFILES_ROOT="${DOTFILES_ROOT:-$HOME/.dotfiles}"
+export DOTFILES_SHELL=zsh
+
+source "$DOTFILES_ROOT/shell/shared/env.sh"
+source "$DOTFILES_ROOT/shell/shared/aliases.sh"
+source "$DOTFILES_ROOT/shell/shared/tooling.sh"
+
+modules_dir="$DOTFILES_ROOT/shell/zsh/modules"
+if [[ -d "$modules_dir" ]]; then
+  for module in "$modules_dir"/*.zsh; do
+    [[ -r "$module" ]] || continue
+    source "$module"
+  done
+fi
+
+unset modules_dir

@@ -88,7 +88,6 @@
 (fn sh-switch () (run "~/.dotfiles/.scripts/shell-switcher.sh"))
 (fn sh-bash () (exec "bash" "--login"))
 (fn sh-zsh () (exec "zsh"))
-(fn sh-fish () (exec "fish"))
 (fn sh-nu () (exec "nu"))
 
 ;; Claude safety wrappers
@@ -114,9 +113,7 @@
     (cd (read (| (zoxide "query" @args))))
     (println "zoxide not installed")))
 
-;; Mise integration
-(when (run? "mise")
-  (eval (read (| (mise "activate" "dune")))))
+;; Toolchain binaries are expected on PATH (Nix dev shell, etc.)
 
 ;; Help function
 (fn help ()

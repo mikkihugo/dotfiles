@@ -1,0 +1,5 @@
+#!/bin/zsh
+export DOTFILES_ROOT="${DOTFILES_ROOT:-$HOME/.dotfiles}"
+if [[ -f "$DOTFILES_ROOT/shell/zsh/zshrc" ]]; then
+  source "$DOTFILES_ROOT/shell/zsh/zshrc"
+fi

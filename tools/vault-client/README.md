@@ -70,18 +70,18 @@ curl -X POST -H "X-API-Key: hugo-vault-api-2025" \
   http://vault-api:5001/api/v1/secrets
 ```
 
-### 5. Mise Integration
-For development environments using mise.
+### 5. Dev Shell Integration
+For Nix/direnv (or any managed shell) sessions that need secrets before launching tooling.
 
 ```bash
 # Load all secrets into environment
-mise-vault setup
+./vault-env.sh setup
 
 # Sync .env file to vault
-mise-vault sync .env
+./vault-env.sh sync .env
 
 # Generate .env from vault
-mise-vault env .env.production
+./vault-env.sh env .env.production
 ```
 
 ## Integration Examples

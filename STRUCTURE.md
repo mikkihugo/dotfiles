@@ -1,37 +1,30 @@
-# Dotfiles Structure (Clean & Organized)
-
-## 📁 All configs in `config/` with symlinks:
+# Repository Structure
 
 ```
-config/
-├── aliases       → ~/.aliases
-├── bashrc        → ~/.bashrc  
-├── starship.toml → ~/.config/starship.toml
-└── tmux.conf     → ~/.tmux.conf
-
-.scripts/
-├── tabby-sync.sh         # Tabby ↔ Gist sync
-├── tmux-startup.sh       # Login menu
-├── tmux-save-restore.sh  # Session management
-└── tmux-auto-name.sh     # Auto-naming
-
-.mise.toml                # Tools including jq, yq, gh
+.
+├── flake.nix                # Nix dev shell with all runtimes/tooling
+├── .envrc                   # direnv hook (use flake)
+├── bootstrap/
+│   ├── bootstrap.sh         # entrypoint called by install.sh
+│   └── steps/               # ordered scripts (00-, 10-, 20-...)
+├── config/                  # mirrors $HOME destinations (starship, zellij, git, ...)
+├── profiles/
+│   ├── default/links.json   # standard workstation links
+│   └── services/links.json  # optional ops stack links
+├── services/                # docker/cloudflare/litellm/vault manifests
+├── shell/
+│   ├── shared/              # env + aliases shared across shells
+│   ├── bash/                # bash-specific entrypoints
+│   └── zsh/                 # zsh-specific entrypoints
+├── tasks/
+│   ├── run                  # thin task dispatcher
+│   └── scripts/             # lint + doctor helpers
+├── install.sh               # forwards to bootstrap/bootstrap.sh
+└── setup-login-shell.sh     # make the nix dev shell your login environment
 ```
 
-## ✅ All dependencies via mise:
-- `jq` - JSON processing
-- `yq` - YAML processing  
-- `gh` - GitHub CLI for gist sync
-
-## 🔗 Symlinks verified:
-- All configs properly linked from `config/`
-- Scripts accessible via PATH
-- Fixed broken aliases
-
-## 🎯 Single sync command:
-```bash
-tabby-sync pull    # Get hosts from gist
-tabby-sync push    # Save hosts to gist
-```
-
-Clean, organized, and maintainable!
+- Run `nix develop` (or `direnv allow`) to enter the managed toolchain before invoking scripts.
+- Apply a profile with `./install.sh` (use `DOTFILES_PROFILE=<name>` to switch).
+- New files go under `config/` and are linked through a profile manifest.
+- Add maintenance helpers under `tasks/scripts/` and expose them via `tasks/run`.
+- Bump tool versions by editing `flake.nix` and committing the updated lock file (`nix flake update`).

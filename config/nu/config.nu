@@ -22,10 +22,6 @@ $env.PATH = ($env.PATH | split row (char esep) | prepend [
 ] | uniq)
 
 # Mise integration
-if (which mise | is-not-empty) {
-    mise activate nu | save -f ~/.cache/mise_activate.nu
-    source ~/.cache/mise_activate.nu
-}
 
 # Starship prompt
 if (which starship | is-not-empty) {
@@ -78,7 +74,6 @@ alias kgs = kubectl get services
 alias sh-switch = ~/.dotfiles/.scripts/shell-switcher.sh
 alias sh-bash = exec bash --login
 alias sh-zsh = exec zsh
-alias sh-fish = exec fish
 alias sh-dune = exec dunesh
 
 # Claude safety

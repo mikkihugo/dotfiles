@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Claude OAuth-Only Wrapper
-# Forces Claude Code to use OAuth token by unsetting ANTHROPIC_API_KEY
+# Forces Claude Code to use stored OAuth session by removing API key interference
 
-unset ANTHROPIC_API_KEY
-exec claude "$@"
+# Completely remove ANTHROPIC_API_KEY from environment to let Claude use stored OAuth
+exec env -u ANTHROPIC_API_KEY claude "$@"

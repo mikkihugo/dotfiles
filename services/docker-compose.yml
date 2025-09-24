@@ -1,0 +1,102 @@
+---
+version: '3.8'
+
+services:
+  # LiteLLM AI Gateway Service
+  litellm:
+    build: 
+      context: ./litellm
+      dockerfile: Dockerfile.litellm
+    container_name: litellm-gateway
+    restart: unless-stopped
+    ports:
+      - "${LITELLM_PORT:-10001}:4000"
+    environment:
+      # AI Service Keys
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - COHERE_API_KEY=${COHERE_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+    volumes:
+      - ./litellm/config:/app/config
+      - litellm_logs:/app/logs
+    networks:
+      - infra_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Cloudflare Tunnel
+  cf-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: hugo-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    network_mode: host
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      - litellm
+
+  # PostgreSQL Vault Database
+  vault-db:
+    image: postgres:15
+    container_name: vault-db
+    restart: unless-stopped
+    ports:
+      - "${VAULT_PORT:-10005}:5432"
+    environment:
+      - POSTGRES_DB=${VAULT_DB:-hugo}
+      - POSTGRES_USER=${VAULT_USER:-hugo}
+      - POSTGRES_PASSWORD=${VAULT_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+    volumes:
+      - vault_data:/var/lib/postgresql/data
+      - ./vault-client/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - infra_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${VAULT_USER:-hugo} -d ${VAULT_DB:-hugo}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Monitoring Service (optional)
+  monitoring:
+    image: prom/node-exporter:latest
+    container_name: monitoring
+    restart: unless-stopped
+    ports:
+      - "${MONITORING_PORT:-10004}:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - infra_network
+
+volumes:
+  litellm_logs:
+    driver: local
+  vault_data:
+    driver: local
+
+networks:
+  infra_network:
+    driver: bridge

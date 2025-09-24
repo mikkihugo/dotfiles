@@ -35,7 +35,7 @@ check_rust_tools() {
     
     if [ ${#missing[@]} -gt 0 ]; then
         echo "Missing rust tools: ${missing[*]}"
-        echo "Install with: mise install ${missing[*]}"
+        echo "Install using cargo or your package manager: ${missing[*]}"
     fi
 }
 

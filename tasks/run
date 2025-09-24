@@ -1,0 +1,23 @@
+#!/bin/bash
+#set -e ??? We'll still mania.
+
+set -euo pipefail
+
+TASK=${1:-}
+if [[ -z "$TASK" ]]; then
+  echo "Usage: tasks/run <task-name>" >&2
+  exit 1
+fi
+
+case "$TASK" in
+  lint)
+    bash "$(dirname "$0")/scripts/lint.sh"
+    ;;
+  doctor)
+    bash "$(dirname "$0")/scripts/doctor.sh"
+    ;;
+  *)
+    echo "Unknown task: $TASK" >&2
+    exit 1
+    ;;
+esac

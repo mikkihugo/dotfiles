@@ -1,0 +1,40 @@
+{
+  "name": "hugo-services",
+  "credentials-file": "/etc/cloudflared/creds.json",
+  "ingress": [
+    {
+      "hostname": "ai.se.hugo.dk",
+      "service": "http://localhost:10001",
+      "originRequest": {
+        "connectTimeout": 30,
+        "tlsTimeout": 10
+      }
+    },
+    {
+      "hostname": "terminal.se.hugo.dk", 
+      "service": "http://localhost:10002",
+      "originRequest": {
+        "connectTimeout": 30,
+        "tlsTimeout": 10
+      }
+    },
+    {
+      "hostname": "ssh.se.hugo.dk",
+      "service": "ssh://localhost:10022",
+      "originRequest": {
+        "connectTimeout": 30
+      }
+    },
+    {
+      "hostname": "monitor.se.hugo.dk",
+      "service": "http://localhost:10004",
+      "originRequest": {
+        "connectTimeout": 30,
+        "tlsTimeout": 10
+      }
+    },
+    {
+      "service": "http_status:404"
+    }
+  ]
+}

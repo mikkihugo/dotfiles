@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Enhanced Claude OAuth Force Wrapper for KiloCode Integration
+# Completely removes all API key interference and forces OAuth authentication
+
+# Remove ALL possible API key environment variables that could interfere
+unset ANTHROPIC_API_KEY
+unset CLAUDE_API_KEY
+unset OPENAI_API_KEY
+
+# Ensure Claude Code uses OAuth by clearing conflicting vars
+# and passing through necessary environment
+exec env \
+  -u ANTHROPIC_API_KEY \
+  -u CLAUDE_API_KEY \
+  PATH="$PATH" \
+  HOME="$HOME" \
+  CLAUDE_CODE_ENTRYPOINT=cli \
+  /home/mhugo/.local/bin/claude "$@"

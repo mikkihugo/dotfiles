@@ -1,0 +1,7 @@
+#!/bin/bash
+# Login shell entrypoint
+
+export DOTFILES_ROOT="${DOTFILES_ROOT:-$HOME/.dotfiles}"
+if [[ -f "$DOTFILES_ROOT/shell/bash/bashrc" ]]; then
+  source "$DOTFILES_ROOT/shell/bash/bashrc"
+fi

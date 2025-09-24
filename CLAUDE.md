@@ -82,7 +82,7 @@ limitations under the License.
 - Internet connection for synchronization
 
 **Optional (Enhanced Features):**
-- mise (tool version manager)
+- Nix (flake-managed toolchain)
 - Modern Rust tools (ripgrep, bat, eza, fd)
 - Starship prompt
 - FZF fuzzy finder
@@ -165,7 +165,7 @@ cd ~/.dotfiles && git add .bashrc && git commit -m "Add .bashrc"
 ```
 
 ## Active configurations:
-- **Shell**: bash with mise + starship
+- **Shell**: bash with Nix dev shell + starship
 
 ## Quick reference:
 - Commit dotfiles: `cd ~/.dotfiles && git add -A && git commit -m "msg" && git push`

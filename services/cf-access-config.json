@@ -1,0 +1,82 @@
+{
+  "applications": [
+    {
+      "name": "Hugo AI Services",
+      "domain": "ai.se.hugo.dk",
+      "type": "self_hosted",
+      "session_duration": "24h",
+      "auto_redirect_to_identity": true,
+      "policies": [
+        {
+          "name": "Admin Access",
+          "decision": "allow",
+          "include": [
+            {
+              "email": ["mikki@hugo.dk"]
+            }
+          ],
+          "require": [],
+          "exclude": []
+        }
+      ]
+    },
+    {
+      "name": "Hugo SSH Gateway",
+      "domain": "ssh.se.hugo.dk",
+      "type": "ssh",
+      "session_duration": "24h",
+      "policies": [
+        {
+          "name": "SSH Access", 
+          "decision": "allow",
+          "include": [
+            {
+              "email": ["mikki@hugo.dk"]
+            }
+          ],
+          "require": [
+            {
+              "login_method": ["Google"]
+            }
+          ],
+          "exclude": []
+        }
+      ]
+    },
+    {
+      "name": "Hugo Monitoring",
+      "domain": "monitor.se.hugo.dk",
+      "type": "self_hosted", 
+      "session_duration": "24h",
+      "auto_redirect_to_identity": true,
+      "policies": [
+        {
+          "name": "Monitor Access",
+          "decision": "allow", 
+          "include": [
+            {
+              "email": ["mikki@hugo.dk"]
+            }
+          ],
+          "require": [],
+          "exclude": []
+        }
+      ]
+    }
+  ],
+  "identity_providers": [
+    {
+      "name": "Google",
+      "type": "google",
+      "config": {
+        "client_id": "${GOOGLE_OAUTH_CLIENT_ID}",
+        "client_secret": "${GOOGLE_OAUTH_CLIENT_SECRET}"
+      }
+    }
+  ],
+  "settings": {
+    "logo_url": "",
+    "header_bg_color": "#1f2937",
+    "header_text_color": "#ffffff"
+  }
+}

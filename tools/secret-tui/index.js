@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import React, { useState, useEffect } from 'react';
 import { render, Box, Text, useInput } from 'ink';
-import BigText from '@ink-ui/big-text';
-import Select from '@ink-ui/select';
-import TextInput from '@ink-ui/text-input';
-import Spinner from '@ink-ui/spinner';
+import BigText from 'ink-big-text';
+import SelectInput from 'ink-select-input';
+import TextInput from 'ink-text-input';
+import Spinner from 'ink-spinner';
 import { execa } from 'execa';
 import chalk from 'chalk';
 import path from 'path';
@@ -95,7 +95,7 @@ const MainMenu = ({ onSelect }) => {
   return (
     <Box flexDirection="column">
       <Text color="yellow">Available actions:</Text>
-      <Select items={items} onSelect={onSelect} />
+      <SelectInput items={items} onSelect={onSelect} />
     </Box>
   );
 };
@@ -142,7 +142,7 @@ const CategorySelect = ({ onSelect, onBack }) => {
     <Box flexDirection="column">
       <Text color="green">➕ Add New Secret</Text>
       <Text color="yellow">Select category:</Text>
-      <Select items={items} onSelect={onSelect} />
+      <SelectInput items={items} onSelect={onSelect} />
       <Text color="gray">Press 'q' or ESC to go back</Text>
     </Box>
   );
@@ -165,7 +165,7 @@ const SecretSelect = ({ category, onSelect, onBack }) => {
     <Box flexDirection="column">
       <Text color="green">Select secret to set:</Text>
       <Text color="yellow">Category: {SECRET_CATEGORIES[category]}</Text>
-      <Select items={items} onSelect={onSelect} />
+      <SelectInput items={items} onSelect={onSelect} />
       <Text color="gray">Press 'q' or ESC to go back</Text>
     </Box>
   );
@@ -372,8 +372,8 @@ const EnvFileViewer = ({ onBack }) => {
   return (
     <Box flexDirection="column">
       <Text color="green">📋 Select Environment File to View:</Text>
-      <Select 
-        items={envItems} 
+      <SelectInput
+        items={envItems}
         onSelect={({ value }) => viewEnvFile(value)}
       />
       <Text color="gray">Press 'q' or ESC to go back</Text>

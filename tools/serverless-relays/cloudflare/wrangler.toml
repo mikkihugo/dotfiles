@@ -1,0 +1,30 @@
+name = "secret-sync-relay"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# KV storage binding
+[[kv_namespaces]]
+binding = "SYNC_KV"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
+
+# Route configuration
+[env.production]
+name = "secret-sync-relay"
+routes = [
+  "your-domain.com/*",
+  "*.your-domain.workers.dev/*"
+]
+
+[env.staging]
+name = "secret-sync-relay-staging"
+
+# Build configuration
+[build]
+command = "echo 'No build needed'"
+cwd = "."
+
+# Variables (set via wrangler secret or dashboard)
+[vars]
+ENVIRONMENT = "production"

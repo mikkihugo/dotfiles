@@ -1,0 +1,57 @@
+{
+  "device_name": "my-laptop",
+  "sync_key": "base64-encoded-32-byte-key-here==",
+  "auto_sync": false,
+  "last_sync": null,
+  "sync_methods": [
+    {
+      "LocalNetwork": {
+        "port": 8765,
+        "discovery_port": 8766
+      }
+    },
+    {
+      "ServerlessRelay": {
+        "provider": "Vercel",
+        "server_url": "https://your-secret-sync.vercel.app",
+        "room_id": "family-secrets-room"
+      }
+    },
+    {
+      "ServerlessRelay": {
+        "provider": "Netlify",
+        "server_url": "https://your-secret-sync.netlify.app",
+        "room_id": "family-secrets-room"
+      }
+    },
+    {
+      "ServerlessRelay": {
+        "provider": "CloudflareWorkers",
+        "server_url": "https://secret-sync.your-subdomain.workers.dev",
+        "room_id": "family-secrets-room"
+      }
+    },
+    {
+      "ServerlessRelay": {
+        "provider": {
+          "Custom": {
+            "name": "railway"
+          }
+        },
+        "server_url": "https://your-secret-sync.railway.app",
+        "room_id": "family-secrets-room"
+      }
+    },
+    {
+      "FileDrop": {
+        "sync_folder": "/home/user/Syncthing/secrets"
+      }
+    },
+    {
+      "Webhook": {
+        "endpoint": "https://api.example.com/secret-sync",
+        "auth_token": "bearer-token-here"
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+# Rust toolchain configuration for secret-tui project
+# This ensures all developers and CI use the same Rust version
+
+[toolchain]
+# Use stable channel for production reliability
+channel = "stable"
+
+# Specific version for reproducible builds
+# Update this when upgrading Rust versions
+# channel = "1.75.0"
+
+# Components needed for development
+components = [
+    "rustc",          # Rust compiler
+    "cargo",          # Package manager
+    "rustfmt",        # Code formatter
+    "clippy",         # Linter
+    "rust-docs",      # Documentation
+    "rust-std",       # Standard library
+    "rust-analyzer",  # LSP server
+]
+
+# Compilation targets for cross-platform support
+targets = [
+    "x86_64-unknown-linux-gnu",    # Linux x64
+    "x86_64-pc-windows-gnu",       # Windows x64
+    "x86_64-apple-darwin",         # macOS Intel
+    "aarch64-apple-darwin",        # macOS Apple Silicon
+    "wasm32-wasi",                 # WebAssembly (for serverless)
+    "wasm32-unknown-unknown",      # WebAssembly (browser)
+]
+
+# Rust edition and features
+# Note: This is for toolchain, not your Cargo.toml
+profile = "default"

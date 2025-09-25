@@ -19,3 +19,4 @@ if [[ -d "$modules_dir" ]]; then
 fi
 
 unset modules_dir
+export PATH="$HOME/.npm-global/bin:$PATH"

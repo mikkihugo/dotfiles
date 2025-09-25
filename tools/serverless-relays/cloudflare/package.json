@@ -1,0 +1,21 @@
+{
+  "name": "secret-sync-relay-cloudflare",
+  "version": "1.0.0",
+  "description": "Serverless relay for secret sync using Cloudflare Workers",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy-staging": "wrangler deploy --env staging",
+    "test": "wrangler dev --test-scheduled",
+    "kv:namespace:create": "wrangler kv:namespace create SYNC_KV",
+    "kv:namespace:create:preview": "wrangler kv:namespace create SYNC_KV --preview"
+  },
+  "devDependencies": {
+    "wrangler": "^3.19.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "secret-sync-relay-netlify",
+  "version": "1.0.0",
+  "description": "Serverless relay for secret sync using Netlify Functions",
+  "main": "index.js",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build needed for serverless functions'",
+    "deploy": "netlify deploy --prod",
+    "test": "node test-relay.js"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

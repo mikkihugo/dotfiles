@@ -1,0 +1,40 @@
+# Alternative toolchain management with mise
+# Provides faster switching and multi-language support
+
+[tools]
+# Rust version - will auto-install if not present
+rust = "1.75.0"
+
+# Node.js for serverless deployment scripts
+node = "20.10.0"
+
+# Python for testing scripts
+python = "3.12"
+
+[env]
+# Environment variables for development
+RUST_BACKTRACE = "1"
+RUST_LOG = "debug"
+
+# Cross-compilation settings
+CARGO_TARGET_WASM32_WASI_LINKER = "wasm-ld"
+
+[tasks.install-targets]
+description = "Install additional Rust compilation targets"
+run = [
+    "rustup target add wasm32-wasi",
+    "rustup target add wasm32-unknown-unknown",
+    "rustup target add x86_64-pc-windows-gnu",
+    "rustup component add rustfmt",
+    "rustup component add clippy",
+    "rustup component add rust-analyzer",
+]
+
+[tasks.setup-dev]
+description = "Setup development environment"
+depends = ["install-targets"]
+run = [
+    "cargo install cargo-watch",
+    "cargo install wasm-pack",
+    "npm install -g vercel netlify-cli wrangler",
+]

@@ -26,12 +26,8 @@ if command -v sops >/dev/null 2>&1 && [[ -f "$DOTFILES_ROOT/secrets/shared.yaml"
   eval "$(sops -d "$DOTFILES_ROOT/secrets/shared.yaml" | grep -E '^[A-Z_]+=' | sed 's/^/export /')"
 fi
 
-# Ensure local bin paths are present
-case ":$PATH:" in
-  *:"$HOME/.local/bin":*) ;;
-  *) export PATH="$HOME/.local/bin:$PATH" ;;
-esac
-
+# Local bin paths are now managed by Nix flake
+# Only add $HOME/bin if not already present (for non-Nix environments)
 case ":$PATH:" in
   *:"$HOME/bin":*) ;;
   *) export PATH="$HOME/bin:$PATH" ;;

@@ -18,3 +18,6 @@ fi
 if command -v direnv >/dev/null 2>&1; then
   eval "$(direnv hook "$DOTFILES_SHELL")"
 fi
+
+# Load AI development tools (one-time installation)
+source "$DOTFILES_ROOT/shell/shared/ai-tools.sh"

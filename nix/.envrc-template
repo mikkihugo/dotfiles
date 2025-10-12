@@ -1,0 +1,28 @@
+# Nix Environment Template for Individual Repos
+# Copy this to your repo's .envrc file
+
+if [ -f "./flake.nix" ]; then
+  use flake .
+else
+  use flake /home/mhugo/.dotfiles
+fi
+
+# Project-specific environment variables
+# export PROJECT_NAME="your-project"
+# export NODE_ENV="development"
+
+# Add local bin to PATH
+export PATH="$HOME/.local/bin:$PATH"
+
+# Auto-install cursor-agent if not present
+if ! command -v cursor-agent &> /dev/null; then
+  echo "🤖 Installing cursor-agent for $(basename $(pwd))..."
+  npm install -g cursor-agent
+  mkdir -p ~/.local/bin
+  ln -sf ~/.npm-global/bin/cursor-agent ~/.local/bin/cursor-agent
+  echo "✅ cursor-agent installed!"
+fi
+
+# Project-specific setup
+echo "🚀 $(basename $(pwd)) development environment loaded!"
+echo "📦 Available AI tools: claude, gemini, codex, copilot, cursor-agent"

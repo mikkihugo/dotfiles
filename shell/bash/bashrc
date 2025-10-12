@@ -6,10 +6,12 @@
 export DOTFILES_ROOT="${DOTFILES_ROOT:-$HOME/.dotfiles}"
 export DOTFILES_SHELL=bash
 
+# Load shared configurations
 source "$DOTFILES_ROOT/shell/shared/env.sh"
 source "$DOTFILES_ROOT/shell/shared/aliases.sh"
 source "$DOTFILES_ROOT/shell/shared/tooling.sh"
 
+# Load bash-specific modules
 modules_dir="$DOTFILES_ROOT/shell/bash/modules"
 if [[ -d "$modules_dir" ]]; then
   for module in "$modules_dir"/*.sh; do
@@ -17,6 +19,70 @@ if [[ -d "$modules_dir" ]]; then
     source "$module"
   done
 fi
-
 unset modules_dir
-export PATH="$HOME/.npm-global/bin:$PATH"
+
+# Ensure Nix profile tools (e.g. direnv) are available before hooks run
+if [[ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]]; then
+  # shellcheck source=/dev/null
+  source "$HOME/.nix-profile/etc/profile.d/nix.sh"
+fi
+
+# Add PATH entries with duplicate detection
+add_to_path() {
+  case ":$PATH:" in
+    *:"$1":*) ;;
+    *) export PATH="$1:$PATH" ;;
+  esac
+}
+
+# Add user paths in priority order (highest first)
+add_to_path "$HOME/.local/bin"           # User-installed tools (Claude Code, etc.)
+add_to_path "$HOME/.nix-profile/bin"     # Nix user profile
+add_to_path "/nix/var/nix/profiles/default/bin"  # Nix system profile
+
+# Load Rust/Cargo environment (includes smart duplicate detection)
+if [[ -f "$HOME/.cargo/env" ]]; then
+  source "$HOME/.cargo/env"
+fi
+
+# Enable direnv for automatic environment loading
+if command -v direnv >/dev/null 2>&1; then
+  eval "$(direnv hook bash)"
+fi
+
+# Development aliases
+alias trunk-check="trunk check --jobs=4"
+alias nix-commit='nix develop --command bash -c "git add -A && git commit"'
+
+# Cleanup function
+unset -f add_to_path
+alias udeps="rustup run nightly cargo udeps --all-targets --backend=depinfo"
+export PATH="$HOME/.local/bin:$PATH"
+export CARGO_TARGET_DIR="/tmp/cargo-shared-target"
+export PATH="$HOME/.proto/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+# Load VS Code shell integration when running inside VS Code
+if [[ "${TERM_PROGRAM:-}" == "vscode" && -z "${VSCODE_SHELL_INTEGRATION:-}" ]]; then
+  _vsc_server_root="$HOME/.vscode-server"
+  if [[ -d "$_vsc_server_root/bin" ]]; then
+    _vsc_latest=$(command ls -td "$_vsc_server_root/bin"/* 2>/dev/null | head -n 1)
+    if [[ -n "$_vsc_latest" ]]; then
+      _vsc_si_script="$_vsc_latest/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+      if [[ -r "$_vsc_si_script" ]]; then
+        # shellcheck source=/dev/null
+        source "$_vsc_si_script"
+      fi
+      unset _vsc_si_script
+    fi
+    unset _vsc_latest
+  fi
+  unset _vsc_server_root
+fi
+
+
+# Remove problematic aliases that interfere with build scripts
+unalias grep 2>/dev/null || true
+unalias cp 2>/dev/null || true
+unalias mv 2>/dev/null || true
+unalias rm 2>/dev/null || true
+. "$HOME/.cargo/env"

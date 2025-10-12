@@ -5,9 +5,6 @@ have() {
   command -v "$1" >/dev/null 2>&1
 }
 
-if have rg; then
-  alias grep='rg'
-fi
 
 if have fd; then
   alias find='fd'
@@ -123,4 +120,10 @@ if have docker; then
   alias dps='docker ps'
   alias di='docker images'
 fi
+
+# Force Gemini CLI to use OAuth authentication instead of API keys
+if have gemini-oauth; then
+  alias gemini='gemini-oauth'
+fi
+
 unset -f have

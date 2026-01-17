@@ -1,3 +1,4 @@
+eval "$(~/.local/bin/agent shell-integration zsh)"
 #!/bin/zsh
 # Primary interactive Zsh configuration
 
@@ -18,3 +19,23 @@ fi
 
 unset modules_dir
 export PATH="$HOME/.npm-global/bin:$PATH"
+
+# Add Cargo bin to PATH
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# AI API Configuration - llm-gateway
+export OPENAI_API_BASE="https://llm-gateway.centralcloud.com/v1"
+export OPENAI_BASE_URL="https://llm-gateway.centralcloud.com/v1"
+export OPENAI_API_KEY="BNgh9981doggy!!"
+
+export ANTHROPIC_API_BASE="https://llm-gateway.centralcloud.com/v1"
+export ANTHROPIC_BASE_URL="https://llm-gateway.centralcloud.com/v1"
+export ANTHROPIC_API_KEY="BNgh9981doggy!!"
+
+export GEMINI_API_BASE="https://llm-gateway.centralcloud.com/v1"
+export GEMINI_BASE_URL="https://llm-gateway.centralcloud.com/v1"
+export GEMINI_API_KEY="BNgh9981doggy!!"
+
+# Generic AI configuration
+export AI_API_KEY="BNgh9981doggy!!"
+export LLM_API_BASE="https://llm-gateway.centralcloud.com/v1"

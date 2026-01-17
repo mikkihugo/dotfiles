@@ -1,10 +1,287 @@
-eval "$(direnv hook bash)"
+# ============================================================================
+# SWITCH TO LINUX HOME IF STARTING IN WINDOWS FILESYSTEM
+# Prevents slow WSL2 performance when starting in /mnt/c
+# ============================================================================
+case "$PWD" in
+  /mnt/c/Users/*) cd ~ ;;
+esac
+
+# ============================================================================
+# SOPS .env LOADER
+# Helper function to decrypt and source .env.enc files
+# Usage: sops_source_env /path/to/.env.enc
+# ============================================================================
+sops_source_env() {
+  local env_file="${1:-.env.enc}"
+  if [ -f "$env_file" ] && command -v sops > /dev/null 2>&1; then
+    # Decrypt and export variables
+    eval "$(sops --decrypt "$env_file" 2>/dev/null | grep -v '^#' | grep -v '^$' | sed 's/^/export /')"
+  fi
+}
+
+# Auto-load .env.enc in current directory (if exists)
+# Disabled to prevent shell startup hangs - use 'sops_source_env .env.enc' manually
+# if [ -f ".env.enc" ]; then
+#   sops_source_env .env.enc 2>/dev/null || true
+# fi
+
+# Direnv with SOPS support
+# TEMPORARILY DISABLED FOR DEBUGGING
+# eval "$(direnv hook bash 2>/dev/null)" 2>/dev/null || true
 # Nix daemon setup
 if [ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
   . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 fi
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.dotfiles/scripts:$PATH"
+
+# mise - universal version manager
+if [ -f "$HOME/.local/bin/mise" ]; then
+  eval "$($HOME/.local/bin/mise activate bash)"
+fi
 
 # Auto-start GitHub Actions runner
 # source /home/mhugo/code/singularity/scripts/autostart-runner.sh
-. "/home/mhugo/.cache/singularity/cargo/env"
+# Cargo env (loaded in profile, skip here to avoid duplication)
+# . "/home/mhugo/.cache/singularity/cargo/env" 2>/dev/null || true
+
+# Process cleanup hooks
+# Automatically terminates orphaned development processes on disconnect
+_cleanup_processes() {
+    local user="$(whoami)"
+
+    # Kill orphaned Node processes
+    pkill -u "$user" -f "node.*" 2>/dev/null || true
+
+    # Kill orphaned code-cli processes
+    pkill -u "$user" -f "code-cli" 2>/dev/null || true
+
+    # Kill orphaned Claude processes
+    pkill -u "$user" -f "claude" 2>/dev/null || true
+
+    # Kill orphaned npm processes
+    pkill -u "$user" -f "npm" 2>/dev/null || true
+}
+
+# Hook on exit
+# trap '_cleanup_processes' EXIT  # Commented out - was killing Claude Code processes
+export PATH="/home/mhugo/.npm-global/bin:$PATH"
+
+# ============================================================================
+# HISTORY CONFIGURATION - Optimized for development work
+# ============================================================================
+HISTSIZE=50000
+HISTFILESIZE=100000
+HISTCONTROL=ignoreboth:erasedups
+HISTTIMEFORMAT="%F %T "
+shopt -s histappend 2>/dev/null
+shopt -s cmdhist 2>/dev/null
+
+# ============================================================================
+# TERMINAL CONFIGURATION - Optimized for Tabby
+# ============================================================================
+# Only set TERM if not already set by terminal (Tabby sets xterm-color)
+[ -z "$TERM" ] && export TERM=xterm-256color
+export COLORTERM=truecolor
+
+# ============================================================================
+# USEFUL ALIASES
+# ============================================================================
+alias ll='ls -alFh --color=auto 2>/dev/null || ls -alFh'
+alias la='ls -A --color=auto 2>/dev/null || ls -A'
+alias l='ls -CF --color=auto 2>/dev/null || ls -CF'
+alias ls='ls --color=auto 2>/dev/null || ls'
+alias grep='grep --color=auto 2>/dev/null || grep'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+# Git aliases
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git log --oneline --graph --decorate'
+alias gd='git diff'
+
+# ============================================================================
+# STARSHIP PROMPT (if installed)
+# TEMPORARILY DISABLED FOR DEBUGGING
+# ============================================================================
+# if command -v starship > /dev/null 2>&1; then
+#   eval "$(starship init bash 2>/dev/null)" || true
+# fi
+
+# Simple fallback prompt while debugging
+PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+# ============================================================================
+# ZELLIJ AUTO-ATTACH (only for interactive shells)
+# DISABLED: Causes freezing in WSL - start manually with 'zellij' command
+# ============================================================================
+# if command -v zellij > /dev/null 2>&1; then
+#   if [[ -z "$ZELLIJ" ]] && [[ -z "$VSCODE_INJECTION" ]] && [[ -z "$CI" ]] && [[ $- == *i* ]]; then
+#     if zellij list-sessions 2>/dev/null | grep -q .; then
+#       exec zellij attach -c 2>/dev/null || true
+#     else
+#       exec zellij 2>/dev/null || true
+#     fi
+#   fi
+# fi
+
+# ============================================================================
+# SOPS SECRETS LOADER
+# ============================================================================
+_load_sops_secrets() {
+  local secrets_file="$HOME/.dotfiles/secrets/api-keys.yaml"
+  if [ -f "$secrets_file" ] && command -v sops > /dev/null 2>&1; then
+    # Decrypt once and cache
+    local decrypted=$(sops --decrypt "$secrets_file" 2>/dev/null)
+
+    # Parse LLM-MUX credentials
+    local llm_mux_key=$(echo "$decrypted" | grep -A1 "^llm_mux:" | grep "api_key:" | sed 's/.*api_key: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+    local llm_mux_url=$(echo "$decrypted" | grep -A2 "^llm_mux:" | grep "base_url:" | sed 's/.*base_url: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+
+    # Parse Claude Code OAuth token
+    local claude_token=$(echo "$decrypted" | grep -A1 "^claude_code:" | grep "oauth_token:" | sed 's/.*oauth_token: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+
+    # Export LLM-MUX variables (OpenAI, Anthropic, Google/Gemini)
+    if [ -n "$llm_mux_key" ] && [ -n "$llm_mux_url" ]; then
+      # OpenAI
+      export OPENAI_API_KEY="$llm_mux_key"
+      export OPENAI_API_BASE="$llm_mux_url"
+      export OPENAI_BASE_URL="$llm_mux_url"
+
+      # Anthropic
+      export ANTHROPIC_API_KEY="$llm_mux_key"
+      export ANTHROPIC_API_URL="$llm_mux_url"
+      export ANTHROPIC_BASE_URL="$llm_mux_url"
+
+      # Google/Gemini
+      export GOOGLE_API_KEY="$llm_mux_key"
+      export GOOGLE_API_BASE="$llm_mux_url"
+      export GEMINI_API_KEY="$llm_mux_key"
+      export GEMINI_API_BASE="$llm_mux_url"
+    fi
+
+    # Export Claude Code OAuth token
+    if [ -n "$claude_token" ]; then
+      export CLAUDE_CODE_OAUTH_TOKEN="$claude_token"
+    fi
+  fi
+}
+
+# Load secrets from SOPS with caching to avoid startup hangs
+_load_sops_secrets_cached() {
+  local cache_file="/tmp/.sops-secrets-cache-$(whoami)"
+  local secrets_file="$HOME/.dotfiles/secrets/api-keys.yaml"
+  local cache_ttl=3600  # 1 hour in seconds
+
+  # Check if cache exists and is fresh
+  if [ -f "$cache_file" ]; then
+    local cache_age=$(($(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || echo 0)))
+    if [ "$cache_age" -lt "$cache_ttl" ]; then
+      # Load from cache (fast)
+      source "$cache_file" 2>/dev/null
+      return 0
+    fi
+  fi
+
+  # Cache is stale or missing - regenerate in background after shell starts
+  # For now, use fallback and schedule background refresh
+  if [ -f "$secrets_file" ] && command -v sops > /dev/null 2>&1; then
+    # Background refresh (non-blocking)
+    (
+      local decrypted=$(sops --decrypt "$secrets_file" 2>/dev/null)
+
+      # Parse and write to cache
+      local llm_mux_key=$(echo "$decrypted" | grep -A1 "^llm_mux:" | grep "api_key:" | sed 's/.*api_key: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+      local llm_mux_url=$(echo "$decrypted" | grep -A2 "^llm_mux:" | grep "base_url:" | sed 's/.*base_url: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+      local claude_token=$(echo "$decrypted" | grep -A1 "^claude_code:" | grep "oauth_token:" | sed 's/.*oauth_token: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+
+      # Write cache file
+      {
+        echo "# Auto-generated SOPS secrets cache - do not edit"
+        [ -n "$llm_mux_key" ] && echo "export OPENAI_API_KEY='$llm_mux_key'"
+        [ -n "$llm_mux_url" ] && echo "export OPENAI_API_BASE='$llm_mux_url'"
+        [ -n "$llm_mux_url" ] && echo "export OPENAI_BASE_URL='$llm_mux_url'"
+        [ -n "$llm_mux_key" ] && echo "export ANTHROPIC_API_KEY='$llm_mux_key'"
+        [ -n "$llm_mux_url" ] && echo "export ANTHROPIC_API_URL='$llm_mux_url'"
+        [ -n "$llm_mux_url" ] && echo "export ANTHROPIC_BASE_URL='$llm_mux_url'"
+        [ -n "$llm_mux_key" ] && echo "export GOOGLE_API_KEY='$llm_mux_key'"
+        [ -n "$llm_mux_url" ] && echo "export GOOGLE_API_BASE='$llm_mux_url'"
+        [ -n "$llm_mux_key" ] && echo "export GEMINI_API_KEY='$llm_mux_key'"
+        [ -n "$llm_mux_url" ] && echo "export GEMINI_API_BASE='$llm_mux_url'"
+        [ -n "$claude_token" ] && echo "export CLAUDE_CODE_OAUTH_TOKEN='$claude_token'"
+      } > "$cache_file.tmp" 2>/dev/null
+
+      # Atomic move
+      mv "$cache_file.tmp" "$cache_file" 2>/dev/null
+      chmod 600 "$cache_file" 2>/dev/null
+    ) &
+  fi
+}
+
+# Load cached secrets (fast) or use fallback
+_load_sops_secrets_cached 2>/dev/null || true
+
+# Fallback if SOPS not available (for compatibility)
+# All AI models (OpenAI, Anthropic, Google/Gemini) point to llm-gateway
+if [ -z "$OPENAI_API_KEY" ]; then
+  # OpenAI
+  export OPENAI_API_BASE=https://llm-gateway.centralcloud.com/v1
+  export OPENAI_BASE_URL=https://llm-gateway.centralcloud.com/v1
+  export OPENAI_API_KEY="BNgh9981doggy!!"
+
+  # Anthropic
+  export ANTHROPIC_API_URL=https://llm-gateway.centralcloud.com/v1
+  export ANTHROPIC_BASE_URL=https://llm-gateway.centralcloud.com/v1
+  export ANTHROPIC_API_KEY="BNgh9981doggy!!"
+
+  # Google/Gemini
+  export GOOGLE_API_KEY="BNgh9981doggy!!"
+  export GOOGLE_API_BASE=https://llm-gateway.centralcloud.com/v1
+  export GEMINI_API_KEY="BNgh9981doggy!!"
+  export GEMINI_API_BASE=https://llm-gateway.centralcloud.com/v1
+fi
+
+# Load Claude Code OAuth token from ~/.claude-max/oauth.json if SOPS failed
+if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ] && [ -f ~/.claude-max/oauth.json ]; then
+  if command -v jq > /dev/null 2>&1; then
+    export CLAUDE_CODE_OAUTH_TOKEN=$(jq -r '.access_token' ~/.claude-max/oauth.json 2>/dev/null)
+  fi
+fi
+
+# Aider aliases
+alias aider-local="aider --config ~/.aider.local.yml"
+alias aider-mux="aider --config ~/.aider.local.yml"
+
+# ============================================================================
+# SOPS CONFIGURATION
+# ============================================================================
+export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+
+# ============================================================================
+# START IN CODE DIRECTORY
+# ============================================================================
+# Disabled: Can cause shell startup delays with direnv
+# cd /home/mhugo/code 2>/dev/null || true
+
+# Add Cargo bin to PATH
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# AI API Configuration - llm-gateway
+export OPENAI_API_BASE="https://llm-gateway.centralcloud.com/v1"
+export OPENAI_BASE_URL="https://llm-gateway.centralcloud.com/v1"
+export OPENAI_API_KEY="BNgh9981doggy!!"
+
+export ANTHROPIC_API_BASE="https://llm-gateway.centralcloud.com/v1"
+export ANTHROPIC_BASE_URL="https://llm-gateway.centralcloud.com/v1"
+export ANTHROPIC_API_KEY="BNgh9981doggy!!"
+
+export GEMINI_API_BASE="https://llm-gateway.centralcloud.com/v1"
+export GEMINI_BASE_URL="https://llm-gateway.centralcloud.com/v1"
+export GEMINI_API_KEY="BNgh9981doggy!!"
+
+# Generic AI configuration
+export AI_API_KEY="BNgh9981doggy!!"
+export LLM_API_BASE="https://llm-gateway.centralcloud.com/v1"

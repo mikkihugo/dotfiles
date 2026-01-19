@@ -1,0 +1,11 @@
+[Unit]
+Description=Nix Garbage Collection Weekly
+Documentation=man:nix-collect-garbage(1)
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

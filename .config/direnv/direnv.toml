@@ -1,0 +1,13 @@
+# Direnv Configuration
+# Automatically allow .envrc files in trusted directories
+
+[global]
+# Warn if .envrc file is not allowed after this many seconds
+warn_timeout = "5m"
+
+[whitelist]
+# Trust all .envrc files under ~/code (prefix match)
+prefix = [ "/home/mhugo/code" ]
+
+# Also trust specific paths (exact match)
+exact = [ "/home/mhugo/.dotfiles/.envrc" ]

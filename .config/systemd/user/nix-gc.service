@@ -1,0 +1,9 @@
+[Unit]
+Description=Nix Garbage Collector
+Documentation=man:nix-collect-garbage(1)
+
+[Service]
+Type=oneshot
+ExecStart=/nix/var/nix/profiles/default/bin/nix-collect-garbage -d
+StandardOutput=journal
+StandardError=journal

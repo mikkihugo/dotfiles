@@ -40,6 +40,7 @@
             zoxide
             direnv
             nix-direnv
+            mise
             ripgrep
             fd
             fzf

@@ -1,144 +1,333 @@
-# ==============================================================================
-# Starship Prompt Configuration
-# ==============================================================================
-#
-# Copyright 2024 Mikki Hugo. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# FILE: starship.toml
-# DESCRIPTION: Modern, informative shell prompt configuration for Starship.
-#              Provides contextual information about development environment
-#              including git status, programming language versions, and
-#              system resources with performance-optimized display.
-#
-# AUTHOR: Mikki Hugo <mikkihugo@gmail.com>
-# VERSION: 2.3.0
-# CREATED: 2024-01-22
-# MODIFIED: 2024-12-06
-#
-# PROMPT ELEMENTS:
-#   - User/Host: Current user and hostname
-#   - Directory: Current working directory with truncation
-#   - Git: Branch, status, and commit information
-#   - Languages: Python, Node.js, Go, Rust version indicators
-#   - Kubernetes: Current context and namespace
-#   - Performance: Memory usage and command duration
-#   - Time: Timestamp for command execution
-#
-# PERFORMANCE OPTIMIZATIONS:
-#   - Async module loading for faster prompt rendering
-#   - Conditional display based on context
-#   - Minimal external command execution
-#   - Efficient git status checking
-#
-# CUSTOMIZATION:
-#   - Modify format string to reorder elements
-#   - Adjust individual module configurations
-#   - Add custom modules for specific needs
-#   - Configure color themes per environment
-#
-# ==============================================================================
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  Starship Prompt - Modern & Beautiful                                    ║
+# ║  Optimized for Nerd Fonts & True Color terminals                         ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
 
-# Starship configuration
+# Performance
+command_timeout = 500
+scan_timeout = 100
+add_newline = true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Main Prompt Format
+# ═══════════════════════════════════════════════════════════════════════════
 format = """
+[╭─](bold blue)\
 $username\
 $hostname\
 $directory\
 $git_branch\
 $git_status\
-$python\
+$git_metrics\
+$fill\
 $nodejs\
-$deno\
-$golang\
 $rust\
-$package\
-$kubernetes\
-$memory_usage\
-$custom\
+$golang\
+$python\
+$bun\
+$deno\
+$nix_shell\
+$docker_context\
 $cmd_duration\
-$time\
-$line_break\
-$character"""
+$time
+[╰─](bold blue)$character"""
 
+# Right-side prompt
+right_format = ""
+
+# Fill space between left and right
+[fill]
+symbol = " "
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Prompt Character
+# ═══════════════════════════════════════════════════════════════════════════
 [character]
-success_symbol = "[❯](bold #A3BE8C)"
-error_symbol = "[❯](bold #BF616A)"
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold yellow)"
 
+# ═══════════════════════════════════════════════════════════════════════════
+# User & Host
+# ═══════════════════════════════════════════════════════════════════════════
+[username]
+show_always = false
+format = "[ $user](bold fg:33) "
+style_user = "bold fg:33"
+style_root = "bold fg:196"
+
+[hostname]
+ssh_only = true
+format = "[@$hostname](bold fg:33) "
+style = "bold fg:33"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Directory
+# ═══════════════════════════════════════════════════════════════════════════
 [directory]
-style = "#81A1C1 bold"
-truncation_length = 3
-truncate_to_repo = false
+truncation_length = 4
+truncate_to_repo = true
+format = "[ $path]($style)[$read_only]($read_only_style) "
+style = "bold cyan"
+read_only = " 󰌾"
+read_only_style = "bold red"
+truncation_symbol = "…/"
+home_symbol = "󰋜 ~"
 
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = "󰝚 "
+"Pictures" = " "
+"code" = "󰲋 "
+"singularity" = " "
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Git
+# ═══════════════════════════════════════════════════════════════════════════
 [git_branch]
-symbol = "🌿 "
-style = "#A3BE8C bold"
+symbol = " "
+format = "[$symbol$branch(:$remote_branch)]($style) "
+style = "bold purple"
+truncation_length = 20
+truncation_symbol = "…"
 
 [git_status]
-style = "#BF616A bold"
+format = "([$all_status$ahead_behind]($style) )"
+style = "bold red"
+conflicted = "🏳 "
+ahead = "⇡${count} "
+behind = "⇣${count} "
+diverged = "⇕⇡${ahead_count}⇣${behind_count} "
+up_to_date = ""
+untracked = "?${count} "
+stashed = "≡${count} "
+modified = "!${count} "
+staged = "[+${count}](bold green) "
+renamed = "»${count} "
+deleted = "✘${count} "
 
-[python]
-symbol = "🐍 "
-python_binary = "python"
+[git_metrics]
+disabled = false
+added_style = "bold green"
+deleted_style = "bold red"
+format = "([+$added]($added_style) )([-$deleted]($deleted_style) )"
 
+[git_commit]
+commit_hash_length = 7
+tag_symbol = "🏷 "
+format = "[$hash$tag]($style) "
+style = "bold yellow"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Programming Languages
+# ═══════════════════════════════════════════════════════════════════════════
 [nodejs]
-symbol = "⬢ "
-style = "#A3BE8C bold"
-detect_extensions = ["js", "mjs", "cjs", "jsx", "tsx", "ts"]
-not_capable_style = "bold red"
-# Hide Node.js if Deno is detected
-detect_files = ["package.json", ".node-version", ".nvmrc"]
-# Only show Node when package.json is in the directory (not for global node)
-detect_folders = []
+symbol = " "
+format = "[$symbol($version )]($style)"
+style = "bold green"
+detect_extensions = ["js", "mjs", "cjs", "ts", "mts", "cts"]
+
+[bun]
+symbol = "󰐔 "
+format = "[$symbol($version )]($style)"
+style = "bold fg:214"
 
 [deno]
 symbol = "🦕 "
-style = "#A3BE8C bold"
-detect_extensions = ["ts", "tsx", "js", "jsx"]
-detect_files = ["deno.json", "deno.jsonc", "mod.ts", "deps.ts", "lock.json"]
-format = "via [$symbol($version )]($style)"
-
-[golang]
-symbol = "🐹 "
+format = "[$symbol($version )]($style)"
+style = "bold green"
 
 [rust]
-symbol = "🦀 "
+symbol = " "
+format = "[$symbol($version )]($style)"
+style = "bold red"
 
-[kubernetes]
-disabled = false
-symbol = "☸️ "
-
-[memory_usage]
-disabled = false
-threshold = 75
-style = "bold dimmed green"
-format = "$symbol[${ram}( | ${swap})]($style) "
-
-[custom.processes]
-command = "echo -n \"PROC: $(ps -e --no-header | wc -l)/$(ulimit -u)\""
-when = false
+[python]
+symbol = " "
+format = "[$symbol($version )]($style)"
 style = "bold yellow"
-format = "[$output]($style) "
-disabled = true
+pyenv_version_name = true
 
-[custom.cpu]
-command = "top -bn1 | grep 'Cpu(s)' | awk '{print $2+$4 \"%\"}'"
-when = false
-style = "bold dimmed green"
-format = "CPU: [$output]($style) "
-disabled = true
+[golang]
+symbol = " "
+format = "[$symbol($version )]($style)"
+style = "bold cyan"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Environment & Tools
+# ═══════════════════════════════════════════════════════════════════════════
+[nix_shell]
+symbol = " "
+format = "[$symbol$state( \\($name\\))]($style) "
+style = "bold blue"
+impure_msg = "[impure](bold red)"
+pure_msg = "[pure](bold green)"
+
+[docker_context]
+symbol = " "
+format = "[$symbol$context]($style) "
+style = "bold blue"
+only_with_files = true
+
+[conda]
+symbol = " "
+format = "[$symbol$environment]($style) "
+style = "bold green"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Utilities
+# ═══════════════════════════════════════════════════════════════════════════
+[cmd_duration]
+min_time = 2_000
+format = "[󱦟 $duration]($style) "
+style = "bold yellow"
+show_milliseconds = false
 
 [time]
 disabled = false
-style = "white bold"
-format = "[$time]($style)"
+format = "[ $time]($style) "
+style = "bold fg:243"
+time_format = "%H:%M"
+utc_time_offset = "local"
+
+[battery]
+disabled = false
+full_symbol = "󰁹 "
+charging_symbol = "󰂄 "
+discharging_symbol = "󰂃 "
+unknown_symbol = "󰁽 "
+empty_symbol = "󰂎 "
+
+[[battery.display]]
+threshold = 10
+style = "bold red"
+
+[[battery.display]]
+threshold = 30
+style = "bold yellow"
+
+[[battery.display]]
+threshold = 100
+style = "bold green"
+
+[status]
+disabled = false
+format = "[$symbol$status]($style) "
+symbol = "✖ "
+style = "bold red"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Cloud & Infrastructure
+# ═══════════════════════════════════════════════════════════════════════════
+[aws]
+disabled = false
+symbol = "☁️  "
+format = "[$symbol($profile )(\\($region\\) )]($style)"
+style = "bold yellow"
+
+[gcloud]
+disabled = false
+symbol = "️🇬️ "
+format = "[$symbol$account(@$domain)(\\($region\\))]($style) "
+style = "bold blue"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Package Managers
+# ═══════════════════════════════════════════════════════════════════════════
+[package]
+disabled = false
+symbol = "󰏗 "
+format = "[$symbol$version]($style) "
+style = "bold fg:208"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Kubernetes
+# ═══════════════════════════════════════════════════════════════════════════
+[kubernetes]
+disabled = false
+symbol = "☸ "
+format = "[$symbol$context( \\($namespace\\))]($style) "
+style = "bold blue"
+
+# Disable modules we rarely need
+[cmake]
+disabled = true
+
+[cobol]
+disabled = true
+
+[crystal]
+disabled = true
+
+[daml]
+disabled = true
+
+[dart]
+disabled = true
+
+[elixir]
+disabled = true
+
+[elm]
+disabled = true
+
+[erlang]
+disabled = true
+
+[haskell]
+disabled = true
+
+[helm]
+disabled = true
+
+[java]
+disabled = true
+
+[julia]
+disabled = true
+
+[kotlin]
+disabled = true
+
+[lua]
+disabled = true
+
+[nim]
+disabled = true
+
+[ocaml]
+disabled = true
+
+[perl]
+disabled = true
+
+[php]
+disabled = true
+
+[purescript]
+disabled = true
+
+[red]
+disabled = true
+
+[ruby]
+disabled = true
+
+[scala]
+disabled = true
+
+[swift]
+disabled = true
+
+[terraform]
+disabled = true
+
+[vagrant]
+disabled = true
+
+[vlang]
+disabled = true
+
+[zig]
+disabled = true

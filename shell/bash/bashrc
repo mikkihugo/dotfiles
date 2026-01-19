@@ -33,6 +33,55 @@ elif [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
   . "$HOME/.nix-profile/etc/profile.d/nix.sh"
 fi
 
+# SOPS configuration
+export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+
+# Helper function to decrypt and source .env.enc files
+# Usage: sops_source_env /path/to/.env.enc
+sops_source_env() {
+  local env_file="${1:-.env.enc}"
+  if [ -f "$env_file" ] && command -v sops > /dev/null 2>&1; then
+    eval "$(sops --decrypt "$env_file" 2>/dev/null | grep -v '^#' | grep -v '^$' | sed 's/^/export /')"
+  fi
+}
+
+# Load SOPS encrypted secrets
+_load_sops_secrets() {
+  local secrets_file="$HOME/.dotfiles/secrets/api-keys.yaml"
+  if [ -f "$secrets_file" ] && command -v sops > /dev/null 2>&1; then
+    local decrypted=$(sops --decrypt "$secrets_file" 2>/dev/null)
+
+    # Parse LLM-MUX credentials
+    local llm_mux_key=$(echo "$decrypted" | grep -A1 "^llm_mux:" | grep "api_key:" | sed 's/.*api_key: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+    local llm_mux_url=$(echo "$decrypted" | grep -A2 "^llm_mux:" | grep "base_url:" | sed 's/.*base_url: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+
+    # Parse Claude Code OAuth token
+    local claude_token=$(echo "$decrypted" | grep -A1 "^claude_code:" | grep "oauth_token:" | sed 's/.*oauth_token: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+
+    # Export LLM-MUX variables (OpenAI, Anthropic, Google/Gemini)
+    if [ -n "$llm_mux_key" ] && [ -n "$llm_mux_url" ]; then
+      export OPENAI_API_KEY="$llm_mux_key"
+      export OPENAI_API_BASE="$llm_mux_url"
+      export OPENAI_BASE_URL="$llm_mux_url"
+      export ANTHROPIC_API_KEY="$llm_mux_key"
+      export ANTHROPIC_API_URL="$llm_mux_url"
+      export ANTHROPIC_BASE_URL="$llm_mux_url"
+      export GOOGLE_API_KEY="$llm_mux_key"
+      export GOOGLE_API_BASE="$llm_mux_url"
+      export GEMINI_API_KEY="$llm_mux_key"
+      export GEMINI_API_BASE="$llm_mux_url"
+    fi
+
+    # Export Claude Code OAuth token
+    if [ -n "$claude_token" ]; then
+      export CLAUDE_CODE_OAUTH_TOKEN="$claude_token"
+    fi
+  fi
+}
+
+# Load SOPS secrets (synchronous for now - fast enough)
+_load_sops_secrets 2>/dev/null || true
+
 # Activate direnv (needed for both interactive and non-interactive shells for VSCode)
 if command -v direnv > /dev/null 2>&1; then
   eval "$(direnv hook bash)"

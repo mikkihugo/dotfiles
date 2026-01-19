@@ -79,8 +79,15 @@ _load_sops_secrets() {
   fi
 }
 
-# Load SOPS secrets (synchronous for now - fast enough)
-_load_sops_secrets 2>/dev/null || true
+# Convenient command to load AI API keys
+# Usage: load-ai-keys
+load-ai-keys() {
+  _load_sops_secrets
+}
+
+# SOPS secrets are NOT auto-loaded to avoid startup overhead
+# To load manually: load-ai-keys
+# Or load project-specific secrets: sops_source_env .env.enc
 
 # Activate direnv (needed for both interactive and non-interactive shells for VSCode)
 if command -v direnv > /dev/null 2>&1; then

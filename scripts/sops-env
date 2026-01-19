@@ -1,0 +1,31 @@
+#!/bin/bash
+# SOPS Environment Helper
+
+set -e
+
+show_help() {
+  cat << EOF
+Usage: sops-env <command> [file]
+
+Commands:
+  encrypt <file>  - Encrypt .env file (creates .env.enc)
+  decrypt <file>  - Decrypt and show .env.enc file
+  edit <file>     - Edit encrypted .env.enc file
+  create <file>   - Create new encrypted .env.enc template
+
+Examples:
+  sops-env encrypt .env
+  sops-env edit .env.enc
+EOF
+}
+
+case "${1:-}" in
+  encrypt) sops --encrypt "${2:-.env}" > "${2:-.env}.enc" && echo "✅ Created ${2:-.env}.enc" ;;
+  decrypt) sops --decrypt "${2:-.env.enc}" ;;
+  edit) sops "${2:-.env.enc}" ;;
+  create) 
+    echo "# Encrypted environment variables" | sops --encrypt /dev/stdin > "${2:-.env.enc}"
+    sops "${2:-.env.enc}"
+    ;;
+  *) show_help ;;
+esac

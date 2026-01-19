@@ -1,21 +1,20 @@
 #!/bin/bash
-# Login shell entrypoint
+# Minimal login shell entrypoint
+
+# Set HOME if missing
+[ -z "$HOME" ] && export HOME="/home/mhugo"
+
+# Set PATH if empty or broken
+if [ -z "$PATH" ] || [ "$PATH" = "/" ]; then
+  export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+fi
+
+# Add user paths
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
 export DOTFILES_ROOT="${DOTFILES_ROOT:-$HOME/.dotfiles}"
-if [[ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]]; then
-  # shellcheck source=/dev/null
-  source "$HOME/.nix-profile/etc/profile.d/nix.sh"
-fi
-export PATH="$HOME/.nix-profile/bin:$PATH"
+
+# Load bashrc if it exists
 if [[ -f "$DOTFILES_ROOT/shell/bash/bashrc" ]]; then
   source "$DOTFILES_ROOT/shell/bash/bashrc"
 fi
-. "$HOME/.cargo/env"
-
-# proto
-export PROTO_HOME="$HOME/.proto";
-export PATH="$PROTO_HOME/shims:$PROTO_HOME/bin:$PATH";
-# bun runtime (ensure available when direnv isn’t active)
-export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
-export PATH="$BUN_INSTALL/bin:$PATH"
-. "/home/mhugo/.cache/singularity/cargo/env"

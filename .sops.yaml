@@ -1,17 +1,34 @@
 # SOPS configuration for dotfiles
 keys:
-  # Your age key
-  - &mikki_key age16zj0qm6fwaffschx76vxy9qk6u6qve6r9y40xdymtmw86s8rkf8slvzf6q
+  # AI Development / Dotfiles key
+  - &dotfiles_key age106l335mhlehuwzrmghvssa9qsqar7z008vmfg5zn8qwx4shrhy9q4jvzcj
+  # OGT Web Production key
+  - &ogt_key age1vt4kwwf9l5888q65szxc6dg4t3m69cu9wpx3qe400kh8e4rvyvsszrjmgq
 
 creation_rules:
-  # All secret files use your age key
+  # All secret files use both age keys
   - path_regex: secrets/.*\.(yaml|json)$
     key_groups:
       - age:
-          - *mikki_key
+          - *dotfiles_key
+          - *ogt_key
+
+  # Encrypted .env and .envrc files
+  - path_regex: .*\.env\.enc$
+    key_groups:
+      - age:
+          - *dotfiles_key
+          - *ogt_key
+
+  - path_regex: .*\.envrc\.enc$
+    key_groups:
+      - age:
+          - *dotfiles_key
+          - *ogt_key
 
   # Environment-specific rules for future use
   - path_regex: secrets/development/.*\.yaml$
     key_groups:
       - age:
-          - *mikki_key
+          - *dotfiles_key
+          - *ogt_key

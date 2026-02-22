@@ -1,9 +1,6 @@
 #!/bin/bash
 # Sourced by home-manager programs.bash.initExtra
 
-# Set HOME if missing
-[ -z "$HOME" ] && export HOME="/home/mhugo"
-
 # Use a user-writable npm global prefix to avoid sudo
 export NPM_CONFIG_PREFIX="$HOME/.npm-global"
 

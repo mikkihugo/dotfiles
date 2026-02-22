@@ -38,7 +38,6 @@ in
     ssh-to-age
 
     # Shell
-    starship
     shellcheck
     shfmt
   ];
@@ -144,6 +143,7 @@ in
   # ── Starship prompt ───────────────────────────────────────────────────────
   programs.starship = {
     enable = true;
+    settings = builtins.fromTOML (builtins.readFile ../config/starship.toml);
   };
 
   # ── Zoxide (better cd) ───────────────────────────────────────────────────

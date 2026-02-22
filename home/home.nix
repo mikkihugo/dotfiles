@@ -45,7 +45,20 @@ in
     # Shell
     shellcheck
     shfmt
-    alejandra
+
+    # Nix tooling
+    alejandra        # Nix formatter
+    statix           # Nix linter (anti-patterns)
+    deadnix          # Nix dead code finder
+    nix-tree         # Visualize derivation dependency tree
+    nvd              # Diff between home-manager/NixOS generations
+    nix-output-monitor # Nicer nix build output
+    nix-index        # nix-locate: find which package provides a binary
+
+    # Pre-commit / code quality
+    lefthook         # Git hook runner (needed globally for any repo using it)
+    typos            # Spell checker
+    detect-secrets   # Secret scanner
   ];
 
   # ── Bash ──────────────────────────────────────────────────────────────────

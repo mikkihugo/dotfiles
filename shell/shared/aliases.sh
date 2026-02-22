@@ -25,25 +25,8 @@ if have bat; then
   alias cat='bat --paging=never'
 fi
 
-if have procs; then
-  alias ps='procs'
-fi
-
-if have dust; then
-  alias du='dust'
-else
-  alias du='du -h'
-fi
-
-if have duf; then
-  alias df='duf'
-else
-  alias df='df -h'
-fi
-
-if have sd; then
-  alias sed='sd'
-fi
+alias du='du -h'
+alias df='df -h'
 
 if have btop; then
   alias top='btop'
@@ -56,10 +39,6 @@ if have delta; then
   alias diff='delta'
 fi
 
-if have doggo; then
-  alias dig='doggo'
-fi
-
 if have hyperfine; then
   alias time='hyperfine'
 fi
@@ -68,25 +47,8 @@ if have zoxide; then
   alias cd='z'
 fi
 
-if have hx; then
-  alias vi='hx'
-  alias vim='hx'
-fi
-
 if have tokei; then
   alias wc='tokei'
-fi
-
-if have watchexec; then
-  alias watch='watchexec'
-fi
-
-if have jaq; then
-  alias jq='jaq'
-fi
-
-if have gron; then
-  alias json='gron'
 fi
 
 if have git; then

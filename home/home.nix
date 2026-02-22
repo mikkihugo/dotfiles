@@ -8,6 +8,11 @@ in
   home.homeDirectory = "/home/mhugo";
   home.stateVersion = "24.11";
 
+  # ── Session variables ─────────────────────────────────────────────────────
+  home.sessionVariables = {
+    SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
+  };
+
   # Let home-manager manage itself
   programs.home-manager.enable = true;
 

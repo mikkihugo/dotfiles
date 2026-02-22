@@ -43,7 +43,7 @@ in
     shfmt
   ];
 
-  # ── Shell ─────────────────────────────────────────────────────────────────
+  # ── Bash ──────────────────────────────────────────────────────────────────
   programs.bash = {
     enable = true;
     initExtra = ''
@@ -54,6 +54,20 @@ in
       [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ]        && source "$DOTFILES_ROOT/shell/bash/bashrc"
       [ -f "$DOTFILES_ROOT/shell/shared/aliases.sh" ]  && source "$DOTFILES_ROOT/shell/shared/aliases.sh"
       [ -f "$DOTFILES_ROOT/shell/shared/tooling.sh" ]  && DOTFILES_SHELL=bash source "$DOTFILES_ROOT/shell/shared/tooling.sh"
+    '';
+  };
+
+  # ── Zsh ───────────────────────────────────────────────────────────────────
+  programs.zsh = {
+    enable = true;
+    initContent = ''
+      export DOTFILES_ROOT="${dotfilesRoot}"
+
+      # Source dotfiles shell stack
+      [ -f "$DOTFILES_ROOT/shell/shared/env.sh" ]     && source "$DOTFILES_ROOT/shell/shared/env.sh"
+      [ -f "$DOTFILES_ROOT/shell/zsh/zshrc" ]          && source "$DOTFILES_ROOT/shell/zsh/zshrc"
+      [ -f "$DOTFILES_ROOT/shell/shared/aliases.sh" ]  && source "$DOTFILES_ROOT/shell/shared/aliases.sh"
+      [ -f "$DOTFILES_ROOT/shell/shared/tooling.sh" ]  && DOTFILES_SHELL=zsh source "$DOTFILES_ROOT/shell/shared/tooling.sh"
     '';
   };
 
@@ -68,6 +82,38 @@ in
       safe.directory = "/home/mhugo/code/flakecache";
       init.defaultBranch = "main";
       pull.rebase = true;
+      core.pager = "delta";
+      interactive.diffFilter = "delta --color-only";
+      delta = {
+        navigate = true;
+        light = false;
+        syntax-theme = "Nord";
+        line-numbers = true;
+        side-by-side = false;
+      };
+      merge.conflictstyle = "diff3";
+      diff.colorMoved = "default";
+      alias = {
+        s    = "status -sb";
+        a    = "add";
+        c    = "commit";
+        co   = "checkout";
+        b    = "branch";
+        p    = "push";
+        pl   = "pull --rebase";
+        f    = "fetch --all --prune";
+        lg   = "log --oneline --graph --decorate";
+        ll   = "log --graph --pretty=format:'%C(yellow)%h%Creset -%C(auto)%d%Creset %s %C(green)(%cr) %C(bold blue)<%an>%Creset'";
+        d    = "diff";
+        dc   = "diff --cached";
+        ds   = "diff --stat";
+        sl   = "stash list";
+        sa   = "stash apply";
+        sp   = "stash pop";
+        undo = "reset --soft HEAD~1";
+        pushit = "!git push -u origin $(git branch --show-current)";
+        rebase-main = "!git rebase -i $(git merge-base HEAD main)";
+      };
     };
   };
 
@@ -96,13 +142,13 @@ in
   # ── Starship prompt ───────────────────────────────────────────────────────
   programs.starship = {
     enable = true;
-    # Config picked up from ~/.config/starship.toml if present
   };
 
   # ── Zoxide (better cd) ───────────────────────────────────────────────────
   programs.zoxide = {
     enable = true;
     enableBashIntegration = true;
+    enableZshIntegration = true;
   };
 
   # ── GitHub CLI ───────────────────────────────────────────────────────────
@@ -116,5 +162,4 @@ in
       };
     };
   };
-
 }

@@ -48,12 +48,14 @@ in
     enable = true;
     initExtra = ''
       export DOTFILES_ROOT="${dotfilesRoot}"
+      export HM_MANAGED=1
 
       # Source dotfiles shell stack
+      # direnv/starship/zoxide hooks are injected by home-manager above this block
       [ -f "$DOTFILES_ROOT/shell/shared/env.sh" ]     && source "$DOTFILES_ROOT/shell/shared/env.sh"
       [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ]        && source "$DOTFILES_ROOT/shell/bash/bashrc"
       [ -f "$DOTFILES_ROOT/shell/shared/aliases.sh" ]  && source "$DOTFILES_ROOT/shell/shared/aliases.sh"
-      [ -f "$DOTFILES_ROOT/shell/shared/tooling.sh" ]  && DOTFILES_SHELL=bash source "$DOTFILES_ROOT/shell/shared/tooling.sh"
+      [ -f "$DOTFILES_ROOT/shell/shared/ai-tools.sh" ] && source "$DOTFILES_ROOT/shell/shared/ai-tools.sh"
     '';
   };
 
@@ -62,12 +64,12 @@ in
     enable = true;
     initContent = ''
       export DOTFILES_ROOT="${dotfilesRoot}"
+      export HM_MANAGED=1
 
-      # Source dotfiles shell stack
-      [ -f "$DOTFILES_ROOT/shell/shared/env.sh" ]     && source "$DOTFILES_ROOT/shell/shared/env.sh"
+      # direnv/starship/zoxide hooks are injected by home-manager above this block
+      # zshrc internally sources env.sh, aliases.sh, and tooling.sh (guarded by HM_MANAGED)
       [ -f "$DOTFILES_ROOT/shell/zsh/zshrc" ]          && source "$DOTFILES_ROOT/shell/zsh/zshrc"
-      [ -f "$DOTFILES_ROOT/shell/shared/aliases.sh" ]  && source "$DOTFILES_ROOT/shell/shared/aliases.sh"
-      [ -f "$DOTFILES_ROOT/shell/shared/tooling.sh" ]  && DOTFILES_SHELL=zsh source "$DOTFILES_ROOT/shell/shared/tooling.sh"
+      [ -f "$DOTFILES_ROOT/shell/shared/ai-tools.sh" ] && source "$DOTFILES_ROOT/shell/shared/ai-tools.sh"
     '';
   };
 

@@ -1,0 +1,29 @@
+name: Bootstrap age key
+
+# Manually triggered — use when on a machine without your SSH key.
+# Outputs the age private key so you can paste it into ~/.config/sops/age/keys.txt
+on:
+  workflow_dispatch:
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write age key to file
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_KEY }}" > ~/.config/sops/age/keys.txt
+          echo "Age key written. Copy the output below to ~/.config/sops/age/keys.txt on your machine."
+          # Print masked — GitHub will redact the actual value, but you can
+          # use this step to verify the secret is set correctly.
+          echo "Key fingerprint:"
+          cat ~/.config/sops/age/keys.txt | grep "^AGE-SECRET" | cut -c1-20 "..."
+
+      - name: Verify can decrypt
+        run: |
+          curl -sSfL https://github.com/getsops/sops/releases/latest/download/sops-v3.9.1.linux.arm64 -o /usr/local/bin/sops
+          chmod +x /usr/local/bin/sops
+          curl -sSfL https://github.com/FiloSottile/age/releases/latest/download/age-v1.2.1-linux-arm64.tar.gz | tar xz -C /tmp
+          export PATH="/tmp/age-v1.2.1-linux-arm64:$PATH"
+          export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
+          sops --decrypt secrets/api-keys.yaml > /dev/null && echo "✓ Decryption works"

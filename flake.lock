@@ -18,18 +18,38 @@
         "type": "github"
       }
     },
+    "home-manager": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1771750122,
+        "narHash": "sha256-+JYMGE6Z4O7GoaBFHByl22XcyeStu56GE1eu3+2sVjI=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "603626a8da9e1b622e55251a90ef486b8179334c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1735563628,
-        "narHash": "sha256-OnSAY7XDSx7CtDoqNh8jwVwh4xNL/2HaJxGjryLWzX8=",
+        "lastModified": 1771369470,
+        "narHash": "sha256-0NBlEBKkN3lufyvFegY4TYv5mCNHbi5OmBDrzihbBMQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b134951a4c9f3c995fd7be05f3243f8ecd65d798",
+        "rev": "0182a361324364ae3f436a63005877674cf45efb",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-24.05",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -37,6 +57,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "sops-nix": "sops-nix"
       }

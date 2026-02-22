@@ -1,0 +1,7 @@
+[default.extend-words]
+# Age key substrings
+mch = "mch"
+# Base64 substrings in SOPS-encrypted files
+UE = "UE"
+Fo = "Fo"
+ue = "ue"

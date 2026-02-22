@@ -84,21 +84,13 @@ load-ai-keys() {
 # To load manually: load-ai-keys
 # Or load project-specific secrets: sops_source_env .env.enc
 
-# Activate direnv (needed for both interactive and non-interactive shells for VSCode)
-if command -v direnv > /dev/null 2>&1; then
-  eval "$(direnv hook bash)"
-fi
-
-# Interactive shell setup (only for interactive shells)
-if [[ $- == *i* ]]; then
-  # Starship prompt (installed via home-manager)
-  if command -v starship > /dev/null 2>&1; then
+# direnv and starship are initialized by home-manager when HM_MANAGED=1.
+# Fallback for non-home-manager environments:
+if [[ -z "$HM_MANAGED" ]]; then
+  if command -v direnv > /dev/null 2>&1; then
+    eval "$(direnv hook bash)"
+  fi
+  if [[ $- == *i* ]] && command -v starship > /dev/null 2>&1; then
     eval "$(starship init bash)"
-  else
-    # Nice fallback prompt with git branch support
-    parse_git_branch() {
-      git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
-    }
-    PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[33m\]$(parse_git_branch)\[\033[00m\]\$ '
   fi
 fi

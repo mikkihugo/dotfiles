@@ -1,0 +1,25 @@
+pre-commit:
+  parallel: true
+  commands:
+    alejandra:
+      glob: "*.nix"
+      run: alejandra --check {staged_files}
+
+    statix:
+      glob: "*.nix"
+      run: statix check {staged_files}
+
+    shellcheck:
+      glob: "*.sh"
+      run: shellcheck --external-sources {staged_files}
+
+    shfmt:
+      glob: "*.sh"
+      run: shfmt -d {staged_files}
+
+    typos:
+      run: typos {staged_files}
+
+    detect-secrets:
+      exclude: \.secrets\.baseline$
+      run: detect-secrets-hook --baseline .secrets.baseline {staged_files}

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Minimal bashrc for testing
+# Sourced by home-manager programs.bash.initExtra
 
 # Set HOME if missing
 [ -z "$HOME" ] && export HOME="/home/mhugo"
@@ -13,12 +13,7 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 # Add user paths first (before tool managers)
 export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.cargo/bin:$HOME/.amp/bin:$PATH"
 
-# Activate mise (installed to ~/.local/bin/mise)
-if [ -f "$HOME/.local/bin/mise" ]; then
-  eval "$("$HOME/.local/bin/mise" activate bash)"
-fi
-
-# Add Nix to PATH AFTER mise (critical for direnv to work)
+# Add Nix to PATH (home-manager manages the environment; no mise)
 if [ -e /nix/var/nix/profiles/default/bin ]; then
   export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 fi
@@ -96,7 +91,7 @@ fi
 
 # Interactive shell setup (only for interactive shells)
 if [[ $- == *i* ]]; then
-  # Starship prompt (installed via mise)
+  # Starship prompt (installed via home-manager)
   if command -v starship > /dev/null 2>&1; then
     eval "$(starship init bash)"
   else

@@ -9,6 +9,9 @@
     "~/.config/zellij/layouts": "config/zellij/layouts",
     "~/.config/zellij/themes": "config/zellij/themes",
     "~/.ripgreprc": "config/ripgreprc",
-    "~/.config/git/config": "config/git/config"
+    "~/.config/git/config": "config/git/config",
+    "~/.config/opencode/opencode.json": "config/opencode/opencode.json",
+    "~/.config/opencode/oh-my-opencode.json": "config/opencode/oh-my-opencode.json",
+    "~/.config/opencode/opencode-mem.jsonc": "config/opencode/opencode-mem.jsonc"
   }
 }

@@ -20,6 +20,56 @@
 #   load-ai-keys   — decrypt ~/.dotfiles/secrets/api-keys.yaml and export
 #                    OPENAI_*, ANTHROPIC_*, GOOGLE_*, GEMINI_*, CLAUDE_* vars
 
+# Set HOME if missing
+[ -z "$HOME" ] && export HOME="/home/mhugo"
+
+# Use a user-writable npm global prefix to avoid sudo
+export NPM_CONFIG_PREFIX="$HOME/.npm-global"
+
+# Set PATH properly - system paths first, then user paths
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Add user paths first (before tool managers)
+export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.cargo/bin:$HOME/.amp/bin:$PATH"
+
+# Add Homebrew to PATH
+if [ -d /home/linuxbrew/.linuxbrew/bin ]; then
+  export PATH="/home/linuxbrew/.linuxbrew/bin:$PATH"
+fi
+
+# Activate mise (installed to ~/.local/bin/mise)
+if [ -f "$HOME/.local/bin/mise" ]; then
+  eval "$("$HOME/.local/bin/mise" activate bash)"
+fi
+
+# Add Nix to PATH AFTER mise (critical for direnv to work)
+if [ -e /nix/var/nix/profiles/default/bin ]; then
+  export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+fi
+if [ -e "$HOME/.nix-profile/bin" ]; then
+  export PATH="$HOME/.nix-profile/bin:$PATH"
+fi
+
+# Load Nix environment (sets NIX_PROFILES and other env vars)
+if [ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+  . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+elif [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+  . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+fi
+
+# SOPS configuration
+export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+
+# Helper function to decrypt and source .env.enc files
+# Usage: sops_source_env /path/to/.env.enc
+sops_source_env() {
+  local env_file="${1:-.env.enc}"
+  if [ -f "$env_file" ] && command -v sops > /dev/null 2>&1; then
+    eval "$(sops --decrypt "$env_file" 2>/dev/null | grep -v '^#' | grep -v '^$' | sed 's/^/export /')"
+  fi
+}
+
+# Load SOPS encrypted secrets
 _load_sops_secrets() {
   local secrets_file="$HOME/.dotfiles/secrets/api-keys.yaml"
 
@@ -38,35 +88,86 @@ _load_sops_secrets() {
     return 1
   }
 
-  # llm_mux routes all providers through a single gateway endpoint.
-  # Both the api_key and base_url must be present to configure anything.
-  local llm_key llm_url claude_token
-  llm_key=$(echo "$decrypted"    | grep -A1 "^llm_mux:"    | grep "api_key:"    | sed 's/.*api_key: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
-  llm_url=$(echo "$decrypted"    | grep -A2 "^llm_mux:"    | grep "base_url:"   | sed 's/.*base_url: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
-  claude_token=$(echo "$decrypted" | grep -A1 "^claude_code:" | grep "oauth_token:" | sed 's/.*oauth_token: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+    # Helper: extract "key: value" under a YAML section (searches up to 5 children)
+    _sops_val() { echo "$decrypted" | grep -A5 "^$1:" | grep "$2:" | head -1 | sed "s/.*$2: *//;s/^ *//;s/ *$//" | tr -d '"'; }
 
-  if [[ -n "$llm_key" && -n "$llm_url" ]]; then
-    # Point every major SDK at the gateway. Providers that don't recognise
-    # OPENAI_BASE_URL fall back to OPENAI_API_BASE; we export both.
-    export OPENAI_API_KEY="$llm_key"    OPENAI_API_BASE="$llm_url"    OPENAI_BASE_URL="$llm_url"
-    export ANTHROPIC_API_KEY="$llm_key" ANTHROPIC_BASE_URL="$llm_url"
-    export GOOGLE_API_KEY="$llm_key"    GOOGLE_API_BASE="$llm_url"
-    export GEMINI_API_KEY="$llm_key"    GEMINI_API_BASE="$llm_url"
-    echo "LLM keys loaded (gateway: $llm_url)"
-  fi
+    # LLM Gateway
+    local val=$(_sops_val llm_gateway api_key)
+    local url=$(_sops_val llm_gateway base_url)
+    if [ -n "$val" ] && [ -n "$url" ]; then
+      export LLM_MUX_API_KEY="$val"
+      export LLM_MUX_BASE_URL="$url"
+      export GOOGLE_API_KEY="$val"
+      export GOOGLE_API_BASE="$url"
+      export GEMINI_API_KEY="$val"
+      export GEMINI_API_BASE="$url"
+    fi
 
-  if [[ -n "$claude_token" ]]; then
-    # OAuth token lets Claude Code run without a separate ANTHROPIC_API_KEY.
-    export CLAUDE_CODE_OAUTH_TOKEN="$claude_token"
-    echo "Claude OAuth token loaded"
-  fi
+    # OpenAI Gateway (ACE Coder - for Goose CLI)
+    val=$(_sops_val openai_gateway api_key)
+    url=$(_sops_val openai_gateway base_url)
+    [ -n "$val" ] && export OPENAI_GATEWAY_API_KEY="$val"
+    [ -n "$url" ] && export OPENAI_GATEWAY_BASE_URL="$url"
+
+    # Claude Code OAuth token
+    val=$(_sops_val claude_code oauth_token)
+    [ -n "$val" ] && export CLAUDE_CODE_OAUTH_TOKEN="$val"
+
+    # DeepSeek
+    val=$(_sops_val deepseek api_key)
+    [ -n "$val" ] && export DEEPSEEK_API_KEY="$val"
+
+    # Kimi (Moonshot)
+    val=$(_sops_val kimi api_key)
+    [ -n "$val" ] && export KIMI_API_KEY="$val"
+
+    # OpenRouter
+    val=$(_sops_val openrouter api_key)
+    [ -n "$val" ] && export OPENROUTER_API_KEY="$val"
+
+    # Google / Gemini
+    val=$(echo "$decrypted" | grep -A1 "^google:" | grep "default:" | sed 's/.*default: *//;s/ *$//' | tr -d '"')
+    [ -n "$val" ] && export GOOGLE_API_KEY="$val" && export GEMINI_API_KEY="$val"
+
+    # Hetzner
+    val=$(_sops_val hetzner api_token)
+    [ -n "$val" ] && export HETZNER_API_TOKEN="$val"
+
+    # GOG Galaxy
+    val=$(_sops_val gog keyring_password)
+    [ -n "$val" ] && export GOG_KEYRING_PASSWORD="$val"
+
+    # Exa (Web Search)
+    val=$(_sops_val exa api_key)
+    [ -n "$val" ] && export EXA_API_KEY="$val"
+
+    unset -f _sops_val
 }
 
 alias load-ai-keys='_load_sops_secrets'
 
-# Activate direnv (needed for both interactive and non-interactive shells for VSCode)
+# Activate direnv for ALL shells (interactive + non-interactive)
+# Non-interactive shells (Claude Code, Cursor, codex, kimi, CI) don't trigger
+# PROMPT_COMMAND, so we must explicitly export the environment.
 if command -v direnv > /dev/null 2>&1; then
-  eval "$(direnv hook bash)"
+  if [[ $- == *i* ]]; then
+    # Interactive: hook into prompt cycle (standard direnv pattern)
+    eval "$(direnv hook bash)"
+    # Make `direnv allow` immediately reload without needing an extra Enter
+    direnv() {
+      command direnv "$@"
+      if [[ "$1" == "allow" ]]; then
+        eval "$(command direnv export bash)"
+      fi
+    }
+  else
+    # Non-interactive: PROMPT_COMMAND doesn't fire, so direnv hook is useless.
+    # Unset direnv tracking so it re-exports the full environment (parent's
+    # DIRENV_DIFF makes direnv think env is current, but .bashrc reset PATH).
+    # nix-direnv caches nix devshells, so this is fast (~50ms).
+    unset DIRENV_DIFF DIRENV_WATCHES
+    eval "$(direnv export bash 2>/dev/null)"
+  fi
 fi
 
 # Interactive shell setup (only for interactive shells)
@@ -84,3 +185,7 @@ if [[ $- == *i* ]]; then
     PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[33m\]$(parse_git_branch)\[\033[00m\]\$ '
   fi
 fi
+
+# OpenClaw Completion
+source "/home/mhugo/.openclaw/completions/openclaw.bash"
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"

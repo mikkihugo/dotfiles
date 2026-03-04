@@ -102,13 +102,14 @@ in {
       # secret-tui — browse, reveal, and edit SOPS-encrypted secrets
       secrets = "secret-tui";
 
-      # Modern CLI replacements (tools installed in home.packages above)
+      # ls replacements — eza is flag-compatible enough for interactive use.
+      # NOT aliasing grep→rg or find→fd: those tools have different argument
+      # syntax; overriding them breaks scripts and unexpected muscle memory.
+      # Use rg/fd directly by name.
       ls = "eza --group-directories-first";
-      ll = "eza -la --group-directories-first";
-      lt = "eza --tree --level=2";
-      cat = "bat --style=plain";
-      grep = "rg";
-      find = "fd";
+      ll = "eza -la --group-directories-first --git";
+      lt = "eza --tree --level=2 --group-directories-first";
+      la = "eza -la --group-directories-first --git --all";
     };
   };
 

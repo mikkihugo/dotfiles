@@ -1,0 +1,6 @@
+# W20 (repeated_keys) is intentionally suppressed: home-manager configs
+# commonly use the flat `home.foo = ...` / `programs.bar = ...` pattern
+# across separate sections. Consolidating everything into one giant `home = {}`
+# block would hurt readability with no functional benefit.
+disabled = ["repeated_keys"]
+ignore = [".direnv"]

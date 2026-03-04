@@ -1,93 +1,65 @@
 #!/bin/bash
-# Sourced by home-manager programs.bash.initExtra
+# shell/bash/bashrc — on-demand LLM key loader
+#
+# Purpose:
+#   Provides the `load-ai-keys` command for decrypting and exporting LLM API
+#   credentials on demand. Keys are NOT auto-loaded at shell startup to avoid
+#   the ~300ms SOPS decrypt penalty on every new terminal.
+#
+#   Everything else (aliases, PATH, tool hooks, starship, direnv, zoxide) is
+#   managed declaratively by home-manager in home/home.nix. This file is the
+#   only runtime shell code that isn't expressed as Nix — it exists because
+#   SOPS decryption must happen in the live shell environment where the age
+#   key is accessible, not at home-manager activation time.
+#
+# Sourced by:
+#   programs.bash.initExtra  (bash sessions)
+#   programs.zsh.initContent (zsh sessions, bash-compatible subset used)
+#
+# Usage:
+#   load-ai-keys   — decrypt ~/.dotfiles/secrets/api-keys.yaml and export
+#                    OPENAI_*, ANTHROPIC_*, GOOGLE_*, GEMINI_*, CLAUDE_* vars
 
-# Use a user-writable npm global prefix to avoid sudo
-export NPM_CONFIG_PREFIX="$HOME/.npm-global"
-
-# Set PATH properly - system paths first, then user paths
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-# Add user paths first (before tool managers)
-export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.cargo/bin:$HOME/.amp/bin:$PATH"
-
-# Add Nix to PATH (home-manager manages the environment; no mise)
-if [ -e /nix/var/nix/profiles/default/bin ]; then
-  export PATH="/nix/var/nix/profiles/default/bin:$PATH"
-fi
-if [ -e "$HOME/.nix-profile/bin" ]; then
-  export PATH="$HOME/.nix-profile/bin:$PATH"
-fi
-
-# Load Nix environment (sets NIX_PROFILES and other env vars)
-if [ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
-  . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-elif [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
-  . "$HOME/.nix-profile/etc/profile.d/nix.sh"
-fi
-
-# SOPS configuration
-export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
-
-# Helper function to decrypt and source .env.enc files
-# Usage: sops_source_env /path/to/.env.enc
-sops_source_env() {
-  local env_file="${1:-.env.enc}"
-  if [ -f "$env_file" ] && command -v sops > /dev/null 2>&1; then
-    eval "$(sops --decrypt "$env_file" 2>/dev/null | grep -v '^#' | grep -v '^$' | sed 's/^/export /')"
-  fi
-}
-
-# Load SOPS encrypted secrets
 _load_sops_secrets() {
   local secrets_file="$HOME/.dotfiles/secrets/api-keys.yaml"
-  if [ -f "$secrets_file" ] && command -v sops > /dev/null 2>&1; then
-    local decrypted=$(sops --decrypt "$secrets_file" 2>/dev/null)
 
-    # Parse LLM-MUX credentials
-    local llm_mux_key=$(echo "$decrypted" | grep -A1 "^llm_mux:" | grep "api_key:" | sed 's/.*api_key: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
-    local llm_mux_url=$(echo "$decrypted" | grep -A2 "^llm_mux:" | grep "base_url:" | sed 's/.*base_url: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+  if [[ ! -f "$secrets_file" ]]; then
+    echo "load-ai-keys: $secrets_file not found" >&2
+    return 1
+  fi
+  if ! command -v sops > /dev/null 2>&1; then
+    echo "load-ai-keys: sops not in PATH" >&2
+    return 1
+  fi
 
-    # Parse Claude Code OAuth token
-    local claude_token=$(echo "$decrypted" | grep -A1 "^claude_code:" | grep "oauth_token:" | sed 's/.*oauth_token: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+  local decrypted
+  decrypted=$(sops --decrypt "$secrets_file" 2>/dev/null) || {
+    echo "load-ai-keys: sops decrypt failed (check age key at $SOPS_AGE_KEY_FILE)" >&2
+    return 1
+  }
 
-    # Export LLM-MUX variables (OpenAI, Anthropic, Google/Gemini)
-    if [ -n "$llm_mux_key" ] && [ -n "$llm_mux_url" ]; then
-      export OPENAI_API_KEY="$llm_mux_key"
-      export OPENAI_API_BASE="$llm_mux_url"
-      export OPENAI_BASE_URL="$llm_mux_url"
-      export ANTHROPIC_API_KEY="$llm_mux_key"
-      export ANTHROPIC_API_URL="$llm_mux_url"
-      export ANTHROPIC_BASE_URL="$llm_mux_url"
-      export GOOGLE_API_KEY="$llm_mux_key"
-      export GOOGLE_API_BASE="$llm_mux_url"
-      export GEMINI_API_KEY="$llm_mux_key"
-      export GEMINI_API_BASE="$llm_mux_url"
-    fi
+  # llm_mux routes all providers through a single gateway endpoint.
+  # Both the api_key and base_url must be present to configure anything.
+  local llm_key llm_url claude_token
+  llm_key=$(echo "$decrypted"    | grep -A1 "^llm_mux:"    | grep "api_key:"    | sed 's/.*api_key: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+  llm_url=$(echo "$decrypted"    | grep -A2 "^llm_mux:"    | grep "base_url:"   | sed 's/.*base_url: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
+  claude_token=$(echo "$decrypted" | grep -A1 "^claude_code:" | grep "oauth_token:" | sed 's/.*oauth_token: *"\?\([^"]*\)"\?/\1/' | tr -d '"')
 
-    # Export Claude Code OAuth token
-    if [ -n "$claude_token" ]; then
-      export CLAUDE_CODE_OAUTH_TOKEN="$claude_token"
-    fi
+  if [[ -n "$llm_key" && -n "$llm_url" ]]; then
+    # Point every major SDK at the gateway. Providers that don't recognise
+    # OPENAI_BASE_URL fall back to OPENAI_API_BASE; we export both.
+    export OPENAI_API_KEY="$llm_key"    OPENAI_API_BASE="$llm_url"    OPENAI_BASE_URL="$llm_url"
+    export ANTHROPIC_API_KEY="$llm_key" ANTHROPIC_BASE_URL="$llm_url"
+    export GOOGLE_API_KEY="$llm_key"    GOOGLE_API_BASE="$llm_url"
+    export GEMINI_API_KEY="$llm_key"    GEMINI_API_BASE="$llm_url"
+    echo "LLM keys loaded (gateway: $llm_url)"
+  fi
+
+  if [[ -n "$claude_token" ]]; then
+    # OAuth token lets Claude Code run without a separate ANTHROPIC_API_KEY.
+    export CLAUDE_CODE_OAUTH_TOKEN="$claude_token"
+    echo "Claude OAuth token loaded"
   fi
 }
 
-# Convenient command to load AI API keys
-# Usage: load-ai-keys
-load-ai-keys() {
-  _load_sops_secrets
-}
-
-# SOPS secrets are NOT auto-loaded to avoid startup overhead
-# To load manually: load-ai-keys
-# Or load project-specific secrets: sops_source_env .env.enc
-
-# direnv and starship are initialized by home-manager when HM_MANAGED=1.
-# Fallback for non-home-manager environments:
-if [[ -z "$HM_MANAGED" ]]; then
-  if command -v direnv > /dev/null 2>&1; then
-    eval "$(direnv hook bash)"
-  fi
-  if [[ $- == *i* ]] && command -v starship > /dev/null 2>&1; then
-    eval "$(starship init bash)"
-  fi
-fi
+alias load-ai-keys='_load_sops_secrets'

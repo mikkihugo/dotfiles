@@ -1,131 +1,159 @@
 # dotfiles
 
-Nix-powered dotfiles for `mhugo` with SOPS-encrypted secrets. A single `flake.nix` pins every language runtime and CLI, while profile manifests describe how the repo links into `$HOME`.
+Declarative user environment for `mhugo`. A single Nix flake pins every
+package and tool version; home-manager applies the configuration to `$HOME`.
+Secrets are SOPS-encrypted with an age key derived from the SSH ed25519 key —
+no separate password, no plaintext credentials in the repo.
 
-## New Machine Setup (One Command)
+## How it works
 
-```bash
-curl -sSL https://raw.githubusercontent.com/mikkihugo/dotfiles/main/bootstrap-remote.sh | bash
+```
+flake.nix           ← nixpkgs + home-manager + sops-nix pins
+home/home.nix       ← everything installed and configured in $HOME
+secrets/            ← SOPS-encrypted YAML (age backend, .sops.yaml rules)
+config/             ← static config files linked into $HOME by home-manager
+shell/bash/bashrc   ← on-demand LLM key loader (sourced by HM initExtra)
+tools/secret-tui-rust/ ← terminal UI for browsing SOPS secrets
 ```
 
-Just paste your SSH key when prompted. The script will:
-- ✅ Install Nix package manager
-- ✅ Set up SSH keys (main + additional keys/config)
-- ✅ Clone your private dotfiles repo
-- ✅ Set up SOPS decryption (from your SSH key)
-- ✅ Install all configurations and tools
-- ✅ Load all your encrypted secrets immediately
+`home-manager switch` is the only command needed after any change. It:
+1. Builds the Nix derivation (packages, symlinks, shell init)
+2. Links config files from `config/` into `~/.config/`
+3. Writes generated shell init blocks into `~/.bashrc` / `~/.zshrc`
 
-**That's it! Your new machine has your complete environment in 2 minutes.**
-
-## Manual Setup (if needed)
+## New machine setup
 
 ```bash
-# 1. Install Nix (multi-user)
-curl -L https://nixos.org/nix/install | sh
+# 1. Install Nix (multi-user, flakes enabled)
+curl -L https://nixos.org/nix/install | sh -s -- --daemon
+mkdir -p ~/.config/nix
+echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
 
-# 2. Clone the dotfiles
-git clone https://github.com/mikkihugo/dotfiles.git ~/.dotfiles
+# 2. Clone
+git clone git@github.com:mikkihugo/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 
-# 3. Enter the dev shell
-nix develop        # or: direnv allow (see below)
+# 3. Add this machine's age key (derived from SSH key — no extra key needed)
+mkdir -p ~/.config/sops/age
+ssh-to-age -i ~/.ssh/id_ed25519.pub >> ~/.dotfiles/secrets/.sops-machine-keys.txt
+# Then add that pubkey to .sops.yaml and re-encrypt secrets (see Secrets below)
 
-# 4. Apply the default profile (symlinks + backups)
-./install.sh
-
-# 5. (Optional) Make the nix dev shell your login environment
-./setup-login-shell.sh
+# 4. Apply
+home-manager switch --flake .#mhugo --impure \
+  --extra-experimental-features "nix-command flakes"
 ```
 
-After step 5, new terminals automatically drop into zsh running inside the flake-managed environment.
+After step 4, open a new terminal — you're in the managed environment.
 
-Choose a different profile on the fly:
+## Day-to-day
+
+| Task | Command |
+|------|---------|
+| Apply config changes | `hms` (alias for home-manager switch) |
+| Load LLM API keys | `load-ai-keys` |
+| Browse / edit secrets | `secrets` (opens secret-tui) |
+| Enter dotfiles maintenance shell | `nix develop ~/.dotfiles` |
+
+## Repo layout
+
+```
+flake.nix                    Entry point — nixpkgs/HM/sops-nix pins
+home/
+  home.nix                   Declarative user config (packages, shell, git, tools)
+config/
+  starship.toml              Prompt theme (managed by programs.starship)
+  zellij/                    Terminal multiplexer config
+  direnv/direnv.toml         Direnv settings (strict mode, warn timeout)
+  git/                       Git config fragments (linked by programs.git)
+secrets/
+  api-keys.yaml              SOPS-encrypted LLM gateway + Claude OAuth token
+  .sops.yaml                 Encryption rules (which keys can decrypt which files)
+shell/
+  bash/bashrc                On-demand load-ai-keys function (sourced by HM)
+tools/
+  secret-tui-rust/           Ratatui TUI: browse/reveal/edit SOPS secrets
+.sops.yaml                   Age key recipients for secret re-encryption
+lefthook.yml                 Git hooks: alejandra, statix, shellcheck, shfmt,
+                             typos, detect-secrets on pre-commit
+```
+
+## Secrets
+
+Secrets live in `secrets/api-keys.yaml`, encrypted with [SOPS](https://github.com/getsops/sops)
+using [age](https://github.com/FiloSottile/age) keys derived from SSH ed25519 keys.
+No GPG, no separate key files — the SSH key you already have is the decryption key.
+
+### View / edit
 
 ```bash
-DOTFILES_PROFILE=services ./install.sh
+# Browse interactively (reveal, copy, edit)
+secrets
+
+# Or directly via sops
+sops -d secrets/api-keys.yaml          # decrypt to stdout
+sops secrets/api-keys.yaml             # open in $EDITOR (re-encrypts on save)
+
+# In-place value update (never redirect stdout — use sops set)
+sops set secrets/api-keys.yaml '["llm_mux"]["api_key"]' '"new-value"'
 ```
 
-The `.envrc` file enables automatic activation via [direnv](https://direnv.net/). Run `direnv allow` once per machine if you prefer transparent entry into `nix develop` whenever you `cd` into the repo.
+### Adding a new machine
 
-## Layout
+```bash
+# 1. Get the age pubkey for the new machine's SSH key
+ssh-to-age -i ~/.ssh/id_ed25519.pub
 
-```
-flake.nix                # Declarative toolchain definition
-.envrc                   # direnv hook (use flake)
-bootstrap/
-  steps/                 # Ordered setup tasks (check nix, link configs, post actions)
-config/                  # Files mirroring final destinations under $HOME
-profiles/                # Host/role manifests (links.json)
-shell/                   # Shared shell logic + per-shell entrypoints
-services/                # Optional infra bits (Cloudflare, litellm, vault, etc.)
-tasks/                   # Lint/doctor helpers invoked inside the dev shell
-install.sh               # Delegates to bootstrap/bootstrap.sh
-```
+# 2. Add it to .sops.yaml under keys:
+#    - age: age1...newkey...
 
-All interactive shells (`bash`, `zsh`, optional `nushell`) source the same shared environment:
+# 3. Re-encrypt all secrets with the new recipient
+cd ~/.dotfiles
+nix develop  # enters maintenance shell with sops available
+sops updatekeys secrets/api-keys.yaml
 
-- `shell/shared/env.sh` exports `DOTFILES_ROOT`, loads `~/.env_*` overlays, and appends user-local bin paths.
-- `shell/shared/aliases.sh` wires modern CLI aliases (`rg`, `fd`, `eza`, …) with graceful fallbacks.
-- `shell/shared/tooling.sh` initialises `zoxide`, `starship`, and `direnv` when available.
-
-## Tooling via Nix
-
-`flake.nix` provisions:
-- Runtimes: Node.js 20, pnpm 9, Python 3.12, Go 1.22, Rust (rustup), GCC
-- Developer tooling: git (+LFS + gitui), zsh, nushell, zoxide, direnv + nix-direnv, starship, ripgrep, fd, fzf, bat, eza, delta, tmate, Eternal Terminal, tmux, htop, jq, yq, cloudflared, tailscale, shellcheck, shfmt, curl, wget, unzip
-
-`nix develop` (or `direnv allow`) places all of these on `PATH`; Moonrepo, VS Code, and other tooling just see a preconfigured environment with no manual installs.
-
-## Bootstrap Flow
-
-`install.sh` delegates to `bootstrap/bootstrap.sh`, which:
-
-1. Verifies Nix is available (`bootstrap/steps/00-check-nix.sh`).
-2. Reads the active profile manifest and symlinks files into `$HOME`, backing up any collisions in `~/.dotfiles-backup-YYYYMMDD-HHMMSS` (`bootstrap/steps/10-symlinks.sh`).
-3. Runs the `tasks/run doctor` helper for a quick sanity check (`bootstrap/steps/20-post.sh`).
-
-Re-run `./install.sh` whenever you pull an update or switch profiles—it’s idempotent.
-
-## Tasks
-
-Inside the dev shell:
-
-```
-./tasks/run lint    # shellcheck + shfmt
-./tasks/run doctor  # print versions of major toolchains
+# 4. Commit .sops.yaml + the re-encrypted secrets/api-keys.yaml
 ```
 
-Extend `tasks/scripts/` and update `tasks/run` to expose additional helpers.
+### Secret structure (api-keys.yaml)
 
-## Profiles
+```yaml
+llm_mux:
+    api_key: <gateway key>     # single key for all LLM providers
+    base_url: <gateway URL>    # routes OpenAI / Anthropic / Google calls
+claude_code:
+    oauth_token: <token>       # Claude Code OAuth (bypasses ANTHROPIC_API_KEY)
+```
 
-`profiles/default/links.json` connects the core shell config:
+`load-ai-keys` decrypts this file and exports the values as the environment
+variables each SDK expects (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.).
 
-- `shell/bash/bashrc` → `~/.bashrc`
-- `shell/zsh/zshrc` → `~/.zshrc`
-- `config/starship.toml` → `~/.config/starship.toml`
-- `config/zellij/*` → `~/.config/zellij/`
-- `config/git/config` → `~/.config/git/config`
-- `config/ripgreprc` → `~/.ripgreprc`
+## What home.nix configures
 
-`profiles/services/links.json` adds Cloudflare/LiteLLM manifests under `~/.config/services/` so ops machines can opt in without cluttering personal laptops.
+All user-space config is in `home/home.nix`. It is the single source of truth —
+editing a dotfile directly will be overwritten on the next `hms`.
 
-## Connectivity Toolkit
+| Section | Purpose |
+|---------|---------|
+| `home.packages` | CLI tools installed into the user profile |
+| `programs.bash` / `programs.zsh` | Shell init (exports DOTFILES_ROOT, sources bashrc) |
+| `programs.git` | Git identity, delta pager, aliases |
+| `programs.jujutsu` | jj identity and UI settings |
+| `programs.direnv` | Auto-load nix shells on `cd` (nix-direnv caches evaluations) |
+| `programs.starship` | Cross-shell prompt, config from `config/starship.toml` |
+| `programs.zoxide` | Smarter `cd` with frecency scoring |
+| `programs.gh` | GitHub CLI settings |
 
-The dev shell ships with several always-ready remote tools:
+## Code quality (pre-commit hooks)
 
-- **tmate** for instant shared terminals (use the public relay or self-host `tmate-ssh-server`).
-- **Eternal Terminal (et)** for resilient SSH sessions; pair with Cloudflare Tunnel or Tailscale to avoid inbound firewall rules.
-- **cloudflared** to publish SSH/web endpoints through Cloudflare Access without opening ports.
-- **tailscale** for mesh VPN and SSH certificates—run `sudo tailscale up` on hosts that join your tailnet.
+lefthook runs on every commit:
 
-Nushell (`nushell`) is available for structured pipelines, while Bash remains the fallback system shell for scripts.
+| Hook | What it checks |
+|------|---------------|
+| `alejandra` | Nix formatting |
+| `statix` | Nix anti-patterns |
+| `shellcheck` | Shell script correctness |
+| `shfmt` | Shell script formatting |
+| `typos` | Spell checking |
+| `detect-secrets` | Credential leak prevention |
 
-## Next Steps
-
-- Review `shell/shared/aliases.sh` and prune/extend as needed.
-- Inspect `services/` before launching anything—populate `.env` files with real secrets outside git.
-- Consider adding per-host manifests (`profiles/<name>/links.json`) for CI, servers, or experimental setups.
-
-Happy hacking! ✨
+Run manually: `lefthook run pre-commit`

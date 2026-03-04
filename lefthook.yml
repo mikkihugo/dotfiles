@@ -7,7 +7,8 @@ pre-commit:
 
     statix:
       glob: "*.nix"
-      run: statix check {staged_files}
+      # statix check accepts only one target at a time; loop over staged files
+      run: for f in {staged_files}; do statix check "$f" || exit 1; done
 
     shellcheck:
       glob: "*.sh"

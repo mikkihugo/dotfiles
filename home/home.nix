@@ -1,97 +1,136 @@
+# home/home.nix — declarative user environment
+#
+# Purpose:
+#   Single source of truth for everything installed and configured in $HOME.
+#   Applied by `home-manager switch --flake .#mhugo --impure` (alias: `hms`).
+#
+#   Why home-manager instead of dotfile symlinks?
+#   - Atomic: either the whole generation activates or nothing changes.
+#   - Reproducible: same flake.lock = identical environment on any machine.
+#   - No drift: editing files in $HOME directly gets overwritten on next switch.
+#
+#   dotfilesRoot is passed into shell init blocks so they can source runtime
+#   files (like shell/bash/bashrc) that need the live shell environment.
 {pkgs, ...}: let
   dotfilesRoot = "$HOME/.dotfiles";
 in {
   home = {
     username = "mhugo";
     homeDirectory = "/home/mhugo";
+
+    # stateVersion pins the home-manager release that manages migration.
+    # Do NOT change this after first activation — it controls format upgrades,
+    # not the software versions (those come from nixpkgs).
     stateVersion = "24.11";
 
-    # ── Session variables ────────────────────────────────────────────────────
+    # ── Session variables ──────────────────────────────────────────────────
+    # Exported into every session before any shell init runs.
+    # SOPS_AGE_KEY_FILE tells sops where to find the age private key used to
+    # decrypt secrets/api-keys.yaml. Derived from SSH key via ssh-to-age.
     sessionVariables = {
       SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
     };
 
-    # ── Packages ─────────────────────────────────────────────────────────────
+    # ── Packages ───────────────────────────────────────────────────────────
+    # Installed into the user profile (available on PATH without a shell hook).
+    # Grouped by role so it's clear what each block is for and what to remove
+    # if a machine doesn't need it.
     packages = with pkgs; [
-      # Modern CLI replacements
-      eza
-      bat
-      fd
-      ripgrep
-      fzf
-      zoxide
-      delta
-      jq
-      yq
-      btop
-      tokei
-      difftastic
+      # Modern CLI replacements — faster, friendlier alternatives to coreutils.
+      # Aliases wired by home-manager shellAliases or shell init.
+      eza # ls replacement (tree view, git status, icons)
+      bat # cat replacement (syntax highlight, paging)
+      fd # find replacement (respects .gitignore, faster)
+      ripgrep # grep replacement (recursive, fast, .gitignore-aware)
+      fzf # fuzzy finder (piped into other tools or used standalone)
+      zoxide # smarter cd (frecency-based, `z` alias)
+      delta # git diff pager (side-by-side, syntax highlight)
+      jq # JSON query and transform
+      yq # YAML/TOML/XML query (jq-compatible syntax)
+      btop # process/resource monitor (replaces htop)
+      tokei # count lines of code by language
+      difftastic # structural diff (understands syntax, not just lines)
 
-      # Dev tools
-      git-lfs
-      nodejs_22
-      pnpm
+      # Dev tools — language runtimes and package managers.
+      # Node/pnpm here because some CLI tools (opencode, etc.) need them
+      # without project-level nix shells.
+      git-lfs # large file storage extension for git
+      nodejs_22 # Node.js LTS
+      pnpm # fast, disk-efficient Node package manager
 
-      # Secret management
-      sops
-      age
-      ssh-to-age
+      # Secret management — the SOPS/age toolchain for encrypting dotfile secrets.
+      # These are also in the devShell but listed here so they're always available
+      # without entering `nix develop`.
+      sops # encrypts/decrypts YAML/JSON secrets
+      age # encryption backend (replaces GPG for SOPS)
+      ssh-to-age # derives age pubkey from SSH ed25519 key
 
-      # Shell
-      shellcheck
-      shfmt
+      # Shell tooling — linters used by lefthook pre-commit hooks.
+      shellcheck # static analysis for shell scripts
+      shfmt # formatter for shell scripts
 
-      # Nix tooling
-      alejandra # Nix formatter
-      statix # Nix linter (anti-patterns)
-      deadnix # Nix dead code finder
-      nix-tree # Visualize derivation dependency tree
-      nvd # Diff between home-manager/NixOS generations
-      nix-output-monitor # Nicer nix build output
-      nix-index # nix-locate: find which package provides a binary
+      # Nix tooling — meta-tools for working with the Nix ecosystem.
+      alejandra # opinionated Nix formatter (used in pre-commit)
+      statix # Nix linter — catches anti-patterns (used in pre-commit)
+      deadnix # finds unused Nix expressions (dead code)
+      nix-tree # visualise the derivation dependency tree
+      nvd # diff between home-manager / NixOS generations
+      nix-output-monitor # prettier `nix build` output
+      nix-index # `nix-locate`: find which package provides a binary
 
-      # Terminal multiplexer
+      # Terminal multiplexer — persistent sessions, split panes.
       zellij
 
-      # Clipboard (Wayland)
+      # Clipboard — Wayland clipboard integration.
+      # Used by secret-tui's `c` key (copy secret to clipboard).
       wl-clipboard
 
-      # Pre-commit / code quality
-      lefthook # Git hook runner (needed globally for any repo using it)
-      typos # Spell checker
-      detect-secrets # Secret scanner
+      # Pre-commit / code quality — run by lefthook on every commit.
+      lefthook # git hook runner (runs alejandra, statix, shellcheck, etc.)
+      typos # spell checker for source files
+      detect-secrets # scans for accidentally committed credentials
     ];
   };
 
   programs = {
-    # Let home-manager manage itself
+    # Let home-manager manage its own config file (~/.config/home-manager/).
     home-manager.enable = true;
 
-    # ── Bash ─────────────────────────────────────────────────────────────────
+    # ── Bash ────────────────────────────────────────────────────────────────
+    # Purpose: set DOTFILES_ROOT so shell/bash/bashrc can locate secrets,
+    # then source bashrc to register the `load-ai-keys` alias.
+    # direnv, starship, and zoxide hooks are injected automatically by their
+    # programs.* blocks below — no need to eval them here.
     bash = {
       enable = true;
       initExtra = ''
         export DOTFILES_ROOT="${dotfilesRoot}"
         export HM_MANAGED=1
 
-        # Load on-demand LLM key helper (load-ai-keys alias)
+        # Load on-demand LLM key helper (load-ai-keys alias).
+        # Sourced here instead of declared inline so the function body lives
+        # in a versioned file (shell/bash/bashrc) not in a generated ~/.bashrc.
         [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"
       '';
     };
 
-    # ── Zsh ──────────────────────────────────────────────────────────────────
+    # ── Zsh ─────────────────────────────────────────────────────────────────
+    # Sources the same bashrc — the load-ai-keys function uses only POSIX sh
+    # syntax so it works in both bash and zsh.
     zsh = {
       enable = true;
       initContent = ''
         export DOTFILES_ROOT="${dotfilesRoot}"
         export HM_MANAGED=1
 
-        # Load on-demand LLM key helper (load-ai-keys alias)
         [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"
       '';
     };
 
-    # ── Git ───────────────────────────────────────────────────────────────────
+    # ── Git ──────────────────────────────────────────────────────────────────
+    # Purpose: canonical identity + delta pager + quality-of-life aliases.
+    # delta replaces the default diff output with syntax-highlighted, side-by-
+    # side views. navigate=true lets you jump between hunks with n/N in less.
     git = {
       enable = true;
       settings = {
@@ -99,6 +138,8 @@ in {
           name = "Mikael Hugo";
           email = "mikkihugo@users.noreply.github.com";
         };
+        # /home/mhugo/code/flakecache is owned by root (nix build cache);
+        # mark it safe so `git status` works inside it without sudo.
         safe.directory = "/home/mhugo/code/flakecache";
         init.defaultBranch = "main";
         pull.rebase = true;
@@ -109,9 +150,9 @@ in {
           light = false;
           syntax-theme = "Nord";
           line-numbers = true;
-          side-by-side = false;
+          side-by-side = false; # single-column is easier on narrow terminals
         };
-        merge.conflictstyle = "diff3";
+        merge.conflictstyle = "diff3"; # shows base in conflicts — clearer resolution
         diff.colorMoved = "default";
         alias = {
           s = "status -sb";
@@ -138,6 +179,8 @@ in {
     };
 
     # ── Jujutsu ──────────────────────────────────────────────────────────────
+    # Purpose: jj is the primary VCS for the ace-coder project (git backend).
+    # difft as diff tool gives structural diffs instead of line-by-line noise.
     jujutsu = {
       enable = true;
       settings = {
@@ -147,25 +190,35 @@ in {
         };
         ui = {
           pager = "less -FRX";
-          default-command = "log";
+          default-command = "log"; # `jj` alone shows the commit graph
           diff.tool = "difft";
         };
       };
     };
 
     # ── Direnv ───────────────────────────────────────────────────────────────
+    # Purpose: automatically load the nix shell when cd-ing into a project.
+    # nix-direnv caches the nix evaluation so `cd` is instant after the first
+    # load — without it, every `cd` into a flake project takes 2-5 seconds.
     direnv = {
       enable = true;
       nix-direnv.enable = true;
     };
 
     # ── Starship prompt ───────────────────────────────────────────────────────
+    # Purpose: informative, fast cross-shell prompt.
+    # configPath points at the versioned TOML file rather than inlining the
+    # config as Nix attrs — this avoids Nix escaping issues with starship's
+    # format strings and keeps the config readable as TOML.
     starship = {
       enable = true;
       configPath = toString ../config/starship.toml;
     };
 
-    # ── Zoxide (better cd) ───────────────────────────────────────────────────
+    # ── Zoxide ───────────────────────────────────────────────────────────────
+    # Purpose: replace `cd` with frecency-based directory jumping.
+    # `z foo` jumps to the most-visited directory matching "foo".
+    # Both integrations are enabled so it works identically in bash and zsh.
     zoxide = {
       enable = true;
       enableBashIntegration = true;
@@ -173,6 +226,9 @@ in {
     };
 
     # ── GitHub CLI ───────────────────────────────────────────────────────────
+    # Purpose: gh is used for PR review and repo management.
+    # ssh protocol avoids HTTPS credential prompts; `gh pr checkout` is aliased
+    # to `co` so checking out a PR by number is quick.
     gh = {
       enable = true;
       settings = {

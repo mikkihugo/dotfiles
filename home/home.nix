@@ -81,6 +81,11 @@ in {
       # Terminal multiplexer — persistent sessions, split panes.
       zellij
 
+      # bat-extras — bat-powered wrappers for standard tools
+      bat-extras.batman # man pages with syntax highlighting
+      bat-extras.batgrep # ripgrep output through bat
+      bat-extras.batdiff # diff output through bat
+
       # Clipboard — Wayland clipboard integration.
       # Used by secret-tui's `c` key (copy secret to clipboard).
       wl-clipboard
@@ -110,6 +115,9 @@ in {
       ll = "eza -la --group-directories-first --git";
       lt = "eza --tree --level=2 --group-directories-first";
       la = "eza -la --group-directories-first --git --all";
+
+      # batman — man pages rendered with bat (syntax-highlighted, paginated)
+      man = "batman";
     };
   };
 

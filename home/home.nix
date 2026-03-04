@@ -29,6 +29,19 @@ in {
     # decrypt secrets/api-keys.yaml. Derived from SSH key via ssh-to-age.
     sessionVariables = {
       SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
+      # Point ripgrep at its config file so smart-case, colors, and glob
+      # ignores apply automatically without passing flags every time.
+      RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
+      # bat picks up its config from BAT_CONFIG_PATH (Nord theme, line numbers).
+      BAT_CONFIG_PATH = "$HOME/.config/bat/config";
+    };
+
+    # ── Config file links ──────────────────────────────────────────────────
+    # Files that tools expect at specific paths under $HOME, managed here so
+    # they stay in version control and update atomically with hms.
+    file = {
+      ".config/ripgrep/config".source = ../config/ripgreprc;
+      ".config/bat/config".source = ../config/bat/config;
     };
 
     # ── Packages ───────────────────────────────────────────────────────────

@@ -1,0 +1,5 @@
+# bat configuration
+--theme="Nord"
+--style="numbers,changes,header"
+--italic-text=always
+--pager="less -FR"

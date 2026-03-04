@@ -37,7 +37,7 @@ in {
     # if a machine doesn't need it.
     packages = with pkgs; [
       # Modern CLI replacements — faster, friendlier alternatives to coreutils.
-      # Aliases wired by home-manager shellAliases or shell init.
+      # Aliases (ls, ll, lt, cat, grep, find) are declared in home.shellAliases below.
       eza # ls replacement (tree view, git status, icons)
       bat # cat replacement (syntax highlight, paging)
       fd # find replacement (respects .gitignore, faster)
@@ -90,6 +90,26 @@ in {
       typos # spell checker for source files
       detect-secrets # scans for accidentally committed credentials
     ];
+
+    # ── Shell aliases ──────────────────────────────────────────────────────
+    # Declared here rather than in a sourced aliases.sh so they appear in
+    # both bash and zsh without duplicating logic.
+    shellAliases = {
+      # home-manager shorthand — `hms` applies the current flake config.
+      # --impure is required because home.nix reads builtins.currentSystem.
+      hms = "home-manager switch --flake ~/.dotfiles#mhugo --impure --extra-experimental-features 'nix-command flakes'";
+
+      # secret-tui — browse, reveal, and edit SOPS-encrypted secrets
+      secrets = "secret-tui";
+
+      # Modern CLI replacements (tools installed in home.packages above)
+      ls = "eza --group-directories-first";
+      ll = "eza -la --group-directories-first";
+      lt = "eza --tree --level=2";
+      cat = "bat --style=plain";
+      grep = "rg";
+      find = "fd";
+    };
   };
 
   programs = {

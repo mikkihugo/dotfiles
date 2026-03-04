@@ -45,7 +45,10 @@ in {
       # VSCode settings — terminal font (Nerd Font), shell (zsh), editor defaults.
       # NOTE: Nerd Font must be installed on the Windows side for WSL2 VSCode.
       #   winget install -e --id DEVCOM.JetBrainsMonoNerdFont
-      ".config/Code/User/settings.json".source = ../config/vscode/settings.json;
+      ".config/Code/User/settings.json" = {
+        source = ../config/vscode/settings.json;
+        force = true;
+      };
     };
 
     # ── Packages ───────────────────────────────────────────────────────────
@@ -102,6 +105,12 @@ in {
       bat-extras.batman # man pages with syntax highlighting
       bat-extras.batgrep # ripgrep output through bat
       bat-extras.batdiff # diff output through bat
+
+      # Nerd Fonts — required for starship icons, eza glyphs, git symbols.
+      # Installed on the Linux/WSL side for native terminal emulators.
+      # VSCode Remote (Windows) also needs the font on the Windows side:
+      #   winget install -e --id DEVCOM.JetBrainsMonoNerdFont
+      nerd-fonts.jetbrains-mono
 
       # Clipboard — Wayland clipboard integration.
       # Used by secret-tui's `c` key (copy secret to clipboard).

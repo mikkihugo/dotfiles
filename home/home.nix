@@ -42,6 +42,10 @@ in {
     file = {
       ".config/ripgrep/config".source = ../config/ripgreprc;
       ".config/bat/config".source = ../config/bat/config;
+      # VSCode settings — terminal font (Nerd Font), shell (zsh), editor defaults.
+      # NOTE: Nerd Font must be installed on the Windows side for WSL2 VSCode.
+      #   winget install -e --id DEVCOM.JetBrainsMonoNerdFont
+      ".config/Code/User/settings.json".source = ../config/vscode/settings.json;
     };
 
     # ── Packages ───────────────────────────────────────────────────────────

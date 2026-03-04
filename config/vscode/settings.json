@@ -1,0 +1,52 @@
+{
+  // ── Terminal ─────────────────────────────────────────────────────────────
+  // Nerd Font required for starship icons (eza glyphs, git branch symbol, etc.)
+  // Install on Windows: https://www.nerdfonts.com/ or:
+  //   winget install -e --id DEVCOM.JetBrainsMonoNerdFont
+  // Then restart VSCode.
+  "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font Mono', 'CaskaydiaCove Nerd Font Mono', monospace",
+  "terminal.integrated.fontSize": 13,
+  "terminal.integrated.lineHeight": 1.2,
+
+  // Use zsh (managed by home-manager) as the default terminal shell in WSL
+  "terminal.integrated.defaultProfile.linux": "zsh",
+  "terminal.integrated.profiles.linux": {
+    "zsh": {
+      "path": "/bin/zsh",
+      "args": ["-l"]
+    },
+    "bash": {
+      "path": "/bin/bash",
+      "args": ["-l"]
+    }
+  },
+
+  // Inherit PATH from the login shell so nix-managed tools are available
+  "terminal.integrated.inheritEnv": true,
+
+  // GPU rendering — smoother scrolling for long terminal output
+  "terminal.integrated.gpuAcceleration": "on",
+
+  // Don't confirm on terminal close — less friction
+  "terminal.integrated.confirmOnExit": "never",
+  "terminal.integrated.confirmOnKill": "never",
+
+  // ── Editor ────────────────────────────────────────────────────────────────
+  "editor.fontFamily": "'JetBrainsMono Nerd Font Mono', 'Cascadia Code', monospace",
+  "editor.fontSize": 13,
+  "editor.lineHeight": 1.5,
+  "editor.fontLigatures": true,
+  "editor.renderWhitespace": "boundary",
+  "editor.rulers": [100],
+  "editor.formatOnSave": true,
+  "editor.minimap.enabled": false,
+
+  // ── Files ─────────────────────────────────────────────────────────────────
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // ── Workbench ─────────────────────────────────────────────────────────────
+  "workbench.colorTheme": "Default Dark Modern",
+  "workbench.startupEditor": "none"
+}

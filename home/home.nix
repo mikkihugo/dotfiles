@@ -27,7 +27,18 @@ in {
     # Exported into every session before any shell init runs.
     # SOPS_AGE_KEY_FILE tells sops where to find the age private key used to
     # decrypt secrets/api-keys.yaml. Derived from SSH key via ssh-to-age.
+    # ── PATH ──────────────────────────────────────────────────────────────
+    # ~/.local/bin: pip/pipx installs, claude CLI, and other user tools.
+    # ~/.npm-global/bin: global npm packages (opencode, etc.)
+    # ~/.cargo/bin: cargo-installed Rust binaries.
+    sessionPath = [
+      "$HOME/.local/bin"
+      "$HOME/.npm-global/bin"
+      "$HOME/.cargo/bin"
+    ];
+
     sessionVariables = {
+      NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
       # Point ripgrep at its config file so smart-case, colors, and glob
       # ignores apply automatically without passing flags every time.

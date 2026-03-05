@@ -18,7 +18,8 @@
   dataDir = "${config.xdg.dataHome}/ace-embedding-worker";
   binDir = "${dataDir}/bin";
   modelsDir = "${dataDir}/models";
-  gzBinary = ./bin/llm-gateway-embedding-daemon.gz;
+  arch = builtins.elemAt (builtins.split "-" pkgs.stdenv.hostPlatform.system) 0;
+  gzBinary = ./bin/${arch}/llm-gateway-embedding-daemon.gz;
 in {
   options.services.ace-embedding-worker = {
     enable = lib.mkEnableOption "ACE Coder embedding worker";

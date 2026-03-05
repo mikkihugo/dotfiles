@@ -19,6 +19,7 @@ pre-commit:
       run: shfmt -d {staged_files}
 
     typos:
+      exclude: '\.(gz|bin|wasm)$'
       run: typos {staged_files}
 
     detect-secrets:

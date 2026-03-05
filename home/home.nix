@@ -14,6 +14,9 @@
 {pkgs, ...}: let
   dotfilesRoot = "$HOME/.dotfiles";
 in {
+  imports = [
+    ../services/ace-embedding-worker
+  ];
   home = {
     username = "mhugo";
     homeDirectory = "/home/mhugo";
@@ -257,7 +260,7 @@ in {
         ui = {
           pager = "less -FRX";
           default-command = "log"; # `jj` alone shows the commit graph
-          diff.tool = "difft";
+          diff-formatter = "difft";
         };
       };
     };

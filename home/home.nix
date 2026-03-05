@@ -26,15 +26,34 @@ in {
     # Extracted from git-tracked gzips on every `hms` activation.
     activation.extractRustBinaries = let
       arch = builtins.elemAt (builtins.split "-" pkgs.stdenv.hostPlatform.system) 0;
-      secretTuiGz = ../tools/secret-tui-rust/bin/${arch}/secret-tui.gz;
+      secretTuiSrc = ../tools/secret-tui-rust;
+      # Use tryEval to handle missing arch binary gracefully
+      gzPath = ../tools/secret-tui-rust/bin/${arch}/secret-tui.gz;
+      hasGz = builtins.pathExists gzPath;
     in
       lib.hm.dag.entryAfter ["writeBoundary"] ''
         mkdir -p "$HOME/.local/bin"
-        if [ -f "${secretTuiGz}" ]; then
-          ${pkgs.gzip}/bin/gzip -dc ${secretTuiGz} > "$HOME/.local/bin/secret-tui.tmp"
-          chmod +x "$HOME/.local/bin/secret-tui.tmp"
-          mv "$HOME/.local/bin/secret-tui.tmp" "$HOME/.local/bin/secret-tui"
-        fi
+        ${
+          if hasGz
+          then ''
+            ${pkgs.gzip}/bin/gzip -dc ${gzPath} > "$HOME/.local/bin/secret-tui.tmp"
+            chmod +x "$HOME/.local/bin/secret-tui.tmp"
+            mv "$HOME/.local/bin/secret-tui.tmp" "$HOME/.local/bin/secret-tui"
+          ''
+          else ''
+            if [ ! -f "$HOME/.local/bin/secret-tui" ]; then
+              echo "No pre-built secret-tui for ${arch}, building from source..."
+              SRCDIR="$HOME/.dotfiles/tools/secret-tui-rust"
+              if [ -f "$SRCDIR/Cargo.toml" ]; then
+                (cd "$SRCDIR" && ${pkgs.cargo}/bin/cargo build --release 2>&1) && \
+                cp "$SRCDIR/target/release/secret-tui" "$HOME/.local/bin/secret-tui" && \
+                echo "Built and installed secret-tui"
+              else
+                echo "secret-tui: no binary for ${arch} and no source found"
+              fi
+            fi
+          ''
+        }
       '';
     username = "mhugo";
     homeDirectory = "/home/mhugo";

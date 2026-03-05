@@ -21,6 +21,11 @@ in {
   imports = [
     ../services/ace-embedding-worker
   ];
+
+  services.ace-embedding-worker = {
+    enable = true;
+    codeModel = "jina-code-embeddings-1.5b-Q8_0.gguf";
+  };
   home = {
     # ── Pre-built Rust binaries ──────────────────────────────────────────
     # Extracted from git-tracked gzips on every `hms` activation.

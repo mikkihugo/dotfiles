@@ -92,6 +92,8 @@ in {
         ExecStart = "${binDir}/llm-gateway-embedding-daemon";
         Restart = "always";
         RestartSec = "10s";
+        MemoryMax = "5G";
+        OOMPolicy = "stop";
       };
 
       Install = {

@@ -11,13 +11,31 @@
 #
 #   dotfilesRoot is passed into shell init blocks so they can source runtime
 #   files (like shell/bash/bashrc) that need the live shell environment.
-{pkgs, ...}: let
+{
+  pkgs,
+  lib,
+  ...
+}: let
   dotfilesRoot = "$HOME/.dotfiles";
 in {
   imports = [
     ../services/ace-embedding-worker
   ];
   home = {
+    # ── Pre-built Rust binaries ──────────────────────────────────────────
+    # Extracted from git-tracked gzips on every `hms` activation.
+    activation.extractRustBinaries = let
+      arch = builtins.elemAt (builtins.split "-" pkgs.stdenv.hostPlatform.system) 0;
+      secretTuiGz = ../tools/secret-tui-rust/bin/${arch}/secret-tui.gz;
+    in
+      lib.hm.dag.entryAfter ["writeBoundary"] ''
+        mkdir -p "$HOME/.local/bin"
+        if [ -f "${secretTuiGz}" ]; then
+          ${pkgs.gzip}/bin/gzip -dc ${secretTuiGz} > "$HOME/.local/bin/secret-tui.tmp"
+          chmod +x "$HOME/.local/bin/secret-tui.tmp"
+          mv "$HOME/.local/bin/secret-tui.tmp" "$HOME/.local/bin/secret-tui"
+        fi
+      '';
     username = "mhugo";
     homeDirectory = "/home/mhugo";
 

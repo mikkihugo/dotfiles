@@ -1,0 +1,34 @@
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+personality = "pragmatic"
+sandbox_mode = "danger-full-access"
+service_tier = "fast"
+
+[projects."/home/mhugo/code/ace-coder"]
+trust_level = "trusted"
+
+[projects."/home/mhugo/code/unity"]
+trust_level = "trusted"
+
+[projects."/home/mhugo/code/singularity-ng/vectordrive"]
+trust_level = "trusted"
+
+[notice]
+hide_full_access_warning = true
+
+[features]
+unified_exec = true
+shell_snapshot = true
+multi_agent = true
+steer = true
+personality = true
+undo = true
+apply_patch_freeform = true
+remote_models = true
+collaboration_modes = true
+js_repl = true
+prevent_idle_sleep = true
+
+[mcp_servers.ace-coder]
+command = "direnv"
+args = ["exec", "/home/mhugo/code/ace-coder", "python", "-m", "ai_dev.mcp.stdio_proxy"]

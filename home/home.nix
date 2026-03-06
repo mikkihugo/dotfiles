@@ -105,6 +105,12 @@ in {
         source = ../config/vscode/settings.json;
         force = true;
       };
+      # Codex CLI config — models, features, project trust, MCP servers.
+      # force=true overwrites on every `hms`; manage MCP servers here, not via `codex mcp add`.
+      ".codex/config.toml" = {
+        source = ../config/codex/config.toml;
+        force = true;
+      };
     };
 
     # ── Packages ───────────────────────────────────────────────────────────

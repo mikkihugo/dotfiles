@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTFILES_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+ACE_REPO="${ACE_REPO:-/home/mhugo/code/ace-coder}"
+
+if [[ ! -d "$ACE_REPO/.git" ]]; then
+  echo "ACE repo not found at: $ACE_REPO" >&2
+  exit 1
+fi
+
+ace_revision="$(git -C "$ACE_REPO" rev-parse HEAD)"
+ace_short_revision="$(git -C "$ACE_REPO" rev-parse --short HEAD)"
+ace_status="$(git -C "$ACE_REPO" status --short)"
+
+if [[ -n "$ace_status" ]]; then
+  echo "warning: $ACE_REPO has uncommitted changes; promoting committed HEAD only ($ace_short_revision)" >&2
+fi
+
+cd "$DOTFILES_ROOT"
+
+nix flake lock \
+  --override-input \
+  ace-coder \
+  "git+file://$ACE_REPO?rev=$ace_revision" \
+  --extra-experimental-features 'nix-command flakes'
+
+echo "Pinned ace-coder input to $ace_short_revision"

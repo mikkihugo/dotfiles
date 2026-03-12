@@ -1,5 +1,25 @@
 {
   "nodes": {
+    "ace-coder": {
+      "inputs": {
+        "lefthook": "lefthook",
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1773260729,
+        "narHash": "sha256-lSuLfTCo5N3WXTVne5tQGdulZuKWQFILycuMaXOGUag=",
+        "ref": "master",
+        "rev": "9a01b2e18a07f361ce9f8b62b99f65b78f1e025f",
+        "revCount": 4540,
+        "type": "git",
+        "url": "file:///home/mhugo/code/ace-coder"
+      },
+      "original": {
+        "rev": "9a01b2e18a07f361ce9f8b62b99f65b78f1e025f",
+        "type": "git",
+        "url": "file:///home/mhugo/code/ace-coder"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -38,7 +58,44 @@
         "type": "github"
       }
     },
+    "lefthook": {
+      "inputs": {
+        "nixpkgs": [
+          "ace-coder",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1770377107,
+        "narHash": "sha256-/QEXSDeAo5RK81PtM0yDhmt9k3v1/pse/jsrT1yXNhU=",
+        "owner": "sudosubin",
+        "repo": "lefthook.nix",
+        "rev": "9cdaf7ce95ae77cbabc5b556bdd35d3cf0b849f5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "sudosubin",
+        "repo": "lefthook.nix",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
+      "locked": {
+        "lastModified": 1771903837,
+        "narHash": "sha256-sdaqdnsQCv3iifzxwB22tUwN/fSHoN7j2myFW5EIkGk=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e764fc9a405871f1f6ca3d1394fb422e0a0c3951",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-25.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
       "locked": {
         "lastModified": 1771369470,
         "narHash": "sha256-0NBlEBKkN3lufyvFegY4TYv5mCNHbi5OmBDrzihbBMQ=",
@@ -56,9 +113,10 @@
     },
     "root": {
       "inputs": {
+        "ace-coder": "ace-coder",
         "flake-utils": "flake-utils",
         "home-manager": "home-manager",
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": "nixpkgs_2",
         "sops-nix": "sops-nix"
       }
     },

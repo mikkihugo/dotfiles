@@ -40,6 +40,11 @@
     # flake-utils: builds the devShell for all default systems without
     # copy-pasting the per-system boilerplate.
     flake-utils.url = "github:numtide/flake-utils";
+
+    # ace-coder: pinned clean source for the CUDA worker package and HM module.
+    # Use a committed git revision from the local repo, not the live dirty tree,
+    # so worker builds remain cacheable and reproducible.
+    ace-coder.url = "git+file:///home/mhugo/code/ace-coder?rev=9a01b2e18a07f361ce9f8b62b99f65b78f1e025f";
   };
 
   outputs = {
@@ -48,6 +53,7 @@
     home-manager,
     sops-nix,
     flake-utils,
+    ace-coder,
   }: let
     # builtins.currentSystem reads the host arch at eval time.
     # Requires --impure; already set in the `hms` shell alias.
@@ -62,7 +68,9 @@
       homeConfigurations."mhugo" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         # Pass sops-nix so home.nix can use sops.secrets.* if needed in future.
-        extraSpecialArgs = {inherit sops-nix;};
+        extraSpecialArgs = {
+          inherit sops-nix ace-coder;
+        };
         modules = [./home/home.nix];
       };
     }

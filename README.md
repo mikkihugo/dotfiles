@@ -50,9 +50,30 @@ After step 4, open a new terminal — you're in the managed environment.
 | Task | Command |
 |------|---------|
 | Apply config changes | `hms` (alias for home-manager switch) |
+| Promote committed ACE worker source into dotfiles | `promote-ace-coder` |
 | Load LLM API keys | `load-ai-keys` |
 | Browse / edit secrets | `secrets` (opens secret-tui) |
 | Enter dotfiles maintenance shell | `nix develop ~/.dotfiles` |
+
+### ACE worker update flow
+
+The local GPU worker services are built from the pinned `ace-coder` flake input,
+not from the live dirty checkout in `~/code/ace-coder`.
+
+Use this workflow:
+
+```bash
+# 1. Finish and commit the worker-related ACE change in ~/code/ace-coder
+
+# 2. Promote that committed ACE revision into dotfiles
+promote-ace-coder
+
+# 3. Apply the dotfiles generation
+hms
+```
+
+This keeps Home Manager activations reproducible and lets Nix reuse cached
+worker builds instead of treating every local ACE edit as a new source hash.
 
 ## Repo layout
 

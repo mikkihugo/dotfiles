@@ -22,10 +22,6 @@ in {
     ../services/ace-embedding-worker
   ];
 
-  services.ace-embedding-worker = {
-    enable = true;
-    codeModel = "jina-code-embeddings-1.5b-Q8_0.gguf";
-  };
   home = {
     # ── Pre-built Rust binaries ──────────────────────────────────────────
     # Extracted from git-tracked gzips on every `hms` activation.
@@ -96,7 +92,10 @@ in {
     # Files that tools expect at specific paths under $HOME, managed here so
     # they stay in version control and update atomically with hms.
     file = {
-      ".config/ripgrep/config".source = ../config/ripgreprc;
+      ".config/ripgrep/config" = {
+        source = ../config/ripgreprc;
+        force = true;
+      };
       ".config/bat/config".source = ../config/bat/config;
       # VSCode settings — terminal font (Nerd Font), shell (zsh), editor defaults.
       # NOTE: Nerd Font must be installed on the Windows side for WSL2 VSCode.
@@ -109,6 +108,12 @@ in {
       # force=true overwrites on every `hms`; manage MCP servers here, not via `codex mcp add`.
       ".codex/config.toml" = {
         source = ../config/codex/config.toml;
+        force = true;
+      };
+      # Nix user config — remote builder (llm-gateway) + substituter (nix-serve).
+      # Enables local hms to substitute CUDA workers from cache instead of recompiling.
+      ".config/nix/nix.conf" = {
+        source = ../config/nix/nix.conf;
         force = true;
       };
     };
@@ -191,6 +196,9 @@ in {
       # home-manager shorthand — `hms` applies the current flake config.
       # --impure is required because home.nix reads builtins.currentSystem.
       hms = "home-manager switch --flake ~/.dotfiles#mhugo --impure --extra-experimental-features 'nix-command flakes'";
+      # Promote the currently committed ACE revision into the dotfiles flake input.
+      # This keeps worker builds cacheable and avoids following a dirty ACE checkout.
+      promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";
 
       # secret-tui — browse, reveal, and edit SOPS-encrypted secrets
       secrets = "secret-tui";

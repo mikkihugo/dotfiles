@@ -9,8 +9,8 @@ in {
 
   services.ace-local-gpu-workers = {
     enable = true;
-    # RTX 4080 — Ada Lovelace sm89.
-    package = ace-pkgs.llm-gateway-worker-linux-x86_64-cuda-sm89;
+    # CPU-static seed — tiny loader bootstraps CUDA binary from gateway on first start.
+    package = ace-pkgs.llm-gateway-worker-linux-x86_64-cpu-static;
     enableReranker = true;
     environmentFile = "/home/mhugo/.config/ace-coder/worker.env";
     inferenceWorkers = [

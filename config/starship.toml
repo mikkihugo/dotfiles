@@ -28,6 +28,8 @@ $bun\
 $deno\
 $nix_shell\
 $docker_context\
+$memory_usage\
+$custom_load\
 $cmd_duration\
 $time
 [╰─](bold blue)$character"""
@@ -178,6 +180,21 @@ style = "bold green"
 # ═══════════════════════════════════════════════════════════════════════════
 # Utilities
 # ═══════════════════════════════════════════════════════════════════════════
+[memory_usage]
+disabled = false
+threshold = 75
+format = "[  $ram_pct]($style) "
+style = "bold dimmed white"
+symbol = " "
+
+[custom.load]
+disabled = false
+command = "cat /proc/loadavg | awk '{print $1\" \"$2\" \"$3}'"
+when = "test -f /proc/loadavg"
+format = "[ $output]($style) "
+style = "bold dimmed white"
+symbol = "󰓅"
+
 [cmd_duration]
 min_time = 2_000
 format = "[󱦟 $duration]($style) "

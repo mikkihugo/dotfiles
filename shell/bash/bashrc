@@ -175,15 +175,30 @@ if [[ $- == *i* ]]; then
   # Change to home directory before starship to avoid WSL timeout
   cd ~
 
-  # Starship prompt (installed via mise)
-  if command -v starship > /dev/null 2>&1; then
-    eval "$(starship init bash)"
+  # Starship prompt.
+  # Prefer a stable user-local shim over transient profile paths so prompt redraws
+  # survive repo-local PATH rewrites (for example direnv + Nix shells).
+  _starship_bin=""
+  if [ -x "$HOME/.local/bin/starship" ]; then
+    _starship_bin="$HOME/.local/bin/starship"
+  elif command -v starship > /dev/null 2>&1; then
+    _starship_bin="$(command -v starship)"
+  fi
+
+  if [ -n "$_starship_bin" ]; then
+    eval "$("$_starship_bin" init bash)"
+    # If an older shell session still injected a removed nix-profile starship path
+    # into the prompt machinery, refresh it immediately with the stable binary.
+    if [[ "${PROMPT_COMMAND:-}" == *".nix-profile/bin/starship"* ]] && [ ! -x "$HOME/.nix-profile/bin/starship" ]; then
+      eval "$("$_starship_bin" init bash)"
+    fi
   else
     parse_git_branch() {
       git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
     }
     PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[33m\]$(parse_git_branch)\[\033[00m\]\$ '
   fi
+  unset _starship_bin
 fi
 
 # OpenClaw Completion

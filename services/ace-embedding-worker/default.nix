@@ -11,6 +11,8 @@ in {
     enable = true;
     # CPU-static seed — tiny loader bootstraps CUDA binary from gateway on first start.
     package = ace-pkgs.llm-gateway-worker-linux-x86_64-cpu-static;
+    # GPU hint so the static loader (no nvml) gets the cuda-sm89 artifact.
+    gpuName = "NVIDIA GeForce RTX 4080";
     enableReranker = true;
     environmentFile = "/home/mhugo/.config/ace-coder/worker.env";
     inferenceWorkers = [

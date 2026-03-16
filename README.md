@@ -1,6 +1,6 @@
 # dotfiles
 
-Declarative user environment for `mhugo`. A single Nix flake pins every
+Declarative user environment for `Mikki-Bunker`. A single Nix flake pins every
 package and tool version; home-manager applies the configuration to `$HOME`.
 Secrets are SOPS-encrypted with an age key derived from the SSH ed25519 key —
 no separate password, no plaintext credentials in the repo.
@@ -39,7 +39,7 @@ ssh-to-age -i ~/.ssh/id_ed25519.pub >> ~/.dotfiles/secrets/.sops-machine-keys.tx
 # Then add that pubkey to .sops.yaml and re-encrypt secrets (see Secrets below)
 
 # 4. Apply
-home-manager switch --flake .#mhugo --impure \
+home-manager switch --flake .#mikki-bunker --impure \
   --extra-experimental-features "nix-command flakes"
 ```
 

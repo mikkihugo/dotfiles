@@ -15,7 +15,6 @@ use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
-use tokio::time::sleep;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncConfig {
@@ -161,6 +160,7 @@ impl SecretSync {
         self.save_config()
     }
 
+    #[allow(dead_code)]
     pub fn generate_pairing_qr(&self) -> Result<String> {
         let pairing_data = serde_json::json!({
             "type": "secret_sync_pairing",
@@ -237,7 +237,7 @@ impl SecretSync {
 
         // Send discovery broadcasts
         for addr in &broadcast_addresses {
-            if let Ok(addr_parsed) = addr.parse() {
+            if let Ok(addr_parsed) = addr.parse::<std::net::SocketAddr>() {
                 let _ = discovery_socket.send_to(
                     discovery_msg.to_string().as_bytes(),
                     addr_parsed
@@ -424,7 +424,7 @@ impl SecretSync {
                     if let Ok(incoming_data) = retrieve_response.json::<serde_json::Value>().await {
                         if let Some(messages) = incoming_data.get("messages").and_then(|m| m.as_array()) {
                             // Process incoming messages (simplified for now)
-                            for message in messages {
+                            for _message in messages {
                                 // Could decrypt and merge incoming secrets here
                                 // For now, just log that we received messages
                                 eprintln!("📥 Received sync message from serverless relay");
@@ -571,7 +571,6 @@ impl SecretSync {
                     }
                     Err(_) => {
                         // Skip files that can't be decrypted
-                        continue;
                     }
                 }
             }
@@ -708,6 +707,7 @@ impl SecretSync {
         self.add_sync_method(method)
     }
 
+    #[allow(dead_code)]
     pub fn add_cloudflare_relay(&mut self, server_url: String, room_id: String) -> Result<()> {
         let method = SyncMethod::ServerlessRelay {
             provider: ServerlessProvider::CloudflareWorkers,
@@ -717,6 +717,7 @@ impl SecretSync {
         self.add_sync_method(method)
     }
 
+    #[allow(dead_code)]
     pub fn add_custom_serverless_relay(&mut self, provider_name: String, server_url: String, room_id: String) -> Result<()> {
         let method = SyncMethod::ServerlessRelay {
             provider: ServerlessProvider::Custom { name: provider_name },
@@ -726,6 +727,7 @@ impl SecretSync {
         self.add_sync_method(method)
     }
 
+    #[allow(dead_code)]
     pub fn list_serverless_providers(&self) -> Vec<&ServerlessProvider> {
         self.config.sync_methods.iter()
             .filter_map(|method| match method {
@@ -735,7 +737,8 @@ impl SecretSync {
             .collect()
     }
 
-    pub async fn test_serverless_relay(&self, provider: &ServerlessProvider, server_url: &str) -> Result<bool> {
+    #[allow(dead_code)]
+    pub async fn test_serverless_relay(&self, _provider: &ServerlessProvider, server_url: &str) -> Result<bool> {
         let health_url = format!("{}/health", server_url);
         let response = self.client
             .get(&health_url)

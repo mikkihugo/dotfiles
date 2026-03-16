@@ -26,9 +26,9 @@
   // "embeddingModel": "Xenova/all-mpnet-base-v2",           // 768 dims, good quality, 512 context
   
   // Optional: Use OpenAI-compatible API for embeddings
-  // "embeddingApiUrl": "https://api.openai.com/v1",
-  // "embeddingApiKey": "sk-...",
-  // "embeddingModel": "text-embedding-3-small",  // 1536 dims, auto-detected
+  "embeddingApiUrl": "http://127.0.0.1:11434/v1",
+  "embeddingApiKey": "ollama",
+  // "embeddingModel": "nomic-embed-text",  // recommended dedicated embedding model for Ollama
   
   // ============================================
   // Web Server Settings
@@ -76,9 +76,9 @@
   "memoryProvider": "openai-chat",
   
   // REQUIRED for auto-capture (all 3 must be set):
-  "memoryModel": "gpt-4o-mini",
-  "memoryApiUrl": "https://api.openai.com/v1",
-  "memoryApiKey": "sk-...",
+  "memoryModel": "llama3.2:3b",
+  "memoryApiUrl": "http://127.0.0.1:11434/v1",
+  "memoryApiKey": "ollama",
 
   // API Key Formats:
   // Direct value:        "sk-..."

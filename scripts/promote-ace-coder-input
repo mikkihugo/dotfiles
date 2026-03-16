@@ -9,9 +9,15 @@ if [[ ! -d "$ACE_REPO/.git" ]]; then
   exit 1
 fi
 
-ace_revision="$(git -C "$ACE_REPO" rev-parse HEAD)"
-ace_short_revision="$(git -C "$ACE_REPO" rev-parse --short HEAD)"
-ace_status="$(git -C "$ACE_REPO" status --short)"
+if command -v jj >/dev/null 2>&1 && [[ -d "$ACE_REPO/.jj" ]]; then
+  ace_revision="$(jj --repository "$ACE_REPO" log -r 'main' --no-graph -T 'commit_id ++ "\n"')"
+  ace_short_revision="$(jj --repository "$ACE_REPO" log -r 'main' --no-graph -T 'commit_id.short() ++ "\n"')"
+  ace_status="$(jj --repository "$ACE_REPO" status --quiet 2>/dev/null || true)"
+else
+  ace_revision="$(git -C "$ACE_REPO" rev-parse HEAD)"
+  ace_short_revision="$(git -C "$ACE_REPO" rev-parse --short HEAD)"
+  ace_status="$(git -C "$ACE_REPO" status --short)"
+fi
 
 if [[ -n "$ace_status" ]]; then
   echo "warning: $ACE_REPO has uncommitted changes; promoting committed HEAD only ($ace_short_revision)" >&2

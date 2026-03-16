@@ -1,99 +1,87 @@
 {
-  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "agents": {
+    "prometheus": {
+      "enabled": true,
+      "replace_plan": true,
+      "model": "openai/gpt-5.3-codex"
+    },
+    "metis": {
+      "enabled": true,
+      "model": "openai/gpt-5.3-codex"
+    },
+    "librarian": {
+      "enabled": true
+    },
+    "explore": {
+      "enabled": true
+    },
+    "oracle": {
+      "enabled": true,
+      "model": "openai/gpt-5.2"
+    },
     "sisyphus": {
-      "model": "anthropic/claude-opus-4-6",
-      "variant": "max"
+      "enabled": true,
+      "model": "kimi-for-coding/k2p5"
+    },
+    "sisyphus-junior": {
+      "enabled": true,
+      "model": "kimi-for-coding/k2p5"
+    },
+    "atlas": {
+      "enabled": true,
+      "model": "openai/gpt-5.3-codex-spark"
     },
     "hephaestus": {
       "model": "openai/gpt-5.3-codex",
-      "variant": "medium"
-    },
-    "oracle": {
-      "model": "openai/gpt-5.2",
-      "variant": "high"
-    },
-    "librarian": {
-      "model": "zai-coding-plan/glm-4.7"
-    },
-    "explore": {
-      "model": "anthropic/claude-haiku-4-5"
-    },
-    "multimodal-looker": {
-      "model": "github-copilot/gemini-3-flash-preview"
-    },
-    "prometheus": {
-      "model": "anthropic/claude-opus-4-6",
-      "variant": "max"
-    },
-    "metis": {
-      "model": "anthropic/claude-opus-4-6",
-      "variant": "max"
-    },
-    "momus": {
-      "model": "openai/gpt-5.2",
-      "variant": "medium"
-    },
-    "atlas": {
-      "model": "kimi-for-coding/k2p5"
+      "enabled": true
     }
   },
-  "categories": {
-    "visual-engineering": {
-      "model": "github-copilot/gemini-3-pro-preview",
-      "variant": "high"
+  "disabled_hooks": [
+    "comment-checker",
+    "agent-usage-reminder"
+  ],
+  "disabled_mcps": [],
+  "models": {
+    "oracle": "openai/gpt-5.2",
+    "orchestrator": "ollama-cloud/minimax-m2.5",
+    "fixer": "ollama-cloud/minimax-m2.5",
+    "designer": "ollama-cloud/glm-5",
+    "librarian": "ollama-cloud/glm-5",
+    "explorer": "ollama-cloud/kimi-k2.5",
+    "prometheus": "openai/gpt-5.3-codex",
+    "metis": "openai/gpt-5.3-codex",
+    "sisyphus": "kimi-for-coding/k2p5",
+    "sisyphus-junior": "kimi-for-coding/k2p5",
+    "atlas": "openai/gpt-5.3-codex-spark",
+    "hephaestus": "openai/gpt-5.3-codex"
+  },
+  "lsp": {
+    "pylsp": {
+      "command": [
+        "pylsp"
+      ],
+      "extensions": [
+        ".py"
+      ],
+      "priority": 10
     },
-    "ultrabrain": {
-      "model": "openai/gpt-5.3-codex",
-      "variant": "xhigh"
-    },
-    "deep": {
-      "model": "openai/gpt-5.3-codex",
-      "variant": "medium"
-    },
-    "artistry": {
-      "model": "github-copilot/gemini-3-pro-preview",
-      "variant": "high"
-    },
-    "quick": {
-      "model": "anthropic/claude-haiku-4-5"
-    },
-    "unspecified-low": {
-      "model": "anthropic/claude-sonnet-4-6"
-    },
-    "unspecified-high": {
-      "model": "anthropic/claude-opus-4-6",
-      "variant": "max"
-    },
-    "writing": {
-      "model": "kimi-for-coding/k2p5"
+    "typescript-language-server": {
+      "command": [
+        "typescript-language-server",
+        "--stdio"
+      ],
+      "extensions": [
+        ".ts",
+        ".tsx"
+      ],
+      "priority": 9
     }
   },
-  "websearch": {
-    "provider": "exa"
-  },
-  "dynamic_context_pruning": {
-    "enabled": true,
-    "notification": "minimal",
-    "turn_protection": {
-      "enabled": true,
-      "turns": 5
-    },
-    "strategies": {
-      "deduplication": {
-        "enabled": true
-      },
-      "supersede_writes": {
-        "enabled": true,
-        "aggressive": false
-      },
-      "purge_errors": {
-        "enabled": true,
-        "turns": 3
-      }
-    }
-  },
-  "_migrations": [
-    "model-version:anthropic/claude-sonnet-4-5->anthropic/claude-sonnet-4-6"
-  ]
+  "experimental": {
+    "preemptive_compaction_threshold": 0.8,
+    "truncate_all_tool_outputs": true,
+    "aggressive_truncation": false,
+    "auto_resume": true,
+    "dcp_for_compaction": true
+  }
 }

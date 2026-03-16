@@ -2,7 +2,7 @@
 #
 # Purpose:
 #   Single source of truth for everything installed and configured in $HOME.
-#   Applied by `home-manager switch --flake .#mhugo --impure` (alias: `hms`).
+#   Applied by `home-manager switch --flake .#mikki-bunker --impure` (alias: `hms`).
 #
 #   Why home-manager instead of dotfile symlinks?
 #   - Atomic: either the whole generation activates or nothing changes.
@@ -46,7 +46,21 @@ in {
               echo "No pre-built secret-tui for ${arch}, building from source..."
               SRCDIR="$HOME/.dotfiles/tools/secret-tui-rust"
               if [ -f "$SRCDIR/Cargo.toml" ]; then
-                (cd "$SRCDIR" && ${pkgs.cargo}/bin/cargo build --release 2>&1) && \
+                (
+                  cd "$SRCDIR" && \
+                  export CC="${pkgs.stdenv.cc}/bin/cc" && \
+                  export CXX="${pkgs.stdenv.cc}/bin/c++" && \
+                  export RUSTC_LINKER="${pkgs.stdenv.cc}/bin/cc" && \
+                  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="${pkgs.stdenv.cc}/bin/cc" && \
+                  export HOST_CC="${pkgs.stdenv.cc}/bin/cc" && \
+                  export TARGET_CC="${pkgs.stdenv.cc}/bin/cc" && \
+                  export OPENSSL_DIR="${pkgs.openssl.dev}" && \
+                  export OPENSSL_INCLUDE_DIR="${pkgs.openssl.dev}/include" && \
+                  export OPENSSL_LIB_DIR="${pkgs.openssl.out}/lib" && \
+                  export PKG_CONFIG="${pkgs.pkg-config}/bin/pkg-config" && \
+                  export PATH="${pkgs.stdenv.cc}/bin:${pkgs.pkg-config}/bin:${pkgs.cargo}/bin:$PATH" && \
+                  ${pkgs.cargo}/bin/cargo build --release 2>&1
+                ) && \
                 cp "$SRCDIR/target/release/secret-tui" "$HOME/.local/bin/secret-tui" && \
                 echo "Built and installed secret-tui"
               else
@@ -142,6 +156,7 @@ in {
       # Node/pnpm here because some CLI tools (opencode, etc.) need them
       # without project-level nix shells.
       git-lfs # large file storage extension for git
+      gcc # provides `cc` for local source builds during HM activation
       nodejs_22 # Node.js LTS
       pnpm # fast, disk-efficient Node package manager
 
@@ -195,7 +210,7 @@ in {
     shellAliases = {
       # home-manager shorthand — `hms` applies the current flake config.
       # --impure is required because home.nix reads builtins.currentSystem.
-      hms = "home-manager switch --flake ~/.dotfiles#mhugo --impure --extra-experimental-features 'nix-command flakes'";
+      hms = "home-manager switch --flake ~/.dotfiles#mikki-bunker --impure --extra-experimental-features 'nix-command flakes'";
       # Promote the currently committed ACE revision into the dotfiles flake input.
       # This keeps worker builds cacheable and avoids following a dirty ACE checkout.
       promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";

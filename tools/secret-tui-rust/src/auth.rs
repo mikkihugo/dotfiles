@@ -1,9 +1,9 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use base64::{Engine as _, engine::general_purpose};
 use chrono::{DateTime, Utc, Duration};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 use tokio::time::sleep;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,14 +46,11 @@ struct TokenResponse {
     access_token: String,
     refresh_token: Option<String>,
     expires_in: Option<u64>,
-    scope: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct UserInfo {
     login: Option<String>,
-    name: Option<String>,
-    email: Option<String>,
 }
 
 pub struct SecretAuth {
@@ -134,7 +131,7 @@ impl SecretAuth {
         if let Some(complete_uri) = &device_response.verification_uri_complete {
             println!("🔗 Or visit: {}", complete_uri);
             // Could auto-open browser like gh CLI does
-            if let Err(_) = opener::open(complete_uri) {
+            if opener::open(complete_uri).is_err() {
                 println!("   (Failed to open browser automatically)");
             }
         }
@@ -176,9 +173,11 @@ impl SecretAuth {
             let error_text = token_response.text().await?;
             if error_text.contains("authorization_pending") {
                 continue; // Keep polling
-            } else if error_text.contains("expired_token") {
+            }
+            if error_text.contains("expired_token") {
                 anyhow::bail!("Device code expired. Please run 'secret-tui auth login' again.");
-            } else if error_text.contains("access_denied") {
+            }
+            if error_text.contains("access_denied") {
                 anyhow::bail!("Authentication was denied.");
             }
         }
@@ -244,18 +243,17 @@ impl SecretAuth {
     pub async fn refresh_token_if_needed(&mut self) -> Result<bool> {
         if let Some(expires_at) = self.config.expires_at {
             if Utc::now() + Duration::minutes(5) > expires_at {
-                if let Some(refresh_token) = &self.config.refresh_token.clone() {
+                if let Some(refresh_token) = self.config.refresh_token.clone() {
                     return self.refresh_access_token(refresh_token).await;
-                } else {
-                    // No refresh token, need to re-authenticate
-                    return Ok(false);
                 }
+                // No refresh token, need to re-authenticate
+                return Ok(false);
             }
         }
         Ok(true)
     }
 
-    async fn refresh_access_token(&mut self, refresh_token: &str) -> Result<bool> {
+    async fn refresh_access_token(&mut self, _refresh_token: String) -> Result<bool> {
         // Implement token refresh logic based on provider
         match &self.config.provider {
             AuthProvider::GitHub => {
@@ -272,11 +270,7 @@ impl SecretAuth {
 
     pub fn is_authenticated(&self) -> bool {
         self.config.access_token.is_some() &&
-        self.config.expires_at.map_or(true, |exp| Utc::now() < exp)
-    }
-
-    pub fn get_access_token(&self) -> Option<&String> {
-        self.config.access_token.as_ref()
+        self.config.expires_at.is_none_or(|exp| Utc::now() < exp)
     }
 
     pub fn logout(&mut self) -> Result<()> {

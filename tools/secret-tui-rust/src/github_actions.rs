@@ -4,7 +4,7 @@ use std::{collections::HashMap, env, fs};
 use tokio::process::Command;
 
 use crate::auth::{SecretAuth, AuthProvider};
-use crate::sync::{SecretSync, SyncMethod, ServerlessProvider};
+use crate::sync::SecretSync;
 
 /// GitHub Actions integration for secret management
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,6 +65,7 @@ impl GitHubActionsIntegration {
             let environment = env::var("GITHUB_ENV_NAME")
                 .or_else(|_| env::var("ENVIRONMENT"))
                 .unwrap_or_else(|_| "production".to_string());
+            let secret_categories = vec!["ci".to_string(), environment.clone()];
 
             let runner_type = if env::var("RUNNER_ENVIRONMENT").as_deref() == Ok("github-hosted") {
                 RunnerType::GitHubHosted
@@ -80,7 +81,7 @@ impl GitHubActionsIntegration {
                 repository,
                 environment,
                 runner_type,
-                secret_categories: vec!["ci".to_string(), environment.clone()],
+                secret_categories,
                 auto_inject: true,
             })
         } else {
@@ -146,7 +147,7 @@ impl GitHubActionsIntegration {
             .await?;
 
         let token_response: serde_json::Value = response.json().await?;
-        let oidc_token = token_response["value"]
+        let _oidc_token = token_response["value"]
             .as_str()
             .context("Failed to get OIDC token from response")?;
 
@@ -214,7 +215,8 @@ impl GitHubActionsIntegration {
                 .context("GITHUB_ENV not set in GitHub Actions")?;
 
             let mut env_content = String::new();
-            for (key, value) in secrets {
+            let secret_count = secrets.len();
+            for (key, value) in &secrets {
                 // Mask sensitive values in logs
                 println!("::add-mask::{}", value);
                 env_content.push_str(&format!("{}={}\n", key, value));
@@ -223,11 +225,11 @@ impl GitHubActionsIntegration {
             fs::write(&github_env, env_content)
                 .context("Failed to write secrets to GITHUB_ENV")?;
 
-            println!("✅ Injected {} secrets into GitHub Actions environment", secrets.len());
+            println!("✅ Injected {} secrets into GitHub Actions environment", secret_count);
         } else {
             // Local development - just print export commands
             println!("# Add these exports to your shell:");
-            for (key, value) in secrets {
+            for (key, value) in &secrets {
                 println!("export {}='{}'", key, value);
             }
         }
@@ -237,16 +239,18 @@ impl GitHubActionsIntegration {
 
     /// Set up sync for organization-wide secret sharing
     pub async fn setup_organization_sync(&mut self, org_config: OrganizationSyncConfig) -> Result<()> {
+        let relay_url = org_config.relay_url.clone();
+
         // Add serverless relay for organization
         self.sync.add_vercel_relay(
-            org_config.relay_url,
+            relay_url.clone(),
             format!("org-{}", org_config.organization),
         )?;
 
         // Configure environment-specific sync
         for env_name in &org_config.environments {
             self.sync.add_netlify_relay(
-                org_config.relay_url.clone(),
+                relay_url.clone(),
                 format!("org-{}-{}", org_config.organization, env_name),
             )?;
         }
@@ -256,7 +260,7 @@ impl GitHubActionsIntegration {
     }
 
     /// Compare our secrets with GitHub Secrets (for migration)
-    pub async fn compare_with_github_secrets(&self) -> Result<SecretComparisonReport> {
+    pub async fn compare_with_github_secrets(&mut self) -> Result<SecretComparisonReport> {
         let our_secrets = self.load_secrets().await?;
         let github_secrets = self.list_github_secrets().await?;
 
@@ -381,29 +385,4 @@ pub struct SecretComparisonReport {
     pub only_in_github: Vec<String>,
     pub in_both: Vec<String>,
     pub conflicts: Vec<String>,
-}
-
-// CLI integration for GitHub Actions
-pub async fn handle_github_actions_command(command: &str) -> Result<()> {
-    let mut integration = GitHubActionsIntegration::new().await?;
-
-    match command {
-        "inject" => {
-            integration.inject_secrets().await?;
-        }
-        "compare" => {
-            let report = integration.compare_with_github_secrets().await?;
-            println!("🔍 Secret Comparison Report:");
-            println!("  Only in our system: {:?}", report.only_in_our_system);
-            println!("  Only in GitHub: {:?}", report.only_in_github);
-            println!("  In both systems: {:?}", report.in_both);
-        }
-        "workflow" => {
-            let workflow = integration.generate_workflow()?;
-            println!("{}", workflow);
-        }
-        _ => anyhow::bail!("Unknown GitHub Actions command: {}", command),
-    }
-
-    Ok(())
 }

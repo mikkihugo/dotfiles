@@ -3,7 +3,8 @@
 # Purpose:
 #   Single source of truth for the entire user environment. Two outputs:
 #
-#   1. homeConfigurations."mhugo"  — the home-manager profile applied by `hms`.
+#   1. homeConfigurations."mikki-bunker"  — the Home Manager profile applied
+#      by `hms` on this machine.
 #      Wires home/home.nix (packages, shell, git, tools) and sops-nix (secret
 #      decryption hooks available for future use).
 #
@@ -14,7 +15,7 @@
 # Requires --impure because builtins.currentSystem reads the host arch at
 # eval time. The `hms` alias in home.nix already passes --impure.
 {
-  description = "mhugo dotfiles — home-manager + SOPS";
+  description = "Mikki-Bunker dotfiles — home-manager + SOPS";
 
   inputs = {
     # nixos-unstable: rolling channel with the newest packages.
@@ -44,7 +45,7 @@
     # ace-coder: pinned clean source for the CUDA worker package and HM module.
     # Use a committed git revision from the local repo, not the live dirty tree,
     # so worker builds remain cacheable and reproducible.
-    ace-coder.url = "git+file:///home/mhugo/code/ace-coder?rev=9a01b2e18a07f361ce9f8b62b99f65b78f1e025f";
+    ace-coder.url = "git+file:///home/mhugo/code/ace-coder?ref=main";
   };
 
   outputs = {
@@ -64,8 +65,8 @@
     };
   in
     {
-      # `home-manager switch --flake .#mhugo --impure`
-      homeConfigurations."mhugo" = home-manager.lib.homeManagerConfiguration {
+      # `home-manager switch --flake .#mikki-bunker --impure`
+      homeConfigurations."mikki-bunker" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         # Pass sops-nix so home.nix can use sops.secrets.* if needed in future.
         extraSpecialArgs = {

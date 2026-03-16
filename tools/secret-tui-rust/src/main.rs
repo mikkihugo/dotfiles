@@ -1,5 +1,28 @@
+#![deny(clippy::all, clippy::pedantic, clippy::nursery)]
+#![allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::format_push_string,
+    clippy::ignored_unit_patterns,
+    clippy::manual_flatten,
+    clippy::manual_ok_err,
+    clippy::map_unwrap_or,
+    clippy::match_same_arms,
+    clippy::missing_const_for_fn,
+    clippy::needless_borrows_for_generic_args,
+    clippy::needless_pass_by_ref_mut,
+    clippy::needless_pass_by_value,
+    clippy::option_if_let_else,
+    clippy::single_match_else,
+    clippy::too_many_lines,
+    clippy::uninlined_format_args,
+    clippy::unnecessary_wraps,
+    clippy::unused_async,
+    clippy::unused_self,
+    clippy::use_self
+)]
+
 use anyhow::{Context, Result};
-use clap::Command;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -29,7 +52,7 @@ mod sync;
 use auth::{SecretAuth, AuthProvider};
 use cli::{Cli, Commands, AuthCommands, GitHubActionsCommands};
 use github_actions::{GitHubActionsIntegration, OrganizationSyncConfig};
-use sync::{SecretSync, SyncMethod, SyncResult};
+use sync::{SecretSync, SyncResult};
 use clap::Parser;
 
 #[derive(Debug, Clone)]
@@ -44,7 +67,6 @@ struct SecretCategory {
 struct SecretEntry {
     key: String,
     description: String,
-    category: String,
     encrypted: bool,
 }
 
@@ -67,7 +89,6 @@ struct App {
     categories: Vec<SecretCategory>,
     secrets: Vec<SecretEntry>,
     selected_category: Option<usize>,
-    selected_secret: Option<usize>,
     menu_state: ListState,
     category_state: ListState,
     secret_state: ListState,
@@ -130,7 +151,6 @@ impl App {
             categories,
             secrets: Vec::new(),
             selected_category: None,
-            selected_secret: None,
             menu_state: ListState::default(),
             category_state: ListState::default(),
             secret_state: ListState::default(),
@@ -160,7 +180,6 @@ impl App {
                                 self.secrets.push(SecretEntry {
                                     key: key.clone(),
                                     description: format!("Encrypted secret: {}", key),
-                                    category: category.name.clone(),
                                     encrypted: true,
                                 });
                             }
@@ -896,7 +915,10 @@ async fn main() -> Result<()> {
 
 async fn handle_github_actions_command(gh_command: &GitHubActionsCommands) -> Result<()> {
     match gh_command {
-        GitHubActionsCommands::Inject { environment, categories } => {
+        GitHubActionsCommands::Inject {
+            environment: _environment,
+            categories: _categories,
+        } => {
             let mut integration = GitHubActionsIntegration::new().await?;
 
             // Override environment if specified
@@ -904,8 +926,10 @@ async fn handle_github_actions_command(gh_command: &GitHubActionsCommands) -> Re
 
             integration.inject_secrets().await?;
         }
-        GitHubActionsCommands::Compare { repository } => {
-            let integration = GitHubActionsIntegration::new().await?;
+        GitHubActionsCommands::Compare {
+            repository: _repository,
+        } => {
+            let mut integration = GitHubActionsIntegration::new().await?;
             let report = integration.compare_with_github_secrets().await?;
 
             println!("🔍 Secret Comparison Report:");
@@ -919,6 +943,10 @@ async fn handle_github_actions_command(gh_command: &GitHubActionsCommands) -> Re
             }
             println!("  🤝 In both systems ({} secrets):", report.in_both.len());
             for secret in &report.in_both {
+                println!("    • {}", secret);
+            }
+            println!("  ⚠️  Conflicts ({} secrets):", report.conflicts.len());
+            for secret in &report.conflicts {
                 println!("    • {}", secret);
             }
 
@@ -954,7 +982,10 @@ async fn handle_github_actions_command(gh_command: &GitHubActionsCommands) -> Re
             println!("✅ Organization secret sync configured for {}", organization);
             println!("🚀 Deploy your serverless relay to: {}", relay_url);
         }
-        GitHubActionsCommands::Migrate { repository, dry_run } => {
+        GitHubActionsCommands::Migrate {
+            repository: _repository,
+            dry_run,
+        } => {
             println!("🔄 GitHub Secrets migration ({})", if *dry_run { "DRY RUN" } else { "LIVE" });
 
             if *dry_run {
@@ -1017,7 +1048,7 @@ async fn handle_auth_command(auth_command: &AuthCommands, dotfiles_root: PathBuf
     Ok(())
 }
 
-async fn run_tui(dotfiles_root: PathBuf) -> Result<()> {
+async fn run_tui(_dotfiles_root: PathBuf) -> Result<()> {
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();

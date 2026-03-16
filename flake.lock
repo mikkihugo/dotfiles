@@ -6,11 +6,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1773260729,
-        "narHash": "sha256-lSuLfTCo5N3WXTVne5tQGdulZuKWQFILycuMaXOGUag=",
+        "lastModified": 1773632298,
+        "narHash": "sha256-uA8G6wWbyRrWXGm5H89YovaaBokZwdgWfKKr4ZznHH0=",
         "ref": "master",
-        "rev": "9a01b2e18a07f361ce9f8b62b99f65b78f1e025f",
-        "revCount": 4540,
+        "rev": "9059fc88232cfca580c877693be9984731b5201d",
+        "revCount": 5978,
         "type": "git",
         "url": "file:///home/mhugo/code/ace-coder"
       },

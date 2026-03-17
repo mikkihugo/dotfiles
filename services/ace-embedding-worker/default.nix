@@ -24,7 +24,6 @@
 
   inferenceName = "default";
   inferenceBackendBaseUrl = "http://127.0.0.1:18400";
-  inferenceModelId = "qwen/Qwen3.5-9B";
   inferenceStateDir = "${config.xdg.dataHome}/ace-inference-worker-${inferenceName}";
   inferenceLoader = "${inferenceStateDir}/bin/llm-gateway-loader";
 
@@ -84,6 +83,8 @@ in {
       Environment = [
         "ACE_LOADER_MASTER_URL=${loaderMasterUrl}"
         "ACE_LOADER_WORKER_DIR=${embeddingStateDir}/worker"
+        "ACE_LOADER_MANAGED_WORKER_KIND=embedding"
+        "ACE_WORKER_RUN_MODE=embedding"
         "\"ACE_LOADER_GPU_NAME=${gpuName}\""
         "ACE_EMBEDDING_WORKER_MASTER_URL=${masterUrl}"
         "ACE_EMBEDDING_WORKER_MODELS_DIR=${modelsDir}"
@@ -121,13 +122,12 @@ in {
       Environment = [
         "ACE_LOADER_MASTER_URL=${loaderMasterUrl}"
         "ACE_LOADER_WORKER_DIR=${inferenceStateDir}/worker"
+        "ACE_LOADER_MANAGED_WORKER_KIND=inference"
+        "ACE_WORKER_RUN_MODE=inference"
         "\"ACE_LOADER_GPU_NAME=${gpuName}\""
         "ACE_INFERENCE_WORKER_MASTER_URL=${masterUrl}"
         "ACE_INFERENCE_WORKER_BASE_URL=${inferenceBackendBaseUrl}"
-        "ACE_INFERENCE_WORKER_MODEL_ID=${inferenceModelId}"
-        "ACE_INFERENCE_WORKER_CONCURRENCY=1"
         "ACE_INFERENCE_WORKER_RECONNECT_DELAY=10"
-        "ACE_INFERENCE_WORKER_RERANK_MODEL_PATH=${rerankModelPath}"
         "RUST_LOG=info"
         "LD_LIBRARY_PATH=/usr/lib/wsl/lib:${gccLibDir}"
       ];

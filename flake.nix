@@ -63,17 +63,22 @@
       inherit system;
       config.allowUnfree = true;
     };
+    # Single definition reused for both config-name and username-based lookups.
+    homeConfig = home-manager.lib.homeManagerConfiguration {
+      inherit pkgs;
+      # Pass sops-nix so home.nix can use sops.secrets.* if needed in future.
+      extraSpecialArgs = {
+        inherit sops-nix ace-coder;
+      };
+      modules = [./home/home.nix];
+    };
   in
     {
       # `home-manager switch --flake .#mikki-bunker --impure`
-      homeConfigurations."mikki-bunker" = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
-        # Pass sops-nix so home.nix can use sops.secrets.* if needed in future.
-        extraSpecialArgs = {
-          inherit sops-nix ace-coder;
-        };
-        modules = [./home/home.nix];
-      };
+      homeConfigurations."mikki-bunker" = homeConfig;
+      # Username alias: home-manager auto-detects by $USER when no #name is given,
+      # so `home-manager switch --flake ~/.config/home-manager --impure` works.
+      homeConfigurations."mhugo" = homeConfig;
     }
     // flake-utils.lib.eachDefaultSystem (sys: let
       maintenance-pkgs = import nixpkgs {

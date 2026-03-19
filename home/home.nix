@@ -2,7 +2,7 @@
 #
 # Purpose:
 #   Single source of truth for everything installed and configured in $HOME.
-#   Applied by `home-manager switch --flake .#mikki-bunker --impure` (alias: `hms`).
+#   Applied by `home-manager switch` (alias: `hms`).
 #
 #   Why home-manager instead of dotfile symlinks?
 #   - Atomic: either the whole generation activates or nothing changes.
@@ -209,8 +209,8 @@ in {
     # both bash and zsh without duplicating logic.
     shellAliases = {
       # home-manager shorthand — `hms` applies the current flake config.
-      # --impure is required because home.nix reads builtins.currentSystem.
-      hms = "home-manager switch --flake ~/.dotfiles#mikki-bunker --impure --extra-experimental-features 'nix-command flakes'";
+      # ~/.config/home-manager → ~/.dotfiles symlink + flakes in nix.conf means no flags needed.
+      hms = "home-manager switch";
       # Promote the currently committed ACE revision into the dotfiles flake input.
       # This keeps worker builds cacheable and avoids following a dirty ACE checkout.
       promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";

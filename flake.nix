@@ -12,8 +12,8 @@
 #      (editing secrets, running alejandra/statix). Not the daily shell;
 #      home-manager provides that.
 #
-# Requires --impure because builtins.currentSystem reads the host arch at
-# eval time. The `hms` alias in home.nix already passes --impure.
+# System is hardcoded to x86_64-linux — mikki-bunker is WSL2 on x86_64.
+# No --impure flag needed.
 {
   description = "Mikki-Bunker dotfiles — home-manager + SOPS";
 
@@ -56,9 +56,9 @@
     flake-utils,
     ace-coder,
   }: let
-    # builtins.currentSystem reads the host arch at eval time.
-    # Requires --impure; already set in the `hms` shell alias.
-    system = builtins.currentSystem;
+    # Hardcoded to x86_64-linux (mikki-bunker is WSL2 on x86_64).
+    # No --impure needed — builtins.currentSystem removed.
+    system = "x86_64-linux";
     pkgs = import nixpkgs {
       inherit system;
       config.allowUnfree = true;

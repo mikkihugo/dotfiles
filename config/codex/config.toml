@@ -14,6 +14,9 @@ trust_level = "trusted"
 [projects."/home/mhugo/code/singularity-ng/vectordrive"]
 trust_level = "trusted"
 
+[projects."/home/mhugo/code/dr-repo"]
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 

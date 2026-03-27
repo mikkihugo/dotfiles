@@ -2,7 +2,6 @@ model = "gpt-5.4"
 model_reasoning_effort = "medium"
 personality = "pragmatic"
 sandbox_mode = "danger-full-access"
-approval_policy = "never"
 
 suppress_unstable_features_warning = true
 

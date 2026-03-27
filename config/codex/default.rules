@@ -1,0 +1,19 @@
+prefix_rule(pattern=["direnv", "allow"], decision="allow")
+
+# Route pushes through the repo-owned safe wrapper so jj CI gating always runs.
+prefix_rule(pattern=["jj", "git", "push"], decision="forbidden", justification="Use scripts/ace_safe_push.sh so ACE safe_push runs CI gating consistently.")
+prefix_rule(pattern=["git", "push"], decision="forbidden", justification="Use jj through scripts/ace_safe_push.sh.")
+
+# Block deployment — production deploys still require explicit operator control.
+prefix_rule(pattern=["make", "deploy-prod"], decision="forbidden", justification="Use MCP deploy_to_production for production deploys.")
+prefix_rule(pattern=["make", "deploy-remote-change-watcher"], decision="forbidden", justification="Deploy watcher is not an agent concern.")
+
+# Destructive commands require an explicit safer path.
+prefix_rule(pattern=["git", "reset", "--hard"], decision="forbidden", justification="Destructive history rewrites are forbidden.")
+prefix_rule(pattern=["git", "checkout", "--"], decision="forbidden", justification="Do not discard changes with git checkout --.")
+prefix_rule(pattern=["jj", "abandon"], decision="prompt", justification="Abandoning revisions discards work; confirm intent first.")
+prefix_rule(pattern=["rm", "-rf"], decision="prompt", justification="Recursive delete requires explicit confirmation.")
+
+# Remote access is allowed; secrets remain approval-gated.
+prefix_rule(pattern=["ssh"], decision="allow")
+prefix_rule(pattern=["sops"], decision="prompt", justification="Secrets access requires explicit approval.")

@@ -124,6 +124,10 @@ in {
         source = ../config/codex/config.toml;
         force = true;
       };
+      ".codex/rules/default.rules" = {
+        source = ../config/codex/default.rules;
+        force = true;
+      };
       # Nix user config — remote builder (llm-gateway) + substituter (nix-serve).
       # Enables local hms to substitute CUDA workers from cache instead of recompiling.
       ".config/nix/nix.conf" = {

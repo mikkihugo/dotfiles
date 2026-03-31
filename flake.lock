@@ -2,15 +2,16 @@
   "nodes": {
     "ace-coder": {
       "inputs": {
+        "crane": "crane",
         "lefthook": "lefthook",
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1773904214,
-        "narHash": "sha256-GcjuulowrqGQwfrTA9xjghvthqJ4NMOGr9lEOCiGkHE=",
+        "lastModified": 1774967110,
+        "narHash": "sha256-CcODsrEKeRXMcjc9pmgnBlczKtQnBJEAjh+MMk8nA4U=",
         "ref": "main",
-        "rev": "41037c5f49cbdd3587dca216600f58b10c34d162",
-        "revCount": 6370,
+        "rev": "1d1adf2976822bd8b36962a3b35dfc25c1a7bd34",
+        "revCount": 7424,
         "type": "git",
         "url": "file:///home/mhugo/code/ace-coder"
       },
@@ -18,6 +19,21 @@
         "ref": "main",
         "type": "git",
         "url": "file:///home/mhugo/code/ace-coder"
+      }
+    },
+    "crane": {
+      "locked": {
+        "lastModified": 1773857772,
+        "narHash": "sha256-5xsK26KRHf0WytBtsBnQYC/lTWDhQuT57HJ7SzuqZcM=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "b556d7bbae5ff86e378451511873dfd07e4504cd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
       }
     },
     "flake-utils": {

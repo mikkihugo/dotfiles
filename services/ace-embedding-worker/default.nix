@@ -25,6 +25,7 @@ in {
     enable = true;
     package = ace-pkgs.remote-worker-linux-x86_64-cpu-static;
     gpuName = "NVIDIA GeForce RTX 4080";
-    rerankModel = "qwen3-reranker-0.6b/Qwen3-Reranker-0.6B-Q4_K_M.gguf";
+    # rerankModel is director-assigned — not a worker config option.
+    # The director pushes the rerank model to the worker via DB config.
   };
 }

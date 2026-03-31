@@ -23,8 +23,29 @@ in {
   ];
 
   home = {
+    # ── Conflict pre-removal ──────────────────────────────────────────────
+    # programs.gh and programs.jujutsu manage these files as nix-store
+    # symlinks. When they exist as plain files (e.g. written by gh auth or
+    # jj init), home-manager aborts with "would be clobbered". Deleting them
+    # before checkLinkTargets lets home-manager recreate them as symlinks.
+    activation.removeConflictingConfigs = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
+      rm -f "$HOME/.config/gh/config.yml"
+      rm -f "$HOME/.config/jj/config.toml"
+    '';
+
     # ── Pre-built Rust binaries ──────────────────────────────────────────
     # Extracted from git-tracked gzips on every `hms` activation.
+    # ── MCP client configs ───────────────────────────────────────────────
+    # Renders ~/.gemini/settings.json mcpServers (and .mcp.json / .cursor/mcp.json)
+    # from SOPS-backed secrets. Runs on every `hms` so Gemini/Claude/Cursor always
+    # have the current ACE MCP token without manual `install_or_repair_mcp_clients.sh`.
+    activation.renderMcpConfigs = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      ACE_REPO="$HOME/code/ace-coder"
+      if [ -f "$ACE_REPO/scripts/render_repo_mcp_configs.sh" ]; then
+        bash "$ACE_REPO/scripts/render_repo_mcp_configs.sh" 2>/dev/null || true
+      fi
+    '';
+
     activation.extractRustBinaries = let
       arch = builtins.elemAt (builtins.split "-" pkgs.stdenv.hostPlatform.system) 0;
       secretTuiSrc = ../tools/secret-tui-rust;

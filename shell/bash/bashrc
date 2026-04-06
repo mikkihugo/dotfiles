@@ -26,6 +26,9 @@
 # Use a user-writable npm global prefix to avoid sudo
 export NPM_CONFIG_PREFIX="$HOME/.npm-global"
 
+# Self-hosted Letta server (docker-compose at ~/code/letta-selfhost)
+export LETTA_BASE_URL="http://localhost:8283"
+
 # Set PATH properly - system paths first, then user paths
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 

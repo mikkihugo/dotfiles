@@ -29,11 +29,6 @@ export NPM_CONFIG_PREFIX="$HOME/.npm-global"
 # Self-hosted Letta server (docker-compose at ~/code/letta-selfhost)
 export LETTA_BASE_URL="http://localhost:8283"
 
-# Set PATH properly - system paths first, then user paths
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-# Add user paths first (before tool managers)
-export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.cargo/bin:$HOME/.amp/bin:$PATH"
 
 # Add Homebrew to PATH
 if [ -d /home/linuxbrew/.linuxbrew/bin ]; then
@@ -124,6 +119,14 @@ _load_sops_secrets() {
     val=$(_sops_val kimi api_key)
     [ -n "$val" ] && export KIMI_API_KEY="$val"
 
+    # MiniMax
+    val=$(_sops_val minimax api_key)
+    [ -n "$val" ] && export MINIMAX_API_KEY="$val"
+
+    # Cloudflare AI Gateway
+    val=$(_sops_val cloudflare_ai_gateway aig_token)
+    [ -n "$val" ] && export CF_AIG_TOKEN="$val"
+
     # OpenRouter
     val=$(_sops_val openrouter api_key)
     [ -n "$val" ] && export OPENROUTER_API_KEY="$val"
@@ -143,6 +146,14 @@ _load_sops_secrets() {
     # Exa (Web Search)
     val=$(_sops_val exa api_key)
     [ -n "$val" ] && export EXA_API_KEY="$val"
+
+    # Ollama Cloud
+    val=$(_sops_val ollama_cloud api_key)
+    [ -n "$val" ] && export OLLAMA_CLOUD_API_KEY="$val"
+
+    # LLM Gateway bearer token (aichat)
+    val=$(_sops_val llm_gateway bearer_key)
+    [ -n "$val" ] && export LLM_GATEWAY_BEARER_KEY="$val"
 
     unset -f _sops_val
 }
@@ -206,4 +217,11 @@ fi
 
 # OpenClaw Completion
 source "/home/mhugo/.openclaw/completions/openclaw.bash"
+# OpenClaw Completion
+source "/home/mhugo/.openclaw/completions/openclaw.bash"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+
+case ":$PATH:" in
+  *":$HOME/.bun/bin:"*) ;;
+  *) export PATH="$HOME/.bun/bin:$PATH" ;;
+esac

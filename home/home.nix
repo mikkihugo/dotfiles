@@ -20,6 +20,7 @@
 in {
   imports = [
     ../services/ace-embedding-worker
+    ../services/openchamber
   ];
 
   home = {

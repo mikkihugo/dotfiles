@@ -12,6 +12,7 @@
 #   dotfilesRoot is passed into shell init blocks so they can source runtime
 #   files (like shell/bash/bashrc) that need the live shell environment.
 {
+  config,
   pkgs,
   lib,
   ...
@@ -22,6 +23,8 @@ in {
     ../services/ace-embedding-worker
     ../services/openchamber
   ];
+
+  sops.age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
 
   home = {
     # ── Conflict pre-removal ──────────────────────────────────────────────
@@ -43,7 +46,8 @@ in {
     activation.renderMcpConfigs = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ACE_REPO="$HOME/code/ace-coder"
       if [ -f "$ACE_REPO/scripts/render_repo_mcp_configs.sh" ]; then
-        bash "$ACE_REPO/scripts/render_repo_mcp_configs.sh" 2>/dev/null || true
+        bash "$ACE_REPO/scripts/render_repo_mcp_configs.sh" || \
+          echo "WARNING: render_repo_mcp_configs.sh failed (MCP configs may be stale)" >&2
       fi
     '';
 
@@ -109,14 +113,17 @@ in {
     # ~/.npm-global/bin: global npm packages (opencode, etc.)
     # ~/.cargo/bin: cargo-installed Rust binaries.
     sessionPath = [
+      "$HOME/.bun/bin"
       "$HOME/.local/bin"
       "$HOME/.npm-global/bin"
       "$HOME/.cargo/bin"
+      "$HOME/.amp/bin"
     ];
 
     sessionVariables = {
       NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
+      MINIMAX_API_HOST = "https://api.minimax.io";
       # Point ripgrep at its config file so smart-case, colors, and glob
       # ignores apply automatically without passing flags every time.
       RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
@@ -181,9 +188,10 @@ in {
       # Dev tools — language runtimes and package managers.
       # Node/pnpm here because some CLI tools (opencode, etc.) need them
       # without project-level nix shells.
+      bun # JavaScript runtime/package manager for local tool builds
       git-lfs # large file storage extension for git
       gcc # provides `cc` for local source builds during HM activation
-      nodejs_22 # Node.js LTS
+      nodejs_24 # Node.js LTS
       pnpm # fast, disk-efficient Node package manager
 
       # Secret management — the SOPS/age toolchain for encrypting dotfile secrets.
@@ -241,8 +249,10 @@ in {
       # This keeps worker builds cacheable and avoids following a dirty ACE checkout.
       promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";
 
-      # secret-tui — browse, reveal, and edit SOPS-encrypted secrets
-      secrets = "secret-tui";
+      # Edit any SOPS file under ~/.dotfiles/secrets via fzf selection or arg.
+      secrets = "~/.dotfiles/scripts/secrets-edit";
+      # secret-tui is still useful as a browser, but it does not save yet.
+      secrets-tui = "secret-tui";
 
       # ls replacements — eza is flag-compatible enough for interactive use.
       # NOT aliasing grep→rg or find→fd: those tools have different argument
@@ -273,10 +283,17 @@ in {
         export DOTFILES_ROOT="${dotfilesRoot}"
         export HM_MANAGED=1
 
-        # Load on-demand LLM key helper (load-ai-keys alias).
-        # Sourced here instead of declared inline so the function body lives
-        # in a versioned file (shell/bash/bashrc) not in a generated ~/.bashrc.
+        # Load AI key helpers and export secrets for CLI tools that expect
+        # provider credentials in the shell environment at startup.
         [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"
+        type _load_sops_secrets >/dev/null 2>&1 && _load_sops_secrets >/dev/null 2>&1 || true
+
+        # Letta Code CLI environment (connects to local Docker server on port 8283).
+        export LETTA_BASE_URL="http://127.0.0.1:8283"
+        # Load API key from file if present (for authenticated servers).
+        if [ -f "$HOME/.letta/api_key" ]; then
+          export LETTA_API_KEY="$(cat "$HOME/.letta/api_key")"
+        fi
       '';
     };
 
@@ -290,6 +307,14 @@ in {
         export HM_MANAGED=1
 
         [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"
+        type _load_sops_secrets >/dev/null 2>&1 && _load_sops_secrets >/dev/null 2>&1 || true
+
+        # Letta Code CLI environment (connects to local Docker server on port 8283).
+        export LETTA_BASE_URL="http://127.0.0.1:8283"
+        # Load API key from file if present (for authenticated servers).
+        if [ -f "$HOME/.letta/api_key" ]; then
+          export LETTA_API_KEY="$(cat "$HOME/.letta/api_key")"
+        fi
       '';
     };
 

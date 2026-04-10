@@ -119,6 +119,10 @@ _load_sops_secrets() {
     val=$(_sops_val kimi api_key)
     [ -n "$val" ] && export KIMI_API_KEY="$val"
 
+    # Kimi Code (separate coding endpoint key)
+    val=$(_sops_val kimi code_api_key)
+    [ -n "$val" ] && export KIMI_CODE_API_KEY="$val"
+
     # MiniMax
     val=$(_sops_val minimax api_key)
     [ -n "$val" ] && export MINIMAX_API_KEY="$val"

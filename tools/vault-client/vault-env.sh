@@ -12,7 +12,7 @@ vault_env_setup() {
     local github_token=$(vault_get "github_token")
     local cloudflare_token=$(vault_get "cloudflare_api_token")
 
-    [[ -n "$anthropic_key" ]] && export ANTHROPIC_API_KEY="$anthropic_key"
+    # ANTHROPIC_API_KEY intentionally not exported — Claude Code uses OAuth
     [[ -n "$openai_key" ]] && export OPENAI_API_KEY="$openai_key"
     [[ -n "$github_token" ]] && export GITHUB_TOKEN="$github_token"
     [[ -n "$cloudflare_token" ]] && export CLOUDFLARE_API_TOKEN="$cloudflare_token"

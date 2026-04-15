@@ -52,6 +52,22 @@ in {
         fi
       '';
 
+      # ── OpenClaw node client ────────────────────────────────────────────
+      # openclaw is an npm package not in nixpkgs. Install once via npm
+      # (using Nix-managed Node.js) and skip if already present.
+      # After first `hms`, run: openclaw node install --host ai.hugo.dk --port 443 --tls --display-name "$(hostname -s)"
+      installOpenclaw = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        if ! command -v openclaw >/dev/null 2>&1; then
+          echo "Installing openclaw via npm..."
+          ${pkgs.nodejs_24}/bin/npm install -g \
+            --prefix "$HOME/.npm-global" \
+            --no-fund --no-audit \
+            openclaw@latest && \
+            echo "openclaw installed — run: openclaw node install --host ai.hugo.dk --port 443 --tls --display-name \$(hostname -s)" || \
+            echo "WARNING: openclaw install failed" >&2
+        fi
+      '';
+
       # ── Pre-built Rust binaries ──────────────────────────────────────────
       # Extracted from git-tracked gzips on every `hms` activation.
       extractRustBinaries = let
@@ -261,6 +277,8 @@ in {
 
       # Edit any SOPS file under ~/.dotfiles/secrets via fzf selection or arg.
       secrets = "~/.dotfiles/scripts/secrets-edit";
+      # Register this machine as an openclaw node (run once after hms on a new machine).
+      openclaw-setup = "openclaw node install --host ai.hugo.dk --port 443 --tls --display-name \"$(hostname -s)\" && openclaw node restart";
       # secret-tui is still useful as a browser, but it does not save yet.
       secrets-tui = "secret-tui";
 

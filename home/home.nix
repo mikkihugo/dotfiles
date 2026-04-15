@@ -250,9 +250,11 @@ in {
     # Declared here rather than in a sourced aliases.sh so they appear in
     # both bash and zsh without duplicating logic.
     shellAliases = {
-      # home-manager shorthand — `hms` applies the current flake config.
-      # ~/.config/home-manager → ~/.dotfiles symlink + flakes in nix.conf means no flags needed.
-      hms = "home-manager switch";
+      # home-manager shorthand — apply the current flake config.
+      # Uses the `mhugo` profile (builtins.currentSystem → auto-detects arch),
+      # so this alias works unchanged on both mikki-bunker and mikki-laptop.
+      # --impure is required because flake.nix reads builtins.currentSystem.
+      hms = "home-manager switch --flake ~/.dotfiles#mhugo --impure";
       # Promote the currently committed ACE revision into the dotfiles flake input.
       # This keeps worker builds cacheable and avoids following a dirty ACE checkout.
       promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";

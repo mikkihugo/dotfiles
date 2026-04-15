@@ -21,10 +21,7 @@
 in {
   imports = [
     ../services/ace-embedding-worker
-    ../services/openchamber
   ];
-
-  sops.age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
 
   home = {
     # ── Conflict pre-removal ──────────────────────────────────────────────
@@ -32,70 +29,72 @@ in {
     # symlinks. When they exist as plain files (e.g. written by gh auth or
     # jj init), home-manager aborts with "would be clobbered". Deleting them
     # before checkLinkTargets lets home-manager recreate them as symlinks.
-    activation.removeConflictingConfigs = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
-      rm -f "$HOME/.config/gh/config.yml"
-      rm -f "$HOME/.config/jj/config.toml"
-    '';
-
-    # ── Pre-built Rust binaries ──────────────────────────────────────────
-    # Extracted from git-tracked gzips on every `hms` activation.
-    # ── MCP client configs ───────────────────────────────────────────────
-    # Renders ~/.gemini/settings.json mcpServers (and .mcp.json / .cursor/mcp.json)
-    # from SOPS-backed secrets. Runs on every `hms` so Gemini/Claude/Cursor always
-    # have the current ACE MCP token without manual `install_or_repair_mcp_clients.sh`.
-    activation.renderMcpConfigs = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      ACE_REPO="$HOME/code/ace-coder"
-      if [ -f "$ACE_REPO/scripts/render_repo_mcp_configs.sh" ]; then
-        bash "$ACE_REPO/scripts/render_repo_mcp_configs.sh" || \
-          echo "WARNING: render_repo_mcp_configs.sh failed (MCP configs may be stale)" >&2
-      fi
-    '';
-
-    activation.extractRustBinaries = let
-      arch = builtins.elemAt (builtins.split "-" pkgs.stdenv.hostPlatform.system) 0;
-      secretTuiSrc = ../tools/secret-tui-rust;
-      # Use tryEval to handle missing arch binary gracefully
-      gzPath = ../tools/secret-tui-rust/bin/${arch}/secret-tui.gz;
-      hasGz = builtins.pathExists gzPath;
-    in
-      lib.hm.dag.entryAfter ["writeBoundary"] ''
-        mkdir -p "$HOME/.local/bin"
-        ${
-          if hasGz
-          then ''
-            ${pkgs.gzip}/bin/gzip -dc ${gzPath} > "$HOME/.local/bin/secret-tui.tmp"
-            chmod +x "$HOME/.local/bin/secret-tui.tmp"
-            mv "$HOME/.local/bin/secret-tui.tmp" "$HOME/.local/bin/secret-tui"
-          ''
-          else ''
-            if [ ! -f "$HOME/.local/bin/secret-tui" ]; then
-              echo "No pre-built secret-tui for ${arch}, building from source..."
-              SRCDIR="$HOME/.dotfiles/tools/secret-tui-rust"
-              if [ -f "$SRCDIR/Cargo.toml" ]; then
-                (
-                  cd "$SRCDIR" && \
-                  export CC="${pkgs.stdenv.cc}/bin/cc" && \
-                  export CXX="${pkgs.stdenv.cc}/bin/c++" && \
-                  export RUSTC_LINKER="${pkgs.stdenv.cc}/bin/cc" && \
-                  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="${pkgs.stdenv.cc}/bin/cc" && \
-                  export HOST_CC="${pkgs.stdenv.cc}/bin/cc" && \
-                  export TARGET_CC="${pkgs.stdenv.cc}/bin/cc" && \
-                  export OPENSSL_DIR="${pkgs.openssl.dev}" && \
-                  export OPENSSL_INCLUDE_DIR="${pkgs.openssl.dev}/include" && \
-                  export OPENSSL_LIB_DIR="${pkgs.openssl.out}/lib" && \
-                  export PKG_CONFIG="${pkgs.pkg-config}/bin/pkg-config" && \
-                  export PATH="${pkgs.stdenv.cc}/bin:${pkgs.pkg-config}/bin:${pkgs.cargo}/bin:$PATH" && \
-                  ${pkgs.cargo}/bin/cargo build --release 2>&1
-                ) && \
-                cp "$SRCDIR/target/release/secret-tui" "$HOME/.local/bin/secret-tui" && \
-                echo "Built and installed secret-tui"
-              else
-                echo "secret-tui: no binary for ${arch} and no source found"
-              fi
-            fi
-          ''
-        }
+    activation = {
+      removeConflictingConfigs = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
+        rm -f "$HOME/.config/gh/config.yml"
+        rm -f "$HOME/.config/jj/config.toml"
       '';
+
+      # ── MCP client configs ───────────────────────────────────────────────
+      # Renders ~/.gemini/settings.json mcpServers (and .mcp.json / .cursor/mcp.json)
+      # from SOPS-backed secrets. Runs on every `hms` so Gemini/Claude/Cursor always
+      # have the current ACE MCP token without manual `install_or_repair_mcp_clients.sh`.
+      renderMcpConfigs = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        ACE_REPO="$HOME/code/ace-coder"
+        if [ -f "$ACE_REPO/scripts/render_repo_mcp_configs.sh" ]; then
+          bash "$ACE_REPO/scripts/render_repo_mcp_configs.sh" || \
+            echo "WARNING: render_repo_mcp_configs.sh failed (MCP configs may be stale)" >&2
+        fi
+      '';
+
+      # ── Pre-built Rust binaries ──────────────────────────────────────────
+      # Extracted from git-tracked gzips on every `hms` activation.
+      extractRustBinaries = let
+        arch = builtins.elemAt (builtins.split "-" pkgs.stdenv.hostPlatform.system) 0;
+        secretTuiSrc = ../tools/secret-tui-rust;
+        # Use tryEval to handle missing arch binary gracefully
+        gzPath = ../tools/secret-tui-rust/bin/${arch}/secret-tui.gz;
+        hasGz = builtins.pathExists gzPath;
+      in
+        lib.hm.dag.entryAfter ["writeBoundary"] ''
+          mkdir -p "$HOME/.local/bin"
+          ${
+            if hasGz
+            then ''
+              ${pkgs.gzip}/bin/gzip -dc ${gzPath} > "$HOME/.local/bin/secret-tui.tmp"
+              chmod +x "$HOME/.local/bin/secret-tui.tmp"
+              mv "$HOME/.local/bin/secret-tui.tmp" "$HOME/.local/bin/secret-tui"
+            ''
+            else ''
+              if [ ! -f "$HOME/.local/bin/secret-tui" ]; then
+                echo "No pre-built secret-tui for ${arch}, building from source..."
+                SRCDIR="$HOME/.dotfiles/tools/secret-tui-rust"
+                if [ -f "$SRCDIR/Cargo.toml" ]; then
+                  (
+                    cd "$SRCDIR" && \
+                    export CC="${pkgs.stdenv.cc}/bin/cc" && \
+                    export CXX="${pkgs.stdenv.cc}/bin/c++" && \
+                    export RUSTC_LINKER="${pkgs.stdenv.cc}/bin/cc" && \
+                    export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="${pkgs.stdenv.cc}/bin/cc" && \
+                    export HOST_CC="${pkgs.stdenv.cc}/bin/cc" && \
+                    export TARGET_CC="${pkgs.stdenv.cc}/bin/cc" && \
+                    export OPENSSL_DIR="${pkgs.openssl.dev}" && \
+                    export OPENSSL_INCLUDE_DIR="${pkgs.openssl.dev}/include" && \
+                    export OPENSSL_LIB_DIR="${pkgs.openssl.out}/lib" && \
+                    export PKG_CONFIG="${pkgs.pkg-config}/bin/pkg-config" && \
+                    export PATH="${pkgs.stdenv.cc}/bin:${pkgs.pkg-config}/bin:${pkgs.cargo}/bin:$PATH" && \
+                    ${pkgs.cargo}/bin/cargo build --release 2>&1
+                  ) && \
+                  cp "$SRCDIR/target/release/secret-tui" "$HOME/.local/bin/secret-tui" && \
+                  echo "Built and installed secret-tui"
+                else
+                  echo "secret-tui: no binary for ${arch} and no source found"
+                fi
+              fi
+            ''
+          }
+        '';
+    };
     username = "mhugo";
     homeDirectory = "/home/mhugo";
 

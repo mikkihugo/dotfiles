@@ -68,3 +68,4 @@ config/.env.gpg
 **/sops/age/keys.txt
 age-keys.txt
 result
+.direnv/

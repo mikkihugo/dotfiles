@@ -7,6 +7,8 @@ keys:
   # SSH-derived key — bootstrap on any machine via:
   #   ssh-to-age -private-key -i ~/.ssh/id_ed25519 > ~/.config/sops/age/keys.txt
   - &ssh_key age1mch8x334rdc94fwrfmd5efchsjutv45yshh7cauew8kjgttsdycsp0uqfj
+  # mail-hugo-new server (OpenClaw/Headscale host)
+  - &mail_hugo_key age144mj9rzctzrqxnmw9x6p8s4jtww94rk7jlwtnc833yd6a90lmptqdagdkr
 
 creation_rules:
   - path_regex: secrets/.*\.(yaml|json)$
@@ -15,6 +17,7 @@ creation_rules:
           - *dotfiles_key
           - *ogt_key
           - *ssh_key
+          - *mail_hugo_key
 
   - path_regex: .*\.env\.enc$
     key_groups:
@@ -22,6 +25,7 @@ creation_rules:
           - *dotfiles_key
           - *ogt_key
           - *ssh_key
+          - *mail_hugo_key
 
   - path_regex: .*\.envrc\.enc$
     key_groups:
@@ -29,6 +33,7 @@ creation_rules:
           - *dotfiles_key
           - *ogt_key
           - *ssh_key
+          - *mail_hugo_key
 
   - path_regex: secrets/development/.*\.yaml$
     key_groups:
@@ -36,3 +41,4 @@ creation_rules:
           - *dotfiles_key
           - *ogt_key
           - *ssh_key
+          - *mail_hugo_key

@@ -3,7 +3,7 @@
 # Purpose: allowlist technical terms that typos incorrectly flags.
 
 [files]
-extend-exclude = ["services/ace-embedding-worker/bin/"]
+extend-exclude = ["services/ace-embedding-worker/bin/", "secrets/"]
 
 [default.extend-words]
 # Ratatui is a Rust TUI framework (https://ratatui.rs), not a misspelling of

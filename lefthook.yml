@@ -19,8 +19,8 @@ pre-commit:
       run: shfmt -d {staged_files}
 
     typos:
-      exclude: '\.(gz|bin|wasm|lock)$'
-      run: typos {staged_files}
+      exclude: '\.(gz|bin|wasm|lock)$|^secrets/'
+      run: typos --force-exclude {staged_files}
 
     detect-secrets:
       exclude: \.secrets\.baseline$

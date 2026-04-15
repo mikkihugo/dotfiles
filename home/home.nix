@@ -124,6 +124,7 @@ in {
       NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
       MINIMAX_API_HOST = "https://api.minimax.io";
+      COLORTERM = "truecolor";
       # Point ripgrep at its config file so smart-case, colors, and glob
       # ignores apply automatically without passing flags every time.
       RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";

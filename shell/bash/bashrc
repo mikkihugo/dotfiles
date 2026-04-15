@@ -95,6 +95,7 @@ _load_sops_secrets() {
     if [ -n "$val" ] && [ -n "$url" ]; then
       export LLM_MUX_API_KEY="$val"
       export LLM_MUX_BASE_URL="$url"
+      export ACE_WORKER_API_KEY="$val"
       export GOOGLE_API_KEY="$val"
       export GOOGLE_API_BASE="$url"
       export GEMINI_API_KEY="$val"

@@ -1,232 +1,177 @@
-#!/bin/bash
-# shell/bash/bashrc — on-demand LLM key loader
+#!/usr/bin/env sh
+# shell/bash/bashrc — runtime shell hooks that cannot live in Nix
 #
 # Purpose:
-#   Provides the `load-ai-keys` command for decrypting and exporting LLM API
-#   credentials on demand. Keys are NOT auto-loaded at shell startup to avoid
-#   the ~300ms SOPS decrypt penalty on every new terminal.
+#   Only things that MUST eval in a live shell belong here:
+#   - mise runtime activation (needs live eval per shell)
+#   - _load_sops_secrets / load-ai-keys (SOPS needs the age key from the
+#     running environment, not baked into the Nix closure)
+#   - Non-interactive direnv export (programs.direnv uses PROMPT_COMMAND
+#     which doesn't fire in non-interactive shells like Claude Code/CI)
+#   - Third-party completions not managed by home-manager
 #
-#   Everything else (aliases, PATH, tool hooks, starship, direnv, zoxide) is
-#   managed declaratively by home-manager in home/home.nix. This file is the
-#   only runtime shell code that isn't expressed as Nix — it exists because
-#   SOPS decryption must happen in the live shell environment where the age
-#   key is accessible, not at home-manager activation time.
+#   Everything else — PATH, env vars, aliases, prompt, tool hooks (direnv
+#   interactive, starship, zoxide) — is declared in home/home.nix and
+#   applied by `home-manager switch` (alias: hms).
 #
 # Sourced by:
 #   programs.bash.initExtra  (bash sessions)
-#   programs.zsh.initContent (zsh sessions, bash-compatible subset used)
-#
-# Usage:
-#   load-ai-keys   — decrypt ~/.dotfiles/secrets/api-keys.yaml and export
-#                    OPENAI_*, ANTHROPIC_*, GOOGLE_*, GEMINI_*, CLAUDE_* vars
+#   programs.zsh.initContent (zsh sessions, POSIX-compatible subset)
 
-# Set HOME if missing
+# Set HOME if missing (safety guard for minimal environments)
 [ -z "$HOME" ] && export HOME="/home/mhugo"
 
-# Use a user-writable npm global prefix to avoid sudo
-export NPM_CONFIG_PREFIX="$HOME/.npm-global"
-
-# Self-hosted Letta server (docker-compose at ~/code/letta-selfhost)
-export LETTA_BASE_URL="http://localhost:8283"
-
-
-# Add Homebrew to PATH
-if [ -d /home/linuxbrew/.linuxbrew/bin ]; then
-  export PATH="/home/linuxbrew/.linuxbrew/bin:$PATH"
-fi
-
-# Activate mise (installed to ~/.local/bin/mise)
+# ── Mise (polyglot runtime version manager) ───────────────────────────────────
+# Must be activated per-shell so the shims and hooks are wired up.
+# Detect zsh vs bash so the right integration is loaded.
 if [ -f "$HOME/.local/bin/mise" ]; then
-  eval "$("$HOME/.local/bin/mise" activate bash)"
+	if [ -n "${ZSH_VERSION:-}" ]; then
+		eval "$("$HOME/.local/bin/mise" activate zsh)"
+	else
+		eval "$("$HOME/.local/bin/mise" activate bash)"
+	fi
 fi
 
-# Add Nix to PATH AFTER mise (critical for direnv to work)
-if [ -e /nix/var/nix/profiles/default/bin ]; then
-  export PATH="/nix/var/nix/profiles/default/bin:$PATH"
-fi
-if [ -e "$HOME/.nix-profile/bin" ]; then
-  export PATH="$HOME/.nix-profile/bin:$PATH"
-fi
-
-# Load Nix environment (sets NIX_PROFILES and other env vars)
-if [ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
-  . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-elif [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
-  . "$HOME/.nix-profile/etc/profile.d/nix.sh"
-fi
-
-# SOPS configuration
-export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
-
-# Helper function to decrypt and source .env.enc files
-# Usage: sops_source_env /path/to/.env.enc
-sops_source_env() {
-  local env_file="${1:-.env.enc}"
-  if [ -f "$env_file" ] && command -v sops > /dev/null 2>&1; then
-    eval "$(sops --decrypt "$env_file" 2>/dev/null | grep -v '^#' | grep -v '^$' | sed 's/^/export /')"
-  fi
-}
-
-# Load SOPS encrypted secrets
+# ── SOPS on-demand secret loader ─────────────────────────────────────────────
+# Decrypts ~/.dotfiles/secrets/api-keys.yaml and exports LLM API credentials.
+# Called eagerly below (silent, non-fatal) so keys are available to child
+# processes without a manual `load-ai-keys` invocation.
 _load_sops_secrets() {
-  local secrets_file="$HOME/.dotfiles/secrets/api-keys.yaml"
+	local secrets_file="$HOME/.dotfiles/secrets/api-keys.yaml"
 
-  if [[ ! -f "$secrets_file" ]]; then
-    echo "load-ai-keys: $secrets_file not found" >&2
-    return 1
-  fi
-  if ! command -v sops > /dev/null 2>&1; then
-    echo "load-ai-keys: sops not in PATH" >&2
-    return 1
-  fi
+	if [[ ! -f "$secrets_file" ]]; then
+		echo "load-ai-keys: $secrets_file not found" >&2
+		return 1
+	fi
+	if ! command -v sops >/dev/null 2>&1; then
+		echo "load-ai-keys: sops not in PATH" >&2
+		return 1
+	fi
 
-  local decrypted
-  decrypted=$(sops --decrypt "$secrets_file" 2>/dev/null) || {
-    echo "load-ai-keys: sops decrypt failed (check age key at $SOPS_AGE_KEY_FILE)" >&2
-    return 1
-  }
+	local decrypted
+	decrypted=$(sops --decrypt "$secrets_file" 2>/dev/null) || {
+		echo "load-ai-keys: sops decrypt failed (check age key at ${SOPS_AGE_KEY_FILE:-~/.config/sops/age/keys.txt})" >&2
+		return 1
+	}
 
-    # Helper: extract "key: value" under a YAML section (searches up to 5 children)
-    _sops_val() { echo "$decrypted" | grep -A5 "^$1:" | grep "$2:" | head -1 | sed "s/.*$2: *//;s/^ *//;s/ *$//" | tr -d '"'; }
+	# Helper: extract value under a YAML section (searches up to 5 children)
+	_sops_val() { echo "$decrypted" | grep -A5 "^$1:" | grep "$2:" | head -1 | sed "s/.*$2: *//;s/^ *//;s/ *$//" | tr -d '"'; }
 
-    # LLM Gateway
-    local val=$(_sops_val llm_gateway api_key)
-    local url=$(_sops_val llm_gateway base_url)
-    if [ -n "$val" ] && [ -n "$url" ]; then
-      export LLM_MUX_API_KEY="$val"
-      export LLM_MUX_BASE_URL="$url"
-      export ACE_WORKER_API_KEY="$val"
-      export GOOGLE_API_KEY="$val"
-      export GOOGLE_API_BASE="$url"
-      export GEMINI_API_KEY="$val"
-      export GEMINI_API_BASE="$url"
-    fi
+	# LLM Gateway (proxies all providers through a single endpoint)
+	local val url
+	val=$(_sops_val llm_gateway api_key)
+	url=$(_sops_val llm_gateway base_url)
+	if [ -n "$val" ] && [ -n "$url" ]; then
+		export LLM_MUX_API_KEY="$val"
+		export LLM_MUX_BASE_URL="$url"
+		export ACE_WORKER_API_KEY="$val"
+		export GOOGLE_API_KEY="$val"
+		export GOOGLE_API_BASE="$url"
+		export GEMINI_API_KEY="$val"
+		export GEMINI_API_BASE="$url"
+	fi
 
-    # OpenAI Gateway (ACE Coder - for Goose CLI)
-    val=$(_sops_val openai_gateway api_key)
-    url=$(_sops_val openai_gateway base_url)
-    [ -n "$val" ] && export OPENAI_GATEWAY_API_KEY="$val"
-    [ -n "$url" ] && export OPENAI_GATEWAY_BASE_URL="$url"
+	# OpenAI Gateway (ACE Coder / Goose CLI)
+	val=$(_sops_val openai_gateway api_key)
+	url=$(_sops_val openai_gateway base_url)
+	[ -n "$val" ] && export OPENAI_GATEWAY_API_KEY="$val"
+	[ -n "$url" ] && export OPENAI_GATEWAY_BASE_URL="$url"
 
-    # Claude Code OAuth token
-    val=$(_sops_val claude_code oauth_token)
-    [ -n "$val" ] && export CLAUDE_CODE_OAUTH_TOKEN="$val"
+	# Claude Code OAuth token
+	val=$(_sops_val claude_code oauth_token)
+	[ -n "$val" ] && export CLAUDE_CODE_OAUTH_TOKEN="$val"
 
-    # DeepSeek
-    val=$(_sops_val deepseek api_key)
-    [ -n "$val" ] && export DEEPSEEK_API_KEY="$val"
+	# DeepSeek
+	val=$(_sops_val deepseek api_key)
+	[ -n "$val" ] && export DEEPSEEK_API_KEY="$val"
 
-    # Kimi (Moonshot)
-    val=$(_sops_val kimi api_key)
-    [ -n "$val" ] && export KIMI_API_KEY="$val"
+	# Kimi (Moonshot)
+	val=$(_sops_val kimi api_key)
+	[ -n "$val" ] && export KIMI_API_KEY="$val"
+	val=$(_sops_val kimi code_api_key)
+	[ -n "$val" ] && export KIMI_CODE_API_KEY="$val"
 
-    # Kimi Code (separate coding endpoint key)
-    val=$(_sops_val kimi code_api_key)
-    [ -n "$val" ] && export KIMI_CODE_API_KEY="$val"
+	# MiniMax
+	val=$(_sops_val minimax api_key)
+	[ -n "$val" ] && export MINIMAX_API_KEY="$val"
 
-    # MiniMax
-    val=$(_sops_val minimax api_key)
-    [ -n "$val" ] && export MINIMAX_API_KEY="$val"
+	# Cloudflare AI Gateway
+	val=$(_sops_val cloudflare_ai_gateway aig_token)
+	[ -n "$val" ] && export CF_AIG_TOKEN="$val"
 
-    # Cloudflare AI Gateway
-    val=$(_sops_val cloudflare_ai_gateway aig_token)
-    [ -n "$val" ] && export CF_AIG_TOKEN="$val"
+	# OpenRouter
+	val=$(_sops_val openrouter api_key)
+	[ -n "$val" ] && export OPENROUTER_API_KEY="$val"
 
-    # OpenRouter
-    val=$(_sops_val openrouter api_key)
-    [ -n "$val" ] && export OPENROUTER_API_KEY="$val"
+	# Google free-tier rotation keys
+	val=$(echo "$decrypted" | grep -A6 "^google:" | grep "free1:" | sed 's/.*free1: *//;s/ *$//' | tr -d '"')
+	[ -n "$val" ] && export GOOGLE_AI_API_KEY_FREE1="$val"
+	val=$(echo "$decrypted" | grep -A6 "^google:" | grep "free2:" | sed 's/.*free2: *//;s/ *$//' | tr -d '"')
+	[ -n "$val" ] && export GOOGLE_AI_API_KEY_FREE2="$val"
+	val=$(echo "$decrypted" | grep -A6 "^google:" | grep "free3:" | sed 's/.*free3: *//;s/ *$//' | tr -d '"')
+	[ -n "$val" ] && export GOOGLE_AI_API_KEY_FREE3="$val"
+	val=$(echo "$decrypted" | grep -A6 "^google:" | grep "free4:" | sed 's/.*free4: *//;s/ *$//' | tr -d '"')
+	[ -n "$val" ] && export GOOGLE_AI_API_KEY_FREE4="$val"
 
-    # Google / Gemini
-    val=$(echo "$decrypted" | grep -A1 "^google:" | grep "default:" | sed 's/.*default: *//;s/ *$//' | tr -d '"')
-    [ -n "$val" ] && export GOOGLE_API_KEY="$val" && export GEMINI_API_KEY="$val"
+	# Google default key (overrides gateway values with direct key if present)
+	val=$(echo "$decrypted" | grep -A1 "^google:" | grep "default:" | sed 's/.*default: *//;s/ *$//' | tr -d '"')
+	[ -n "$val" ] && export GOOGLE_API_KEY="$val" && export GEMINI_API_KEY="$val"
 
-    # Hetzner
-    val=$(_sops_val hetzner api_token)
-    [ -n "$val" ] && export HETZNER_API_TOKEN="$val"
+	# xAI (Grok)
+	val=$(_sops_val xai api_key)
+	[ -n "$val" ] && export XAI_API_KEY="$val"
 
-    # GOG Galaxy
-    val=$(_sops_val gog keyring_password)
-    [ -n "$val" ] && export GOG_KEYRING_PASSWORD="$val"
+	# Groq
+	val=$(_sops_val groq api_key)
+	[ -n "$val" ] && export GROQ_API_KEY="$val"
 
-    # Exa (Web Search)
-    val=$(_sops_val exa api_key)
-    [ -n "$val" ] && export EXA_API_KEY="$val"
+	# Longcat
+	val=$(_sops_val longcat api_key)
+	[ -n "$val" ] && export LONGCAT_API_KEY="$val"
 
-    # Ollama Cloud
-    val=$(_sops_val ollama_cloud api_key)
-    [ -n "$val" ] && export OLLAMA_CLOUD_API_KEY="$val"
+	# Hetzner
+	val=$(_sops_val hetzner api_token)
+	[ -n "$val" ] && export HETZNER_API_TOKEN="$val"
 
-    # LLM Gateway bearer token (aichat)
-    val=$(_sops_val llm_gateway bearer_key)
-    [ -n "$val" ] && export LLM_GATEWAY_BEARER_KEY="$val"
+	# GOG Galaxy
+	val=$(_sops_val gog keyring_password)
+	[ -n "$val" ] && export GOG_KEYRING_PASSWORD="$val"
 
-    unset -f _sops_val
+	# Exa (Web Search)
+	val=$(_sops_val exa api_key)
+	[ -n "$val" ] && export EXA_API_KEY="$val"
+
+	# Ollama Cloud
+	val=$(_sops_val ollama_cloud api_key)
+	[ -n "$val" ] && export OLLAMA_CLOUD_API_KEY="$val"
+
+	# LLM Gateway bearer token (aichat / direct API clients)
+	val=$(_sops_val llm_gateway bearer_key)
+	[ -n "$val" ] && export LLM_GATEWAY_BEARER_KEY="$val"
+
+	unset -f _sops_val
 }
 
 alias load-ai-keys='_load_sops_secrets'
 
-# Activate direnv for ALL shells (interactive + non-interactive)
-# Non-interactive shells (Claude Code, Cursor, codex, kimi, CI) don't trigger
-# PROMPT_COMMAND, so we must explicitly export the environment.
-if command -v direnv > /dev/null 2>&1; then
-  if [[ $- == *i* ]]; then
-    # Interactive: hook into prompt cycle (standard direnv pattern)
-    eval "$(direnv hook bash)"
-    # Make `direnv allow` immediately reload without needing an extra Enter
-    direnv() {
-      command direnv "$@"
-      if [[ "$1" == "allow" ]]; then
-        eval "$(command direnv export bash)"
-      fi
-    }
-  else
-    # Non-interactive: PROMPT_COMMAND doesn't fire, so direnv hook is useless.
-    # Unset direnv tracking so it re-exports the full environment (parent's
-    # DIRENV_DIFF makes direnv think env is current, but .bashrc reset PATH).
-    # nix-direnv caches nix devshells, so this is fast (~50ms).
-    unset DIRENV_DIFF DIRENV_WATCHES
-    eval "$(direnv export bash 2>/dev/null)"
-  fi
+# ── Non-interactive direnv export ────────────────────────────────────────────
+# programs.direnv sets up PROMPT_COMMAND hooks, which only fire in interactive
+# shells. Non-interactive shells (Claude Code, Cursor, CI) must call
+# `direnv export` explicitly to inherit the project environment.
+# DIRENV_DIFF/DIRENV_WATCHES are unset first so direnv re-exports everything
+# (parent may have set them; .bashrc reset PATH so they'd be stale).
+if command -v direnv >/dev/null 2>&1 && [[ $- != *i* ]]; then
+	unset DIRENV_DIFF DIRENV_WATCHES
+	eval "$(direnv export bash 2>/dev/null)"
 fi
 
-# Interactive shell setup (only for interactive shells)
-if [[ $- == *i* ]]; then
-  # Change to home directory before starship to avoid WSL timeout
-  cd ~
-
-  # Starship prompt.
-  # Prefer a stable user-local shim over transient profile paths so prompt redraws
-  # survive repo-local PATH rewrites (for example direnv + Nix shells).
-  _starship_bin=""
-  if [ -x "$HOME/.local/bin/starship" ]; then
-    _starship_bin="$HOME/.local/bin/starship"
-  elif command -v starship > /dev/null 2>&1; then
-    _starship_bin="$(command -v starship)"
-  fi
-
-  if [ -n "$_starship_bin" ]; then
-    eval "$("$_starship_bin" init bash)"
-    # If an older shell session still injected a removed nix-profile starship path
-    # into the prompt machinery, refresh it immediately with the stable binary.
-    if [[ "${PROMPT_COMMAND:-}" == *".nix-profile/bin/starship"* ]] && [ ! -x "$HOME/.nix-profile/bin/starship" ]; then
-      eval "$("$_starship_bin" init bash)"
-    fi
-  else
-    parse_git_branch() {
-      git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
-    }
-    PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[33m\]$(parse_git_branch)\[\033[00m\]\$ '
-  fi
-  unset _starship_bin
+# ── Third-party completions ───────────────────────────────────────────────────
+# OpenClaw CLI completions (not packaged in nixpkgs; installed separately).
+if [ -f "$HOME/.openclaw/completions/openclaw.bash" ]; then
+	source "$HOME/.openclaw/completions/openclaw.bash"
 fi
 
-# OpenClaw Completion
-source "/home/mhugo/.openclaw/completions/openclaw.bash"
-# OpenClaw Completion
-source "/home/mhugo/.openclaw/completions/openclaw.bash"
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
-
-case ":$PATH:" in
-  *":$HOME/.bun/bin:"*) ;;
-  *) export PATH="$HOME/.bun/bin:$PATH" ;;
-esac
+# ── Homebrew (Linux Homebrew, present on some machines) ───────────────────────
+if [ -x "/home/linuxbrew/.linuxbrew/bin/brew" ]; then
+	eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+fi

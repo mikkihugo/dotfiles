@@ -134,6 +134,8 @@ in {
       RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
       # bat picks up its config from BAT_CONFIG_PATH (Nord theme, line numbers).
       BAT_CONFIG_PATH = "$HOME/.config/bat/config";
+      # Letta Code CLI — connects to local Docker server on port 8283.
+      LETTA_BASE_URL = "http://127.0.0.1:8283";
     };
 
     # ── Config file links ──────────────────────────────────────────────────
@@ -289,14 +291,12 @@ in {
         export DOTFILES_ROOT="${dotfilesRoot}"
         export HM_MANAGED=1
 
-        # Load AI key helpers and export secrets for CLI tools that expect
-        # provider credentials in the shell environment at startup.
+        # Activate mise, load SOPS secrets, handle non-interactive direnv,
+        # and set up third-party completions. See shell/bash/bashrc for details.
         [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"
         type _load_sops_secrets >/dev/null 2>&1 && _load_sops_secrets >/dev/null 2>&1 || true
 
-        # Letta Code CLI environment (connects to local Docker server on port 8283).
-        export LETTA_BASE_URL="http://127.0.0.1:8283"
-        # Load API key from file if present (for authenticated servers).
+        # Letta API key from file (LETTA_BASE_URL is in sessionVariables).
         if [ -f "$HOME/.letta/api_key" ]; then
           export LETTA_API_KEY="$(cat "$HOME/.letta/api_key")"
         fi
@@ -312,12 +312,13 @@ in {
         export DOTFILES_ROOT="${dotfilesRoot}"
         export HM_MANAGED=1
 
+        # Activate mise, load SOPS secrets, handle non-interactive direnv,
+        # and set up third-party completions. shell/bash/bashrc uses only
+        # POSIX-compatible syntax so it works correctly in zsh.
         [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"
         type _load_sops_secrets >/dev/null 2>&1 && _load_sops_secrets >/dev/null 2>&1 || true
 
-        # Letta Code CLI environment (connects to local Docker server on port 8283).
-        export LETTA_BASE_URL="http://127.0.0.1:8283"
-        # Load API key from file if present (for authenticated servers).
+        # Letta API key from file (LETTA_BASE_URL is in sessionVariables).
         if [ -f "$HOME/.letta/api_key" ]; then
           export LETTA_API_KEY="$(cat "$HOME/.letta/api_key")"
         fi
@@ -351,6 +352,7 @@ in {
         };
         merge.conflictstyle = "diff3"; # shows base in conflicts — clearer resolution
         diff.colorMoved = "default";
+        diff.sopsdiffer.textconv = "sops -d";
         alias = {
           s = "status -sb";
           a = "add";

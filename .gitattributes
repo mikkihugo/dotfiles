@@ -14,3 +14,7 @@
 
 # Consider compiled binary files as binary
 *.bin binary
+
+# SOPS-encrypted files — show decrypted diff in git diff
+secrets/*.yaml diff=sopsdiffer
+secrets/*.json diff=sopsdiffer

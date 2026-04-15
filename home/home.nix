@@ -211,6 +211,7 @@ in {
       shfmt # formatter for shell scripts
 
       # Nix tooling — meta-tools for working with the Nix ecosystem.
+      nixd # Nix language server (autocomplete, diagnostics in editors)
       alejandra # opinionated Nix formatter (used in pre-commit)
       statix # Nix linter — catches anti-patterns (used in pre-commit)
       deadnix # finds unused Nix expressions (dead code)

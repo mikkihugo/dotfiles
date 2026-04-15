@@ -1,21 +1,18 @@
 # flake.nix — dotfiles entry point
 #
 # Purpose:
-#   Single source of truth for the entire user environment. Two outputs:
+#   Single source of truth for the entire user environment. Profiles:
 #
-#   1. homeConfigurations."mikki-bunker"  — the Home Manager profile applied
-#      by `hms` on this machine.
-#      Wires home/home.nix (packages, shell, git, tools) and sops-nix (secret
-#      decryption hooks available for future use).
+#   homeConfigurations."mikki-bunker"  — x86_64 WSL2 desktop (GPU worker, CUDA)
+#   homeConfigurations."mikki-laptop"  — aarch64 laptop (no GPU, no CUDA)
+#   homeConfigurations."mhugo"         — username alias, resolves to current host
 #
-#   2. devShells.default  — a lightweight shell for dotfiles *maintenance*
-#      (editing secrets, running alejandra/statix). Not the daily shell;
-#      home-manager provides that.
+#   devShells.default  — lightweight shell for dotfiles maintenance.
 #
-# System is hardcoded to x86_64-linux — mikki-bunker is WSL2 on x86_64.
-# No --impure flag needed.
+# Requires --impure because builtins.currentSystem reads host arch at eval time.
+# The `hms` alias already passes --impure.
 {
-  description = "Mikki-Bunker dotfiles — home-manager + SOPS";
+  description = "mhugo dotfiles — home-manager + SOPS (multi-arch)";
 
   inputs = {
     # nixos-unstable: rolling channel with the newest packages.
@@ -56,29 +53,37 @@
     flake-utils,
     ace-coder,
   }: let
-    # Hardcoded to x86_64-linux (mikki-bunker is WSL2 on x86_64).
-    # No --impure needed — builtins.currentSystem removed.
-    system = "x86_64-linux";
+    # builtins.currentSystem reads host arch at eval time — requires --impure.
+    # The `hms` alias already passes --impure.
+    system = builtins.currentSystem;
     pkgs = import nixpkgs {
       inherit system;
       config.allowUnfree = true;
     };
-    # Single definition reused for both config-name and username-based lookups.
-    homeConfig = home-manager.lib.homeManagerConfiguration {
-      inherit pkgs;
-      # Pass sops-nix so home.nix can use sops.secrets.* if needed in future.
-      extraSpecialArgs = {
-        inherit sops-nix ace-coder;
+    specialArgs = {inherit sops-nix ace-coder;};
+
+    # Single home.nix works on all arches — GPU service is gated by lib.optionals.
+    # targetSystem is passed as specialArgs so imports can branch without
+    # referencing pkgs (which would cause infinite recursion in imports).
+    mkHome = sys:
+      home-manager.lib.homeManagerConfiguration {
+        pkgs = import nixpkgs {
+          system = sys;
+          config.allowUnfree = true;
+        };
+        extraSpecialArgs = specialArgs // {targetSystem = sys;};
+        modules = [./home/home.nix];
       };
-      modules = [./home/home.nix];
-    };
   in
     {
-      # `home-manager switch --flake .#mikki-bunker --impure`
-      homeConfigurations."mikki-bunker" = homeConfig;
-      # Username alias: home-manager auto-detects by $USER when no #name is given,
-      # so `home-manager switch --flake ~/.config/home-manager --impure` works.
-      homeConfigurations."mhugo" = homeConfig;
+      homeConfigurations = {
+        # mikki-bunker: x86_64 WSL2 desktop (GPU worker enabled via lib.optionals).
+        "mikki-bunker" = mkHome "x86_64-linux";
+        # mikki-laptop: aarch64 portable machine (GPU worker skipped automatically).
+        "mikki-laptop" = mkHome "aarch64-linux";
+        # Username alias — resolves to current host arch via builtins.currentSystem.
+        "mhugo" = mkHome system;
+      };
     }
     // flake-utils.lib.eachDefaultSystem (sys: let
       maintenance-pkgs = import nixpkgs {

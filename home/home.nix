@@ -15,13 +15,18 @@
   config,
   pkgs,
   lib,
+  targetSystem ? pkgs.stdenv.hostPlatform.system,
   ...
 }: let
   dotfilesRoot = "$HOME/.dotfiles";
 in {
-  imports = [
-    ../services/ace-embedding-worker
-  ];
+  imports =
+    # GPU/CUDA worker — only on x86_64 (mikki-bunker WSL2 desktop).
+    # Pass targetSystem via extraSpecialArgs to avoid infinite recursion
+    # (pkgs.stdenv.hostPlatform.system cannot be used in imports).
+    lib.optionals (targetSystem == "x86_64-linux") [
+      ../services/ace-embedding-worker
+    ];
 
   home = {
     # ── Conflict pre-removal ──────────────────────────────────────────────

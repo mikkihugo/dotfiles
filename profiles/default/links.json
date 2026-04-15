@@ -1,9 +1,5 @@
 {
   "links": {
-    "~/.bashrc": "shell/bash/bashrc",
-    "~/.bash_profile": "shell/bash/profile",
-    "~/.zshrc": "shell/zsh/zshrc",
-    "~/.zprofile": "shell/zsh/profile",
     "~/.config/starship.toml": "config/starship.toml",
     "~/.config/zellij/config.kdl": "config/zellij/config.kdl",
     "~/.config/zellij/layouts": "config/zellij/layouts",

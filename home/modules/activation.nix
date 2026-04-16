@@ -24,6 +24,7 @@
     renderMcpConfigs = lib.hm.dag.entryAfter ["installPackages"] ''
       ACE_REPO="$HOME/code/ace-coder"
       if [ -f "$ACE_REPO/scripts/render_repo_mcp_configs.sh" ]; then
+        PATH="${pkgs.sops}/bin:${pkgs.age}/bin:$PATH" \
         bash "$ACE_REPO/scripts/render_repo_mcp_configs.sh" || \
           echo "WARNING: render_repo_mcp_configs.sh failed (MCP configs may be stale)" >&2
       fi

@@ -25,6 +25,9 @@
     if [ -f "$HOME/.letta/api_key" ]; then
       export LETTA_API_KEY="$(cat "$HOME/.letta/api_key")"
     fi
+
+    # openclaw gateway password — rendered from SOPS by activation hook.
+    [ -f "$HOME/.config/openclaw/env" ] && set -a && source "$HOME/.config/openclaw/env" && set +a
   '';
 in {
   home.shellAliases = {

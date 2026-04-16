@@ -46,7 +46,7 @@
       ExecStart = "${pkgs.nodejs_24}/bin/node ${config.home.homeDirectory}/.npm-global/lib/node_modules/openclaw/dist/index.js node run --host ai.hugo.dk --port 443 --tls --display-name Mikki-WSL";
       EnvironmentFile = "-${config.home.homeDirectory}/.config/openclaw/env";
       Restart = "always"; # openclaw exits 0 on auth failure — restart regardless
-      RestartSec = "5s";
+      RestartSec = "30s"; # back off while awaiting pairing approval on gateway
     };
     Install.WantedBy = ["default.target"];
   };

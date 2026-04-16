@@ -21,7 +21,7 @@
     # Render MCP client configs (~/.gemini/settings.json, .mcp.json, .cursor/mcp.json)
     # from SOPS-backed secrets so Gemini/Claude/Cursor always have the current ACE
     # MCP token without a manual `install_or_repair_mcp_clients.sh`.
-    renderMcpConfigs = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    renderMcpConfigs = lib.hm.dag.entryAfter ["installPackages"] ''
       ACE_REPO="$HOME/code/ace-coder"
       if [ -f "$ACE_REPO/scripts/render_repo_mcp_configs.sh" ]; then
         bash "$ACE_REPO/scripts/render_repo_mcp_configs.sh" || \
@@ -35,6 +35,7 @@
     installOpenclaw = lib.hm.dag.entryAfter ["writeBoundary"] ''
       if ! command -v openclaw >/dev/null 2>&1; then
         echo "Installing openclaw via npm..."
+        PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH" \
         ${pkgs.nodejs_24}/bin/npm install -g \
           --prefix "$HOME/.npm-global" \
           --no-fund --no-audit \

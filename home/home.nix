@@ -16,11 +16,13 @@
 {
   pkgs,
   lib,
+  sops-nix,
   targetSystem ? pkgs.stdenv.hostPlatform.system,
   ...
 }: {
   imports =
     [
+      sops-nix.homeManagerModules.sops
       ./modules/activation.nix
       ./modules/packages.nix
       ./modules/shell.nix

@@ -1,7 +1,7 @@
 # home/modules/git.nix — version control configuration
 #
 # Covers: git (identity, delta pager, aliases), jujutsu, GitHub CLI.
-{_}: {
+{lib, ...}: {
   programs = {
     # git: canonical identity + delta diff pager + quality-of-life aliases.
     # delta replaces the default diff output with syntax-highlighted views.

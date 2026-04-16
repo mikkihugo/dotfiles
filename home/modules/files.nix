@@ -3,7 +3,7 @@
 # Files that tools expect at specific $HOME paths, kept in version control
 # and updated atomically on every `hms`. force=true overwrites any manually
 # edited copy so the repo stays the source of truth.
-{_}: {
+{lib, ...}: {
   home.file = {
     ".config/ripgrep/config" = {
       source = ../../config/ripgreprc;

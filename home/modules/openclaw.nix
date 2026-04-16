@@ -21,26 +21,24 @@
     age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
     secrets.openclaw_gateway_password = {
       key = "openclaw/gateway_password";
+      mode = "0600";
     };
-    templates."openclaw/env".content = ''
-      OPENCLAW_GATEWAY_PASSWORD=${config.sops.placeholder.openclaw_gateway_password}
-    '';
   };
 
   # Persistent node host — connects to the ai.hugo.dk gateway.
   # This is not a local UI service. The browser UI lives on the gateway,
   # and the gateway can delegate work to this host node.
-  # EnvironmentFile injects the gateway password at runtime; the `-` prefix
-  # makes it optional so hms succeeds even before the SOPS key is added.
+  # Wrapper script sources password from sops decrypted file.
   systemd.user.services.openclaw-node = {
     Unit = {
       Description = "OpenClaw Node Host";
-      After = ["network-online.target"];
+      After = ["sops-nix.service" "network-online.target"];
       Wants = ["network-online.target"];
+      Requires = ["sops-nix.service"];
     };
     Service = {
-      ExecStart = "${pkgs.nodejs_24}/bin/node ${config.home.homeDirectory}/.npm-global/lib/node_modules/openclaw/dist/index.js node run --host ai.hugo.dk --port 443 --tls --display-name %H";
-      EnvironmentFile = config.sops.templates."openclaw/env".path;
+      Type = "simple";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'export OPENCLAW_GATEWAY_PASSWORD=$(cat ${config.sops.secrets.openclaw_gateway_password.path}) && exec ${pkgs.nodejs_24}/bin/node ${config.home.homeDirectory}/.npm-global/lib/node_modules/openclaw/dist/index.js node run --host ai.hugo.dk --port 443 --tls --display-name %H'";
       Restart = "always"; # openclaw exits 0 on auth failure — restart regardless
       RestartSec = "30s"; # back off while awaiting pairing approval on gateway
     };

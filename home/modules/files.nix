@@ -31,6 +31,13 @@
       force = true;
     };
 
+    # SSH client config: host aliases for all servers (mail.hugo.dk, aidev, llm-gateway).
+    # hetzner_id_ed25519 is rendered from SOPS by the renderHetznerSshKey activation hook.
+    ".ssh/config" = {
+      source = ../../config/ssh_config;
+      force = true;
+    };
+
     # Nix user config: remote builder (llm-gateway) + substituter (nix-serve).
     # Enables `hms` to substitute CUDA worker derivations from cache instead
     # of recompiling locally.

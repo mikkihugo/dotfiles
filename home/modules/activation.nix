@@ -19,6 +19,29 @@
       rm -f "$HOME/.config/systemd/user/openclaw-node.service"
     '';
 
+    # Extract Hetzner SSH private key from SOPS into ~/.ssh/ so `ssh mail.hugo.dk`
+    # works without a password. chmod 600 so ssh accepts it.
+    renderHetznerSshKey = lib.hm.dag.entryAfter ["installPackages"] ''
+            # sops --extract mangles multiline PEM keys; use python3 yaml to extract cleanly.
+            PATH="${pkgs.sops}/bin:${pkgs.age}/bin:${pkgs.python3}/bin:$PATH" \
+            ${pkgs.python3}/bin/python3 - <<'PY'
+      import subprocess, sys, yaml
+      r = subprocess.run(
+        ["${pkgs.sops}/bin/sops", "--decrypt",
+         "${config.home.homeDirectory}/.dotfiles/secrets/hetzner-ssh.yaml"],
+        capture_output=True, text=True)
+      if r.returncode != 0:
+        print("WARNING: could not decrypt hetzner SSH key from SOPS", file=sys.stderr)
+        sys.exit(0)
+      key = yaml.safe_load(r.stdout)["hetzner"]["ssh"]["private_key"]
+      path = "${config.home.homeDirectory}/.ssh/hetzner_id_ed25519"
+      import os, stat
+      with open(path, "w") as f:
+        f.write(key if key.endswith("\n") else key + "\n")
+      os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
+      PY
+    '';
+
     # Render MCP client configs (~/.gemini/settings.json, .mcp.json, .cursor/mcp.json)
     # from SOPS-backed secrets so Gemini/Claude/Cursor always have the current ACE
     # MCP token without a manual `install_or_repair_mcp_clients.sh`.

@@ -1,0 +1,14 @@
+Host mail.hugo.dk ai.hugo.dk
+    User root
+    IdentityFile ~/.ssh/hetzner_id_ed25519
+    IdentitiesOnly yes
+
+Host aidev
+    HostName aidev.centralcloud.com
+    User root
+    IdentityFile ~/.ssh/id_ed25519
+
+Host llm-gateway
+    HostName llm-gateway.centralcloud.com
+    User root
+    IdentityFile ~/.ssh/id_ed25519

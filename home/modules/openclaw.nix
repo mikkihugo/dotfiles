@@ -43,7 +43,7 @@
       Wants = ["network-online.target"];
     };
     Service = {
-      ExecStart = "${pkgs.nodejs_24}/bin/node ${config.home.homeDirectory}/.npm-global/lib/node_modules/openclaw/dist/index.js node run --host ai.hugo.dk --port 443 --tls --display-name Mikki-WSL";
+      ExecStart = "${pkgs.nodejs_24}/bin/node ${config.home.homeDirectory}/.npm-global/lib/node_modules/openclaw/dist/index.js node run --host ai.hugo.dk --port 443 --tls --display-name Laptop";
       EnvironmentFile = "-${config.home.homeDirectory}/.config/openclaw/env";
       Restart = "always"; # openclaw exits 0 on auth failure — restart regardless
       RestartSec = "30s"; # back off while awaiting pairing approval on gateway

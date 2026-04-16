@@ -41,7 +41,7 @@ in {
     secrets-tui = "secret-tui";
 
     # Register this machine as an openclaw node (run once after hms on a new machine).
-    openclaw-setup = ''openclaw node install --host ai.hugo.dk --port 443 --tls --display-name "$(hostname -s)" && openclaw node restart'';
+    openclaw-setup = "openclaw node install --host ai.hugo.dk --port 443 --tls --display-name Laptop && openclaw node restart";
 
     # ls replacements via eza. NOT aliasing grep→rg or find→fd — different
     # argument syntax would break scripts that rely on them.

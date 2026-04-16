@@ -42,7 +42,7 @@
     # stateVersion pins the home-manager release that manages migration.
     # Do NOT change this after first activation — it controls format upgrades,
     # not the software versions (those come from nixpkgs).
-    stateVersion = "24.11";
+    stateVersion = "25.11";
 
     # PATH additions — prepended before the system PATH in every session.
     sessionPath = [

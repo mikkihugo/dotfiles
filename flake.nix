@@ -15,15 +15,15 @@
   description = "mhugo dotfiles — home-manager + SOPS (multi-arch)";
 
   inputs = {
-    # nixos-unstable: rolling channel with the newest packages.
+    # nixos-25.11: latest stable channel — predictable, well-tested packages.
     # Pin here so every `nix develop` / `home-manager switch` uses the same
     # nixpkgs snapshot across all machines.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
 
     # home-manager: declarative user-space config (dotfiles, packages, shell).
-    # Follows our nixpkgs pin so there's exactly one nixpkgs in the closure.
+    # release-25.11 matches nixpkgs so there's exactly one nixpkgs in the closure.
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

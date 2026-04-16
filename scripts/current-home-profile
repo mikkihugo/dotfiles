@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+host="$(hostnamectl --static 2>/dev/null || hostname -s 2>/dev/null || true)"
+
+case "$host" in
+Mikki-Bunker | mikki-bunker)
+  echo "mikki-bunker"
+  ;;
+Mikki-Laptop | mikki-laptop)
+  echo "mikki-laptop"
+  ;;
+*)
+  echo "mhugo"
+  ;;
+esac

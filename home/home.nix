@@ -29,6 +29,7 @@
       ./modules/git.nix
       ./modules/files.nix
       ./modules/openclaw.nix
+      ./modules/dotfiles-auto-update.nix
     ]
     # GPU/CUDA embedding worker — x86_64 WSL2 desktop only.
     # targetSystem comes from extraSpecialArgs (not pkgs.stdenv) to avoid

@@ -8,7 +8,9 @@
   pkgs,
   lib,
   ...
-}: {
+}: let
+  pythonWithYaml = pkgs.python3.withPackages (ps: [ps.pyyaml]);
+in {
   home.activation = {
     # programs.gh and programs.jujutsu own these files as nix-store symlinks.
     # If they exist as plain files (written by `gh auth` or `jj init`) home-manager
@@ -23,8 +25,8 @@
     # works without a password. chmod 600 so ssh accepts it.
     renderHetznerSshKey = lib.hm.dag.entryAfter ["installPackages"] ''
             # sops --extract mangles multiline PEM keys; use python3 yaml to extract cleanly.
-            PATH="${pkgs.sops}/bin:${pkgs.age}/bin:${pkgs.python3}/bin:$PATH" \
-            ${pkgs.python3}/bin/python3 - <<'PY'
+            PATH="${pkgs.sops}/bin:${pkgs.age}/bin:${pythonWithYaml}/bin:$PATH" \
+            ${pythonWithYaml}/bin/python3 - <<'PY'
       import subprocess, sys, yaml
       r = subprocess.run(
         ["${pkgs.sops}/bin/sops", "--decrypt",

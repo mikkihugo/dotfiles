@@ -31,10 +31,8 @@
   '';
 in {
   home.shellAliases = {
-    # home-manager: apply the current flake config on any arch.
-    # `mhugo` profile uses builtins.currentSystem — works on both machines.
-    # --impure is required because flake.nix reads builtins.currentSystem.
-    hms = "home-manager switch --flake ~/.dotfiles#mhugo --impure";
+    # home-manager: resolve the explicit host profile from the current hostname.
+    hms = "home-manager switch --flake ~/.dotfiles#$(~/.dotfiles/scripts/current-home-profile) --impure";
 
     # Promote the currently committed ACE revision into the dotfiles flake input.
     promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";

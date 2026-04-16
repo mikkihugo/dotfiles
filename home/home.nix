@@ -26,6 +26,7 @@
       ./modules/shell.nix
       ./modules/git.nix
       ./modules/files.nix
+      ./modules/openclaw.nix
     ]
     # GPU/CUDA embedding worker — x86_64 WSL2 desktop only.
     # targetSystem comes from extraSpecialArgs (not pkgs.stdenv) to avoid

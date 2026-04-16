@@ -16,6 +16,7 @@
     removeConflictingConfigs = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
       rm -f "$HOME/.config/gh/config.yml"
       rm -f "$HOME/.config/jj/config.toml"
+      rm -f "$HOME/.config/systemd/user/openclaw-node.service"
     '';
 
     # Render MCP client configs (~/.gemini/settings.json, .mcp.json, .cursor/mcp.json)
@@ -24,7 +25,7 @@
     renderMcpConfigs = lib.hm.dag.entryAfter ["installPackages"] ''
       ACE_REPO="$HOME/code/ace-coder"
       if [ -f "$ACE_REPO/scripts/render_repo_mcp_configs.sh" ]; then
-        PATH="${pkgs.sops}/bin:${pkgs.age}/bin:$PATH" \
+        PATH="${pkgs.sops}/bin:${pkgs.age}/bin:${pkgs.python3}/bin:$PATH" \
         bash "$ACE_REPO/scripts/render_repo_mcp_configs.sh" || \
           echo "WARNING: render_repo_mcp_configs.sh failed (MCP configs may be stale)" >&2
       fi
@@ -34,7 +35,7 @@
     # Nix-managed Node.js. Skips if already present so re-runs are fast.
     # After first install run `openclaw-setup` to register this machine as a node.
     installOpenclaw = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      if ! command -v openclaw >/dev/null 2>&1; then
+      if [ ! -f "$HOME/.npm-global/bin/openclaw" ]; then
         echo "Installing openclaw via npm..."
         PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH" \
         ${pkgs.nodejs_24}/bin/npm install -g \

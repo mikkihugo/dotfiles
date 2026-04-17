@@ -45,40 +45,5 @@
       source = ../../config/nix/nix.conf;
       force = true;
     };
-
-    # ace-coder repo lefthook config — Nix owns this so `hms` repairs the
-    # symlink automatically after nix-collect-garbage breaks it.
-    "code/ace-coder/lefthook.yml" = {
-      force = true;
-      text = ''
-        pre-commit:
-          parallel: true
-          commands:
-            nix-format:
-              glob: "*.nix"
-              run: alejandra --check {staged_files}
-
-            nix-lint:
-              glob: "*.nix"
-              run: statix check --config statix.toml {staged_files}
-
-            shellcheck:
-              glob: "*.sh"
-              run: shellcheck --external-sources {staged_files}
-
-            shfmt:
-              glob: "*.sh"
-              run: shfmt -d {staged_files}
-
-            typos:
-              exclude: '\.(gz|bin|wasm|lock|pyc)$|^secrets/'
-              run: typos --force-exclude {staged_files}
-
-        pre-push:
-          commands:
-            quality:
-              run: make quality
-      '';
-    };
   };
 }

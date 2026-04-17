@@ -63,24 +63,29 @@
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.
     # targetSystem is passed as specialArgs so imports can branch without
     # referencing pkgs (which would cause infinite recursion in imports).
-    mkHome = sys:
+    mkHome = sys: hostname:
       home-manager.lib.homeManagerConfiguration {
         pkgs = import nixpkgs {
           system = sys;
           config.allowUnfree = true;
         };
-        extraSpecialArgs = specialArgs // {targetSystem = sys;};
+        extraSpecialArgs =
+          specialArgs
+          // {
+            targetSystem = sys;
+            inherit hostname;
+          };
         modules = [./home/home.nix];
       };
   in
     {
       homeConfigurations = {
-        # mikki-bunker: x86_64 WSL2 desktop (GPU worker enabled via lib.optionals).
-        "mikki-bunker" = mkHome "x86_64-linux";
+        # mikki-bunker: x86_64 WSL2 desktop (GPU + embedding worker enabled).
+        "mikki-bunker" = mkHome "x86_64-linux" "mikki-bunker";
         # mikki-laptop: aarch64 portable machine (GPU worker skipped automatically).
-        "mikki-laptop" = mkHome "aarch64-linux";
+        "mikki-laptop" = mkHome "aarch64-linux" "mikki-laptop";
         # Username alias — resolves to current host arch via builtins.currentSystem.
-        "mhugo" = mkHome system;
+        "mhugo" = mkHome system (builtins.getEnv "HOSTNAME");
       };
     }
     // flake-utils.lib.eachDefaultSystem (sys: let

@@ -18,6 +18,7 @@
   lib,
   sops-nix,
   targetSystem ? pkgs.stdenv.hostPlatform.system,
+  hostname ? "",
   ...
 }: {
   imports =
@@ -31,10 +32,10 @@
       ./modules/openclaw.nix
       ./modules/dotfiles-auto-update.nix
     ]
-    # GPU/CUDA embedding worker — x86_64 WSL2 desktop only.
+    # GPU/CUDA workers — Bunker only (x86_64 + explicit hostname guard).
     # targetSystem comes from extraSpecialArgs (not pkgs.stdenv) to avoid
     # infinite recursion when evaluating the imports list.
-    ++ lib.optionals (targetSystem == "x86_64-linux") [
+    ++ lib.optionals (targetSystem == "x86_64-linux" && hostname == "mikki-bunker") [
       ../services/ace-embedding-worker
     ];
 

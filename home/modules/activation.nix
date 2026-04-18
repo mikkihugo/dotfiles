@@ -81,14 +81,20 @@ in {
     # openclaw is an npm package not in nixpkgs — always update to latest on hms.
     # After first install run `openclaw-setup` to register this machine as a node.
     installOpenclaw = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Updating openclaw to latest..."
-      PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH" \
-      ${pkgs.nodejs_24}/bin/npm install -g \
-        --prefix "$HOME/.npm-global" \
-        --no-fund --no-audit \
-        openclaw@latest && \
-        echo "openclaw updated — run: openclaw-setup if first time" || \
-        echo "WARNING: openclaw update failed" >&2
+      PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH"
+      _installed=$(${pkgs.nodejs_24}/bin/npm list -g --prefix "$HOME/.npm-global" openclaw 2>/dev/null | grep openclaw | awk -F@ '{print $2}' | tr -d ' ')
+      _latest=$(${pkgs.nodejs_24}/bin/npm view openclaw version 2>/dev/null)
+      if [ "$_installed" = "$_latest" ] && [ -n "$_installed" ]; then
+        echo "openclaw $_installed already at latest, skipping"
+      else
+        echo "Updating openclaw $_installed -> $_latest..."
+        ${pkgs.nodejs_24}/bin/npm install -g \
+          --prefix "$HOME/.npm-global" \
+          --no-fund --no-audit \
+          openclaw@latest && \
+          echo "openclaw updated to $_latest — run: openclaw-setup if first time" || \
+          echo "WARNING: openclaw update failed" >&2
+      fi
     '';
 
     # Extract pre-built secret-tui binary from the git-tracked gzip on every hms.

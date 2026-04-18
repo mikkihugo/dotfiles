@@ -2,7 +2,11 @@
 #
 # Uses the remote-gpu-worker Home Manager module from ace-coder.
 # One binary, one WSS connection. Model config comes from the DB.
-{ace-coder, pkgs, ...}: let
+{
+  ace-coder,
+  pkgs,
+  ...
+}: let
   ace-pkgs = ace-coder.packages.${pkgs.stdenv.hostPlatform.system};
 in {
   imports = [
@@ -14,7 +18,7 @@ in {
     enable = true;
     package = ace-pkgs.remote-worker-linux-x86_64-cpu-static;
     gpuName = "NVIDIA GeForce RTX 4080";
-    managedWorkerKind = "inference";
+    managedWorkerKind = "combined";
     # The worker bundle ships cudart + cublas but not nvrtc or curand.
     # The loader appends the parent LD_LIBRARY_PATH, so we inject cudatoolkit
     # here to cover the missing libs on WSL2 (libnvrtc.so.12, libcurand.so.10).

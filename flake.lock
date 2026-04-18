@@ -3,15 +3,14 @@
     "ace-coder": {
       "inputs": {
         "crane": "crane",
-        "lefthook": "lefthook",
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1774967110,
-        "narHash": "sha256-CcODsrEKeRXMcjc9pmgnBlczKtQnBJEAjh+MMk8nA4U=",
-        "ref": "main",
-        "rev": "1d1adf2976822bd8b36962a3b35dfc25c1a7bd34",
-        "revCount": 7424,
+        "lastModified": 1776548238,
+        "narHash": "sha256-B/byAy09bR62zDw1s5SAah+029gYQ3SncNnG7Q7seFc=",
+        "ref": "master",
+        "rev": "33c5f13e16aea7caa5e9e5485b7d56767282436e",
+        "revCount": 7954,
         "type": "git",
         "url": "file:///home/mhugo/code/ace-coder"
       },
@@ -74,39 +73,18 @@
         "type": "github"
       }
     },
-    "lefthook": {
-      "inputs": {
-        "nixpkgs": [
-          "ace-coder",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1770377107,
-        "narHash": "sha256-/QEXSDeAo5RK81PtM0yDhmt9k3v1/pse/jsrT1yXNhU=",
-        "owner": "sudosubin",
-        "repo": "lefthook.nix",
-        "rev": "9cdaf7ce95ae77cbabc5b556bdd35d3cf0b849f5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "sudosubin",
-        "repo": "lefthook.nix",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1771903837,
-        "narHash": "sha256-sdaqdnsQCv3iifzxwB22tUwN/fSHoN7j2myFW5EIkGk=",
+        "lastModified": 1774709303,
+        "narHash": "sha256-D3Q07BbIA2KnTcSXIqqu9P586uWxN74zNoCH3h2ESHg=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "e764fc9a405871f1f6ca3d1394fb422e0a0c3951",
+        "rev": "8110df5ad7abf5d4c0f6fb0f8f978390e77f9685",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-25.11",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }

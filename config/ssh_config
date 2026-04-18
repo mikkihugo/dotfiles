@@ -15,6 +15,13 @@ Host portal-automation
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
+Host storagebox
+    HostName u579183.your-storagebox.de
+    User u579183
+    Port 23
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
 Host wf.portal.centralcloud.com
     User root
     IdentityFile ~/.ssh/wf_portal_id_ed25519

@@ -3,6 +3,23 @@ Host mail.hugo.dk ai.hugo.dk
     IdentityFile ~/.ssh/hetzner_id_ed25519
     IdentitiesOnly yes
 
+Host mon.portal.centralcloud.com mail.sendramp.com
+    HostName %h
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host portal-automation
+    HostName 157.180.79.108
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host wf.portal.centralcloud.com
+    User root
+    IdentityFile ~/.ssh/wf_portal_id_ed25519
+    IdentitiesOnly yes
+
 Host aidev
     HostName aidev.centralcloud.com
     User root

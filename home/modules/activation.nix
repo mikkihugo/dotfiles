@@ -21,6 +21,28 @@ in {
       rm -f "$HOME/.config/systemd/user/openclaw-node.service"
     '';
 
+    # Extract personal-admin SSH key from SOPS into ~/.ssh/ for monitor, portal-automation,
+    # mailcow-openclaw, and the Hetzner storage box.
+    renderPersonalAdminSshKey = lib.hm.dag.entryAfter ["installPackages"] ''
+            PATH="${pkgs.sops}/bin:${pkgs.age}/bin:${pythonWithYaml}/bin:$PATH" \
+            ${pythonWithYaml}/bin/python3 - <<'PY'
+      import subprocess, sys, yaml
+      r = subprocess.run(
+        ["${pkgs.sops}/bin/sops", "--decrypt",
+         "${config.home.homeDirectory}/.dotfiles/secrets/personal-servers-ssh.yaml"],
+        capture_output=True, text=True)
+      if r.returncode != 0:
+        print("WARNING: could not decrypt personal-admin SSH key from SOPS", file=sys.stderr)
+        sys.exit(0)
+      key = yaml.safe_load(r.stdout)["personal_admin"]["ssh"]["private_key"]
+      path = "${config.home.homeDirectory}/.ssh/personal_admin_id_ed25519"
+      import os, stat
+      with open(path, "w") as f:
+        f.write(key if key.endswith("\n") else key + "\n")
+      os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
+      PY
+    '';
+
     # Extract Hetzner SSH private key from SOPS into ~/.ssh/ so `ssh mail.hugo.dk`
     # works without a password. chmod 600 so ssh accepts it.
     renderHetznerSshKey = lib.hm.dag.entryAfter ["installPackages"] ''

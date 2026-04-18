@@ -3,6 +3,7 @@ Host mail.hugo.dk ai.hugo.dk
     IdentityFile ~/.ssh/hetzner_id_ed25519
     IdentitiesOnly yes
 
+# Personal Hetzner servers — public access from outside
 Host mon.portal.centralcloud.com mail.sendramp.com
     HostName %h
     User root
@@ -11,6 +12,25 @@ Host mon.portal.centralcloud.com mail.sendramp.com
 
 Host portal-automation
     HostName 157.180.79.108
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+# Private network aliases — use these for inter-server communication
+Host mon-private
+    HostName 10.250.250.3
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host portal-automation-private
+    HostName 10.250.250.2
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host mailcow-openclaw-private
+    HostName 10.250.250.4
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
@@ -24,7 +44,7 @@ Host storagebox
 
 Host wf.portal.centralcloud.com
     User root
-    IdentityFile ~/.ssh/wf_portal_id_ed25519
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
 Host aidev

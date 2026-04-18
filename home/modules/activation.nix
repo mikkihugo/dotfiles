@@ -56,20 +56,17 @@ in {
       fi
     '';
 
-    # openclaw is an npm package not in nixpkgs — install once via npm using
-    # Nix-managed Node.js. Skips if already present so re-runs are fast.
+    # openclaw is an npm package not in nixpkgs — always update to latest on hms.
     # After first install run `openclaw-setup` to register this machine as a node.
     installOpenclaw = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      if [ ! -f "$HOME/.npm-global/bin/openclaw" ]; then
-        echo "Installing openclaw via npm..."
-        PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH" \
-        ${pkgs.nodejs_24}/bin/npm install -g \
-          --prefix "$HOME/.npm-global" \
-          --no-fund --no-audit \
-          openclaw@latest && \
-          echo "openclaw installed — run: openclaw-setup" || \
-          echo "WARNING: openclaw install failed" >&2
-      fi
+      echo "Updating openclaw to latest..."
+      PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH" \
+      ${pkgs.nodejs_24}/bin/npm install -g \
+        --prefix "$HOME/.npm-global" \
+        --no-fund --no-audit \
+        openclaw@latest && \
+        echo "openclaw updated — run: openclaw-setup if first time" || \
+        echo "WARNING: openclaw update failed" >&2
     '';
 
     # Extract pre-built secret-tui binary from the git-tracked gzip on every hms.

@@ -38,7 +38,7 @@
     };
     Service = {
       Type = "simple";
-      ExecStart = "${pkgs.bash}/bin/bash -c 'export OPENCLAW_GATEWAY_PASSWORD=$(cat ${config.sops.secrets.openclaw_gateway_password.path}) && exec ${pkgs.nodejs_24}/bin/node ${config.home.homeDirectory}/.npm-global/lib/node_modules/openclaw/dist/index.js node run --host ai.hugo.dk --port 443 --tls --display-name %H'";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'export OPENCLAW_GATEWAY_PASSWORD=$(cat ${config.sops.secrets.openclaw_gateway_password.path}) && exec ${pkgs.nodejs_24}/bin/node ${config.home.homeDirectory}/.npm-global/lib/node_modules/openclaw/dist/index.js node run --host ai.hugo.dk --port 18789 --tls --display-name %H'";
       Restart = "always"; # openclaw exits 0 on auth failure — restart regardless
       RestartSec = "30s"; # back off while awaiting pairing approval on gateway
     };

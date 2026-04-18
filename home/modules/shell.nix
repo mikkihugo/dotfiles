@@ -3,11 +3,7 @@
 # Covers: bash, zsh, aliases, direnv, starship prompt, zoxide.
 # The shared `shellInit` string is injected into both bash and zsh so
 # there's a single source of truth for the runtime init sequence.
-{
-  pkgs,
-  lib,
-  ...
-}: let
+_: let
   dotfilesRoot = "$HOME/.dotfiles";
 
   # Injected into both bash initExtra and zsh initContent.

@@ -44,20 +44,16 @@
   };
 
   outputs = {
-    self,
     nixpkgs,
     home-manager,
     sops-nix,
     flake-utils,
     ace-coder,
+    ...
   }: let
     # builtins.currentSystem reads host arch at eval time — requires --impure.
     # The `hms` alias already passes --impure.
     system = builtins.currentSystem;
-    pkgs = import nixpkgs {
-      inherit system;
-      config.allowUnfree = true;
-    };
     specialArgs = {inherit sops-nix ace-coder;};
 
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.

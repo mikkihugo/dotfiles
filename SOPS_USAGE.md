@@ -170,92 +170,48 @@ If you regenerate your age key:
 gh gist edit bc16d0e5315aa78394a4fe7468a79f4e ~/.config/sops/age/keys.txt
 ```
 
-## Claude Code OAuth Token
-
-Your Claude Code OAuth token is now encrypted and auto-loaded!
-
-### Current Setup
-
-The token is stored in:
-- **Encrypted**: `~/.dotfiles/secrets/api-keys.yaml` (encrypted with SOPS)
-- **Fallback**: `~/.claude-max/oauth.json` (unencrypted - can be deleted)
-
-### Environment Variable
-
-On shell startup, `$CLAUDE_CODE_OAUTH_TOKEN` is automatically exported:
-
-```bash
-echo $CLAUDE_CODE_OAUTH_TOKEN
-# sk-ant-oat01-...
-```
-
-### Updating the Token
-
-If you need to update your Claude Code OAuth token:
-
-```bash
-# Method 1: Edit encrypted secrets directly
-sops ~/.dotfiles/secrets/api-keys.yaml
-# Edit the claude_code.oauth_token field
-
-# Method 2: Extract from ~/.claude-max/oauth.json and update
-NEW_TOKEN=$(jq -r '.access_token' ~/.claude-max/oauth.json)
-# Then manually edit with sops as above
-```
-
-### Security Note
-
-Once encrypted in SOPS, you can safely delete the unencrypted version:
-
-```bash
-# Optional: Remove unencrypted OAuth token
-rm ~/.claude-max/oauth.json
-
-# The encrypted version in SOPS will continue to work
-```
-
 ---
 
-## GSD Keys Pattern — process-scoped secrets via wrapper
+## SF Keys Pattern — process-scoped secrets via wrapper
 
-As of 2026-04-15 the `sf-run` coding agent (formerly `gsd`) has its API keys stored under a
-top-level **`gsd:`** section in `secrets/api-keys.yaml`, **separate from** the
-top-level sections loaded by `load-ai-keys`. The distinction matters:
+The `sf` coding agent has its API keys stored under a top-level **`sf:`** section
+in `secrets/api-keys.yaml`, **separate from** the top-level sections loaded by
+`load-ai-keys`. The distinction matters:
 
 | Section | Loaded by | Visible where |
 |---|---|---|
 | `llm_gateway:`, `kimi:`, `openrouter:`, etc. | `load-ai-keys` bashrc alias | Exported into the interactive shell when you run `load-ai-keys` — every child process inherits them |
-| **`gsd:`** | `~/bin/sf-run` wrapper only | Exported into the `sf-run` process env only — nothing else on the system sees them |
+| **`sf:`** | `~/.local/bin/sf` wrapper only | Exported into the `sf` process env only — nothing else on the system sees them |
 
-The wrapper at `~/bin/sf-run` runs at launch:
+The wrapper at `~/.local/bin/sf` runs at launch:
 
 ```bash
 while IFS='=' read -r k v; do
   [ -n "$k" ] && export "$k=$v"
 done < <(
   sops --config ~/.dotfiles/.sops.yaml -d ~/.dotfiles/secrets/api-keys.yaml 2>/dev/null \
-    | yq -r '.gsd // {} | to_entries[] | "\(.key)=\(.value)"' 2>/dev/null
+    | yq -r '.sf // {} | to_entries[] | "\(.key)=\(.value)"' 2>/dev/null
 )
-exec ~/.bun/bin/sf-run "$@"
+exec ~/.npm-global/bin/sf "$@"
 ```
 
-Effect: `sf-run` and its children see the keys, the login shell does not. The
-keys in the `gsd:` section are **completely separate** from the keys in other
+Effect: `sf` and its children see the keys, the login shell does not. The
+keys in the `sf:` section are **completely separate** from the keys in other
 top-level sections — you can (and do) have different OpenRouter, Kimi, and
-OLLAMA keys in each because `gsd:` is sf-run-scoped.
+OLLAMA keys in each because `sf:` is sf-scoped.
 
-### Current `gsd:` section contents
+### Current `sf:` section contents
 
-Flat `KEY: VALUE` map. As of 2026-04-15:
+Flat `KEY: VALUE` map:
 
 ```yaml
-gsd:
+sf:
     XIAOMI_TOKEN_PLAN_AMS_API_KEY: ...  # custom provider in models.json
     MINIMAX_API_KEY: ...
-    OLLAMA_API_KEY: ...                  # NB: pi calls the provider "ollama-cloud" but expects OLLAMA_API_KEY
+    OLLAMA_API_KEY: ...                  # NB: provider is "ollama-cloud", env var is OLLAMA_API_KEY
     OPENCODE_API_KEY: ...                # NB: provider is "opencode-go", env var is OPENCODE_API_KEY (no _GO_)
     MISTRAL_API_KEY: ...
-    TAVILY_API_KEY: ...                  # consumed by gsd's search-the-web tool
+    TAVILY_API_KEY: ...                  # consumed by sf's search-the-web tool
     GEMINI_API_KEY: ...                  # used by provider "google"
     ZAI_API_KEY: ...
     KIMI_API_KEY: ...                    # NB: provider is "kimi-coding", env var is KIMI_API_KEY (no _CODE_)
@@ -275,22 +231,22 @@ Custom providers defined in `models.json` that are NOT in pi's map can use
 any `UPPER_SNAKE_NAME` — just reference the same name in both sops and the
 `models.json` `apiKey` field.
 
-### Adding or rotating a gsd key — interactive (the easy one)
+### Adding or rotating an sf key — interactive (the easy one)
 
 ```bash
 sops --config ~/.dotfiles/.sops.yaml ~/.dotfiles/secrets/api-keys.yaml
 ```
 
-Find the `gsd:` block near the bottom, add or update an entry, save, sops
+Find the `sf:` block near the bottom, add or update an entry, save, sops
 re-encrypts. **The `--config` flag is mandatory** — sops walks up from the
 CWD (not the file path) looking for `.sops.yaml`, so running sops from `~` or
 `/tmp/` without `--config` will fail silently with `config file not found, or
 has no creation rules`. Learned that one the hard way.
 
-Restart `sf-run` (exit TUI and relaunch) — the wrapper re-decrypts at each launch,
+Restart `sf` (exit TUI and relaunch) — the wrapper re-decrypts at each launch,
 so no cache invalidation needed.
 
-### Adding or rotating a gsd key — non-interactive (for scripted migrations)
+### Adding or rotating an sf key — non-interactive (for scripted migrations)
 
 Used by Claude Code sessions doing batch migrations. Decrypt → edit plaintext
 in-place via text or python → re-encrypt → atomic mv:
@@ -319,20 +275,20 @@ The `-s "$NEW" && grep -q sops` sanity check catches a failure mode where
 `sops -e` silently 0-bytes the output file on config errors. Without it, the
 `mv` would wipe the encrypted original with an empty file.
 
-### DO NOT run `/gsd keys add <provider>` inside gsd
+### DO NOT run `/sf keys add <provider>` inside sf
 
-Pi's built-in `/gsd keys add` command writes the key plaintext to
-`~/.gsd/agent/auth.json` AND exports it to `process.env` for the current
+Pi's built-in `/sf keys add` command writes the key plaintext to
+`~/.sf/agent/auth.json` AND exports it to `process.env` for the current
 session. If you run it, you undo the point of the wrapper — plaintext key ends
-up on disk and survives across sessions. Same goes for `/gsd keys rotate`.
+up on disk and survives across sessions. Same goes for `/sf keys rotate`.
 
-**Always rotate via the sops file**, not gsd's built-in key commands.
+**Always rotate via the sops file**, not sf's built-in key commands.
 
 ### OpenRouter-management section (provisioning keys)
 
 Separate top-level section `openrouter-management:` holds the OpenRouter
 provisioning key. Used by scripts that call `POST /api/v1/keys` to create
-scoped child keys — never by inference flows. The `gsd:` section's
+scoped child keys — never by inference flows. The `sf:` section's
 `OPENROUTER_API_KEY` is one such child key, provisioned with `limit: 0` so it
 can only call `:free` models and cannot accrue paid spend.
 
@@ -355,9 +311,9 @@ OpenRouter — but `:free`-suffixed models still work because they cost $0.
 
 ### Related
 
-- `~/bin/gsd` — the wrapper that injects the `gsd:` section into the gsd process
-- `~/.gsd/agent/models.json` — gsd's chat provider definitions, with `apiKey`
+- `~/.local/bin/sf` — the wrapper that injects the `sf:` section into the sf process
+- `~/.sf/agent/models.json` — sf's chat provider definitions, with `apiKey`
   fields referencing the env var names the wrapper exports
-- `~/.gsd/agent/auth.json` — gsd's tool/OAuth credential store; holds the
+- `~/.sf/agent/auth.json` — sf's tool/OAuth credential store; holds the
   `search_provider` preference and `openai-codex` OAuth stub only, no plaintext
   api_keys as of the 2026-04-15 migration

@@ -32,10 +32,3 @@ remote_models = true
 collaboration_modes = true
 js_repl = true
 prevent_idle_sleep = true
-
-[mcp_servers.ace-coder]
-url = "https://aidev.centralcloud.com/mcp"
-startup_timeout_sec = 60
-
-[mcp_servers.ace-coder.http_headers]
-X-ACE-MCP-TOKEN = "ead5845e660e7a086aab61eae46b316400d46a37b77521fe63cb64175bd9b267"

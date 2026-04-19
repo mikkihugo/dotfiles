@@ -82,7 +82,12 @@ in {
     # After first install run `openclaw-setup` to register this machine as a node.
     installOpenclaw = lib.hm.dag.entryAfter ["writeBoundary"] ''
       PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH"
-      _installed=$(${pkgs.nodejs_24}/bin/npm list -g --prefix "$HOME/.npm-global" openclaw 2>/dev/null | grep openclaw | awk -F@ '{print $2}' | tr -d ' ')
+      _installed=$(
+        ${pkgs.nodejs_24}/bin/npm list -g --prefix "$HOME/.npm-global" openclaw 2>/dev/null \
+          | ${pkgs.gnugrep}/bin/grep openclaw \
+          | ${pkgs.gawk}/bin/awk -F@ '{print $2}' \
+          | ${pkgs.coreutils}/bin/tr -d ' '
+      )
       _latest=$(${pkgs.nodejs_24}/bin/npm view openclaw version 2>/dev/null)
       if [ "$_installed" = "$_latest" ] && [ -n "$_installed" ]; then
         echo "openclaw $_installed already at latest, skipping"

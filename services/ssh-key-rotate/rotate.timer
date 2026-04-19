@@ -1,0 +1,11 @@
+[Unit]
+Description=Rotate mhugo SSH key monthly
+
+[Timer]
+# First day of each month at 03:17 local (off the :00/:30 herd)
+OnCalendar=*-*-01 03:17:00
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target

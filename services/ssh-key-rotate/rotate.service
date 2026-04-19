@@ -1,0 +1,15 @@
+[Unit]
+Description=Rotate mhugo SSH key (lldap + SOPS + local)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Inherit user env so sops age key path + ssh-agent work.
+ExecStart=%h/.dotfiles/services/ssh-key-rotate/rotate.sh
+StandardOutput=journal
+StandardError=journal
+# Cap CPU + don't hammer the disk
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=5

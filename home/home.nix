@@ -24,13 +24,16 @@
   imports =
     [
       sops-nix.homeManagerModules.sops
+      ./modules/machine-role.nix
       ./modules/activation.nix
       ./modules/packages.nix
       ./modules/shell.nix
       ./modules/git.nix
       ./modules/files.nix
       ./modules/openclaw.nix
+      ./modules/machine-agent.nix
       ./modules/dotfiles-auto-update.nix
+      ./modules/tailscale.nix
     ]
     # GPU/CUDA workers — Bunker only (x86_64 + explicit hostname guard).
     # targetSystem comes from extraSpecialArgs (not pkgs.stdenv) to avoid

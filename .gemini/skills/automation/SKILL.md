@@ -18,7 +18,7 @@ Always secure n8n webhooks, especially those that trigger sensitive operations.
 - Use Authelia or API keys to protect the n8n instance.
 
 ### 2. Secrets Management
-Use the n8n Credentials system, but ideally pull secrets from a central vault (like OpenBao) where possible.
+Use the n8n Credentials system, but ideally pull secrets from a central vault (like OpenBae) where possible.
 
 ### 3. Monitoring
 - Check the n8n UI for failed executions.

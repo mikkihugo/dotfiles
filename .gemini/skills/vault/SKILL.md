@@ -1,9 +1,9 @@
-# SKILL: OpenBao & Vault Management
+# SKILL: OpenBae & Vault Management
 
-Expert guidance for configuring, managing, and troubleshooting secrets within the OpenBao/Vault ecosystem.
+Expert guidance for configuring, managing, and troubleshooting secrets within the OpenBae/Vault ecosystem.
 
 ## Overview
-OpenBao (an open-source fork of HashiCorp Vault) is a community-driven secrets management system. This skill enables the agent to interact with Vault for secret retrieval, configuration of auth methods (AppRole, OIDC), and lifecycle management of sensitive data.
+OpenBae (an open-source fork of Vault) is a community-driven secrets management system. This skill enables the agent to interact with Vault for secret retrieval, configuration of auth methods (AppRole, OIDC), and lifecycle management of sensitive data.
 
 ## Capabilities
 - **Secret Retrieval**: Fetch K/V secrets from specific paths.
@@ -37,7 +37,7 @@ Use AppRoles for machine-to-machine authentication.
 
 ## Best Practices
 - **Never Log Secrets**: Ensure that `bao` commands that return secrets are either piped directly to their consumer or handled in a way that doesn't leak to logs.
-- **Declarative Audit**: Use declarative configuration for audit devices in OpenBao 2.x.
+- **Declarative Audit**: Use declarative configuration for audit devices in OpenBae 2.x.
 - **Token TTLs**: Set reasonable TTLs for tokens to minimize the window of opportunity for leaked credentials.
 - **Use SOPS for Backup**: Store unseal shares and root tokens in SOPS-encrypted files within the infrastructure repository.
 

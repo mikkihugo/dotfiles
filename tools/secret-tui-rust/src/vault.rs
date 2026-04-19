@@ -1,3 +1,26 @@
+// TODO: migrate this module from the custom vault.hugo.dk protocol to standard
+// OIDC device-code flow against Authelia (login.hugo.dk).
+//
+// Why:
+// - vault.hugo.dk isn't deployed; the endpoint is a placeholder.
+// - Authelia is already the IdP for every other service (lldap-backed, passkeys,
+//   group-gated policies). Using it here consolidates the trust chain.
+//
+// Migration scope:
+// - Replace custom auth with `openidconnect::core::CoreClient` using
+//   `ProviderMetadata::discover(https://login.hugo.dk/.well-known/openid-configuration)`
+// - Use device authorization grant (RFC 8628) so the TUI stays headless-friendly
+// - Gate admin actions (e.g. `secret-tui rotate ssh`) on the `lldap_admin` group
+//   claim in the OIDC ID token
+// - Add matching OIDC client in
+//   clusters/wf-portal/apps/authelia/configmap.yaml (oidc.clients) with
+//   `device_authorization` grant enabled
+// - Delete the vault.hugo.dk DNS placeholder once the migration lands
+//
+// After migration: rename the `Vault` subcommand to `Auth` (or merge into the
+// existing `Auth` command) and this module shrinks to token storage + device
+// naming.
+
 use anyhow::{Context, Result};
 use hex::encode as hex_encode;
 use rand::RngCore;

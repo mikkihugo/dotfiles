@@ -77,10 +77,6 @@ _load_sops_secrets() {
 	[ -n "$val" ] && export OPENAI_GATEWAY_API_KEY="$val"
 	[ -n "$url" ] && export OPENAI_GATEWAY_BASE_URL="$url"
 
-	# Claude Code OAuth token
-	val=$(_sops_val claude_code oauth_token)
-	[ -n "$val" ] && export CLAUDE_CODE_OAUTH_TOKEN="$val"
-
 	# DeepSeek
 	val=$(_sops_val deepseek api_key)
 	[ -n "$val" ] && export DEEPSEEK_API_KEY="$val"

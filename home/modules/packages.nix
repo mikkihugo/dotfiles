@@ -29,8 +29,10 @@
     bun # JavaScript runtime/package manager for local tool builds
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
+    go # build and validate the vault.hugo.dk service and other Go tools
     nodejs_24 # Node.js LTS (also needed by openclaw activation)
     pnpm # fast, disk-efficient Node package manager
+    uv # Python package/runner — provides `uvx` required by the Serena MCP plugin
 
     # Secret management — SOPS/age toolchain for encrypting dotfile secrets.
     # Also in devShell but listed here so they're always available without

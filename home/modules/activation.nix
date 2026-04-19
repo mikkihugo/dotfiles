@@ -81,24 +81,51 @@ in {
     # openclaw is an npm package not in nixpkgs — always update to latest on hms.
     # After first install run `openclaw-setup` to register this machine as a node.
     installOpenclaw = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      if [ "${lib.boolToString config.dotfiles.machine.enableOpenclawNode}" != "true" ]; then
+        echo "openclaw disabled for role ${config.dotfiles.machine.role}, skipping install"
+      else
+        PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH"
+        _installed=$(
+          ${pkgs.nodejs_24}/bin/npm list -g --prefix "$HOME/.npm-global" openclaw 2>/dev/null \
+            | ${pkgs.gnugrep}/bin/grep openclaw \
+            | ${pkgs.gawk}/bin/awk -F@ '{print $NF}' \
+            | ${pkgs.coreutils}/bin/tr -d ' '
+        )
+        _latest=$(${pkgs.nodejs_24}/bin/npm view openclaw version 2>/dev/null)
+        if [ "$_installed" = "$_latest" ] && [ -n "$_installed" ]; then
+          echo "openclaw $_installed already at latest, skipping"
+        else
+          echo "Updating openclaw $_installed -> $_latest..."
+          ${pkgs.nodejs_24}/bin/npm install -g \
+            --prefix "$HOME/.npm-global" \
+            --no-fund --no-audit \
+            openclaw@latest && \
+            echo "openclaw updated to $_latest — run: openclaw-setup if first time" || \
+            echo "WARNING: openclaw update failed" >&2
+        fi
+      fi
+    '';
+
+    # gemini-cli is not in nixpkgs — keep it up to date on every hms.
+    installGeminiCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
       PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH"
       _installed=$(
-        ${pkgs.nodejs_24}/bin/npm list -g --prefix "$HOME/.npm-global" openclaw 2>/dev/null \
-          | ${pkgs.gnugrep}/bin/grep openclaw \
-          | ${pkgs.gawk}/bin/awk -F@ '{print $2}' \
+        ${pkgs.nodejs_24}/bin/npm list -g --prefix "$HOME/.npm-global" @google/gemini-cli 2>/dev/null \
+          | ${pkgs.gnugrep}/bin/grep gemini-cli \
+          | ${pkgs.gawk}/bin/awk -F@ '{print $NF}' \
           | ${pkgs.coreutils}/bin/tr -d ' '
       )
-      _latest=$(${pkgs.nodejs_24}/bin/npm view openclaw version 2>/dev/null)
+      _latest=$(${pkgs.nodejs_24}/bin/npm view @google/gemini-cli version 2>/dev/null)
       if [ "$_installed" = "$_latest" ] && [ -n "$_installed" ]; then
-        echo "openclaw $_installed already at latest, skipping"
+        echo "gemini-cli $_installed already at latest, skipping"
       else
-        echo "Updating openclaw $_installed -> $_latest..."
+        echo "Updating gemini-cli $_installed -> $_latest..."
         ${pkgs.nodejs_24}/bin/npm install -g \
           --prefix "$HOME/.npm-global" \
           --no-fund --no-audit \
-          openclaw@latest && \
-          echo "openclaw updated to $_latest — run: openclaw-setup if first time" || \
-          echo "WARNING: openclaw update failed" >&2
+          @google/gemini-cli@latest && \
+          echo "gemini-cli updated to $_latest" || \
+          echo "WARNING: gemini-cli update failed" >&2
       fi
     '';
 
@@ -128,7 +155,6 @@ in {
                   export CC="${pkgs.stdenv.cc}/bin/cc" && \
                   export CXX="${pkgs.stdenv.cc}/bin/c++" && \
                   export RUSTC_LINKER="${pkgs.stdenv.cc}/bin/cc" && \
-                  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="${pkgs.stdenv.cc}/bin/cc" && \
                   export HOST_CC="${pkgs.stdenv.cc}/bin/cc" && \
                   export TARGET_CC="${pkgs.stdenv.cc}/bin/cc" && \
                   export OPENSSL_DIR="${pkgs.openssl.dev}" && \
@@ -147,5 +173,32 @@ in {
           ''
         }
       '';
+
+    installMachineAgent = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      if [ "${lib.boolToString config.dotfiles.machine.enableRemoteAgent}" != "true" ]; then
+        echo "machine-agent disabled for role ${config.dotfiles.machine.role}, skipping install"
+      else
+        mkdir -p "$HOME/.local/bin"
+        SRCDIR="$HOME/.dotfiles/tools/machine-agent-rust"
+        if [ ! -f "$SRCDIR/Cargo.toml" ]; then
+          echo "machine-agent source missing at $SRCDIR" >&2
+          exit 1
+        fi
+
+        (
+          cd "$SRCDIR" && \
+          export CC="${pkgs.stdenv.cc}/bin/cc" && \
+          export CXX="${pkgs.stdenv.cc}/bin/c++" && \
+          export RUSTC_LINKER="${pkgs.stdenv.cc}/bin/cc" && \
+          export HOST_CC="${pkgs.stdenv.cc}/bin/cc" && \
+          export TARGET_CC="${pkgs.stdenv.cc}/bin/cc" && \
+          export PATH="${pkgs.stdenv.cc}/bin:${pkgs.pkg-config}/bin:${pkgs.cargo}/bin:$PATH" && \
+          ${pkgs.cargo}/bin/cargo build --release
+        ) && \
+        cp "$SRCDIR/target/release/machine-agent" "$HOME/.local/bin/machine-agent" && \
+        chmod +x "$HOME/.local/bin/machine-agent" && \
+        echo "Built and installed machine-agent"
+      fi
+    '';
   };
 }

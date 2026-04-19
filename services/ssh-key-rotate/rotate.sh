@@ -51,12 +51,21 @@ token=$(curl -sS --max-time 10 "$LLDAP_URL/auth/simple/login" \
 	exit 1
 }
 
-log "replacing sshPublicKey in lldap"
+log "appending new sshPublicKey in lldap (keeps last 2 valid so other dotfiles-managed machines still authenticate until they auto-pull the new key)"
+# Fetch current keys, append new, keep only last 2 (newest + previous).
+current_keys=$(curl -sSf --max-time 10 "$LLDAP_URL/api/graphql" \
+	-H "Authorization: Bearer $token" \
+	-H 'Content-Type: application/json' \
+	--data "$(jq -n --arg u "$USERNAME" \
+		'{query:"query($u:String!){ user(userId:$u){ attributes{ name value } } }", variables:{u:$u}}')" |
+	jq -r '.data.user.attributes[] | select(.name=="sshPublicKey") | .value[]?')
+merged=$(printf '%s\n%s\n' "$current_keys" "$new_pub" | awk 'NF' | tail -2)
+merged_json=$(printf '%s\n' "$merged" | jq -R -s 'split("\n") | map(select(length>0))')
 curl -sSf --max-time 10 "$LLDAP_URL/api/graphql" \
 	-H "Authorization: Bearer $token" \
 	-H 'Content-Type: application/json' \
-	--data "$(jq -n --arg u "$USERNAME" --arg k "$new_pub" \
-		'{query:"mutation UpdateUser($u: UpdateUserInput!) { updateUser(user: $u) { ok } }", variables:{u:{id:$u, insertAttributes:[{name:"sshPublicKey", value:[$k]}]}}}')" \
+	--data "$(jq -n --arg u "$USERNAME" --argjson keys "$merged_json" \
+		'{query:"mutation UpdateUser($u: UpdateUserInput!) { updateUser(user: $u) { ok } }", variables:{u:{id:$u, insertAttributes:[{name:"sshPublicKey", value:$keys}]}}}')" \
 	>/dev/null
 
 log "writing SOPS — $SOPS_FILE"

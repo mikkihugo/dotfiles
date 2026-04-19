@@ -1,48 +1,47 @@
-# SKILL: OpenClaw Coding Agent
+# SKILL: OpenClaw Coding Agent (Orchestration & Peer Review)
 
-Delegate coding tasks to other agents (Codex, Claude Code, Pi) using bash-first execution.
+Delegate tasks and seek second opinions from specialized agents (Codex, Claude Code, Pi) to ensure architectural integrity and code quality.
 
 ## Overview
-This skill enables the agent to delegate complex coding tasks, refactoring, or codebase analysis to specialized sub-agents. It leverages the `openclaw` ecosystem for background processing and agent orchestration.
+This skill enables the agent to utilize the `openclaw` ecosystem for both execution and validation. It focuses on using sub-agents as "peer reviewers" to provide second opinions on complex strategies, refactors, or bug fixes before implementation.
 
 ## Capabilities
-- **Task Delegation**: Send specific prompts to sub-agents for autonomous execution.
-- **Background Processing**: Run agent tasks in the background and monitor progress.
-- **Multi-Agent Coordination**: Orchestrate workflows involving multiple agents.
-- **Codebase Analysis**: Delegate large-scale codebase understanding to agents with larger context windows.
+- **Second Opinion**: Invoke a specialized agent to review a proposed implementation plan or architectural decision.
+- **Peer Review**: Delegate code review tasks to verify that an implementation meets quality standards.
+- **Task Delegation**: Send specific prompts to sub-agents for autonomous execution of heavy-lifting tasks.
+- **Multi-Agent Consensus**: Compare outputs from multiple agents to identify the most robust solution.
 
 ## Usage Guidelines
 
-### 1. Task Scoping
-Clearly define the task and provided context before delegating.
-- `cd /path/to/project && openclaw run 'Refactor the auth module'`
+### 1. Seeking a Second Opinion (Recommended)
+Before executing a high-impact change, ask a sub-agent to critique your plan.
+- `openclaw run --agent claude 'Critique this plan for migrating the auth module: <plan_details>'`
 
-### 2. Agent Selection
-Choose the appropriate agent for the task based on its strengths (e.g., Claude Code for logic, Codex for snippets).
-- `openclaw run --agent claude 'Review this PR'`
+### 2. Consensus Synthesis
+If a sub-agent provides a diverging opinion:
+1.  Analyze the trade-offs between your plan and the second opinion.
+2.  Synthesize a "best-of-both" approach or present the options to the user.
+3.  Explain the technical rationale for the final choice.
 
 ### 3. Permission Mode
 Use appropriate permission modes when delegating to avoid interactive blocks.
 - `claude --permission-mode bypassPermissions --print 'Task description'`
 
-### 4. Verification
-Always verify the output of the delegated task before committing.
-- Run tests: `npm test`
-- Lint check: `npm run lint`
+### 4. Post-Implementation Review
+After completing a task, you can seek a final review from another agent to ensure no regressions were introduced.
 
 ## Best Practices
-- **Atomic Tasks**: Break down large tasks into smaller, manageable units for better agent performance.
-- **Provide Context**: Include relevant file paths and symbols in the delegation prompt.
-- **Monitor Logs**: Check agent logs if a task fails or hangs.
-- **Safety First**: Never delegate tasks that involve modifying sensitive security configurations without explicit approval.
+- **Explicit Critique**: When asking for a second opinion, specifically ask the agent to "find flaws" or "suggest alternatives" to avoid confirmation bias.
+- **Contextual Parity**: Ensure the sub-agent has the same context (file paths, symbols) as you do.
+- **Verification**: Always run local tests (`npm test`, `cargo test`) regardless of the agent's confidence.
 
 ## Common Commands
 | Task | Command |
 | :--- | :--- |
-| Delegate refactor | `openclaw run 'Refactor module X'` |
+| Seek critique | `openclaw run 'Review this strategy for X...'` |
+| Peer review code | `openclaw run --agent claude 'Review the changes in src/auth.ts'` |
 | View agent status | `openclaw status` |
 | List available agents | `openclaw agents list` |
-| Stop background task | `openclaw stop <task_id>` |
 
 ## Error Handling
-If an agent fails due to "context window exceeded", try breaking the task into smaller parts. If you see "authentication failed", verify the agent's API keys in the vault.
+If agents provide conflicting advice that cannot be reconciled, defer to the user with a summary of the disagreement.

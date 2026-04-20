@@ -41,6 +41,13 @@
     # Use a committed git revision from the local repo, not the live dirty tree,
     # so worker builds remain cacheable and reproducible.
     ace-coder.url = "git+file:///home/mhugo/code/ace-coder?ref=main";
+
+    # hermes-agent: self-improving agent (replaces legacy openclaw node).
+    # Flake exposes packages.<system>.default wrapping the `hermes` binary.
+    hermes-agent = {
+      url = "github:NousResearch/hermes-agent";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -49,12 +56,13 @@
     sops-nix,
     flake-utils,
     ace-coder,
+    hermes-agent,
     ...
   }: let
     # builtins.currentSystem reads host arch at eval time — requires --impure.
     # The `hms` alias already passes --impure.
     system = builtins.currentSystem;
-    specialArgs = {inherit sops-nix ace-coder;};
+    specialArgs = {inherit sops-nix ace-coder hermes-agent;};
 
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.
     # targetSystem is passed as specialArgs so imports can branch without
@@ -95,6 +103,10 @@
       # only needed when working on the dotfiles repo itself.
       devShells.default = maintenance-pkgs.mkShell {
         packages = with maintenance-pkgs; [
+          go # build and validate services under tools/ like vault-hugo-dk
+          cargo # build and validate rust tools under tools/
+          rustc # rust compiler for machine-agent and secret-tui work
+          pkg-config # native dependency discovery for rust crates when needed
           sops # encrypt/decrypt secrets/api-keys.yaml
           age # age key generation and encryption backend
           ssh-to-age # derive age public key from SSH ed25519 key

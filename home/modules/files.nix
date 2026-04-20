@@ -3,7 +3,21 @@
 # Files that tools expect at specific $HOME paths, kept in version control
 # and updated atomically on every `hms`. force=true overwrites any manually
 # edited copy so the repo stays the source of truth.
-_: {
+{
+  lib,
+  hostname ? "",
+  ...
+}: let
+  lowercaseHostname = lib.toLower hostname;
+  usesLocalBuildNixConfig =
+    lowercaseHostname
+    == "mikki-bunker"
+    || lowercaseHostname == "mikki-laptop";
+  nixConfigSource =
+    if usesLocalBuildNixConfig
+    then ../../config/nix/local-build.nix.conf
+    else ../../config/nix/remote-builder.nix.conf;
+in {
   home.file = {
     ".config/ripgrep/config" = {
       source = ../../config/ripgreprc;
@@ -38,11 +52,10 @@ _: {
       force = true;
     };
 
-    # Nix user config: remote builder (llm-gateway) + substituter (nix-serve).
-    # Enables `hms` to substitute CUDA worker derivations from cache instead
-    # of recompiling locally.
+    # Nix user config is host-specific:
+    # bunker/laptop build locally; the main Linux workstation can use llm-gateway.
     ".config/nix/nix.conf" = {
-      source = ../../config/nix/nix.conf;
+      source = nixConfigSource;
       force = true;
     };
   };

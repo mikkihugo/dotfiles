@@ -39,7 +39,7 @@
     # GPU/CUDA workers — Bunker only (x86_64 + explicit hostname guard).
     # targetSystem comes from extraSpecialArgs (not pkgs.stdenv) to avoid
     # infinite recursion when evaluating the imports list.
-    ++ lib.optionals (targetSystem == "x86_64-linux" && hostname == "mikki-bunker") [
+    ++ lib.optionals (targetSystem == "x86_64-linux" && lib.toLower hostname == "mikki-bunker") [
       ../services/ace-embedding-worker
     ];
 

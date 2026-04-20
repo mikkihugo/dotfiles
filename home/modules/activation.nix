@@ -84,49 +84,114 @@ in {
       if [ "${lib.boolToString config.dotfiles.machine.enableOpenclawNode}" != "true" ]; then
         echo "openclaw disabled for role ${config.dotfiles.machine.role}, skipping install"
       else
-        PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH"
-        _installed=$(
-          ${pkgs.nodejs_24}/bin/npm list -g --prefix "$HOME/.npm-global" openclaw 2>/dev/null \
-            | ${pkgs.gnugrep}/bin/grep openclaw \
-            | ${pkgs.gawk}/bin/awk -F@ '{print $NF}' \
-            | ${pkgs.coreutils}/bin/tr -d ' '
-        )
-        _latest=$(${pkgs.nodejs_24}/bin/npm view openclaw version 2>/dev/null)
-        if [ "$_installed" = "$_latest" ] && [ -n "$_installed" ]; then
-          echo "openclaw $_installed already at latest, skipping"
-        else
-          echo "Updating openclaw $_installed -> $_latest..."
-          ${pkgs.nodejs_24}/bin/npm install -g \
-            --prefix "$HOME/.npm-global" \
-            --no-fund --no-audit \
-            openclaw@latest && \
-            echo "openclaw updated to $_latest — run: openclaw-setup if first time" || \
-            echo "WARNING: openclaw update failed" >&2
-        fi
+        echo "Updating openclaw..."
+        ${pkgs.nodejs_24}/bin/npm install -g \
+          --prefix "$HOME/.npm-global" \
+          --no-fund --no-audit \
+          openclaw@latest && \
+          echo "openclaw ready — run: openclaw-setup if first time" || \
+          echo "WARNING: openclaw update failed" >&2
       fi
+    '';
+
+    # toad (batrachian.ai) is not in nixpkgs — keep it up to date on every hms.
+    # Requires Python 3.14+; uv fetches the right interpreter automatically.
+    # uv tool install -U is idempotent: no-op when already at latest.
+    installToad = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      echo "Updating toad..."
+      ${pkgs.uv}/bin/uv tool install -U batrachian-toad --python 3.14 && \
+        echo "toad ready — run: toad" || \
+        echo "WARNING: toad install failed" >&2
+    '';
+
+    # kimi-cli (Moonshot) is not in nixpkgs — keep it up to date on every hms.
+    installKimiCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      echo "Updating kimi-cli..."
+      ${pkgs.uv}/bin/uv tool install -U kimi-cli && \
+        echo "kimi-cli ready — run: kimi" || \
+        echo "WARNING: kimi-cli install failed" >&2
+    '';
+
+    # opencode is not in nixpkgs — keep it up to date on every hms.
+    installOpencode = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      echo "Updating opencode..."
+      ${pkgs.nodejs_24}/bin/npm install -g \
+        --prefix "$HOME/.npm-global" \
+        --no-fund --no-audit \
+        opencode-ai@latest && \
+        echo "opencode ready — run: opencode" || \
+        echo "WARNING: opencode install failed" >&2
     '';
 
     # gemini-cli is not in nixpkgs — keep it up to date on every hms.
     installGeminiCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      PATH="${pkgs.git}/bin:${pkgs.nodejs_24}/bin:$PATH"
-      _installed=$(
-        ${pkgs.nodejs_24}/bin/npm list -g --prefix "$HOME/.npm-global" @google/gemini-cli 2>/dev/null \
-          | ${pkgs.gnugrep}/bin/grep gemini-cli \
-          | ${pkgs.gawk}/bin/awk -F@ '{print $NF}' \
-          | ${pkgs.coreutils}/bin/tr -d ' '
-      )
-      _latest=$(${pkgs.nodejs_24}/bin/npm view @google/gemini-cli version 2>/dev/null)
-      if [ "$_installed" = "$_latest" ] && [ -n "$_installed" ]; then
-        echo "gemini-cli $_installed already at latest, skipping"
+      echo "Updating gemini-cli..."
+      ${pkgs.nodejs_24}/bin/npm install -g \
+        --prefix "$HOME/.npm-global" \
+        --no-fund --no-audit \
+        @google/gemini-cli@latest && \
+        echo "gemini-cli ready" || \
+        echo "WARNING: gemini-cli update failed" >&2
+    '';
+
+    # claude-code (Anthropic) is not in nixpkgs — keep it up to date on every hms.
+    installClaudeCode = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      echo "Updating claude-code..."
+      ${pkgs.nodejs_24}/bin/npm install -g \
+        --prefix "$HOME/.npm-global" \
+        --no-fund --no-audit \
+        @anthropic-ai/claude-code@latest && \
+        echo "claude-code ready — run: claude" || \
+        echo "WARNING: claude-code update failed" >&2
+    '';
+
+    # codex (OpenAI) is not in nixpkgs — keep it up to date on every hms.
+    installCodex = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      echo "Updating codex..."
+      ${pkgs.nodejs_24}/bin/npm install -g \
+        --prefix "$HOME/.npm-global" \
+        --no-fund --no-audit \
+        @openai/codex@latest && \
+        echo "codex ready — run: codex" || \
+        echo "WARNING: codex update failed" >&2
+    '';
+
+    # amp (Sourcegraph) self-updates via its own update command.
+    updateAmp = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      if command -v amp &>/dev/null; then
+        echo "Updating amp..."
+        amp update || echo "WARNING: amp update failed" >&2
       else
-        echo "Updating gemini-cli $_installed -> $_latest..."
-        ${pkgs.nodejs_24}/bin/npm install -g \
-          --prefix "$HOME/.npm-global" \
-          --no-fund --no-audit \
-          @google/gemini-cli@latest && \
-          echo "gemini-cli updated to $_latest" || \
-          echo "WARNING: gemini-cli update failed" >&2
+        echo "WARNING: amp not found — install manually from amp.dev" >&2
       fi
+    '';
+
+    # cursor-agent self-updates via its own update command.
+    updateCursorAgent = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      if command -v cursor-agent &>/dev/null; then
+        echo "Updating cursor-agent..."
+        cursor-agent update || echo "WARNING: cursor-agent update failed" >&2
+      else
+        echo "WARNING: cursor-agent not found — install manually from cursor.sh" >&2
+      fi
+    '';
+
+    # factory droid self-updates via its own update command.
+    updateDroid = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      if command -v droid &>/dev/null; then
+        echo "Updating droid..."
+        droid update || echo "WARNING: droid update failed" >&2
+      else
+        echo "WARNING: droid not found — install manually from factory.ai" >&2
+      fi
+    '';
+
+    # mistral-vibe (Mistral AI) is not in nixpkgs — keep it up to date on every hms.
+    installMistralVibe = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      echo "Updating mistral-vibe..."
+      ${pkgs.uv}/bin/uv tool install -U mistral-vibe && \
+        echo "mistral-vibe ready — run: mistral-vibe" || \
+        echo "WARNING: mistral-vibe install failed" >&2
     '';
   };
 }

@@ -1,9 +1,13 @@
+# SSH host aliases and the exact key file configured for each block.
+# IdentitiesOnly=yes ensures only the listed key is used for authentication.
+
 Host mail.hugo.dk ai.hugo.dk
+    # Central Hetzner-hosted machines use the Hetzner-specific key.
     User root
     IdentityFile ~/.ssh/hetzner_id_ed25519
     IdentitiesOnly yes
 
-# Personal Hetzner servers — public access from outside
+# Personal Hetzner/public servers — use the personal admin key here.
 Host mon.portal.centralcloud.com mail.sendramp.com
     HostName %h
     User root
@@ -11,12 +15,13 @@ Host mon.portal.centralcloud.com mail.sendramp.com
     IdentitiesOnly yes
 
 Host portal-automation
+    # Portal automation node on public IP uses the personal admin key.
     HostName 157.180.79.108
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-# Private network aliases — use these for inter-server communication
+# Private network aliases — typically internal/legacy names.
 Host mon-private
     HostName 10.250.250.3
     User root
@@ -36,6 +41,7 @@ Host mailcow-openclaw-private
     IdentitiesOnly yes
 
 Host storagebox
+    # Hetzner storagebox alias. Also uses the personal admin key.
     HostName u579183.your-storagebox.de
     User u579183
     Port 23
@@ -43,16 +49,19 @@ Host storagebox
     IdentitiesOnly yes
 
 Host wf.portal.centralcloud.com
+    # Old hostname alias; still configured with the personal admin key.
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
 Host aidev
+    # Local developer machine uses the normal id_ed25519 key.
     HostName aidev.centralcloud.com
     User root
     IdentityFile ~/.ssh/id_ed25519
 
 Host llm-gateway
+    # LLM gateway host also uses the standard id_ed25519 key.
     HostName llm-gateway.centralcloud.com
     User root
     IdentityFile ~/.ssh/id_ed25519

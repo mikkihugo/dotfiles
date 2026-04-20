@@ -1,14 +1,15 @@
-# home/modules/hermes-proxy.nix — Hermes thin gateway (proxy to ai.hugo.dk)
+# home/modules/hermes-proxy.nix — Hermes thin gateway (proxy to the main host agent)
 #
 # Topology:
-# - ai.hugo.dk runs the Hermes host agent (API server) on port 8642.
+# - The main Hermes host agent API is exposed privately at
+#   api.hermes.internal/hermes and resolves to flow's tailnet IP.
 # - This module runs a thin gateway on each machine that forwards all agent
 #   work to that host agent. Matches the "proxy mode" in Hermes docs.
 # - Replaces the legacy openclaw-node service (openclaw.nix) once enabled.
 #
 # Setup flow (once per machine):
 #   1. Add hermes.gateway_proxy_key to secrets/api-keys.yaml via `sops`
-#      (same bearer token as API_SERVER_KEY on the ai.hugo.dk host agent)
+#      (same bearer token as API_SERVER_KEY on the main Hermes host agent)
 #   2. Flip dotfiles.machine.enableHermesProxy = true via machine-role.json
 #   3. Run `hms` — installs hermes via nix flake, starts service
 {
@@ -24,13 +25,11 @@ in {
   options.dotfiles.services.hermesProxy = {
     upstreamUrl = lib.mkOption {
       type = lib.types.str;
-      # Hermes API at api.hugo.dk/hermes, fronted by Cloudflare Tunnel +
-      # CF Access (service-token policy). Traefik on flow k3s strips the
-      # /hermes prefix and forwards to the hermes Service:8642.
-      # Proxy nodes must present CF-Access-Client-Id + CF-Access-Client-Secret
-      # headers on every request to pass CF Access, plus the API_SERVER_KEY
-      # bearer token for the Hermes API itself.
-      default = "https://api.hugo.dk/hermes";
+      # Hermes API at api.hermes.internal/hermes. Headscale DNS resolves the
+      # hostname to flow's tailnet IP for on-tailnet machines, and Traefik on
+      # flow k3s strips the /hermes prefix and forwards to the hermes
+      # Service:8642. Proxy nodes only need the API_SERVER_KEY bearer token.
+      default = "https://api.hermes.internal/hermes";
       description = "Hermes host agent API endpoint this proxy forwards to.";
     };
   };

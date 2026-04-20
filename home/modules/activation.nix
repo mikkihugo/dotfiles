@@ -10,6 +10,12 @@
   ...
 }: let
   pythonWithYaml = pkgs.python3.withPackages (ps: [ps.pyyaml]);
+  NODE_INSTALL_RUNTIME_PATH = lib.makeBinPath [
+    pkgs.nodejs_24
+    pkgs.bun
+    pkgs.coreutils
+    pkgs.bash
+  ];
 in {
   home.activation = {
     # programs.gh and programs.jujutsu own these files as nix-store symlinks.
@@ -19,6 +25,12 @@ in {
       rm -f "$HOME/.config/gh/config.yml"
       rm -f "$HOME/.config/jj/config.toml"
       rm -f "$HOME/.config/systemd/user/openclaw-node.service"
+      rm -f "$HOME/.config/systemd/user/dr-repo-maintenance.service"
+      rm -f "$HOME/.config/systemd/user/dr-repo-maintenance.timer"
+      rm -f "$HOME/.config/systemd/user/timers.target.wants/dr-repo-maintenance.timer"
+      rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/combined.conf"
+      rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/no-watchdog.conf"
+      rmdir "$HOME/.config/systemd/user/remote-gpu-worker.service.d" 2>/dev/null || true
     '';
 
     # Extract personal-admin SSH key from SOPS into ~/.ssh/ for monitor, portal-automation,
@@ -85,6 +97,7 @@ in {
         echo "openclaw disabled for role ${config.dotfiles.machine.role}, skipping install"
       else
         echo "Updating openclaw..."
+        PATH="${NODE_INSTALL_RUNTIME_PATH}:$PATH" \
         ${pkgs.nodejs_24}/bin/npm install -g \
           --prefix "$HOME/.npm-global" \
           --no-fund --no-audit \
@@ -115,6 +128,7 @@ in {
     # opencode is not in nixpkgs — keep it up to date on every hms.
     installOpencode = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating opencode..."
+      PATH="${NODE_INSTALL_RUNTIME_PATH}:$PATH" \
       ${pkgs.nodejs_24}/bin/npm install -g \
         --prefix "$HOME/.npm-global" \
         --no-fund --no-audit \
@@ -126,6 +140,7 @@ in {
     # gemini-cli is not in nixpkgs — keep it up to date on every hms.
     installGeminiCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating gemini-cli..."
+      PATH="${NODE_INSTALL_RUNTIME_PATH}:$PATH" \
       ${pkgs.nodejs_24}/bin/npm install -g \
         --prefix "$HOME/.npm-global" \
         --no-fund --no-audit \
@@ -137,6 +152,7 @@ in {
     # claude-code (Anthropic) is not in nixpkgs — keep it up to date on every hms.
     installClaudeCode = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating claude-code..."
+      PATH="${NODE_INSTALL_RUNTIME_PATH}:$PATH" \
       ${pkgs.nodejs_24}/bin/npm install -g \
         --prefix "$HOME/.npm-global" \
         --no-fund --no-audit \
@@ -148,6 +164,7 @@ in {
     # codex (OpenAI) is not in nixpkgs — keep it up to date on every hms.
     installCodex = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating codex..."
+      PATH="${NODE_INSTALL_RUNTIME_PATH}:$PATH" \
       ${pkgs.nodejs_24}/bin/npm install -g \
         --prefix "$HOME/.npm-global" \
         --no-fund --no-audit \

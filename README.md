@@ -13,7 +13,7 @@ home/home.nix       ← everything installed and configured in $HOME
 secrets/            ← SOPS-encrypted YAML (age backend, .sops.yaml rules)
 config/             ← static config files linked into $HOME by home-manager
 shell/bash/bashrc   ← on-demand LLM key loader (sourced by HM initExtra)
-tools/secret-tui-rust/ ← terminal UI for browsing SOPS secrets
+scripts/secrets-edit   ← sops edit wrapper for SOPS-encrypted YAML
 ```
 
 `home-manager switch` is the only command needed after any change. It:
@@ -33,17 +33,14 @@ echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
 git clone git@github.com:mikkihugo/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 
-# 3. Add this machine's age key (derived from SSH key — no extra key needed)
-mkdir -p ~/.config/sops/age
-ssh-to-age -i ~/.ssh/id_ed25519.pub >> ~/.dotfiles/secrets/.sops-machine-keys.txt
-# Then add that pubkey to .sops.yaml and re-encrypt secrets (see Secrets below)
-
-# 4. Apply
-home-manager switch --flake .#mikki-bunker --impure \
-  --extra-experimental-features "nix-command flakes"
+# 3. Bootstrap
+./install.sh
 ```
 
-After step 4, open a new terminal — you're in the managed environment.
+`install.sh` now preflights the SOPS age key before Home Manager runs. If this
+machine has not been added to `.sops.yaml` yet, bootstrap continues but secret
+decryption will stay partial until you add the new `ssh-to-age -i ~/.ssh/id_ed25519.pub`
+recipient and re-encrypt the repo secrets.
 
 ## Day-to-day
 
@@ -52,7 +49,8 @@ After step 4, open a new terminal — you're in the managed environment.
 | Apply config changes | `hms` (alias for home-manager switch) |
 | Promote committed ACE worker source into dotfiles | `promote-ace-coder` |
 | Load LLM API keys | `load-ai-keys` |
-| Browse / edit secrets | `secrets` (opens secret-tui) |
+| Edit SOPS-encrypted secrets | `secrets` (sops $EDITOR) |
+| Fetch runtime secret from OpenBao | `bao login -method=oidc && bao kv get kv/<name>` |
 | Enter dotfiles maintenance shell | `nix develop ~/.dotfiles` |
 
 ### ACE worker update flow
@@ -91,8 +89,7 @@ secrets/
   .sops.yaml                 Encryption rules (which keys can decrypt which files)
 shell/
   bash/bashrc                On-demand load-ai-keys function (sourced by HM)
-tools/
-  secret-tui-rust/           Ratatui TUI: browse/reveal/edit SOPS secrets
+tools/                       (Go machine-agent rewrite pending — see TODO.md)
 .sops.yaml                   Age key recipients for secret re-encryption
 lefthook.yml                 Git hooks: alejandra, statix, shellcheck, shfmt,
                              typos, detect-secrets on pre-commit
@@ -134,6 +131,9 @@ sops updatekeys secrets/api-keys.yaml
 
 # 4. Commit .sops.yaml + the re-encrypted secrets/api-keys.yaml
 ```
+
+Until that recipient is added, `./install.sh` can lay down the non-secret parts
+of the environment, but any SOPS-backed secrets and services will remain unavailable.
 
 ### Secret structure (api-keys.yaml)
 

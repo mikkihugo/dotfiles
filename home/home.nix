@@ -31,6 +31,7 @@
       ./modules/git.nix
       ./modules/files.nix
       ./modules/openclaw.nix
+      ./modules/hermes-proxy.nix
       ./modules/machine-agent.nix
       ./modules/dotfiles-auto-update.nix
       ./modules/tailscale.nix
@@ -54,7 +55,7 @@
     # PATH additions — prepended before the system PATH in every session.
     sessionPath = [
       "$HOME/.bun/bin"
-      "$HOME/.local/bin" # pip/pipx, claude CLI, secret-tui
+      "$HOME/.local/bin" # pip/pipx, claude CLI, machine-agent
       "$HOME/.npm-global/bin" # openclaw, opencode, and other npm globals
       "$HOME/.cargo/bin" # cargo-installed Rust binaries
       "$HOME/.amp/bin"
@@ -69,6 +70,9 @@
       RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
       BAT_CONFIG_PATH = "$HOME/.config/bat/config";
       LETTA_BASE_URL = "http://127.0.0.1:8283";
+      # OpenBao CLI — tailnet-only endpoint, no LAN exposure.
+      # `bao login -method=oidc` authenticates via Authelia (passkey/TOTP).
+      BAO_ADDR = "https://vault.hugo.dk";
     };
   };
 

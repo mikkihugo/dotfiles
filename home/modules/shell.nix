@@ -35,7 +35,6 @@ in {
 
     # Secrets management
     secrets = "~/.dotfiles/scripts/secrets-edit";
-    secrets-tui = "secret-tui";
 
     # Register this machine as an openclaw node (run once after hms on a new machine).
     openclaw-setup = "openclaw node install --host ai.hugo.dk --port 18789 --tls --display-name \"$(hostnamectl --static)\" && openclaw node restart";

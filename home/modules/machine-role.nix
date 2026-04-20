@@ -19,13 +19,19 @@ in {
     enableOpenclawNode = lib.mkOption {
       type = lib.types.bool;
       default = machineConfig.enableOpenclawNode or false;
-      description = "Whether this machine should run the OpenClaw node service.";
+      description = "Whether this machine should run the legacy OpenClaw node service.";
+    };
+
+    enableHermesProxy = lib.mkOption {
+      type = lib.types.bool;
+      default = machineConfig.enableHermesProxy or false;
+      description = "Whether this machine should run the Hermes proxy gateway. Mutually exclusive with enableOpenclawNode at runtime (both write to ~/.hermes / ~/.openclaw respectively; a single host can run both services concurrently but they share no state).";
     };
 
     enableRemoteAgent = lib.mkOption {
       type = lib.types.bool;
-      default = machineConfig.enableRemoteAgent or true;
-      description = "Whether this machine should run the local machine-agent service.";
+      default = machineConfig.enableRemoteAgent or false;
+      description = "Whether this machine should run the local machine-agent service. Disabled by default until the Go+tsnet rewrite lands — the legacy Rust agent was removed after Codex flagged its exec surface as too broad.";
     };
 
     validateSudoAccess = lib.mkOption {

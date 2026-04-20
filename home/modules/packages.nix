@@ -29,7 +29,7 @@
     bun # JavaScript runtime/package manager for local tool builds
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
-    go # build and validate the vault.hugo.dk service and other Go tools
+    go # build machine-agent (tsnet) and other Go tools
     nodejs_24 # Node.js LTS (also needed by openclaw activation)
     pnpm # fast, disk-efficient Node package manager
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin
@@ -40,6 +40,7 @@
     sops # encrypts/decrypts YAML/JSON secrets
     age # encryption backend (replaces GPG for SOPS)
     ssh-to-age # derives age pubkey from SSH ed25519 key
+    openbao # `bao` CLI — talks to vault.hugo.dk (tailnet-only) via BAO_ADDR
 
     # Shell tooling — linters used by lefthook pre-commit hooks.
     shellcheck # static analysis for shell scripts
@@ -64,7 +65,6 @@
     nerd-fonts.jetbrains-mono
 
     # Clipboard — Wayland clipboard integration.
-    # Used by secret-tui's `c` key (copy secret to clipboard).
     wl-clipboard
 
     # Pre-commit / code quality — run by lefthook on every commit.

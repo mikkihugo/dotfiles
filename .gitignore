@@ -1,6 +1,4 @@
 # Build artifacts
-tools/secret-tui-rust/target/
-tools/secret-tui/node_modules/
 tools/*/node_modules/
 *.gguf
 

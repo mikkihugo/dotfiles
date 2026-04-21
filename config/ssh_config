@@ -1,14 +1,19 @@
 # SSH host aliases and the exact key file configured for each block.
 # IdentitiesOnly=yes ensures only the listed key is used for authentication.
 
-Host mail.hugo.dk ai.hugo.dk
+Host mail.hugo.dk ai.hugo.dk vpn.hugo.dk
     # Central Hetzner-hosted machines use the Hetzner-specific key.
     User root
     IdentityFile ~/.ssh/hetzner_id_ed25519
     IdentitiesOnly yes
 
+Host flow.hugo.dk
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
 # Personal Hetzner/public servers — use the personal admin key here.
-Host mon.portal.centralcloud.com mail.sendramp.com
+Host mon.hugo.dk mon.portal.centralcloud.com mail.sendramp.com
     HostName %h
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
@@ -64,4 +69,15 @@ Host llm-gateway
     # LLM gateway host also uses the standard id_ed25519 key.
     HostName llm-gateway.centralcloud.com
     User root
+    IdentityFile ~/.ssh/id_ed25519
+
+# Tailscale hosts
+Host mikki-bunker
+    HostName mikki-bunker
+    User mhugo
+    IdentityFile ~/.ssh/id_ed25519
+
+Host mikki-laptop
+    HostName mikki-laptop
+    User mhugo
     IdentityFile ~/.ssh/id_ed25519

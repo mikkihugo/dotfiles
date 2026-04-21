@@ -1,14 +1,11 @@
-{
-  config,
-  pkgs,
-  ...
-}: let
-  profileScript = "${config.home.homeDirectory}/.dotfiles/scripts/current-home-profile";
-  updateScript = pkgs.writeShellScript "dotfiles-auto-update" ''
+{pkgs, ...}: let
+  observerScript = pkgs.writeShellScript "dotfiles-auto-update" ''
     set -euo pipefail
 
-    export HOME="${config.home.homeDirectory}"
+    export HOME="/home/mhugo"
     repo="$HOME/.dotfiles"
+    state_dir="$HOME/.local/state/dotfiles-observer"
+    state_file="$state_dir/last-status"
 
     if [ ! -d "$repo/.git" ]; then
       echo "dotfiles-auto-update: repo missing at $repo"
@@ -17,48 +14,68 @@
 
     cd "$repo"
 
-    if ! ${pkgs.git}/bin/git diff --quiet || ! ${pkgs.git}/bin/git diff --cached --quiet; then
-      echo "dotfiles-auto-update: repo has local changes, skipping"
-      exit 0
-    fi
-
     ${pkgs.git}/bin/git fetch --quiet origin
 
     upstream="$(${pkgs.git}/bin/git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)"
     if [ -z "$upstream" ]; then
-      echo "dotfiles-auto-update: no upstream configured, skipping"
-      exit 0
+      upstream="origin/main"
+      if ! ${pkgs.git}/bin/git rev-parse --verify "$upstream" >/dev/null 2>&1; then
+        echo "dotfiles-auto-update: no upstream configured, skipping"
+        exit 0
+      fi
     fi
 
-    local_rev="$(${pkgs.git}/bin/git rev-parse HEAD)"
-    remote_rev="$(${pkgs.git}/bin/git rev-parse "$upstream")"
-    if [ "$local_rev" = "$remote_rev" ]; then
-      echo "dotfiles-auto-update: already up to date"
-      exit 0
+    counts="$(${pkgs.git}/bin/git rev-list --left-right --count HEAD..."$upstream")"
+    local_ahead="$(${pkgs.gawk}/bin/awk '{print $1}' <<<"$counts")"
+    remote_ahead="$(${pkgs.gawk}/bin/awk '{print $2}' <<<"$counts")"
+
+    status="up-to-date"
+    summary="dotfiles: local and remote are in sync"
+    if [ "$remote_ahead" -gt 0 ] && [ "$local_ahead" -gt 0 ]; then
+      status="diverged:''${local_ahead}:''${remote_ahead}"
+      summary="dotfiles diverged: local +''${local_ahead}, remote +''${remote_ahead}"
+    elif [ "$remote_ahead" -gt 0 ]; then
+      status="remote-ahead:''${remote_ahead}"
+      summary="dotfiles remote is ahead by ''${remote_ahead} commit(s)"
+    elif [ "$local_ahead" -gt 0 ]; then
+      status="local-ahead:''${local_ahead}"
+      summary="dotfiles has ''${local_ahead} unpushed local commit(s)"
     fi
 
-    ${pkgs.git}/bin/git pull --ff-only --quiet
-    profile="$(${profileScript})"
-    ${config.programs.home-manager.package}/bin/home-manager switch --flake "$repo#$profile" --impure
+    mkdir -p "$state_dir"
+    previous=""
+    if [ -f "$state_file" ]; then
+      previous="$(cat "$state_file")"
+    fi
+
+    if [ "$status" != "$previous" ]; then
+      printf '%s\n' "$status" > "$state_file"
+      if [ "$status" != "up-to-date" ]; then
+        ${pkgs.libnotify}/bin/notify-send "Dotfiles status" "$summary"
+      fi
+    else
+      echo "dotfiles-auto-update: unchanged status ($status)"
+      exit 0
+    fi
   '';
 in {
   systemd.user.services.dotfiles-auto-update = {
     Unit = {
-      Description = "Pull dotfiles and apply Home Manager when upstream changes";
+      Description = "Observe dotfiles remote status and notify on drift";
       After = ["network-online.target"];
       Wants = ["network-online.target"];
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "${updateScript}";
+      ExecStart = "${observerScript}";
     };
   };
 
   systemd.user.timers.dotfiles-auto-update = {
-    Unit.Description = "Periodically update dotfiles and Home Manager";
+    Unit.Description = "Periodically check dotfiles remote status";
     Timer = {
       OnBootSec = "3min";
-      OnUnitActiveSec = "15min";
+      OnUnitActiveSec = "1h";
       Persistent = true;
       Unit = "dotfiles-auto-update.service";
     };

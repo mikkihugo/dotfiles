@@ -14,8 +14,10 @@
 {
   config,
   pkgs,
+  lib,
   ...
-}: {
+}:
+lib.mkIf config.dotfiles.machine.enableOpenclawNode {
   sops = {
     defaultSopsFile = ../../secrets/api-keys.yaml;
     age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";

@@ -1,11 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "==> Setting up SOPS age key"
+echo "==> Verifying SOPS age key after Home Manager"
 
-# sops and ssh-to-age are installed by home-manager (step 20).
-if ! command -v sops >/dev/null 2>&1; then
-	echo "❌ sops not found — home-manager step should have installed it" >&2
+# sops and ssh-to-age should now be on PATH via home-manager.
+if ! command -v sops >/dev/null 2>&1 || ! command -v ssh-to-age >/dev/null 2>&1; then
+	echo "❌ sops/ssh-to-age not found after home-manager step" >&2
 	exit 1
 fi
 
@@ -22,7 +22,7 @@ SOPS_KEY_FILE="$SOPS_KEY_DIR/keys.txt"
 
 mkdir -p "$SOPS_KEY_DIR"
 
-# Generate age key from SSH key if it doesn't exist
+# Generate age key from SSH key if it doesn't exist yet.
 if [[ ! -f "$SOPS_KEY_FILE" ]]; then
 	echo "   Generating SOPS age key from SSH key..."
 	ssh-to-age -private-key -i ~/.ssh/id_ed25519 >"$SOPS_KEY_FILE"
@@ -39,6 +39,6 @@ if [[ -f "$SECRETS_FILE" ]]; then
 		echo "   ✅ SOPS decryption test successful"
 	else
 		echo "   ⚠️  SOPS decryption test failed — age key may not be authorised"
-		echo "      Ask the repo owner to add your pubkey: ssh-to-age -i ~/.ssh/id_ed25519.pub"
+		echo "      Ask the repo owner to add your pubkey: $(ssh-to-age -i ~/.ssh/id_ed25519.pub)"
 	fi
 fi

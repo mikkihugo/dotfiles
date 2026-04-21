@@ -32,9 +32,11 @@
       ./modules/files.nix
       ./modules/openclaw.nix
       ./modules/hermes-proxy.nix
+      ./modules/hermes-tui.nix
       ./modules/machine-agent.nix
       ./modules/dotfiles-auto-update.nix
       ./modules/tailscale.nix
+      ./modules/wezterm.nix
     ]
     # GPU/CUDA workers — Bunker only (x86_64 + explicit hostname guard).
     # targetSystem comes from extraSpecialArgs (not pkgs.stdenv) to avoid

@@ -34,6 +34,12 @@ in {
       description = "Whether this machine should run the local machine-agent service. Disabled by default until the Go+tsnet rewrite lands — the legacy Rust agent was removed after Codex flagged its exec surface as too broad.";
     };
 
+    enableTailscale = lib.mkOption {
+      type = lib.types.bool;
+      default = machineConfig.enableTailscale or false;
+      description = "Whether this machine should install and join tailscale. Set true on laptops/desktops; leave false on servers where tailscale is not needed.";
+    };
+
     validateSudoAccess = lib.mkOption {
       type = lib.types.bool;
       default = machineConfig.validateSudoAccess or true;

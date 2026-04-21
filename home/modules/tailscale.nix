@@ -15,7 +15,8 @@
   pkgs,
   lib,
   ...
-}: {
+}:
+lib.mkIf config.dotfiles.machine.enableTailscale {
   sops.secrets.tailscale_authkey = {
     key = "tailscale/authkey";
     mode = "0400";

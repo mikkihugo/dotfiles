@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package agent.v1;
+
+option go_package = "github.com/mikkihugo/dotfiles/tools/machine-agent/proto/agentv1";
+
+// AgentService — narrow RPC surface for per-machine management.
+// All methods are read-only or constrained exec only.
+service AgentService {
+  rpc HealthGet(HealthRequest) returns (HealthResponse);
+  rpc ServiceStatus(ServiceRequest) returns (ServiceStatusResponse);
+  rpc ServiceLogs(ServiceLogsRequest) returns (ServiceLogsResponse);
+  rpc ServiceExec(ServiceExecRequest) returns (ServiceExecResponse);
+  rpc AgentVersion(VersionRequest) returns (VersionResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string hostname = 1;
+  int64 uptime_seconds = 2;
+  repeated string degraded_units = 3;
+  double disk_percent = 4;
+  double load_1m = 5;
+}
+
+message ServiceRequest {
+  string name = 1; // must be in allowlist
+}
+
+message ServiceStatusResponse {
+  string name = 1;
+  string active_state = 2; // active, inactive, failed, activating
+  string output = 3;       // systemctl status output (truncated)
+}
+
+message ServiceLogsRequest {
+  string name = 1;
+  int32 lines = 2;
+}
+
+message ServiceLogsResponse {
+  string name = 1;
+  string output = 2;
+}
+
+// ServiceExec — constrained to start/stop/restart on allowlisted units.
+message ServiceExecRequest {
+  string name = 1;
+  ServiceAction action = 2;
+}
+
+enum ServiceAction {
+  SERVICE_ACTION_UNSPECIFIED = 0;
+  SERVICE_ACTION_START = 1;
+  SERVICE_ACTION_STOP = 2;
+  SERVICE_ACTION_RESTART = 3;
+}
+
+message ServiceExecResponse {
+  bool ok = 1;
+  string output = 2;
+}
+
+message VersionRequest {}
+
+message VersionResponse {
+  string version = 1;
+  string commit = 2;
+  string built_at = 3;
+}

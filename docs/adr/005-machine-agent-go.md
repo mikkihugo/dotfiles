@@ -26,20 +26,32 @@ Build `tools/machine-agent/` in **Go** using `tailscale.com/tsnet`.
   public exposure, no firewall rules.
 - Identity is Tailscale WireGuard + OpenBao AppRole at the application layer.
 
-### RPC surface (explicit methods — no `Exec`, no arbitrary file read)
+### Transport
+
+Outbound WebSocket reverse tunnel to the central gateway
+(`wss://llm-gateway.centralcloud.com/worker`). The agent connects out —
+no inbound ports, no firewall rules. Same pattern as the ACE embedding worker.
+
+Protocol: **protobuf over WSS**. Auth: bearer token from OpenBao AppRole
+SecretID, sent in the WebSocket handshake header.
+
+### RPC surface (explicit methods — no unconstrained exec)
 
 | Method | Returns |
 |--------|---------|
 | `HealthGet` | uptime, degraded systemd units, disk %, load |
 | `ServiceStatus(name)` | `systemctl --user status <name>` for hard-coded allowlist |
 | `ServiceLogs(name, lines)` | journalctl tail for the same allowlist |
+| `ServiceExec(name, action)` | `systemctl --user <action> <name>` — action limited to `{start,stop,restart}`, name from allowlist only |
 | `AgentVersion` | build info |
 
-**Allowlisted units:** `openclaw-node`, `hermes-proxy`, `dotfiles-auto-update`
+**Allowlisted units:** `openclaw-node`, `hermes-proxy`, `dotfiles-auto-update`, `machine-agent`
 
-Nothing else. PTY sessions, reverse tunnels, file transfer, and
-desired-state reconciliation are **permanently deferred** — use `hms` or
-`ssh` instead.
+**Constrained exec rules:**
+- `action` is an enum — not a free string passed to shell
+- `name` is validated against the allowlist before any syscall
+- No working directory control, no argument injection, no shell expansion
+- No PTY, no file read/write, no arbitrary command execution
 
 ### Auth
 

@@ -40,7 +40,12 @@
     # ace-coder: pinned clean source for the CUDA worker package and HM module.
     # Use a committed git revision from the local repo, not the live dirty tree,
     # so worker builds remain cacheable and reproducible.
-    ace-coder.url = "git+file:///home/mhugo/code/ace-coder?ref=main";
+    # Pinned to 9b6e50329 — last rev that builds cleanly under -D dead_code.
+    # HEAD of main (017e53d44) orphaned 5 load_* functions in remote-worker
+    # without cfg-gating them, failing the Nix build. The running worker
+    # self-updates via WSS from llm-gateway, so the Nix-built binary is only
+    # a first-boot seed — pinning an older rev does not affect runtime.
+    ace-coder.url = "git+file:///home/mhugo/code/ace-coder?rev=9b6e50329125c1004e845e7a01d70d0735fb9468";
 
     # hermes-agent: self-improving agent (replaces legacy openclaw node).
     # Flake exposes packages.<system>.default wrapping the `hermes` binary.

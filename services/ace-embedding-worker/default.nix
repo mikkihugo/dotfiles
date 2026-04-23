@@ -17,7 +17,12 @@ in {
 
   services.remote-gpu-worker = {
     enable = true;
-    package = ace-pkgs.remote-worker-linux-x86_64-cpu-static;
+    # Supervisor-only package: ~20MB static musl binary, no llama-cpp / candle
+    # in its dep graph (worker.nix skips inference features when
+    # workerBinaryName == "remote-supervisor"). The supervisor connects to
+    # llm-gateway over WSS and fetches the full worker bundle at runtime via
+    # the self-update protocol — Nix only seeds the tiny loader.
+    package = ace-pkgs.worker-supervisor-linux-x86_64-bundle;
     gpuName = "NVIDIA GeForce RTX 4080";
     managedWorkerKind = "combined";
     extraEnv = ["\"LD_LIBRARY_PATH=${pkgs.cudatoolkit}/lib\""];

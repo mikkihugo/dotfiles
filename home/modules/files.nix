@@ -9,10 +9,10 @@
   ...
 }: let
   lowercaseHostname = lib.toLower hostname;
-  usesLocalBuildNixConfig =
-    lowercaseHostname
-    == "mikki-bunker"
-    || lowercaseHostname == "mikki-laptop";
+  # mikki-bunker delegates worker builds to llm-gateway (remote builder) —
+  # llama-cpp + candle deps take ~20 min to compile locally. mikki-laptop
+  # stays on local-build (no SSH path to llm-gateway from there).
+  usesLocalBuildNixConfig = lowercaseHostname == "mikki-laptop";
   nixConfigSource =
     if usesLocalBuildNixConfig
     then ../../config/nix/local-build.nix.conf

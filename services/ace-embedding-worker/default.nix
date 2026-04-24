@@ -17,12 +17,15 @@ in {
 
   services.remote-gpu-worker = {
     enable = true;
-    # Supervisor-only package: ~20MB static musl binary, no llama-cpp / candle
-    # in its dep graph (worker.nix skips inference features when
-    # workerBinaryName == "remote-supervisor"). The supervisor connects to
-    # llm-gateway over WSS and fetches the full worker bundle at runtime via
-    # the self-update protocol — Nix only seeds the tiny loader.
-    package = ace-pkgs.worker-supervisor-linux-x86_64-bundle;
+    # RTX 4080 is Ada Lovelace = sm89. Using the CUDA worker variant so the
+    # supervisor correctly advertises artifact_variant="cuda-sm89" on
+    # LoaderHello and the director assigns it the GPU pool. The CPU-static
+    # supervisor bundle advertises "cpu" and the director shelves it with
+    # "no serving pools assigned" because no CPU pool is configured here.
+    # Followup: ace-coder should expose a CUDA-aware supervisor-only bundle
+    # (nvml-wrapper feature enabled) so we get tiny-loader + GPU detection
+    # together. Until then, the full worker package is the right pick.
+    package = ace-pkgs.remote-worker-linux-x86_64-cuda-sm89;
     gpuName = "NVIDIA GeForce RTX 4080";
     managedWorkerKind = "combined";
     extraEnv = ["\"LD_LIBRARY_PATH=${pkgs.cudatoolkit}/lib\""];

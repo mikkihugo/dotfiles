@@ -66,13 +66,16 @@ Host aidev
     IdentityFile ~/.ssh/id_ed25519
 
 Host llm-gateway llm-gateway.centralcloud.com
-    # Authorized keys on llm-gateway: id_ed25519 (canonical) + hetzner_ace (legacy).
-    # Do NOT use hetzner_id_ed25519 (→ mail.hugo.dk) or personal_admin_id_ed25519
-    # (→ mon.portal.centralcloud.com et al) here — those are SOPS-rendered for
-    # other hosts and not authorized on llm-gateway.
+    # Use hetzner_ace — the only user-level key authorized on llm-gateway today.
+    # id_ed25519 is NOT authorized here (confirmed 2026-04-24). The nix
+    # remote-builder uses hetzner_ace via /etc/ssh/ssh_config.d/99-llm-gateway-builder.conf
+    # so keeping this aligned avoids split-brain auth paths.
+    # Do NOT try hetzner_id_ed25519 (→ mail.hugo.dk) or personal_admin_id_ed25519
+    # (→ mon.portal.centralcloud.com et al) — those are SOPS-rendered for other
+    # hosts and will fail auth here.
     HostName llm-gateway.centralcloud.com
     User root
-    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile ~/.ssh/hetzner_ace
     IdentitiesOnly yes
 
 # Tailscale hosts

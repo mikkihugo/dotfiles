@@ -40,7 +40,7 @@
     sops # encrypts/decrypts YAML/JSON secrets
     age # encryption backend (replaces GPG for SOPS)
     ssh-to-age # derives age pubkey from SSH ed25519 key
-    openbao # `bao` CLI — talks to vault.hugo.dk (tailnet-only) via BAO_ADDR
+    openbao # `bao` CLI — talks to app.hugo.dk/vault (public, Authelia-gated UI) via BAO_ADDR
 
     # Shell tooling — linters used by lefthook pre-commit hooks.
     shellcheck # static analysis for shell scripts

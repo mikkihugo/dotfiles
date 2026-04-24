@@ -35,6 +35,13 @@ in {
   };
 
   config = lib.mkIf config.dotfiles.machine.enableHermesProxy {
+    # Expose the `hermes` CLI on PATH so users can run `hermes --tui`,
+    # `hermes chat`, etc. interactively. Falls back to nothing if the
+    # flake input isn't wired (e.g. unsupported system).
+    home.packages = lib.optionals (hermes-agent != null) [
+      hermes-agent.packages.${targetSystem}.default
+    ];
+
     sops = {
       defaultSopsFile = ../../secrets/api-keys.yaml;
       age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";

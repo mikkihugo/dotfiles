@@ -15,9 +15,18 @@
     pkgs.bun
     pkgs.coreutils
     pkgs.bash
+    pkgs.systemd
   ];
+  USER_TOOL_PATH = "${config.home.homeDirectory}/.local/bin:${config.home.homeDirectory}/.npm-global/bin:${config.home.homeDirectory}/.bun/bin:${config.home.homeDirectory}/.cargo/bin";
 in {
   home.activation = {
+    # A previous transient user-unit failure makes home-manager report the whole
+    # user manager as degraded before it reloads services. Clear stale failed
+    # states first; real failures during this activation will still be reported.
+    resetFailedUserUnits = lib.hm.dag.entryBefore ["reloadSystemd"] ''
+      ${pkgs.systemd}/bin/systemctl --user reset-failed || true
+    '';
+
     # programs.gh and programs.jujutsu own these files as nix-store symlinks.
     # If they exist as plain files (written by `gh auth` or `jj init`) home-manager
     # aborts with "would be clobbered". Remove them before checkLinkTargets.
@@ -96,6 +105,7 @@ in {
     # uv tool install -U is idempotent: no-op when already at latest.
     installToad = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating toad..."
+      PATH="${USER_TOOL_PATH}:$PATH" \
       ${pkgs.uv}/bin/uv tool install -U batrachian-toad --python 3.14 && \
         echo "toad ready — run: toad" || \
         echo "WARNING: toad install failed" >&2
@@ -142,6 +152,7 @@ installCrowCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
     # kimi-cli (Moonshot) is not in nixpkgs — keep it up to date on every hms.
     installKimiCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating kimi-cli..."
+      PATH="${USER_TOOL_PATH}:$PATH" \
       ${pkgs.uv}/bin/uv tool install -U kimi-cli && \
         echo "kimi-cli ready — run: kimi" || \
         echo "WARNING: kimi-cli install failed" >&2
@@ -228,6 +239,7 @@ installCrowCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
     # mistral-vibe (Mistral AI) is not in nixpkgs — keep it up to date on every hms.
     installMistralVibe = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating mistral-vibe..."
+      PATH="${USER_TOOL_PATH}:$PATH" \
       ${pkgs.uv}/bin/uv tool install -U mistral-vibe && \
         echo "mistral-vibe ready — run: mistral-vibe" || \
         echo "WARNING: mistral-vibe install failed" >&2

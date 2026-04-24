@@ -10,6 +10,7 @@
 }: let
   ace-pkgs = ace-coder.packages.${pkgs.stdenv.hostPlatform.system};
   SUPERVISOR_RESTART_DELAY_SECONDS = 300;
+  SUPERVISOR_STOP_TIMEOUT_SECONDS = 10;
 in {
   imports = [
     ace-coder.homeManagerModules.remote-gpu-worker
@@ -35,5 +36,9 @@ in {
   };
 
   # Slow down full supervisor restarts so a crash loop does not thrash WSL2.
-  systemd.user.services.remote-gpu-worker.Service.RestartSec = lib.mkForce SUPERVISOR_RESTART_DELAY_SECONDS;
+  systemd.user.services.remote-gpu-worker.Service = {
+    RestartSec = lib.mkForce SUPERVISOR_RESTART_DELAY_SECONDS;
+    TimeoutStopSec = lib.mkForce SUPERVISOR_STOP_TIMEOUT_SECONDS;
+    SendSIGKILL = lib.mkForce true;
+  };
 }

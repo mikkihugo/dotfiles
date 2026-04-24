@@ -17,15 +17,16 @@ in {
 
   services.remote-gpu-worker = {
     enable = true;
-    # RTX 4080 is Ada Lovelace = sm89. Using the CUDA worker variant so the
-    # supervisor correctly advertises artifact_variant="cuda-sm89" on
-    # LoaderHello and the director assigns it the GPU pool. The CPU-static
-    # supervisor bundle advertises "cpu" and the director shelves it with
-    # "no serving pools assigned" because no CPU pool is configured here.
-    # Followup: ace-coder should expose a CUDA-aware supervisor-only bundle
-    # (nvml-wrapper feature enabled) so we get tiny-loader + GPU detection
-    # together. Until then, the full worker package is the right pick.
-    package = ace-pkgs.remote-worker-linux-x86_64-cuda-sm89;
+    # Tiny static-musl supervisor-only bundle (~20MB). Director now routes
+    # by hostname via host_pool_assignment (SQL worker_kind filter was
+    # decommissioned in ace-coder 519deb6c9/fc6e21e61), so the supervisor
+    # doesn't need to advertise "cuda-sm89" to get assigned GPU pools.
+    # The supervisor downloads the actual worker binary at runtime via
+    # LaunchWorker — that binary is director-selected per pool.runtime
+    # and fetched from llm-gateway's release store, NOT from Nix.
+    # Avoids the fat-worker Nix build which OOMs on bunker (candle-flash-attn
+    # CUDA compile) and on llm-gateway (production-python 711-drv rebuild).
+    package = ace-pkgs.worker-supervisor-linux-x86_64-bundle;
     gpuName = "NVIDIA GeForce RTX 4080";
     # managedWorkerKind removed 2026-04-24 — director now routes purely by
     # hostname → host_pool_assignment → pool.runtime (Alembic 005 + director

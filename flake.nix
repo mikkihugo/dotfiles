@@ -45,7 +45,7 @@
     # without cfg-gating them, failing the Nix build. The running worker
     # self-updates via WSS from llm-gateway, so the Nix-built binary is only
     # a first-boot seed — pinning an older rev does not affect runtime.
-    ace-coder.url = "git+file:///home/mhugo/code/ace-coder?rev=9b6e50329125c1004e845e7a01d70d0735fb9468";
+    ace-coder.url = "git+file:///home/mhugo/code/ace-coder?rev=58b7a904030dfd06e139aafc2222c1ea1331746c";
 
     # hermes-agent: self-improving agent (replaces legacy openclaw node).
     # Flake exposes packages.<system>.default wrapping the `hermes` binary.

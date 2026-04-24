@@ -12,6 +12,14 @@ _: let
     export DOTFILES_ROOT="${dotfilesRoot}"
     export HM_MANAGED=1
 
+    # home-manager only sources hm-session-vars.sh from ~/.profile (login shells).
+    # WSL/terminal-emulator bash starts as a non-login interactive shell, so PATH
+    # entries from home.sessionPath (~/.bun/bin, ~/.npm-global/bin, ~/.cargo/bin,
+    # etc.) never get added. Source it here so codex/gemini/openclaw/opencode
+    # resolve in interactive shells.
+    [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] \
+      && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+
     # Activate mise, load SOPS secrets, handle non-interactive direnv,
     # and source third-party completions. See shell/bash/bashrc for details.
     [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"

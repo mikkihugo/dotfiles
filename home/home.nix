@@ -21,6 +21,11 @@
   hostname ? "",
   ...
 }: {
+  dotfiles.machine.tailnetHostname =
+    if lib.toLower hostname == "mikki-bunker"
+    then "bunker"
+    else null;
+
   imports =
     [
       sops-nix.homeManagerModules.sops

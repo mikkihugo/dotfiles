@@ -15,7 +15,12 @@
   pkgs,
   lib,
   ...
-}:
+}: let
+  desiredHostname =
+    if config.dotfiles.machine.tailnetHostname != null && config.dotfiles.machine.tailnetHostname != ""
+    then config.dotfiles.machine.tailnetHostname
+    else "$(${pkgs.hostname}/bin/hostname)";
+in
 lib.mkIf config.dotfiles.machine.enableTailscale {
   sops.secrets.tailscale_authkey = {
     key = "tailscale/authkey";
@@ -50,12 +55,10 @@ lib.mkIf config.dotfiles.machine.enableTailscale {
       done
     fi
 
-    # Already online on our login_server? Skip.
-    _state=$($SUDO /usr/bin/tailscale status --json 2>/dev/null | ${pkgs.jq}/bin/jq -r '.BackendState // ""')
-    if [ "$_state" = "Running" ]; then
-      echo "[tailscale] already online — $($SUDO /usr/bin/tailscale status --self=true --peers=false 2>/dev/null | head -1)"
-      exit 0
-    fi
+    _desired_hostname='${desiredHostname}'
+    _status_json=$($SUDO /usr/bin/tailscale status --json 2>/dev/null || true)
+    _state=$(printf '%s' "$_status_json" | ${pkgs.jq}/bin/jq -r '.BackendState // ""' 2>/dev/null || echo "")
+    _current_hostname=$(printf '%s' "$_status_json" | ${pkgs.jq}/bin/jq -r '.Self.HostName // .Self.DNSName // ""' 2>/dev/null || echo "")
 
     _login_server=$(cat ${config.sops.secrets.tailscale_login_server.path} 2>/dev/null || echo "")
     _authkey=$(cat ${config.sops.secrets.tailscale_authkey.path} 2>/dev/null || echo "")
@@ -64,12 +67,22 @@ lib.mkIf config.dotfiles.machine.enableTailscale {
       exit 0
     fi
 
-    echo "[tailscale] joining $_login_server as $(${pkgs.hostname}/bin/hostname)…"
+    if [ "$_state" = "Running" ] && [ "$_current_hostname" = "$_desired_hostname" ]; then
+      echo "[tailscale] already online as $_current_hostname — $($SUDO /usr/bin/tailscale status --self=true --peers=false 2>/dev/null | head -1)"
+      exit 0
+    fi
+
+    if [ "$_state" = "Running" ] && [ -n "$_current_hostname" ] && [ "$_current_hostname" != "$_desired_hostname" ]; then
+      echo "[tailscale] correcting hostname $_current_hostname -> $_desired_hostname"
+    else
+      echo "[tailscale] joining $_login_server as $_desired_hostname…"
+    fi
+
     # --operator avoids needing sudo for `tailscale up/down/set` from now on.
     $SUDO /usr/bin/tailscale up \
       --login-server="$_login_server" \
       --authkey="$_authkey" \
-      --hostname="$(${pkgs.hostname}/bin/hostname)" \
+      --hostname="$_desired_hostname" \
       --operator="$(whoami)" \
       --accept-routes \
       || echo "[tailscale] up failed (non-fatal)" >&2

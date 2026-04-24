@@ -30,7 +30,7 @@
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
     go # build machine-agent (tsnet) and other Go tools
-    nodejs_24 # Node.js LTS (also needed by openclaw activation)
+    nodejs_24 # Node.js LTS
     pnpm # fast, disk-efficient Node package manager
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin
 
@@ -41,7 +41,6 @@
     age # encryption backend (replaces GPG for SOPS)
     ssh-to-age # derives age pubkey from SSH ed25519 key
     openbao # `bao` CLI — talks to app.hugo.dk/vault (public, Authelia-gated UI) via BAO_ADDR
-
     # Shell tooling — linters used by lefthook pre-commit hooks.
     shellcheck # static analysis for shell scripts
     shfmt # formatter for shell scripts
@@ -55,6 +54,7 @@
     nvd # diff between home-manager / NixOS generations
     nix-output-monitor # prettier `nix build` output
     nix-index # `nix-locate`: find which package provides a binary
+    kubectl # Kubernetes CLI for Flux/k3s validation and ops
 
     # Terminal multiplexer — persistent sessions, split panes.
     zellij

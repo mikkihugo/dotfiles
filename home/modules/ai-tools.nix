@@ -43,22 +43,20 @@
     sopsSecrets.openrouter_api_key.path
     "OPENROUTER_API_KEY";
 in {
-  sops.secrets = {
-    gemini_api_key = lib.mkDefault {
-      key = "gemini/api_key";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
-    openrouter_api_key = lib.mkDefault {
-      key = "openrouter/api_key";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
-    amp_token = lib.mkDefault {
-      key = "amp/token";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
+  sops.secrets.gemini_api_key = {
+    key = "gemini/api_key";
+    mode = "0600";
+    sopsFile = ../../secrets/api-keys.yaml;
+  };
+  sops.secrets.openrouter_api_key = {
+    key = "openrouter/api_key";
+    mode = "0600";
+    sopsFile = ../../secrets/api-keys.yaml;
+  };
+  sops.secrets.amp_token = {
+    key = "amp/token";
+    mode = "0600";
+    sopsFile = ../../secrets/api-keys.yaml;
   };
 
   home.packages = [geminiWrapper ampWrapper toadWrapper];

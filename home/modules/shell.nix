@@ -30,8 +30,6 @@ _: let
       export LETTA_API_KEY="$(cat "$HOME/.letta/api_key")"
     fi
 
-    # openclaw gateway password — rendered from SOPS by activation hook.
-    [ -f "$HOME/.config/openclaw/env" ] && set -a && source "$HOME/.config/openclaw/env" && set +a
   '';
 in {
   home.shellAliases = {
@@ -44,10 +42,7 @@ in {
     # Secrets management
     secrets = "~/.dotfiles/scripts/secrets-edit";
 
-    # Register this machine as an openclaw node (run once after hms on a new machine).
-    openclaw-setup = "openclaw node install --host ai.hugo.dk --port 18789 --tls --display-name \"$(hostnamectl --static)\" && openclaw node restart";
-
-    # ls replacements via eza. NOT aliasing grep→rg or find→fd — different
+    #ls replacements via eza. NOT aliasing grep→rg or find→fd — different
     # argument syntax would break scripts that rely on them.
     ls = "eza --group-directories-first";
     ll = "eza -la --group-directories-first --git";

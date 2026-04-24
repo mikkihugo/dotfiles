@@ -24,7 +24,7 @@ in {
     removeConflictingConfigs = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
       rm -f "$HOME/.config/gh/config.yml"
       rm -f "$HOME/.config/jj/config.toml"
-      rm -f "$HOME/.config/systemd/user/openclaw-node.service"
+
       rm -f "$HOME/.config/systemd/user/dr-repo-maintenance.service"
       rm -f "$HOME/.config/systemd/user/dr-repo-maintenance.timer"
       rm -f "$HOME/.config/systemd/user/timers.target.wants/dr-repo-maintenance.timer"
@@ -90,22 +90,6 @@ in {
       fi
     '';
 
-    # openclaw is an npm package not in nixpkgs — always update to latest on hms.
-    # After first install run `openclaw-setup` to register this machine as a node.
-    installOpenclaw = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      if [ "${lib.boolToString config.dotfiles.machine.enableOpenclawNode}" != "true" ]; then
-        echo "openclaw disabled for role ${config.dotfiles.machine.role}, skipping install"
-      else
-        echo "Updating openclaw..."
-        PATH="${NODE_INSTALL_RUNTIME_PATH}:$PATH" \
-        ${pkgs.nodejs_24}/bin/npm install -g \
-          --prefix "$HOME/.npm-global" \
-          --no-fund --no-audit \
-          openclaw@latest && \
-          echo "openclaw ready — run: openclaw-setup if first time" || \
-          echo "WARNING: openclaw update failed" >&2
-      fi
-    '';
 
     # toad (batrachian.ai) is not in nixpkgs — keep it up to date on every hms.
     # Requires Python 3.14+; uv fetches the right interpreter automatically.
@@ -115,6 +99,44 @@ in {
       ${pkgs.uv}/bin/uv tool install -U batrachian-toad --python 3.14 && \
         echo "toad ready — run: toad" || \
         echo "WARNING: toad install failed" >&2
+    '';
+
+    installCursor = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      if ! command -v agent &>/dev/null; then
+        echo "Installing cursor CLI..."
+        curl https://cursor.com/install -fsS | bash || \
+          echo "WARNING: cursor install failed" >&2
+      fi
+    '';
+
+    installGoose = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      if ! command -v goose &>/dev/null; then
+        echo "Installing goose..."
+        curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash || \
+          echo "WARNING: goose install failed" >&2
+      fi
+    '';
+
+    installKiro = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      if ! command -v kiro &>/dev/null; then
+        echo "Installing kiro CLI..."
+        curl -fsSL https://cli.kiro.dev/install | bash || \
+          echo "WARNING: kiro install failed" >&2
+      fi
+    '';
+
+    installOpenhands = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      echo "Updating openhands..."
+      ${pkgs.uv}/bin/uv tool install openhands -U --python 3.12 && \
+        echo "openhands ready — run: openhands login" || \
+        echo "WARNING: openhands install failed" >&2
+    '';
+
+installCrowCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      echo "Updating crow-cli..."
+      ${pkgs.uv}/bin/uv tool install -U crow-cli --python 3.14 && \
+        echo "crow-cli ready — run: crow-cli" || \
+        echo "WARNING: crow-cli install failed" >&2
     '';
 
     # kimi-cli (Moonshot) is not in nixpkgs — keep it up to date on every hms.

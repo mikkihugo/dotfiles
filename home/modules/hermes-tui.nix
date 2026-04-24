@@ -14,7 +14,7 @@
   hermes-agent ? null,
   ...
 }: let
-  hermesUrl = "https://api.hugo.dk/hermes";
+  hermesUrl = "https://hdm.hugo.dk";
   hermesBin =
     if hermes-agent != null
     then "${hermes-agent.packages.${targetSystem}.default}/bin/hermes"
@@ -25,20 +25,16 @@
   htWrapper = pkgs.writeShellScriptBin "hermes" ''
     export GATEWAY_PROXY_URL="${hermesUrl}"
     export GATEWAY_PROXY_KEY="$(cat "${keyPath}")"
+    export HERMES_TUI_DIR="$HOME/.hermes/ui-tui"
+    unset OPENROUTER_API_KEY
     exec ${hermesBin} --tui "$@"
   '';
 in {
-  # Reuse the SOPS secret declared in hermes-proxy.nix if that module is
-  # active; otherwise declare it here. lib.mkDefault avoids duplicate-key
-  # errors when both modules are loaded.
-  sops.secrets.hermes_gateway_proxy_key = lib.mkDefault {
+  sops.secrets.hermes_gateway_proxy_key = {
     key = "hermes/gateway_proxy_key";
     mode = "0600";
     sopsFile = ../../secrets/api-keys.yaml;
   };
 
-  home.packages =
-    [htWrapper]
-    ++ lib.optional (hermes-agent != null)
-    hermes-agent.packages.${targetSystem}.default;
+  home.packages = [htWrapper];
 }

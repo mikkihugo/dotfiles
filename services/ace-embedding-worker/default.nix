@@ -27,7 +27,9 @@ in {
     # together. Until then, the full worker package is the right pick.
     package = ace-pkgs.remote-worker-linux-x86_64-cuda-sm89;
     gpuName = "NVIDIA GeForce RTX 4080";
-    managedWorkerKind = "combined";
+    # managedWorkerKind removed 2026-04-24 — director now routes purely by
+    # hostname → host_pool_assignment → pool.runtime (Alembic 005 + director
+    # list_loader_desired_pools_from_db). Supervisor no longer self-declares.
     extraEnv = ["\"LD_LIBRARY_PATH=${pkgs.cudatoolkit}/lib\""];
   };
 

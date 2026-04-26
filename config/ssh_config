@@ -80,11 +80,6 @@ Host llm-gateway llm-gateway.centralcloud.com
     IdentitiesOnly yes
 
 # Tailscale hosts
-Host bunker
-    HostName bunker
-    User mhugo
-    IdentityFile ~/.ssh/id_ed25519
-
 Host mikki-bunker-windows
     HostName mikki-bunker
     User mhugo

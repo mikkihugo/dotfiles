@@ -83,12 +83,12 @@ Host llm-gateway llm-gateway.centralcloud.com
 # NOTE: headscale has two nodes on the bunker host:
 #   mikki-bunker             → 100.64.0.5 (Windows side, no sshd)
 #   mikki-bunker-frislo8r    → 100.64.0.3 (WSL2 Linux, real sshd target)
-Host mikki-bunker
+Host mikki-bunker-windows
     HostName mikki-bunker
     User mhugo
     IdentityFile ~/.ssh/id_ed25519
 
-Host mikki-bunker-frislo8r
+Host mikki-bunker
     HostName mikki-bunker-frislo8r
     User mhugo
     IdentityFile ~/.ssh/id_ed25519

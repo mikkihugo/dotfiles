@@ -15,7 +15,7 @@ Host flow.hugo.dk portal-workflow
 
 # Personal Hetzner/public servers — use the personal admin key here.
 Host mon.hugo.dk mon.portal.centralcloud.com mail.sendramp.com
-    HostName %h
+    HostName 77.42.29.242
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes

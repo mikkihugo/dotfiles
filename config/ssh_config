@@ -80,16 +80,15 @@ Host llm-gateway llm-gateway.centralcloud.com
     IdentitiesOnly yes
 
 # Tailscale hosts
-Host mikki-bunker-windows
+# NOTE: headscale has two nodes on the bunker host:
+#   mikki-bunker             → 100.64.0.5 (Windows side, no sshd)
+#   mikki-bunker-frislo8r    → 100.64.0.3 (WSL2 Linux, real sshd target)
+Host mikki-bunker
     HostName mikki-bunker
     User mhugo
     IdentityFile ~/.ssh/id_ed25519
 
-# NOTE: headscale has two nodes on the bunker host:
-#   mikki-bunker             → 100.64.0.5 (Windows side, no sshd)
-#   mikki-bunker-frislo8r    → 100.64.0.3 (WSL2 Linux, real sshd target)
-# The alias below points to the usable Linux node.
-Host mikki-bunker
+Host mikki-bunker-frislo8r
     HostName mikki-bunker-frislo8r
     User mhugo
     IdentityFile ~/.ssh/id_ed25519

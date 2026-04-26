@@ -13,17 +13,10 @@
   lib,
   ...
 }: let
-  baoWrapper = pkgs.writeShellScriptBin "bao" ''
-    # Use VAULT_ADDR if already set (e.g. by kubectl port-forward).
-    # Fall back to CF Tunnel hostname — requires vault.hugo.dk CNAME + CF Access.
-    export VAULT_ADDR="''${VAULT_ADDR:-https://vault.hugo.dk}"
-    exec ${pkgs.openbao}/bin/bao "$@"
-  '';
-
   autheliaWrapper = pkgs.writeShellScriptBin "authelia" ''
     export X_AUTHELIA_CONFIG_FILTERS="template"
     exec ${pkgs.authelia}/bin/authelia "$@"
   '';
 in {
-  home.packages = [baoWrapper autheliaWrapper];
+  home.packages = [autheliaWrapper pkgs.kustomize];
 }

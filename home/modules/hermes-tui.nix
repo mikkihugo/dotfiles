@@ -22,7 +22,7 @@
 
   keyPath = config.sops.secrets.hermes_gateway_proxy_key.path;
 
-  htWrapper = pkgs.writeShellScriptBin "hermes" ''
+  htWrapper = pkgs.writeShellScriptBin "hermes-tui" ''
     export GATEWAY_PROXY_URL="${hermesUrl}"
     export GATEWAY_PROXY_KEY="$(cat "${keyPath}")"
     export HERMES_TUI_DIR="$HOME/.hermes/ui-tui"

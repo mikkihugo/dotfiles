@@ -31,11 +31,11 @@
     sopsSecrets.gemini_api_key.path
     "GEMINI_API_KEY";
 
-  ampWrapper =
-    mkKeyWrapper "amp"
-    "${config.home.homeDirectory}/.npm-global/bin/amp"
-    sopsSecrets.amp_token.path
-    "AMP_TOKEN";
+  # ampWrapper =
+  #   mkKeyWrapper "amp"
+  #   "${config.home.homeDirectory}/.npm-global/bin/amp"
+  #   sopsSecrets.amp_token.path
+  #   "AMP_TOKEN";
 
   toadWrapper =
     mkKeyWrapper "toad"
@@ -53,13 +53,13 @@ in {
     mode = "0600";
     sopsFile = ../../secrets/api-keys.yaml;
   };
-  sops.secrets.amp_token = {
-    key = "amp/token";
-    mode = "0600";
-    sopsFile = ../../secrets/api-keys.yaml;
-  };
+  # sops.secrets.amp_token = {
+  #   key = "amp/token";
+  #   mode = "0600";
+  #   sopsFile = ../../secrets/api-keys.yaml;
+  # };
 
-  home.packages = [geminiWrapper ampWrapper toadWrapper];
+  home.packages = [geminiWrapper /* ampWrapper */ toadWrapper];
 
   # Install + upgrade on every hms. npm --prefer-online updates if registry
   # has a newer version; uv tool upgrade does the same for Python.

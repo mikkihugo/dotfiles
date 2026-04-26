@@ -85,15 +85,15 @@ Host bunker
     User mhugo
     IdentityFile ~/.ssh/id_ed25519
 
-Host bunker-windows
+Host mikki-bunker-windows
     HostName mikki-bunker
     User mhugo
     IdentityFile ~/.ssh/id_ed25519
 
-# NOTE: headscale has two nodes named "mikki-bunker*":
-#   mikki-bunker             → 100.64.0.5 (Windows host, no sshd)
+# NOTE: headscale has two nodes on the bunker host:
+#   mikki-bunker             → 100.64.0.5 (Windows side, no sshd)
 #   mikki-bunker-frislo8r    → 100.64.0.3 (WSL2 Linux, real sshd target)
-# Pin the alias to the Linux node's MagicDNS name.
+# The alias below points to the usable Linux node.
 Host mikki-bunker
     HostName mikki-bunker-frislo8r
     User mhugo

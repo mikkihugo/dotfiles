@@ -10,13 +10,6 @@
   ...
 }: let
   pythonWithYaml = pkgs.python3.withPackages (ps: [ps.pyyaml]);
-  NODE_INSTALL_RUNTIME_PATH = lib.makeBinPath [
-    pkgs.nodejs_24
-    pkgs.bun
-    pkgs.coreutils
-    pkgs.bash
-    pkgs.systemd
-  ];
   USER_TOOL_PATH = "${config.home.homeDirectory}/.local/bin:${config.home.homeDirectory}/.npm-global/bin:${config.home.homeDirectory}/.bun/bin:${config.home.homeDirectory}/.cargo/bin";
 in {
   home.activation = {
@@ -40,6 +33,15 @@ in {
       rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/combined.conf"
       rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/no-watchdog.conf"
       rmdir "$HOME/.config/systemd/user/remote-gpu-worker.service.d" 2>/dev/null || true
+    '';
+
+    seedMutableCodexConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      mkdir -p "$HOME/.codex"
+      if [ -L "$HOME/.codex/config.toml" ] || [ ! -e "$HOME/.codex/config.toml" ]; then
+        rm -f "$HOME/.codex/config.toml"
+        cp "${config.home.homeDirectory}/.dotfiles/config/codex/config.toml" "$HOME/.codex/config.toml"
+        chmod 600 "$HOME/.codex/config.toml"
+      fi
     '';
 
     # Extract personal-admin SSH key from SOPS into ~/.ssh/ for monitor, portal-automation,
@@ -99,7 +101,6 @@ in {
       fi
     '';
 
-
     # toad (batrachian.ai) is not in nixpkgs — keep it up to date on every hms.
     # Requires Python 3.14+; uv fetches the right interpreter automatically.
     # uv tool install -U is idempotent: no-op when already at latest.
@@ -111,30 +112,6 @@ in {
         echo "WARNING: toad install failed" >&2
     '';
 
-    installCursor = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      if ! command -v agent &>/dev/null; then
-        echo "Installing cursor CLI..."
-        curl https://cursor.com/install -fsS | bash || \
-          echo "WARNING: cursor install failed" >&2
-      fi
-    '';
-
-    installGoose = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      if ! command -v goose &>/dev/null; then
-        echo "Installing goose..."
-        curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash || \
-          echo "WARNING: goose install failed" >&2
-      fi
-    '';
-
-    installKiro = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      if ! command -v kiro &>/dev/null; then
-        echo "Installing kiro CLI..."
-        curl -fsSL https://cli.kiro.dev/install | bash || \
-          echo "WARNING: kiro install failed" >&2
-      fi
-    '';
-
     installOpenhands = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating openhands..."
       ${pkgs.uv}/bin/uv tool install openhands -U --python 3.12 && \
@@ -142,7 +119,7 @@ in {
         echo "WARNING: openhands install failed" >&2
     '';
 
-installCrowCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    installCrowCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating crow-cli..."
       ${pkgs.uv}/bin/uv tool install -U crow-cli --python 3.14 && \
         echo "crow-cli ready — run: crow-cli" || \
@@ -156,93 +133,6 @@ installCrowCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ${pkgs.uv}/bin/uv tool install -U kimi-cli && \
         echo "kimi-cli ready — run: kimi" || \
         echo "WARNING: kimi-cli install failed" >&2
-    '';
-
-    # opencode is not in nixpkgs — keep it up to date on every hms.
-    installOpencode = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Updating opencode..."
-      PATH="${NODE_INSTALL_RUNTIME_PATH}:$PATH" \
-      ${pkgs.nodejs_24}/bin/npm install -g \
-        --prefix "$HOME/.npm-global" \
-        --no-fund --no-audit \
-        opencode-ai@latest && \
-        echo "opencode ready — run: opencode" || \
-        echo "WARNING: opencode install failed" >&2
-    '';
-
-    # gemini-cli is not in nixpkgs — keep it up to date on every hms.
-    installGeminiCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Updating gemini-cli..."
-      PATH="${NODE_INSTALL_RUNTIME_PATH}:$PATH" \
-      ${pkgs.nodejs_24}/bin/npm install -g \
-        --prefix "$HOME/.npm-global" \
-        --no-fund --no-audit \
-        @google/gemini-cli@latest && \
-        echo "gemini-cli ready" || \
-        echo "WARNING: gemini-cli update failed" >&2
-    '';
-
-    # claude-code (Anthropic) is not in nixpkgs — keep it up to date on every hms.
-    installClaudeCode = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Updating claude-code..."
-      PATH="${NODE_INSTALL_RUNTIME_PATH}:$PATH" \
-      ${pkgs.nodejs_24}/bin/npm install -g \
-        --prefix "$HOME/.npm-global" \
-        --no-fund --no-audit \
-        @anthropic-ai/claude-code@latest && \
-        echo "claude-code ready — run: claude" || \
-        echo "WARNING: claude-code update failed" >&2
-    '';
-
-    # codex (OpenAI) is not in nixpkgs — keep it up to date on every hms.
-    installCodex = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Updating codex..."
-      PATH="${NODE_INSTALL_RUNTIME_PATH}:$PATH" \
-      ${pkgs.nodejs_24}/bin/npm install -g \
-        --prefix "$HOME/.npm-global" \
-        --no-fund --no-audit \
-        @openai/codex@latest && \
-        echo "codex ready — run: codex" || \
-        echo "WARNING: codex update failed" >&2
-    '';
-
-    # amp (Sourcegraph) self-updates via its own update command.
-    updateAmp = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      if command -v amp &>/dev/null; then
-        echo "Updating amp..."
-        amp update || echo "WARNING: amp update failed" >&2
-      else
-        echo "WARNING: amp not found — install manually from amp.dev" >&2
-      fi
-    '';
-
-    # cursor-agent self-updates via its own update command.
-    updateCursorAgent = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      if command -v cursor-agent &>/dev/null; then
-        echo "Updating cursor-agent..."
-        cursor-agent update || echo "WARNING: cursor-agent update failed" >&2
-      else
-        echo "WARNING: cursor-agent not found — install manually from cursor.sh" >&2
-      fi
-    '';
-
-    # factory droid self-updates via its own update command.
-    updateDroid = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      if command -v droid &>/dev/null; then
-        echo "Updating droid..."
-        droid update || echo "WARNING: droid update failed" >&2
-      else
-        echo "WARNING: droid not found — install manually from factory.ai" >&2
-      fi
-    '';
-
-    # mistral-vibe (Mistral AI) is not in nixpkgs — keep it up to date on every hms.
-    installMistralVibe = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Updating mistral-vibe..."
-      PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install -U mistral-vibe && \
-        echo "mistral-vibe ready — run: mistral-vibe" || \
-        echo "WARNING: mistral-vibe install failed" >&2
     '';
   };
 }

@@ -34,12 +34,9 @@ in {
       force = true;
     };
 
-    # Codex CLI: models, features, project trust, MCP servers.
-    # Manage MCP servers here — not via `codex mcp add` which writes locally.
-    ".codex/config.toml" = {
-      source = ../../config/codex/config.toml;
-      force = true;
-    };
+    # Codex CLI config is seeded by activation.nix as a mutable file. Codex
+    # persists approvals, default model, and feature toggles at runtime, so this
+    # path must not be a Home Manager symlink into /nix/store.
     ".codex/rules/default.rules" = {
       source = ../../config/codex/default.rules;
       force = true;

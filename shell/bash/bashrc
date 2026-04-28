@@ -137,6 +137,10 @@ _load_sops_secrets() {
 	val=$(_sops_val exa api_key)
 	[ -n "$val" ] && export EXA_API_KEY="$val"
 
+	# Tavily (Web Search — stored under sf section)
+	val=$(_sops_val sf TAVILY_API_KEY)
+	[ -n "$val" ] && export TAVILY_API_KEY="$val"
+
 	# Ollama Cloud
 	val=$(_sops_val ollama_cloud api_key)
 	[ -n "$val" ] && export OLLAMA_CLOUD_API_KEY="$val"
@@ -149,6 +153,10 @@ _load_sops_secrets() {
 }
 
 alias load-ai-keys='_load_sops_secrets'
+
+# Eager load — makes keys available to child processes (Claude Code, Cursor, CI)
+# without requiring a manual `load-ai-keys` invocation.
+_load_sops_secrets 2>/dev/null || true
 
 # ── Non-interactive direnv export ────────────────────────────────────────────
 # programs.direnv sets up PROMPT_COMMAND hooks, which only fire in interactive

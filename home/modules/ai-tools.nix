@@ -1,23 +1,27 @@
-# home/modules/ai-tools.nix — AI coding CLI tools for laptop
+# home/modules/ai-tools.nix — AI coding CLI tools
 #
-# Installs and auto-updates AI CLI tools that aren't in nixpkgs:
-#   - gemini  (@google/gemini-cli, npm)
-#   - amp     (@sourcegraph/amp, npm)
-#   - toad    (batrachianai/toad, Python via uv tool)
+# All major tools sourced from github:numtide/llm-agents.nix — daily-updated
+# Nix packages with a prebuilt binary cache (cache.numtide.com).
 #
-# API keys come from SOPS (mirroring OpenBao KV), never hardcoded.
-# Wrapper scripts read keys at invocation time from the decrypted secret paths.
+# Tools that need API keys are wrapped with a shell script that reads the
+# decrypted SOPS secret at invocation time — never hardcoded.
 #
 # Keys expected in secrets/api-keys.yaml (SOPS):
-#   gemini/api_key    → kv/gemini:api_key on OpenBao
-#   openrouter/api_key → kv/openrouter:api_key (already present for hermes)
+#   gemini/api_key     → kv/gemini:api_key on OpenBao
+#   openrouter/api_key → kv/openrouter:api_key (shared with hermes)
+#   amp/token          → kv/amp:token
+#
+# Tools not yet in llm-agents (installed via activation.nix):
+#   toad, kiro, openhands, crow-cli, kimi-cli
 {
   config,
   pkgs,
   lib,
+  llm-agents,
   ...
 }: let
   sopsSecrets = config.sops.secrets;
+  llm-pkgs = llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
 
   mkKeyWrapper = name: bin: keyPath: envVar:
     pkgs.writeShellScriptBin name ''
@@ -27,15 +31,15 @@
 
   geminiWrapper =
     mkKeyWrapper "gemini"
-    "${config.home.homeDirectory}/.npm-global/bin/gemini"
+    "${llm-pkgs.gemini-cli}/bin/gemini"
     sopsSecrets.gemini_api_key.path
     "GEMINI_API_KEY";
 
-  # ampWrapper =
-  #   mkKeyWrapper "amp"
-  #   "${config.home.homeDirectory}/.npm-global/bin/amp"
-  #   sopsSecrets.amp_token.path
-  #   "AMP_TOKEN";
+  ampWrapper =
+    mkKeyWrapper "amp"
+    "${llm-pkgs.amp}/bin/amp"
+    sopsSecrets.amp_token.path
+    "AMP_TOKEN";
 
   toadWrapper =
     mkKeyWrapper "toad"
@@ -43,37 +47,36 @@
     sopsSecrets.openrouter_api_key.path
     "OPENROUTER_API_KEY";
 in {
-  sops.secrets.gemini_api_key = {
-    key = "gemini/api_key";
-    mode = "0600";
-    sopsFile = ../../secrets/api-keys.yaml;
+  sops.secrets = {
+    gemini_api_key = {
+      key = "gemini/api_key";
+      mode = "0600";
+      sopsFile = ../../secrets/api-keys.yaml;
+    };
+    openrouter_api_key = {
+      key = "openrouter/api_key";
+      mode = "0600";
+      sopsFile = ../../secrets/api-keys.yaml;
+    };
+    amp_token = {
+      key = "amp/token";
+      mode = "0600";
+      sopsFile = ../../secrets/api-keys.yaml;
+    };
   };
-  sops.secrets.openrouter_api_key = {
-    key = "openrouter/api_key";
-    mode = "0600";
-    sopsFile = ../../secrets/api-keys.yaml;
-  };
-  # sops.secrets.amp_token = {
-  #   key = "amp/token";
-  #   mode = "0600";
-  #   sopsFile = ../../secrets/api-keys.yaml;
-  # };
 
-  home.packages = [geminiWrapper /* ampWrapper */ toadWrapper];
-
-  # Install + upgrade on every hms. npm --prefer-online updates if registry
-  # has a newer version; uv tool upgrade does the same for Python.
-  home.activation.installAiTools = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    export PATH="${pkgs.nodejs}/bin:${pkgs.uv}/bin:$PATH"
-    export npm_config_prefix="$HOME/.npm-global"
-
-    $DRY_RUN_CMD npm install -g --prefer-online \
-      @google/gemini-cli \
-      @sourcegraph/amp \
-      2>/dev/null || true
-
-    $DRY_RUN_CMD uv tool install --upgrade \
-      "git+https://github.com/batrachianai/toad" \
-      2>/dev/null || true
-  '';
+  home.packages = [
+    # API-key-injecting wrappers (shadow the raw Nix binaries for these tools).
+    geminiWrapper
+    ampWrapper
+    toadWrapper
+    # Raw llm-agents packages — no key injection needed.
+    llm-pkgs.claude-code # binary: claude
+    llm-pkgs.codex # binary: codex
+    llm-pkgs.opencode # binary: opencode
+    llm-pkgs.goose-cli # binary: goose
+    llm-pkgs.cursor-agent # binary: cursor-agent (note: was `agent` from curl install)
+    llm-pkgs.droid # binary: droid
+    llm-pkgs.mistral-vibe # binary: vibe (note: was `mistral-vibe` from uv install)
+  ];
 }

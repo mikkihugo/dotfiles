@@ -1,7 +1,7 @@
 # SSH host aliases and the exact key file configured for each block.
 # IdentitiesOnly=yes ensures only the listed key is used for authentication.
 
-Host mail.hugo.dk ai.hugo.dk vpn.hugo.dk
+Host ai.hugo.dk vpn.hugo.dk jump.hugo.dk
     # Central Hetzner-hosted machines use the Hetzner-specific key.
     User root
     IdentityFile ~/.ssh/hetzner_id_ed25519

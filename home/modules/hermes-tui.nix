@@ -1,11 +1,8 @@
 # home/modules/hermes-tui.nix — Hermes TUI client for laptop
 #
 # Wraps `hermes` so it always launches in TUI mode connected to
-# the central Hermes agent at api.hugo.dk/hermes via HTTPS (CF Tunnel).
-# No tailscale required — works anywhere with internet access.
-#
-# The GATEWAY_PROXY_KEY is read from SOPS at runtime (same secret as
-# hermes-proxy.nix uses, key hermes/gateway_proxy_key in api-keys.yaml).
+# the local hermes-proxy gateway (localhost:8642), which forwards to the
+# central agent. Keeps a single upstream path instead of two.
 {
   config,
   pkgs,
@@ -14,7 +11,7 @@
   hermes-agent ? null,
   ...
 }: let
-  hermesUrl = "https://hdm.hugo.dk";
+  hermesUrl = "http://localhost:8642";
   hermesBin =
     if hermes-agent != null
     then "${hermes-agent.packages.${targetSystem}.default}/bin/hermes"

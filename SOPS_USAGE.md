@@ -216,6 +216,7 @@ sf:
     ZAI_API_KEY: ...
     KIMI_API_KEY: ...                    # NB: provider is "kimi-coding", env var is KIMI_API_KEY (no _CODE_)
     OPENROUTER_API_KEY: ...              # free-only child key (limit=0), provisioned via openrouter-management
+    TELEGRAM_BOT_TOKEN: ...              # SF remote questions Telegram bot
 ```
 
 **Important**: the env var names are NOT derived from the provider id. Pi's

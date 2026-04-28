@@ -37,6 +37,12 @@
     # copy-pasting the per-system boilerplate.
     flake-utils.url = "github:numtide/flake-utils";
 
+    # llm-agents: daily-updated Nix packages for AI coding agents (claude-code,
+    # codex, gemini-cli, opencode, amp, goose-cli, cursor-agent, droid, …).
+    # Intentionally NOT following our nixpkgs — cache hits depend on the exact
+    # store paths numtide built; overriding nixpkgs invalidates all of them.
+    llm-agents.url = "github:numtide/llm-agents.nix";
+
     # ace-coder: pinned clean source for the CUDA worker package and HM module.
     # Use a committed git revision from the local repo, not the live dirty tree,
     # so worker builds remain cacheable and reproducible.
@@ -62,12 +68,13 @@
     flake-utils,
     ace-coder,
     hermes-agent,
+    llm-agents,
     ...
   }: let
     # builtins.currentSystem reads host arch at eval time — requires --impure.
     # The `hms` alias already passes --impure.
     system = builtins.currentSystem;
-    specialArgs = {inherit sops-nix ace-coder hermes-agent;};
+    specialArgs = {inherit sops-nix ace-coder hermes-agent llm-agents;};
 
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.
     # targetSystem is passed as specialArgs so imports can branch without

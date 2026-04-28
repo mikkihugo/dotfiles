@@ -52,6 +52,11 @@
       ../services/ace-embedding-worker
     ];
 
+  # Top-level SOPS key source so every host (including dev1) can decrypt,
+  # not just hosts that trigger openclaw/hermes-proxy modules.
+  sops.age.keyFile = "/home/mhugo/.config/sops/age/keys.txt";
+  sops.defaultSopsFile = ../secrets/api-keys.yaml;
+
   home = {
     username = "mhugo";
     homeDirectory = "/home/mhugo";

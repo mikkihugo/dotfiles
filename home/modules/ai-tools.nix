@@ -62,13 +62,15 @@ in {
     geminiWrapper
     toadWrapper
     # Raw llm-agents packages — no key injection needed.
+    # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
+    # these packages compile from source — disable per-host as needed.
     llm-pkgs.claude-code # binary: claude
-    llm-pkgs.codex # binary: codex
+    # llm-pkgs.codex # disabled — Rust rebuild on aarch64
     llm-pkgs.opencode # binary: opencode
-    # llm-pkgs.goose-cli # binary: goose — disabled (heavy Rust rebuild blocks hms)
-    llm-pkgs.cursor-agent # binary: cursor-agent (note: was `agent` from curl install)
+    # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
+    llm-pkgs.cursor-agent # binary: cursor-agent
     llm-pkgs.droid # binary: droid
-    llm-pkgs.mistral-vibe # binary: vibe (note: was `mistral-vibe` from uv install)
+    llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
   ];
 }

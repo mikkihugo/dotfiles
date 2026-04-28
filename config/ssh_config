@@ -96,3 +96,9 @@ Host mikki-laptop
     HostName mikki-laptop
     User mhugo
     IdentityFile ~/.ssh/id_ed25519
+
+Host dev1 dev1.ts.hugo.dk
+    HostName dev1.ts.hugo.dk
+    User mhugo
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes

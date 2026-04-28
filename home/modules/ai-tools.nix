@@ -35,11 +35,8 @@
     sopsSecrets.gemini_api_key.path
     "GEMINI_API_KEY";
 
-  ampWrapper =
-    mkKeyWrapper "amp"
-    "${llm-pkgs.amp}/bin/amp"
-    sopsSecrets.amp_token.path
-    "AMP_TOKEN";
+  # ampWrapper disabled until `amp` section exists in secrets/api-keys.yaml.
+  # When ready, re-enable + add the amp_token sops.secrets block below.
 
   toadWrapper =
     mkKeyWrapper "toad"
@@ -58,17 +55,11 @@ in {
       mode = "0600";
       sopsFile = ../../secrets/api-keys.yaml;
     };
-    amp_token = {
-      key = "amp/token";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
   };
 
   home.packages = [
     # API-key-injecting wrappers (shadow the raw Nix binaries for these tools).
     geminiWrapper
-    ampWrapper
     toadWrapper
     # Raw llm-agents packages — no key injection needed.
     llm-pkgs.claude-code # binary: claude
@@ -78,5 +69,6 @@ in {
     llm-pkgs.cursor-agent # binary: cursor-agent (note: was `agent` from curl install)
     llm-pkgs.droid # binary: droid
     llm-pkgs.mistral-vibe # binary: vibe (note: was `mistral-vibe` from uv install)
+    # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
   ];
 }

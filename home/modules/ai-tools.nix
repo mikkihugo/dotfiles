@@ -65,7 +65,7 @@ in {
     llm-pkgs.claude-code # binary: claude
     llm-pkgs.codex # binary: codex
     llm-pkgs.opencode # binary: opencode
-    llm-pkgs.goose-cli # binary: goose
+    # llm-pkgs.goose-cli # binary: goose — disabled (heavy Rust rebuild blocks hms)
     llm-pkgs.cursor-agent # binary: cursor-agent (note: was `agent` from curl install)
     llm-pkgs.droid # binary: droid
     llm-pkgs.mistral-vibe # binary: vibe (note: was `mistral-vibe` from uv install)

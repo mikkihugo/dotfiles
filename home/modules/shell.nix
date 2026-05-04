@@ -42,6 +42,9 @@ in {
     # Secrets management
     secrets = "~/.dotfiles/scripts/secrets-edit";
 
+    # Cluster: fetch the k3s kubeconfig from rigel for off-cluster kubectl
+    fetch-kubeconfig = "~/.dotfiles/scripts/fetch-kubeconfig";
+
     #ls replacements via eza. NOT aliasing grep→rg or find→fd — different
     # argument syntax would break scripts that rely on them.
     ls = "eza --group-directories-first";

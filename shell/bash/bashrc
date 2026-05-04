@@ -129,6 +129,16 @@ _load_sops_secrets() {
 	val=$(_sops_val hetzner api_token)
 	[ -n "$val" ] && export HETZNER_API_TOKEN="$val"
 
+	# Cloudflare (Global API Key — flarectl + ad-hoc CF API; X-Auth-Email + X-Auth-Key)
+	val=$(_sops_val cloudflare api_token)
+	if [ -n "$val" ]; then
+		export CF_API_KEY="$val"
+		export CF_API_EMAIL="$(_sops_val cloudflare email)"
+		# Aliases some tools (Terraform CF provider, others) expect
+		export CLOUDFLARE_API_KEY="$CF_API_KEY"
+		export CLOUDFLARE_API_EMAIL="$CF_API_EMAIL"
+	fi
+
 	# GOG Galaxy
 	val=$(_sops_val gog keyring_password)
 	[ -n "$val" ] && export GOG_KEYRING_PASSWORD="$val"

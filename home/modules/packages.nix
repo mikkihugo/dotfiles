@@ -30,7 +30,6 @@
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
     go # build machine-agent (tsnet) and other Go tools
-    nodejs_24 # Node.js LTS
     pnpm # fast, disk-efficient Node package manager
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin
 

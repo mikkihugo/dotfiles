@@ -30,6 +30,12 @@ if [ -f "$HOME/.local/bin/mise" ]; then
 	else
 		eval "$("$HOME/.local/bin/mise" activate bash)"
 	fi
+
+	_mise_node_bin="$("$HOME/.local/bin/mise" which node 2>/dev/null || true)"
+	if [ -n "$_mise_node_bin" ]; then
+		export PATH="$(dirname "$_mise_node_bin"):$PATH"
+	fi
+	unset _mise_node_bin
 fi
 
 # ── SOPS on-demand secret loader ─────────────────────────────────────────────

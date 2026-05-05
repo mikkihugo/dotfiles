@@ -107,21 +107,23 @@ in {
     installToad = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating toad..."
       PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install -U batrachian-toad --python 3.14 && \
+      ${pkgs.uv}/bin/uv tool install --force -U batrachian-toad --python 3.14 && \
         echo "toad ready — run: toad" || \
         echo "WARNING: toad install failed" >&2
     '';
 
     installOpenhands = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating openhands..."
-      ${pkgs.uv}/bin/uv tool install openhands -U --python 3.12 && \
+      PATH="${USER_TOOL_PATH}:$PATH" \
+      ${pkgs.uv}/bin/uv tool install --force openhands -U --python 3.12 && \
         echo "openhands ready — run: openhands login" || \
         echo "WARNING: openhands install failed" >&2
     '';
 
     installCrowCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating crow-cli..."
-      ${pkgs.uv}/bin/uv tool install -U crow-cli --python 3.14 && \
+      PATH="${USER_TOOL_PATH}:$PATH" \
+      ${pkgs.uv}/bin/uv tool install --force -U crow-cli --python 3.14 && \
         echo "crow-cli ready — run: crow-cli" || \
         echo "WARNING: crow-cli install failed" >&2
     '';
@@ -130,7 +132,7 @@ in {
     installKimiCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating kimi-cli..."
       PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install -U kimi-cli && \
+      ${pkgs.uv}/bin/uv tool install --force -U kimi-cli && \
         echo "kimi-cli ready — run: kimi" || \
         echo "WARNING: kimi-cli install failed" >&2
     '';

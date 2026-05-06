@@ -59,7 +59,13 @@ in {
         mkdir -p "$HOME/.cache/attic"
         (
           ${pkgs.util-linux}/bin/flock -n 9 || exit 0
-          ${pkgs.attic-client}/bin/attic push centralcloud:default "$newGenPath"
+          for attempt in 1 2 3; do
+            ${pkgs.attic-client}/bin/attic push centralcloud:default "$newGenPath" && exit 0
+            status=$?
+            echo "attic push attempt $attempt failed with exit $status" >&2
+            [ "$attempt" -lt 3 ] || exit "$status"
+            sleep "$((attempt * 30))"
+          done
         ) 9>"$HOME/.cache/attic/home-manager-push.lock" \
           >"$HOME/.cache/attic/home-manager-push.log" 2>&1 &
         echo "Started background push of Home Manager generation to centralcloud:default"

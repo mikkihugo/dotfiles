@@ -32,6 +32,9 @@ in {
       rm -f "$HOME/.config/systemd/user/timers.target.wants/dr-repo-maintenance.timer"
       rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/combined.conf"
       rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/no-watchdog.conf"
+      rm -f "$HOME/.local/bin/claude"
+      rm -f "$HOME/.npm-global/bin/claude"
+      rm -f "$HOME/.npm-global/bin/gemini"
       rmdir "$HOME/.config/systemd/user/remote-gpu-worker.service.d" 2>/dev/null || true
     '';
 
@@ -89,6 +92,27 @@ in {
       PY
     '';
 
+    # Extract GitHub SSH private key from SOPS into ~/.ssh/github_mikkihugo.
+    renderGithubSshKey = lib.hm.dag.entryAfter ["installPackages"] ''
+            PATH="${pkgs.sops}/bin:${pkgs.age}/bin:${pythonWithYaml}/bin:$PATH" \
+            ${pythonWithYaml}/bin/python3 - <<'PY'
+      import subprocess, sys, yaml
+      r = subprocess.run(
+        ["${pkgs.sops}/bin/sops", "--decrypt",
+         "${config.home.homeDirectory}/.dotfiles/secrets/github-ssh.yaml"],
+        capture_output=True, text=True)
+      if r.returncode != 0:
+        print("WARNING: could not decrypt GitHub SSH key from SOPS", file=sys.stderr)
+        sys.exit(0)
+      key = yaml.safe_load(r.stdout)["github_mikkihugo_private_key"]
+      path = "${config.home.homeDirectory}/.ssh/github_mikkihugo"
+      import os, stat
+      with open(path, "w") as f:
+        f.write(key if key.endswith("\n") else key + "\n")
+      os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
+      PY
+    '';
+
     # Render MCP client configs (~/.gemini/settings.json, .mcp.json, .cursor/mcp.json)
     # from SOPS-backed secrets so Gemini/Claude/Cursor always have the current ACE
     # MCP token without a manual `install_or_repair_mcp_clients.sh`.
@@ -107,7 +131,7 @@ in {
     installToad = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating toad..."
       PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install --force -U batrachian-toad --python 3.14 && \
+      ${pkgs.uv}/bin/uv tool install -U batrachian-toad --python 3.14 && \
         echo "toad ready — run: toad" || \
         echo "WARNING: toad install failed" >&2
     '';
@@ -115,7 +139,7 @@ in {
     installOpenhands = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating openhands..."
       PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install --force openhands -U --python 3.12 && \
+      ${pkgs.uv}/bin/uv tool install openhands -U --python 3.12 && \
         echo "openhands ready — run: openhands login" || \
         echo "WARNING: openhands install failed" >&2
     '';
@@ -123,7 +147,7 @@ in {
     installCrowCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating crow-cli..."
       PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install --force -U crow-cli --python 3.14 && \
+      ${pkgs.uv}/bin/uv tool install -U crow-cli --python 3.14 && \
         echo "crow-cli ready — run: crow-cli" || \
         echo "WARNING: crow-cli install failed" >&2
     '';
@@ -132,7 +156,7 @@ in {
     installKimiCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating kimi-cli..."
       PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install --force -U kimi-cli && \
+      ${pkgs.uv}/bin/uv tool install -U kimi-cli && \
         echo "kimi-cli ready — run: kimi" || \
         echo "WARNING: kimi-cli install failed" >&2
     '';

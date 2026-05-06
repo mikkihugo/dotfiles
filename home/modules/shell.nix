@@ -32,9 +32,34 @@ _: let
 
   '';
 in {
+  home.file.".local/bin/home-manager" = {
+    executable = true;
+    force = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      real_home_manager="$HOME/.nix-profile/bin/home-manager"
+      if [[ ! -x "$real_home_manager" ]]; then
+        real_home_manager="/nix/var/nix/profiles/default/bin/home-manager"
+      fi
+
+      if [[ "''${1:-}" == "switch" ]]; then
+        shift
+        exec "$real_home_manager" switch \
+          --flake "$HOME/.dotfiles#$("$HOME/.dotfiles/scripts/current-home-profile")" \
+          --impure \
+          --extra-experimental-features 'nix-command flakes' \
+          "$@"
+      fi
+
+      exec "$real_home_manager" "$@"
+    '';
+  };
+
   home.shellAliases = {
     # home-manager: resolve the explicit host profile from the current hostname.
-    hms = "home-manager switch --flake ~/.dotfiles#$(~/.dotfiles/scripts/current-home-profile) --impure";
+    hms = "home-manager switch";
 
     # Promote the currently committed ACE revision into the dotfiles flake input.
     promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";

@@ -13,6 +13,14 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
 
+# Make plain `home-manager switch` use this dotfiles flake. Do not keep the
+# bootstrap-generated standalone ~/.config/home-manager config around.
+mkdir -p "$HOME/.config"
+if [ -e "$HOME/.config/home-manager" ] && [ ! -L "$HOME/.config/home-manager" ]; then
+	rm -rf "$HOME/.config/home-manager"
+fi
+ln -sfn "$ROOT_DIR" "$HOME/.config/home-manager"
+
 # ── 1. Install home-manager if missing ───────────────────────────────────────
 if ! command -v home-manager >/dev/null 2>&1; then
 	echo "==> Installing home-manager..."

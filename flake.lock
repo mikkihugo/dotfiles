@@ -94,6 +94,21 @@
         "type": "github"
       }
     },
+    "crane_2": {
+      "locked": {
+        "lastModified": 1773857772,
+        "narHash": "sha256-5xsK26KRHf0WytBtsBnQYC/lTWDhQuT57HJ7SzuqZcM=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "b556d7bbae5ff86e378451511873dfd07e4504cd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
@@ -196,6 +211,49 @@
       "original": {
         "owner": "nix-community",
         "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "inference-fabric": {
+      "inputs": {
+        "crane": "crane_2",
+        "lefthook": "lefthook",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1778043361,
+        "narHash": "sha256-RJg0dUhc1MnTHLq5u8qj/oGFcTi74ufO0NbQ5h0Qy1M=",
+        "ref": "refs/heads/main",
+        "rev": "12222064d2005871b109c34bccd87fe9e768b9b0",
+        "revCount": 872,
+        "type": "git",
+        "url": "ssh://git@github.com/singularity-ng/inference-fabric"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/singularity-ng/inference-fabric"
+      }
+    },
+    "lefthook": {
+      "inputs": {
+        "nixpkgs": [
+          "inference-fabric",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1770377107,
+        "narHash": "sha256-/QEXSDeAo5RK81PtM0yDhmt9k3v1/pse/jsrT1yXNhU=",
+        "owner": "sudosubin",
+        "repo": "lefthook.nix",
+        "rev": "9cdaf7ce95ae77cbabc5b556bdd35d3cf0b849f5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "sudosubin",
+        "repo": "lefthook.nix",
         "type": "github"
       }
     },
@@ -385,6 +443,7 @@
         "flake-utils": "flake-utils",
         "hermes-agent": "hermes-agent",
         "home-manager": "home-manager",
+        "inference-fabric": "inference-fabric",
         "llm-agents": "llm-agents",
         "nixpkgs": "nixpkgs_3",
         "sops-nix": "sops-nix"

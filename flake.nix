@@ -77,6 +77,15 @@
       url = "github:NousResearch/hermes-agent";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # inference-fabric: provides the remote-supervisor binary used by the
+    # GPU worker service, plus fabric-ops console (charmspeed/fabricctl/
+    # fabric-ssh) for managing the LLM gateway. Worker package replaces
+    # the ace-coder bundle in services/ace-embedding-worker.
+    inference-fabric = {
+      url = "git+ssh://git@github.com/singularity-ng/inference-fabric";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -87,12 +96,13 @@
     ace-coder,
     hermes-agent,
     llm-agents,
+    inference-fabric,
     ...
   }: let
     # builtins.currentSystem reads host arch at eval time, so switch/build must
     # pass --impure when using the mhugo alias.
     system = builtins.currentSystem;
-    specialArgs = {inherit sops-nix ace-coder hermes-agent llm-agents;};
+    specialArgs = {inherit sops-nix ace-coder hermes-agent llm-agents inference-fabric;};
 
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.
     # targetSystem is passed as specialArgs so imports can branch without

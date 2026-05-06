@@ -183,15 +183,17 @@ in `secrets/api-keys.yaml`, **separate from** the top-level sections loaded by
 | `llm_gateway:`, `kimi:`, `openrouter:`, etc. | `load-ai-keys` bashrc alias | Exported into the interactive shell when you run `load-ai-keys` — every child process inherits them |
 | **`sf:`** | `~/.local/bin/sf` wrapper only | Exported into the `sf` process env only — nothing else on the system sees them |
 
-The wrapper at `~/.local/bin/sf` runs at launch:
+The wrapper at `~/.local/bin/sf` runs at launch. It first clears known AI/tool
+provider env vars inherited from the shell, then exports only the sf-scoped
+projection from SOPS:
 
 ```bash
-while IFS='=' read -r k v; do
-  [ -n "$k" ] && export "$k=$v"
-done < <(
-  sops --config ~/.dotfiles/.sops.yaml -d ~/.dotfiles/secrets/api-keys.yaml 2>/dev/null \
-    | yq -r '.sf // {} | to_entries[] | "\(.key)=\(.value)"' 2>/dev/null
-)
+unset OPENROUTER_API_KEY GEMINI_API_KEY GOOGLE_API_KEY GOOGLE_GENERATIVE_AI_API_KEY ...
+sops --config ~/.dotfiles/.sops.yaml -d ~/.dotfiles/secrets/api-keys.yaml \
+  | yq -r '
+      (.sf.env // {} | to_entries[] | "\(.key)=\(.value)"),
+      (.sf.providers // {} | to_entries[] | (.value.env // {}) | to_entries[] | "\(.key)=\(.value)")
+    '
 exec ~/.npm-global/bin/sf "$@"
 ```
 
@@ -202,30 +204,51 @@ OLLAMA keys in each because `sf:` is sf-scoped.
 
 ### Current `sf:` section contents
 
-Flat `KEY: VALUE` map:
+Use `sf.env` for literal environment variables that should be exported to the
+sf process, and `sf.providers.<provider>.env` when grouping keys by provider
+makes the file easier to manage. Both are sf-only. Do not use top-level
+`google:`, `gemini:`, `openrouter:`, or `kimi:` as fallbacks for sf.
 
 ```yaml
 sf:
-    XIAOMI_TOKEN_PLAN_AMS_API_KEY: ...  # custom provider in models.json
+  env:
+    KIMI_API_KEY: ...                    # provider "kimi-coding"
     MINIMAX_API_KEY: ...
-    OLLAMA_API_KEY: ...                  # NB: provider is "ollama-cloud", env var is OLLAMA_API_KEY
-    OPENCODE_API_KEY: ...                # NB: provider is "opencode-go", env var is OPENCODE_API_KEY (no _GO_)
     MISTRAL_API_KEY: ...
-    TAVILY_API_KEY: ...                  # consumed by sf's search-the-web tool
-    GEMINI_API_KEY: ...                  # used by provider "google"
+    OLLAMA_API_KEY: ...                  # provider "ollama-cloud"
+    OPENCODE_API_KEY: ...                # provider "opencode"
+    OPENCODE_GO_API_KEY: ...             # provider "opencode-go"
+    OPENROUTER_API_KEY: ...              # OpenRouter key; sf policy restricts to :free models
+    TAVILY_API_KEY: ...                  # consumed by sf search tools
+    XIAOMI_API_KEY: ...
     ZAI_API_KEY: ...
-    KIMI_API_KEY: ...                    # NB: provider is "kimi-coding", env var is KIMI_API_KEY (no _CODE_)
-    OPENROUTER_API_KEY: ...              # free-only child key (limit=0), provisioned via openrouter-management
     TELEGRAM_BOT_TOKEN: ...              # SF remote questions Telegram bot
+  providers:
+    google:
+      env:
+        # Add sf-specific Google exports here only when sf should use them.
+        # models.dev lists GOOGLE_GENERATIVE_AI_API_KEY first, then GEMINI_API_KEY.
+        # sf/pi-ai direct "google" and google_search accept both; GEMINI_API_KEY wins if both are set.
+        GEMINI_API_KEY: ...
+        GOOGLE_GENERATIVE_AI_API_KEY: ...
 ```
+
+If sf should use a provider, add the exact env var under `sf.env` or the
+provider's `sf.providers.<provider>.env` map. For example, OpenRouter must be
+added as a dedicated `sf.env.OPENROUTER_API_KEY` or
+`sf.providers.openrouter.env.OPENROUTER_API_KEY` child key, ideally with a zero
+spend limit for `:free` models.
 
 **Important**: the env var names are NOT derived from the provider id. Pi's
 `packages/pi-ai/src/env-api-keys.ts` has a hardcoded map. When adding a new key,
 look up the exact name there — for example:
 
 - provider `kimi-coding` → env var `KIMI_API_KEY` (NOT `KIMI_CODE_API_KEY`)
-- provider `opencode-go` → env var `OPENCODE_API_KEY` (NOT `OPENCODE_GO_API_KEY`)
+- provider `opencode` → env var `OPENCODE_API_KEY`
+- provider `opencode-go` → env var `OPENCODE_GO_API_KEY`
 - provider `google` → env var `GEMINI_API_KEY`
+- models.dev provider `google` → env vars `GOOGLE_GENERATIVE_AI_API_KEY`,
+  `GEMINI_API_KEY`; sf accepts both and prefers `GEMINI_API_KEY` if both are set
 - provider `ollama-cloud` → env var `OLLAMA_API_KEY`
 
 Custom providers defined in `models.json` that are NOT in pi's map can use
@@ -238,8 +261,9 @@ any `UPPER_SNAKE_NAME` — just reference the same name in both sops and the
 sops --config ~/.dotfiles/.sops.yaml ~/.dotfiles/secrets/api-keys.yaml
 ```
 
-Find the `sf:` block near the bottom, add or update an entry, save, sops
-re-encrypts. **The `--config` flag is mandatory** — sops walks up from the
+Find the `sf:` block near the bottom, add or update `sf.env` or a
+`sf.providers.<provider>.env` entry, save, sops re-encrypts. **The `--config`
+flag is mandatory** — sops walks up from the
 CWD (not the file path) looking for `.sops.yaml`, so running sops from `~` or
 `/tmp/` without `--config` will fail silently with `config file not found, or
 has no creation rules`. Learned that one the hard way.
@@ -289,9 +313,10 @@ up on disk and survives across sessions. Same goes for `/sf keys rotate`.
 
 Separate top-level section `openrouter-management:` holds the OpenRouter
 provisioning key. Used by scripts that call `POST /api/v1/keys` to create
-scoped child keys — never by inference flows. The `sf:` section's
-`OPENROUTER_API_KEY` is one such child key, provisioned with `limit: 0` so it
-can only call `:free` models and cannot accrue paid spend.
+scoped child keys — never by inference flows. The sf-scoped
+`OPENROUTER_API_KEY` should live under `sf.env` or
+`sf.providers.openrouter.env`, provisioned with `limit: 0` so it can only call
+`:free` models and cannot accrue paid spend.
 
 To create another scoped child key:
 

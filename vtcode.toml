@@ -1,0 +1,36 @@
+# VT Code Configuration File
+[agent]
+provider = "opencode-go"
+default_model = "minimax-m2.7"
+api_key_env = "OPENCODE_GO_API_KEY"
+
+[permissions]
+default_mode = "auto"
+
+[[custom_providers]]
+name = "opencode-go"
+display_name = "OpenCode Go"
+base_url = "https://opencode.ai/zen/go/v1"
+api_key_env = "OPENCODE_GO_API_KEY"
+model = "minimax-m2.7"
+
+[[custom_providers]]
+name = "kimi-code"
+display_name = "Kimi Code"
+base_url = "https://opencode.ai/zen/go/v1"
+api_key_env = "OPENCODE_GO_API_KEY"
+model = "kimi-k2.5"
+
+[[custom_providers]]
+name = "opencode-zai"
+display_name = "Z.AI GLM"
+base_url = "https://opencode.ai/zen/go/v1"
+api_key_env = "OPENCODE_GO_API_KEY"
+model = "glm-5.1"
+
+[[custom_providers]]
+name = "ollama-cloud"
+display_name = "Ollama Cloud"
+base_url = "https://ollama.com/v1"
+api_key_env = "OLLAMA_API_KEY"
+model = "gemma3:27b"

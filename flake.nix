@@ -9,10 +9,28 @@
 #
 #   devShells.default  — lightweight shell for dotfiles maintenance.
 #
-# Requires --impure because builtins.currentSystem reads host arch at eval time.
-# The `hms` alias already passes --impure.
+# Requires --impure because the default mhugo profile reads the current system.
+# The home-manager shell wrapper, hms alias, and installer all pass --impure.
 {
   description = "mhugo dotfiles — home-manager + SOPS (multi-arch)";
+
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.centralcloud.com/default"
+      "https://cuda-maintainers.cachix.org"
+      "https://nix-community.cachix.org"
+      "https://cache.numtide.com"
+    ];
+    extra-trusted-public-keys = [
+      "default:ywfU21WX06iOn2Ec2lae1jYh4w8LO4IQkmp06vJzsk8="
+      "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+    ];
+    accept-flake-config = true;
+    fallback = true;
+    connect-timeout = 5;
+  };
 
   inputs = {
     # nixos-unstable: rolling pre-release tracking towards 26.05 (due ~May 2026).
@@ -71,8 +89,8 @@
     llm-agents,
     ...
   }: let
-    # builtins.currentSystem reads host arch at eval time — requires --impure.
-    # The `hms` alias already passes --impure.
+    # builtins.currentSystem reads host arch at eval time, so switch/build must
+    # pass --impure when using the mhugo alias.
     system = builtins.currentSystem;
     specialArgs = {inherit sops-nix ace-coder hermes-agent llm-agents;};
 
@@ -100,7 +118,7 @@
         "mikki-bunker" = mkHome "x86_64-linux" "mikki-bunker";
         # mikki-laptop: aarch64 portable machine (GPU worker skipped automatically).
         "mikki-laptop" = mkHome "aarch64-linux" "mikki-laptop";
-        # Username alias — resolves to current host arch via builtins.currentSystem.
+        # Username alias — resolves to the current host arch via builtins.currentSystem.
         "mhugo" = mkHome system (builtins.getEnv "HOSTNAME");
       };
     }

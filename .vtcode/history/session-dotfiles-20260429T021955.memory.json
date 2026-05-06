@@ -1,0 +1,17 @@
+{
+  "session_id": "session-dotfiles-20260429T021955Z_256950-3556259",
+  "schema_version": 2,
+  "summary": "Recent session context: user: T Code (0.105.0)────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮│OpenAI gpt-5.4 (128...",
+  "objective": null,
+  "task_summary": null,
+  "spec_summary": null,
+  "evaluation_summary": null,
+  "constraints": [],
+  "grounded_facts": [],
+  "touched_files": [],
+  "open_questions": [],
+  "verification_todo": [],
+  "delegation_notes": [],
+  "history_artifact_path": null,
+  "generated_at": "2026-04-29T02:40:39.332295993+00:00"
+}

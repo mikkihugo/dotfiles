@@ -21,6 +21,18 @@ Host lyra lyra.hugo.dk mon.hugo.dk mon.portal.centralcloud.com mail.sendramp.com
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
+Host betelgeuse betelgeuse.hugo.dk
+    HostName 178.104.218.38
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host vega-public vega.hugo.dk
+    HostName 185.230.35.242
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
 Host portal-automation
     # Portal automation node on public IP uses the personal admin key.
     HostName 157.180.79.108
@@ -81,9 +93,9 @@ Host llm-gateway llm-gateway.centralcloud.com
     IdentitiesOnly yes
 
 # Tailscale hosts
-# NOTE: headscale has two nodes on the bunker host:
-#   mikki-bunker             → 100.64.0.5 (Windows side, no sshd)
-#   mikki-bunker-frislo8r    → 100.64.0.3 (WSL2 Linux, real sshd target)
+# NOTE: headscale node layout for the bunker host:
+#   mikki-bunker             → 100.64.0.3 (WSL2 Linux, real sshd target)
+#   mikki-bunker-windows     → Windows side, no sshd
 Host mikki-bunker-windows
     HostName mikki-bunker-windows
     User mhugo
@@ -103,4 +115,10 @@ Host vega vega.ts.hugo.dk dev1 dev1.ts.hugo.dk
     HostName vega.ts.hugo.dk
     User mhugo
     IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/github_mikkihugo
     IdentitiesOnly yes

@@ -43,6 +43,25 @@
     "${config.home.homeDirectory}/.local/bin/toad"
     sopsSecrets.openrouter_api_key.path
     "OPENROUTER_API_KEY";
+
+  # vtcode — cargo-vtcode installed via mise. Custom wrapper because:
+  # 1. vtcode is not in PATH (only mise shim at ~/.local/share/mise/shims/vtcode)
+  # 2. opencode-go is OpenAI-compat; vtcode reads key via --api-key-env, not OPENAI_API_KEY
+  vtcodeWrapper = pkgs.writeShellScriptBin "vtcode" ''
+    export OPENCODE_GO_API_KEY="$(cat "${sopsSecrets.opencode_go_api_key.path}" 2>/dev/null || echo "")"
+    export OLLAMA_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
+    exec ${config.home.homeDirectory}/.local/share/mise/shims/vtcode \
+      --provider opencode-go --model minimax-m2.7 --api-key-env OPENCODE_GO_API_KEY \
+      "$@"
+  '';
+
+  # vtcode-cloud — same binary, defaults to Ollama Cloud instead of opencode-go
+  vtcodeCloudWrapper = pkgs.writeShellScriptBin "vtcode-cloud" ''
+    export OLLAMA_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
+    exec ${config.home.homeDirectory}/.local/share/mise/shims/vtcode \
+      --provider ollama-cloud --api-key-env OLLAMA_API_KEY \
+      "$@"
+  '';
 in {
   sops.secrets = {
     gemini_api_key = {
@@ -55,12 +74,29 @@ in {
       mode = "0600";
       sopsFile = ../../secrets/api-keys.yaml;
     };
+    opencode_api_key = {
+      key = "opencode/api_key";
+      mode = "0600";
+      sopsFile = ../../secrets/api-keys.yaml;
+    };
+    opencode_go_api_key = {
+      key = "sf/env/OPENCODE_GO_API_KEY";
+      mode = "0600";
+      sopsFile = ../../secrets/api-keys.yaml;
+    };
+    ollama_api_key = {
+      key = "sf/env/OLLAMA_API_KEY";
+      mode = "0600";
+      sopsFile = ../../secrets/api-keys.yaml;
+    };
   };
 
   home.packages = [
     # API-key-injecting wrappers (shadow the raw Nix binaries for these tools).
     geminiWrapper
     toadWrapper
+    vtcodeWrapper
+    vtcodeCloudWrapper
     # Raw llm-agents packages — no key injection needed.
     # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
     # these packages compile from source — disable per-host as needed.

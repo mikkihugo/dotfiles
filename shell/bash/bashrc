@@ -62,6 +62,7 @@ _load_sops_secrets() {
 
 	# Helper: extract value under a YAML section (searches up to 5 children)
 	_sops_val() { echo "$decrypted" | grep -A5 "^$1:" | grep "$2:" | head -1 | sed "s/.*$2: *//;s/^ *//;s/ *$//" | tr -d '"'; }
+	_sops_sf_val() { echo "$decrypted" | grep -A80 "^sf:" | grep "$1:" | head -1 | sed "s/.*$1: *//;s/^ *//;s/ *$//" | tr -d '"'; }
 
 	# LLM Gateway (proxies all providers through a single endpoint)
 	local val url
@@ -71,10 +72,6 @@ _load_sops_secrets() {
 		export LLM_MUX_API_KEY="$val"
 		export LLM_MUX_BASE_URL="$url"
 		export ACE_WORKER_API_KEY="$val"
-		export GOOGLE_API_KEY="$val"
-		export GOOGLE_API_BASE="$url"
-		export GEMINI_API_KEY="$val"
-		export GEMINI_API_BASE="$url"
 	fi
 
 	# OpenAI Gateway (ACE Coder / Goose CLI)
@@ -104,20 +101,6 @@ _load_sops_secrets() {
 	# OpenRouter
 	val=$(_sops_val openrouter api_key)
 	[ -n "$val" ] && export OPENROUTER_API_KEY="$val"
-
-	# Google free-tier rotation keys
-	val=$(echo "$decrypted" | grep -A6 "^google:" | grep "free1:" | sed 's/.*free1: *//;s/ *$//' | tr -d '"')
-	[ -n "$val" ] && export GOOGLE_AI_API_KEY_FREE1="$val"
-	val=$(echo "$decrypted" | grep -A6 "^google:" | grep "free2:" | sed 's/.*free2: *//;s/ *$//' | tr -d '"')
-	[ -n "$val" ] && export GOOGLE_AI_API_KEY_FREE2="$val"
-	val=$(echo "$decrypted" | grep -A6 "^google:" | grep "free3:" | sed 's/.*free3: *//;s/ *$//' | tr -d '"')
-	[ -n "$val" ] && export GOOGLE_AI_API_KEY_FREE3="$val"
-	val=$(echo "$decrypted" | grep -A6 "^google:" | grep "free4:" | sed 's/.*free4: *//;s/ *$//' | tr -d '"')
-	[ -n "$val" ] && export GOOGLE_AI_API_KEY_FREE4="$val"
-
-	# Google default key (overrides gateway values with direct key if present)
-	val=$(echo "$decrypted" | grep -A1 "^google:" | grep "default:" | sed 's/.*default: *//;s/ *$//' | tr -d '"')
-	[ -n "$val" ] && export GOOGLE_API_KEY="$val" && export GEMINI_API_KEY="$val"
 
 	# xAI (Grok)
 	val=$(_sops_val xai api_key)
@@ -154,18 +137,35 @@ _load_sops_secrets() {
 	[ -n "$val" ] && export EXA_API_KEY="$val"
 
 	# Tavily (Web Search — stored under sf section)
-	val=$(_sops_val sf TAVILY_API_KEY)
+	val=$(_sops_sf_val TAVILY_API_KEY)
 	[ -n "$val" ] && export TAVILY_API_KEY="$val"
 
 	# Ollama Cloud
 	val=$(_sops_val ollama_cloud api_key)
 	[ -n "$val" ] && export OLLAMA_CLOUD_API_KEY="$val"
 
+	# SF provider keys stored under the sf section
+	val=$(_sops_sf_val MISTRAL_API_KEY)
+	[ -n "$val" ] && export MISTRAL_API_KEY="$val"
+	val=$(_sops_sf_val ZAI_API_KEY)
+	[ -n "$val" ] && export ZAI_API_KEY="$val"
+	val=$(_sops_sf_val XIAOMI_API_KEY)
+	[ -n "$val" ] && export XIAOMI_API_KEY="$val"
+	val=$(_sops_sf_val OPENCODE_API_KEY)
+	[ -n "$val" ] && export OPENCODE_API_KEY="$val"
+	val=$(_sops_sf_val OPENCODE_GO_API_KEY)
+	[ -n "$val" ] && export OPENCODE_GO_API_KEY="$val"
+	val=$(_sops_sf_val OLLAMA_API_KEY)
+	if [ -n "$val" ]; then
+		export OLLAMA_API_KEY="$val"
+		export OLLAMA_CLOUD_API_KEY="$val"
+	fi
+
 	# LLM Gateway bearer token (aichat / direct API clients)
 	val=$(_sops_val llm_gateway bearer_key)
 	[ -n "$val" ] && export LLM_GATEWAY_BEARER_KEY="$val"
 
-	unset -f _sops_val
+	unset -f _sops_val _sops_sf_val
 }
 
 alias load-ai-keys='_load_sops_secrets'

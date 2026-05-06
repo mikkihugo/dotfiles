@@ -67,6 +67,9 @@ in {
     # Secrets management
     secrets = "~/.dotfiles/scripts/secrets-edit";
 
+    # Promote live Codex client model/reasoning choices into dotfiles.
+    codex-save-prefs = "~/.dotfiles/scripts/codex-preferences save";
+
     # Cluster: fetch the k3s kubeconfig from rigel for off-cluster kubectl
     fetch-kubeconfig = "~/.dotfiles/scripts/fetch-kubeconfig";
 

@@ -47,6 +47,26 @@ in {
       fi
     '';
 
+    applySharedCodexPreferences = lib.hm.dag.entryAfter ["seedMutableCodexConfig"] ''
+      if [ -f "$HOME/.dotfiles/config/codex/shared-preferences.toml" ]; then
+        ${pkgs.python3}/bin/python3 "$HOME/.dotfiles/scripts/codex-preferences" apply
+        chmod 600 "$HOME/.codex/config.toml"
+      fi
+    '';
+
+    pushHomeManagerGenerationToCache = lib.hm.dag.entryAfter ["linkGeneration"] ''
+      if [ -f "$HOME/.config/attic/config.toml" ]; then
+        mkdir -p "$HOME/.cache/attic"
+        (
+          ${pkgs.util-linux}/bin/flock -n 9 || exit 0
+          ${pkgs.attic-client}/bin/attic push centralcloud:default "$newGenPath"
+        ) 9>"$HOME/.cache/attic/home-manager-push.lock" \
+          >"$HOME/.cache/attic/home-manager-push.log" 2>&1 &
+        echo "Started background push of Home Manager generation to centralcloud:default"
+        echo "Log: $HOME/.cache/attic/home-manager-push.log"
+      fi
+    '';
+
     # Extract personal-admin SSH key from SOPS into ~/.ssh/ for monitor, portal-automation,
     # mailcow-openclaw, and the Hetzner storage box.
     renderPersonalAdminSshKey = lib.hm.dag.entryAfter ["installPackages"] ''

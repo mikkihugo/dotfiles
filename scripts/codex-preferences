@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+import argparse
+import re
+import sys
+import tomllib
+from pathlib import Path
+
+SHARED_KEYS = [
+    "model",
+    "model_reasoning_effort",
+    "model_reasoning_summary",
+]
+
+
+def load_toml(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    with path.open("rb") as f:
+        return tomllib.load(f)
+
+
+def toml_value(value) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    return '"' + str(value).replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def save(args) -> None:
+    source = Path(args.source).expanduser()
+    target = Path(args.target).expanduser()
+    data = load_toml(source)
+    prefs = {key: data[key] for key in SHARED_KEYS if key in data}
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Shared Codex client preferences.",
+        "# Update from a machine with: codex-preferences save",
+        "# Applied to each machine by Home Manager activation.",
+        "",
+    ]
+    lines.extend(f"{key} = {toml_value(prefs[key])}" for key in SHARED_KEYS if key in prefs)
+    target.write_text("\n".join(lines).rstrip() + "\n")
+
+    if prefs:
+        print(f"saved {', '.join(prefs.keys())} to {target}")
+    else:
+        print(f"no shared Codex preferences found in {source}", file=sys.stderr)
+        sys.exit(1)
+
+
+def apply(args) -> None:
+    source = Path(args.source).expanduser()
+    target = Path(args.target).expanduser()
+    prefs = {key: value for key, value in load_toml(source).items() if key in SHARED_KEYS}
+    if not prefs:
+        return
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    original = target.read_text().splitlines() if target.exists() else []
+    seen = set()
+    output = []
+    top_level_key = re.compile(r"^([A-Za-z0-9_]+)\s*=")
+
+    for line in original:
+        match = top_level_key.match(line)
+        if match and match.group(1) in prefs:
+            key = match.group(1)
+            output.append(f"{key} = {toml_value(prefs[key])}")
+            seen.add(key)
+        else:
+            output.append(line)
+
+    missing = [key for key in SHARED_KEYS if key in prefs and key not in seen]
+    if missing:
+        insert = [f"{key} = {toml_value(prefs[key])}" for key in missing]
+        output = insert + ([""] if output and output[0] else []) + output
+
+    target.write_text("\n".join(output).rstrip() + "\n")
+
+
+def main() -> None:
+    home = Path.home()
+    default_live = home / ".codex/config.toml"
+    default_shared = home / ".dotfiles/config/codex/shared-preferences.toml"
+
+    parser = argparse.ArgumentParser(description="Sync shared Codex client preferences.")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    save_parser = sub.add_parser("save", help="copy whitelisted preferences from live Codex config to dotfiles")
+    save_parser.add_argument("--source", default=str(default_live))
+    save_parser.add_argument("--target", default=str(default_shared))
+    save_parser.set_defaults(func=save)
+
+    apply_parser = sub.add_parser("apply", help="apply shared dotfiles preferences to live Codex config")
+    apply_parser.add_argument("--source", default=str(default_shared))
+    apply_parser.add_argument("--target", default=str(default_live))
+    apply_parser.set_defaults(func=apply)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

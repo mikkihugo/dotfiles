@@ -34,9 +34,9 @@ in {
       force = true;
     };
 
-    # Codex CLI config is seeded by activation.nix as a mutable file. Codex
-    # persists approvals, default model, and feature toggles at runtime, so this
-    # path must not be a Home Manager symlink into /nix/store.
+    # Codex CLI config is seeded by activation.nix as a mutable file. The Codex
+    # client owns model/reasoning choices, approvals, notices, and feature
+    # toggles at runtime, so this path must not be a Home Manager symlink.
     ".codex/rules/default.rules" = {
       source = ../../config/codex/default.rules;
       force = true;

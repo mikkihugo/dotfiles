@@ -1,0 +1,6 @@
+# Shared Codex client preferences.
+# Update from a machine with: codex-preferences save
+# Applied to each machine by Home Manager activation.
+
+model = "gpt-5.5"
+model_reasoning_effort = "medium"

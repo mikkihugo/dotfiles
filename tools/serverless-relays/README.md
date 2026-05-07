@@ -8,7 +8,6 @@ Free serverless relay implementations for secret synchronization across machines
 |----------|-----------|------------------|-------------|----------------|
 | **Vercel** | 100GB bandwidth, serverless functions | Easy | ✅ Global | Low |
 | **Netlify** | 125k invocations/month, 100h runtime | Easy | ✅ Global | Low |
-| **Cloudflare** | 100k requests/day, 1GB KV storage | Medium | ✅ Global Edge | Medium |
 
 ## 🚀 Deployment Options
 
@@ -40,23 +39,6 @@ npm install
 - ✅ Generous free tier
 - ⚠️ Data doesn't persist across cold starts
 
-### Option 3: Cloudflare Workers
-
-```bash
-cd cloudflare/
-npm install
-npm run kv:namespace:create
-npm run kv:namespace:create:preview
-# Update wrangler.toml with namespace IDs
-./deploy.sh
-```
-
-**Features:**
-- ✅ Global edge network
-- ✅ Excellent performance
-- ✅ Persistent KV storage
-- ⚠️ More complex setup
-
 ## 🔧 Setup Instructions
 
 ### 1. Choose Your Provider
@@ -64,7 +46,6 @@ npm run kv:namespace:create:preview
 Pick one based on your preference:
 - **Vercel**: Best overall experience
 - **Netlify**: Great for teams already using Netlify
-- **Cloudflare**: Best performance, most complex setup
 
 ### 2. Deploy Your Relay
 
@@ -127,11 +108,6 @@ All implementations provide:
 - 100 hours runtime/month
 - Bandwidth: 100GB/month
 
-**Cloudflare Workers:**
-- 100,000 requests/day (3M/month)
-- 1GB KV storage
-- Global edge network
-
 ### Estimated Usage for Secret Sync
 
 Assuming 4 devices syncing 10 secrets/day:
@@ -151,9 +127,6 @@ cd vercel && vercel dev
 
 # Netlify
 cd netlify && netlify dev
-
-# Cloudflare
-cd cloudflare && wrangler dev
 ```
 
 ### Custom Modifications
@@ -181,7 +154,7 @@ Modify the storage backend or add features as needed.
 
 **Messages not persisting**
 - Netlify: Uses in-memory storage (resets on cold start)
-- Vercel/Cloudflare: Use persistent KV storage
+- Vercel: Uses persistent KV storage
 
 ### Performance Tips
 

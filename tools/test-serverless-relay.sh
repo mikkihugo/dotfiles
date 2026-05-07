@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Test script for serverless relay endpoints
-# Tests all three serverless implementations
+# Tests the serverless relay implementations
 
 set -euo pipefail
 
@@ -11,7 +11,6 @@ echo ""
 # Configuration - update these with your deployed URLs
 VERCEL_URL="${VERCEL_URL:-}"
 NETLIFY_URL="${NETLIFY_URL:-}"
-CLOUDFLARE_URL="${CLOUDFLARE_URL:-}"
 
 # Test data
 ROOM_ID="test-$(date +%s)"
@@ -95,13 +94,12 @@ test_endpoint() {
 }
 
 # Check if any URLs are provided
-if [[ -z "$VERCEL_URL" && -z "$NETLIFY_URL" && -z "$CLOUDFLARE_URL" ]]; then
+if [[ -z "$VERCEL_URL" && -z "$NETLIFY_URL" ]]; then
     echo "❌ No relay URLs configured!"
     echo ""
     echo "Set environment variables with your deployed URLs:"
     echo "   export VERCEL_URL='https://your-app.vercel.app'"
     echo "   export NETLIFY_URL='https://your-app.netlify.app'"
-    echo "   export CLOUDFLARE_URL='https://your-worker.your-subdomain.workers.dev'"
     echo ""
     echo "Then run: $0"
     exit 1
@@ -118,12 +116,6 @@ fi
 
 if [[ -n "$NETLIFY_URL" ]]; then
     if ! test_endpoint "Netlify" "$NETLIFY_URL"; then
-        ((failed_tests++))
-    fi
-fi
-
-if [[ -n "$CLOUDFLARE_URL" ]]; then
-    if ! test_endpoint "Cloudflare Workers" "$CLOUDFLARE_URL"; then
         ((failed_tests++))
     fi
 fi

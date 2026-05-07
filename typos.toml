@@ -12,5 +12,4 @@ Ratatui = "Ratatui"
 # "mch" appears in an age public key in .sops.yaml — not a word.
 mch = "mch"
 VaultCorp = "VaultCorp"
-OpenBae = "OpenBae"
 Vault = "Vault"

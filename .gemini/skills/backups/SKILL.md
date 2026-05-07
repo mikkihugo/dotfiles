@@ -37,4 +37,4 @@ Backups should ideally be stored off-site (e.g., Hetzner Storage Box).
 - **Encryption**: Always use strong encryption for backup repositories.
 - **Atomic Backups**: Ensure databases are dumped (pg_dump) before being included in the backup.
 - **Testing**: Periodically perform a test restoration to verify the integrity and usability of the backups.
-- **Secrets Management**: Store Borg passphrases in the Vault or SOPS.
+- **Secrets Management**: Store Borg passphrases in OpenBao or SOPS.

@@ -37,4 +37,4 @@ When adding new data (emails, docs, code):
 - **Privacy**: Be mindful of sensitive data being traced to LangFuse.
 - **Model Choice**: Use 32B+ models for graph extraction in LightRAG for best results.
 - **Incremental Sync**: Use file-watchers or scheduled scripts to incrementally sync data into the RAG graph.
-- **Tracing Secret**: Store the LangFuse secret key securely in the Vault.
+- **Tracing Secret**: Store the LangFuse secret key securely in OpenBao.

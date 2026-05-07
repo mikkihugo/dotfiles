@@ -143,9 +143,8 @@
       # only needed when working on the dotfiles repo itself.
       devShells.default = maintenance-pkgs.mkShell {
         packages = with maintenance-pkgs; [
-          go # build and validate services under tools/ like vault-hugo-dk
-          cargo # build and validate rust tools under tools/
-          rustc # rust compiler for machine-agent work
+          go # build and validate local Go tools
+          cargo # build and validate local Rust tools
           pkg-config # native dependency discovery for rust crates when needed
           sops # encrypt/decrypt secrets/api-keys.yaml
           age # age key generation and encryption backend

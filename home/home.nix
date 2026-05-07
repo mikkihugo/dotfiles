@@ -40,7 +40,6 @@
       ./modules/hermes-tui.nix
       ./modules/ai-tools.nix
       ./modules/ops-tools.nix
-      ./modules/machine-agent.nix
       ./modules/dotfiles-auto-update.nix
       ./modules/tailscale.nix
       ./modules/wezterm.nix
@@ -69,7 +68,7 @@
     # PATH additions — prepended before the system PATH in every session.
     sessionPath = [
       "$HOME/.bun/bin"
-      "$HOME/.local/bin" # pip/pipx, claude CLI, machine-agent
+      "$HOME/.local/bin" # pip/pipx, claude CLI, local tools
       "$HOME/.npm-global/bin" # openclaw, opencode, and other npm globals
       "$HOME/.cargo/bin" # cargo-installed Rust binaries
       "$HOME/.amp/bin"

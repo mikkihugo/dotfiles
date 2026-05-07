@@ -28,12 +28,6 @@ in {
       description = "Whether this machine should run the Hermes proxy gateway. Mutually exclusive with enableOpenclawNode at runtime (both write to ~/.hermes / ~/.openclaw respectively; a single host can run both services concurrently but they share no state).";
     };
 
-    enableRemoteAgent = lib.mkOption {
-      type = lib.types.bool;
-      default = machineConfig.enableRemoteAgent or false;
-      description = "Whether this machine should run the local machine-agent service. Disabled by default until the Go+tsnet rewrite lands — the legacy Rust agent was removed after Codex flagged its exec surface as too broad.";
-    };
-
     enableTailscale = lib.mkOption {
       type = lib.types.bool;
       default = machineConfig.enableTailscale or false;

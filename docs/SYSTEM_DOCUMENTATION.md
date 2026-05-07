@@ -37,7 +37,6 @@ Supported role-related options:
 - `dotfiles.machine.role` — machine purpose string (`laptop`, `workstation`, `worker`, `server`, `general`).
 - `dotfiles.machine.enableOpenclawNode` — enable legacy OpenClaw node service.
 - `dotfiles.machine.enableHermesProxy` — enable Hermes proxy gateway.
-- `dotfiles.machine.enableRemoteAgent` — enable future machine-agent service.
 - `dotfiles.machine.validateSudoAccess` — whether bootstrap validates sudo.
 
 Default semantics:

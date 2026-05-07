@@ -12,24 +12,21 @@ write_config() {
 	local role="$1"
 	local enable_openclaw="$2"
 	local enable_hermes_proxy="$3"
-	local enable_remote_agent="$4"
-	local validate_sudo="$5"
+	local validate_sudo="$4"
 
 	cat >"$CONFIG_JSON" <<EOF
 {
-  "role": "${role}",
-  "enableOpenclawNode": ${enable_openclaw},
-  "enableHermesProxy": ${enable_hermes_proxy},
-  "enableRemoteAgent": ${enable_remote_agent},
-  "validateSudoAccess": ${validate_sudo}
-}
+	  "role": "${role}",
+	  "enableOpenclawNode": ${enable_openclaw},
+	  "enableHermesProxy": ${enable_hermes_proxy},
+	  "validateSudoAccess": ${validate_sudo}
+	}
 EOF
 
 	cat >"$CONFIG_ENV" <<EOF
 DOTFILES_MACHINE_ROLE="${role}"
 DOTFILES_ENABLE_OPENCLAW_NODE="${enable_openclaw}"
 DOTFILES_ENABLE_HERMES_PROXY="${enable_hermes_proxy}"
-DOTFILES_ENABLE_REMOTE_AGENT="${enable_remote_agent}"
 DOTFILES_VALIDATE_SUDO_ACCESS="${validate_sudo}"
 EOF
 }
@@ -42,7 +39,6 @@ print_existing() {
 		echo "    role: ${DOTFILES_MACHINE_ROLE:-general}"
 		echo "    openclaw node: ${DOTFILES_ENABLE_OPENCLAW_NODE:-true}"
 		echo "    hermes proxy: ${DOTFILES_ENABLE_HERMES_PROXY:-false}"
-		echo "    remote agent: ${DOTFILES_ENABLE_REMOTE_AGENT:-true}"
 		echo "    sudo validation: ${DOTFILES_VALIDATE_SUDO_ACCESS:-true}"
 	fi
 }
@@ -76,7 +72,7 @@ fi
 
 role="${DOTFILES_MACHINE_ROLE:-}"
 enable_openclaw="${DOTFILES_ENABLE_OPENCLAW_NODE:-}"
-enable_remote_agent="${DOTFILES_ENABLE_REMOTE_AGENT:-}"
+enable_hermes_proxy="${DOTFILES_ENABLE_HERMES_PROXY:-}"
 validate_sudo_access="${DOTFILES_VALIDATE_SUDO_ACCESS:-}"
 
 if [[ -z "$role" && -t 0 && -t 1 ]]; then
@@ -151,10 +147,6 @@ else
 	enable_openclaw="false"
 fi
 
-if [[ -z "$enable_remote_agent" ]]; then
-	enable_remote_agent="false"
-fi
-
 if [[ -z "$validate_sudo_access" && -t 0 && -t 1 ]]; then
 	read -r -p "Validate sudo access during setup? [Y/n]: " sudo_choice
 	case "${sudo_choice:-}" in
@@ -171,6 +163,6 @@ if [[ -z "$validate_sudo_access" ]]; then
 	validate_sudo_access="true"
 fi
 
-write_config "$role" "$enable_openclaw" "$enable_hermes_proxy" "$enable_remote_agent" "$validate_sudo_access"
+write_config "$role" "$enable_openclaw" "$enable_hermes_proxy" "$validate_sudo_access"
 echo "==> Wrote machine setup to $CONFIG_JSON"
 validate_sudo "$validate_sudo_access"

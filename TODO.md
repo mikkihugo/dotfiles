@@ -3,7 +3,7 @@
 ## Architecture (revised 2026-04-20)
 
 The custom `vault.hugo.dk` Go control plane and the Rust `secret-tui` /
-`machine-agent` tools were retired after Codex adversarial review flagged
+`machine-agent` tools were retired after adversarial review flagged
 credential-reuse and unbounded-exec flaws, and because every piece had a
 better off-the-shelf replacement already deployed.
 
@@ -18,7 +18,6 @@ Current split:
 | Network layer         | Tailscale / headscale             | overlay     |
 | Desired state         | home-manager (this repo)          | pull, `hms` |
 | Admin actions         | OpenBao UI at `vault.hugo.dk`     | tailnet-UI  |
-| Per-machine RPC       | machine-agent (Go+tsnet, planned) | tailnet     |
 
 No custom control-plane service. No home-grown device-pairing protocol.
 Humans authenticate to Authelia with a passkey; machines authenticate
@@ -35,33 +34,6 @@ OpenBao). No runtime rotation.
 **Dynamic, runtime** → OpenBao KV v2 at `vault.hugo.dk/v1/kv/`. Read with
 `bao kv get kv/<path>`. Rotated without rebuilds. Used for service tokens,
 LLM provider keys, OAuth client secrets, AppRole SecretIDs.
-
-## Machine agent (Go + tsnet, pending)
-
-Replaces the deleted `machine-agent-rust`. Same purpose — per-machine
-management surface — but built around **narrow RPCs, not `exec`**.
-
-Constraints:
-- Embed Tailscale via `tailscale.com/tsnet` so the agent joins the tailnet
-  as its own node; no port-forwarding, no public exposure.
-- Per-machine OpenBao AppRole. SecretID stored at
-  `~/.config/machine-agent/secret_id`, chmod 600, rotated on re-enrollment.
-- RPC endpoints are explicit methods, not a command allowlist:
-  - `HealthGet` — uptime, systemd degraded units, disk %, load
-  - `ServiceStatus(name)` — `systemctl --user status <name>` output for a
-    hard-coded allowlist of unit names (openclaw-node, hermes-proxy,
-    dotfiles-auto-update)
-  - `ServiceLogs(name, lines)` — journalctl tail for the same allowlist
-  - `AgentVersion` — build info for health dashboards
-  - No `Exec`. No arbitrary file read.
-- Upgrade path: `go install` + systemd user unit restart driven by
-  `dotfiles-auto-update`.
-
-Deferred (add only when a concrete need shows up):
-- PTY sessions
-- Reverse tunnels
-- File transfer
-- Desired-state reconciliation (use `hms` instead)
 
 ## Secret-tui replacement
 
@@ -89,7 +61,6 @@ For the two things `bao` doesn't do for you:
 
 Current gaps:
 - `05-machine-setup.sh` still prompts for openclaw/sudo/role. Keep.
-- Machine-agent prompts removed; re-add only once the Go agent lands.
 - First-run age-key fetch: currently SOPS-decrypts `personal-servers-ssh.yaml`
   in activation.nix. Migrate to `bao kv get kv/mhugo/age_private_key` once
   every host has an AppRole — until then SOPS is fine.
@@ -99,8 +70,6 @@ Current gaps:
 - `mhugo` — full RW on `kv/mhugo/*`, `kv/personal/*` (user's own secrets)
 - `openclaw` — RO on `kv/{kimi,minimax,deepseek,openrouter,groq,openclaw}`
 - `mail-ingest` — RO on `kv/{office365,mistral,lightrag}`
-- `machine-agent` — no secrets; only auth method for proving identity to
-  a future central dashboard (if one ever gets built)
 
 ## Immediate next steps
 
@@ -108,18 +77,17 @@ Current gaps:
 2. Confirm `bao login -method=oidc` flow on laptop + bunker
 3. Mint AppRoles for openclaw + mail-ingest; wire SecretID into their
    systemd `EnvironmentFile` (not in-repo SOPS)
-4. Start the Go machine-agent scaffold (`tools/machine-agent/`)
-5. Write `bootstrap/steps/20-bao-bootstrap.sh` — reads AppRole SecretID
+4. Write `bootstrap/steps/20-bao-bootstrap.sh` — reads AppRole SecretID
    (provisioned out-of-band at first enroll), logs into bao, fetches
    per-machine secrets to the right files
 
 ## Not doing (decisions logged)
 
 - Custom WireGuard/Headscale control plane — use plain Tailscale
-- Per-machine MCP servers — central MCP bridge can call into the agent
-  over tsnet
+- Per-machine MCP servers — use central orchestration and existing host
+  supervisors instead
 - Central web UI for approvals — OpenBao's UI covers it
-- Rust rewrite of anything — Go for all new infra tooling (tsnet, bao
-  client, OIDC client ecosystems are Go-native)
+- Rust rewrite of anything — Go for new infra tooling where it fits the
+  deployed ecosystem
 - mTLS for machine → control-plane — Tailscale's WireGuard identity is
   good enough at this scale, and OIDC/AppRole handles app-layer auth

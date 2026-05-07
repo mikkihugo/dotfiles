@@ -29,7 +29,7 @@
     bun # JavaScript runtime/package manager for local tool builds
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
-    go # build machine-agent (tsnet) and other Go tools
+    go # build local Go tools
     pnpm # fast, disk-efficient Node package manager
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin
 

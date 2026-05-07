@@ -88,7 +88,6 @@ secrets/
   .sops.yaml                 Encryption rules (which keys can decrypt which files)
 shell/
   bash/bashrc                On-demand load-ai-keys function (sourced by HM)
-tools/                       (Go machine-agent rewrite pending — see TODO.md)
 .sops.yaml                   Age key recipients for secret re-encryption
 lefthook.yml                 Git hooks: alejandra, statix, shellcheck, shfmt,
                              typos, detect-secrets on pre-commit

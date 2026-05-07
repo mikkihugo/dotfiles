@@ -10,7 +10,7 @@ The system architecture is centered on:
 - `SOPS + age` for declarative, git-tracked secret encryption.
 - `Headscale` as the central self-hosted Tailscale control plane.
 - `Tailscale` clients on every machine for private overlay networking.
-- `OpenBao` / `vault.hugo.dk` for runtime secrets and machine/service auth.
+- `OpenBao` at `app.hugo.dk/vault` for runtime secrets and machine/service auth.
 - `Authelia` for human identity and passkey-based login to admin surfaces.
 
 ## Host Inventory
@@ -68,7 +68,7 @@ The `login_server` is the central Headscale control plane URL; documentation and
 
 - `headscale` appears in docs as the control plane.
 - `vpn.hugo.dk` is the expected login server address.
-- All internal admin services such as Vault and OpenBao are accessed over the Tailscale overlay.
+- Tailnet-only admin services are accessed over the Tailscale overlay.
 
 ## Secrets Model
 
@@ -83,21 +83,21 @@ This data is used during bootstrap and activation and is not treated as runtime-
 
 ### Runtime secrets
 
-Runtime secrets are handled by OpenBao KV v2 at `vault.hugo.dk`.
+Runtime secrets are handled by OpenBao KV v2 via `BAO_ADDR`.
 
-- `home/home.nix` exports `BAO_ADDR="https://vault.hugo.dk"`.
+- `home/home.nix` exports `BAO_ADDR="https://app.hugo.dk/vault"`.
 - `home/modules/packages.nix` installs the `openbao` CLI.
 - Runtime secrets policy is to fetch with `bao kv get kv/<path>` and to use AppRole/OIDC for auth.
 
 ## OpenBao / Vault Integration
 
-The current system is designed around OpenBao as a tailnet-only secrets plane.
+The current system is designed around OpenBao as the shared secrets plane.
 
 Key integration points:
 
 - `BAO_ADDR` is exported globally for user shells.
 - The `openbao` CLI is installed in every user profile.
-- Vault uses a tailnet-only administrative UI at `vault.hugo.dk`.
+- The OpenBao UI is served at `app.hugo.dk/vault`.
 
 The repo currently favors:
 

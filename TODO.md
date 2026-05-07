@@ -2,7 +2,7 @@
 
 ## Architecture (revised 2026-04-20)
 
-The custom `vault.hugo.dk` Go control plane and the Rust `secret-tui` /
+The custom Go secrets control plane and the Rust `secret-tui` /
 `machine-agent` tools were retired after adversarial review flagged
 credential-reuse and unbounded-exec flaws, and because every piece had a
 better off-the-shelf replacement already deployed.
@@ -17,12 +17,11 @@ Current split:
 | Declarative secrets   | SOPS + age (in this repo)         | git         |
 | Network layer         | Tailscale / headscale             | overlay     |
 | Desired state         | home-manager (this repo)          | pull, `hms` |
-| Admin actions         | OpenBao UI at `vault.hugo.dk`     | tailnet-UI  |
+| Admin actions         | OpenBao UI at `app.hugo.dk/vault` | public/OIDC |
 
 No custom control-plane service. No home-grown device-pairing protocol.
 Humans authenticate to Authelia with a passkey; machines authenticate
-to OpenBao with AppRole SecretIDs handed out during bootstrap; all of
-it reaches `vault.hugo.dk` over Tailscale only.
+to OpenBao with AppRole SecretIDs handed out during bootstrap.
 
 ## Secrets model
 
@@ -31,7 +30,7 @@ keys recipients listed in `.sops.yaml`. Used for config that needs to be
 reproducible across `hms` runs (SSH keys, long-lived API keys that predate
 OpenBao). No runtime rotation.
 
-**Dynamic, runtime** → OpenBao KV v2 at `vault.hugo.dk/v1/kv/`. Read with
+**Dynamic, runtime** → OpenBao KV v2 via `BAO_ADDR`. Read with
 `bao kv get kv/<path>`. Rotated without rebuilds. Used for service tokens,
 LLM provider keys, OAuth client secrets, AppRole SecretIDs.
 

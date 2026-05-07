@@ -1,7 +1,7 @@
 # home/modules/ops-tools.nix — infrastructure ops CLI tools
 #
 # Installs ops CLIs from nixpkgs with pre-configured wrappers:
-#   - bao       (openbao, vault-compatible CLI → vault.hugo.dk)
+#   - bao       (openbao, vault-compatible CLI → app.hugo.dk/vault)
 #   - authelia  (Authelia CLI → auth.hugo.dk)
 #   - flarectl  (Cloudflare CLI for DNS records etc.)
 #

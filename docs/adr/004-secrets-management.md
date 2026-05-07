@@ -9,7 +9,7 @@ All secrets follow this hierarchy:
 
 | Layer | Tool | Purpose |
 |-------|------|---------|
-| Source of truth | OpenBao (vault.hugo.dk) | KV v2, k8s auth, OIDC |
+| Source of truth | OpenBao (`app.hugo.dk/vault`) | KV v2, k8s auth, OIDC |
 | Declarative secrets in repo | SOPS + age | `secrets/*.sops.yaml`, encrypted at rest |
 | Runtime injection (k8s) | External Secrets Operator | SecretStore → ExternalSecret → Secret |
 | Runtime injection (home) | sops-nix | Decrypts to `/run/secrets/` at hms activation |

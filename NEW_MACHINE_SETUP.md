@@ -60,9 +60,8 @@ tailscale up --login-server=https://vpn.hugo.dk
 #   sops -d secrets/api-keys.yaml | grep authkey
 # to skip the browser auth flow.
 ```
-Without this step, your Windows browser can't reach `vault.hugo.dk` and
-other tailnet-only services — WSL has its own tailnet identity, but
-Windows traffic is separate.
+Without this step, your Windows browser cannot reach tailnet-only services.
+WSL has its own tailnet identity, but Windows traffic is separate.
 
 ### 7. Verify Installation
 ```bash

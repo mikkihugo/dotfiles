@@ -55,7 +55,7 @@ config/.env.gpg
 .aider/
 .aider.conf.yml
 
-# Environment files - these go to encrypted gists
+# Environment files - keep plaintext env files out of git
 .env.*
 *.env
 !.env.example

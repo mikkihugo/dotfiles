@@ -69,9 +69,9 @@ Windows traffic is separate.
 # Start new shell - should have all environment variables
 bash -l
 
-# Check that secrets are loaded
-echo $GITHUB_TOKEN
-echo $OPENAI_API_KEY
+# Check that local LLM secrets can be loaded
+load-ai-keys
+echo $LLM_MUX_BASE_URL
 
 # Test tools work
 gh auth status
@@ -86,8 +86,8 @@ gh auth status
 
 ## Differences from Current Setup
 
-**Before (Gist-based):**
-- Clone dotfiles → Run install → Wait for gist sync timer → Manual token fixes
+**Before (plaintext env sync):**
+- Clone dotfiles → Run install → wait for external sync → manual token fixes
 
 **After (SOPS-based):**
 - Clone dotfiles → authorize machine recipient → run install → secrets work immediately

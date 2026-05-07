@@ -137,11 +137,10 @@ export EDITOR=nano  # or vim, code, etc.
 
 ## Age Key Backup Location
 
-Your age key is backed up in a **private GitHub gist**:
-
-- Gist ID: `bc16d0e5315aa78394a4fe7468a79f4e`
-- Created: 2026-01-07
-- URL: https://gist.github.com/bc16d0e5315aa78394a4fe7468a79f4e
+The age private key is machine-local and must not be committed or copied into
+GitHub Actions, gists, or plaintext sync tooling. For recovery, store it in the
+approved OpenBao path or provision a new machine recipient and re-encrypt the
+repo secrets from an already-authorized machine.
 
 ### Restore from Backup
 
@@ -151,8 +150,9 @@ If you need to restore your age key on a new machine:
 # Create directory
 mkdir -p ~/.config/sops/age
 
-# Download from gist
-gh gist view bc16d0e5315aa78394a4fe7468a79f4e --raw > ~/.config/sops/age/keys.txt
+# Restore from the approved OpenBao path, or copy from an authorized machine
+# over an encrypted channel.
+bao kv get -field=age_private_key kv/mhugo/age_private_key > ~/.config/sops/age/keys.txt
 
 # Set correct permissions
 chmod 600 ~/.config/sops/age/keys.txt
@@ -161,13 +161,13 @@ chmod 600 ~/.config/sops/age/keys.txt
 sops --decrypt ~/.dotfiles/secrets/api-keys.yaml
 ```
 
-### Keep Gist Updated
+### Rotate the Age Key
 
 If you regenerate your age key:
 
 ```bash
-# Update the gist
-gh gist edit bc16d0e5315aa78394a4fe7468a79f4e ~/.config/sops/age/keys.txt
+# Store the new key in OpenBao, update .sops.yaml recipients, then re-encrypt.
+bao kv put kv/mhugo/age_private_key age_private_key="$(cat ~/.config/sops/age/keys.txt)"
 ```
 
 ---

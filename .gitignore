@@ -59,6 +59,12 @@ config/.env.gpg
 .aider/
 .aider.conf.yml
 
+# VT Code runtime state
+.vtcode/history/
+.vtcode/logs/
+.vtcode/state/
+.vtcode/terminals/
+
 # Environment files - keep plaintext env files out of git
 .env.*
 *.env

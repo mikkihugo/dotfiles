@@ -58,6 +58,7 @@ config/.env.gpg
 *.aider.*
 .aider/
 .aider.conf.yml
+.letta/
 
 # VT Code runtime state
 .vtcode/history/

@@ -28,17 +28,6 @@ for tool_path in $HOME/.local/share/mise/installs/*/*
     end
 end
 
-# Load tokens if available - handle export prefix
-if test -f "$HOME/.env_tokens"
-    for line in (cat $HOME/.env_tokens | grep -v '^#' | grep '=' | sed 's/^export //')
-        set var_name (echo $line | cut -d= -f1)
-        set var_value (echo $line | cut -d= -f2-)
-        # Remove quotes if present
-        set var_value (echo $var_value | sed 's/^"//;s/"$//')
-        set -x $var_name $var_value
-    end
-end
-
 # Add dotfiles tools
 if test -d "$HOME/.dotfiles/tools"
     set -x PATH $HOME/.dotfiles/tools $PATH

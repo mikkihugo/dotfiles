@@ -13,7 +13,6 @@ All secrets follow this hierarchy:
 | Declarative secrets in repo | SOPS + age | `secrets/*.sops.yaml`, encrypted at rest |
 | Runtime injection (k8s) | External Secrets Operator | SecretStore → ExternalSecret → Secret |
 | Runtime injection (home) | sops-nix | Decrypts to `/run/secrets/` at hms activation |
-| Sensitive env vars | Private GitHub Gist | `~/.env_tokens`, never in dotfiles repo |
 
 **Rules:**
 
@@ -22,10 +21,7 @@ All secrets follow this hierarchy:
 3. Secrets in home-manager come from `sops.secrets.*` — no plaintext in nix files.
 4. The OpenBao root token and unseal keys live in SOPS-encrypted files only.
 5. Cloudflare API token is scoped to `Zone.DNS:Edit` on `hugo.dk` only — not the global key.
-6. Private GitHub Gist ID is stored in `~/.env_tokens` — update via:
-   ```bash
-   gh gist edit $GIST_ID ~/.env_tokens
-   ```
+6. Do not reintroduce private gist or plaintext env-file secret sync.
 
 ## Key paths in OpenBao (kv/)
 

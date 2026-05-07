@@ -1,6 +1,5 @@
 {
   "links": {
-    "~/.config/services/cloudflare/access.json": "services/cf-access-config.json",
     "~/.config/services/docker-compose.yml": "services/docker-compose.yml"
   }
 }

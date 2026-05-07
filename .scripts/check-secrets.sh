@@ -49,8 +49,7 @@ done
 if [ $FOUND_ISSUES -eq 1 ]; then
     echo ""
     echo "🚨 Security check failed! Potential secrets detected."
-    echo "   Move secrets to ~/.env_tokens (managed via private gist)"
-    echo "   Use environment variables instead of hardcoded values"
+    echo "   Move personal/local secrets to SOPS and shared runtime secrets to OpenBao"
     exit 1
 else
     echo "✅ No hardcoded secrets detected"

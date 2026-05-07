@@ -145,7 +145,7 @@
         packages = with maintenance-pkgs; [
           go # build and validate services under tools/ like vault-hugo-dk
           cargo # build and validate rust tools under tools/
-          rustc # rust compiler for machine-agent and secret-tui work
+          rustc # rust compiler for machine-agent work
           pkg-config # native dependency discovery for rust crates when needed
           sops # encrypt/decrypt secrets/api-keys.yaml
           age # age key generation and encryption backend

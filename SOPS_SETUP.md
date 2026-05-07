@@ -34,8 +34,8 @@ Your dotfiles already have a perfect structure! SOPS integrates seamlessly:
    sops secrets/shared.yaml  # This will encrypt it
    ```
 
-5. **Migrate from your current env files**:
-   Copy values from `~/.env_tokens`, `~/.env_repos`, etc. into the SOPS editor
+5. **Migrate any remaining plaintext env files**:
+   Copy values into the SOPS editor, then delete the plaintext source files.
 
 ## Commands Available in Nix Shell
 
@@ -53,13 +53,11 @@ Your dotfiles already have a perfect structure! SOPS integrates seamlessly:
 ❌ **Never commit** (stays local):
 - `~/.config/sops/age/keys.txt` - Your private decryption key
 
-## Migration from Gist System
+## Migration from Plaintext Env Files
 
-1. Keep gist sync running during transition
-2. Set up SOPS as described above
-3. Test that secrets decrypt properly
-4. Disable systemd timer: `systemctl --user disable env-sync.timer`
-5. Remove old env files: `rm ~/.env_tokens ~/.env_repos`
+1. Set up SOPS as described above.
+2. Test that secrets decrypt properly.
+3. Remove old plaintext env files after the values are present in SOPS or OpenBao.
 
 ## Per-Machine Setup
 
@@ -67,4 +65,4 @@ On new machines:
 1. Clone dotfiles: `git clone <your-repo> ~/.dotfiles`
 2. Copy your SSH key to the new machine
 3. Run the age key generation commands above
-4. Enter `nix develop` - secrets automatically available!
+4. Enter `nix develop` - secrets automatically available.

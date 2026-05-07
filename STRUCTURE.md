@@ -11,7 +11,7 @@
 ├── profiles/
 │   ├── default/links.json   # standard workstation links
 │   └── services/links.json  # optional ops stack links
-├── services/                # docker/cloudflare/litellm/vault manifests
+├── services/                # docker/litellm/vault manifests and service helpers
 ├── shell/
 │   ├── shared/              # env + aliases shared across shells
 │   ├── bash/                # bash-specific entrypoints

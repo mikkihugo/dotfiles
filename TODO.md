@@ -77,7 +77,7 @@ bao kv list kv/                  # browse
 
 For the two things `bao` doesn't do for you:
 
-- **Fresh-machine bootstrap** (fetch age key + SSH keys + `.env_tokens`
+- **Fresh-machine bootstrap** (fetch age key + SSH keys
   from OpenBao with correct paths/permissions) — keep as a small shell
   script in `bootstrap/steps/`, no new binary.
 - **age key rotation** (generate → bao put → re-encrypt every sops file

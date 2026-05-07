@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Create clean zellij sessions from tmux sessions
-# This version handles session names properly
+# Create clean zellij sessions for the active workspaces.
 
 echo "🔄 Creating clean zellij sessions..."
 
 # Define sessions and their directories
 declare -A sessions=(
-    ["agent"]="/home/mhugo/singularity-engine"
-    ["mcp"]="/home/mhugo/architecturemcp" 
+    ["forge"]="/home/mhugo/code/singularity-forge"
+    ["ace"]="/home/mhugo/code/ace-coder"
+    ["fabric"]="/home/mhugo/code/inference-fabric"
     ["temp"]="/home/mhugo"
-    ["work"]="/home/mhugo/.dotfiles"
+    ["dots"]="/home/mhugo/.dotfiles"
 )
 
 echo "Creating ${#sessions[@]} zellij sessions:"
@@ -41,11 +41,12 @@ echo ""
 echo "🎉 Sessions created!"
 echo ""
 echo "Your clean sessions:"
-zellij list-sessions | grep -E "(agent|mcp|temp|work)" | grep -v "EXITED" || echo "Sessions starting..."
+zellij list-sessions | grep -E "(forge|ace|fabric|temp|dots)" | grep -v "EXITED" || echo "Sessions starting..."
 
 echo ""
 echo "Usage:"
-echo "  zellij attach agent"
-echo "  zellij attach mcp" 
+echo "  zellij attach forge"
+echo "  zellij attach ace"
+echo "  zellij attach fabric"
 echo "  zellij attach temp"
-echo "  zellij attach work"
+echo "  zellij attach dots"

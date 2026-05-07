@@ -32,9 +32,10 @@ sk() {
 }
 
 # Quick session shortcuts
-alias sa='s agent && cd ~/singularity-engine'
-alias sm='s mcp && cd ~/architecturemcp'  
-alias sw='s work && cd ~/.dotfiles'
+alias sf='s forge && cd ~/code/singularity-forge'
+alias sa='s ace && cd ~/code/ace-coder'
+alias si='s fabric && cd ~/code/inference-fabric'
+alias sd='s dots && cd ~/.dotfiles'
 alias st='s temp'
 
 # Only show this message on SSH login, not local bash
@@ -44,5 +45,5 @@ if [ -z "$SIMPLE_SESSIONS_LOADED" ] && [ -n "$SSH_CONNECTION" ]; then
     echo "  s [name]  - Create/attach session (defaults to current dir name)"
     echo "  sl        - List sessions"
     echo "  sk <name> - Kill session"
-    echo "  sa/sm/sw/st - Quick shortcuts for main sessions"
+    echo "  sf/sa/si/sd/st - Quick shortcuts for main sessions"
 fi

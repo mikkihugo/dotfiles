@@ -4,8 +4,9 @@
 echo "🔍 Discovering available AI providers..."
 
 # Build dynamic config based on available API keys
-CONFIG="/app/config/dynamic-config.yaml"
-cp /app/config/litellm_config.yaml $CONFIG
+CONFIG_DIR="${LITELLM_CONFIG_DIR:-/app/config}"
+CONFIG="$CONFIG_DIR/dynamic-config.yaml"
+cp "$CONFIG_DIR/litellm_config.yaml" "$CONFIG"
 
 # Check and add providers dynamically
 
@@ -174,4 +175,9 @@ fi
 
 # Start LiteLLM with dynamic config
 echo "🚀 Starting LiteLLM with discovered providers..."
-exec litellm --config $CONFIG --host 0.0.0.0 --port 4000 --detailed_debug
+if [ "${LITELLM_GENERATE_ONLY:-0}" = "1" ]; then
+    echo "Generated config at $CONFIG"
+    exit 0
+fi
+
+exec litellm --config "$CONFIG" --host 0.0.0.0 --port 4000 --detailed_debug

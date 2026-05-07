@@ -126,7 +126,7 @@ priority=3
 EOF
 
 # Copy startup script
-COPY scripts/litellm-startup.sh /app/scripts/
+COPY litellm-startup.sh /app/scripts/
 RUN chmod +x /app/scripts/litellm-startup.sh
 
 # Create directories

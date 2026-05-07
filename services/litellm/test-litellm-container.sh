@@ -1,5 +1,8 @@
 #!/bin/bash
 # Test LiteLLM container with all providers
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "🐳 Testing LiteLLM Container Setup"
 echo "================================="
@@ -16,7 +19,7 @@ echo "---------------------------------------"
 # Create a temporary config directory
 TEMP_DIR=$(mktemp -d)
 mkdir -p "$TEMP_DIR/config"
-cp scripts/litellm-startup.sh "$TEMP_DIR/"
+cp "$SCRIPT_DIR/litellm-startup.sh" "$TEMP_DIR/"
 
 # Create base config
 cat > "$TEMP_DIR/config/litellm_config.yaml" << 'EOF'
@@ -37,7 +40,7 @@ EOF
 # Run the startup script to generate dynamic config
 echo "Generating dynamic config..."
 cd "$TEMP_DIR"
-bash litellm-startup.sh 2>&1 | head -50
+LITELLM_CONFIG_DIR="$TEMP_DIR/config" LITELLM_GENERATE_ONLY=1 bash litellm-startup.sh 2>&1 | head -50
 
 echo ""
 echo "2. Checking generated config..."
@@ -46,11 +49,18 @@ if [ -f "$TEMP_DIR/config/dynamic-config.yaml" ]; then
     echo "✅ Dynamic config created"
     echo ""
     echo "Model counts by provider:"
-    grep -c "model_name: google/" "$TEMP_DIR/config/dynamic-config.yaml" | xargs echo "  Google AI models:"
-    grep -c "model_name: openrouter/" "$TEMP_DIR/config/dynamic-config.yaml" | xargs echo "  OpenRouter models:"
-    grep -c "model_name: github/" "$TEMP_DIR/config/dynamic-config.yaml" | xargs echo "  GitHub models:"
-    grep -c "model_name: copilot/" "$TEMP_DIR/config/dynamic-config.yaml" | xargs echo "  Copilot models:"
-    grep -c "model_name: local/" "$TEMP_DIR/config/dynamic-config.yaml" | xargs echo "  Local models:"
+    count_models() {
+        local label="$1"
+        local pattern="$2"
+        local count
+        count=$(grep -c "$pattern" "$TEMP_DIR/config/dynamic-config.yaml" || true)
+        echo "  $label: $count"
+    }
+    count_models "Google AI models" "model_name: google/"
+    count_models "OpenRouter models" "model_name: openrouter/"
+    count_models "GitHub models" "model_name: github/"
+    count_models "Copilot models" "model_name: copilot/"
+    count_models "Local models" "model_name: local/"
 else
     echo "❌ Dynamic config not created"
 fi
@@ -58,7 +68,7 @@ fi
 echo ""
 echo "3. Testing Docker build..."
 echo "-------------------------"
-cd /home/mhugo/code/architecturemcp
+cd "$SCRIPT_DIR"
 
 # Check if Dockerfile.litellm exists
 if [ -f "Dockerfile.litellm" ]; then
@@ -79,7 +89,8 @@ echo "Required variables for full functionality:"
 echo ""
 
 check_env() {
-    if [ -n "${!1}" ]; then
+    local name="$1"
+    if [ -n "${!name:-}" ]; then
         echo "✅ $1 is set"
     else
         echo "❌ $1 is not set"
@@ -135,7 +146,7 @@ fi
 
 echo ""
 echo "To run the LiteLLM container:"
-echo "  docker compose -f docker-compose.singularity.yml up litellm"
+echo "  cd /home/mhugo/.dotfiles/services && docker compose up litellm"
 
 # Cleanup
 rm -rf "$TEMP_DIR"

@@ -9,16 +9,16 @@ layout {
         }
     }
     
-    tab name="Claude Dual" focus=true {
+    tab name="Code Dual" focus=true {
         pane split_direction="vertical" {
             pane name="Architect" {
                 command "claude"
                 args "--mode" "architect"
             }
-            pane name="Singularity" {
+            pane name="Forge" {
                 command "claude"  
                 args "--mode" "code"
-                cwd "/home/mhugo/singularity-engine"
+                cwd "/home/mhugo/code/singularity-forge"
             }
         }
     }

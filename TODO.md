@@ -68,14 +68,13 @@ Current gaps:
 
 - `mhugo` — full RW on `kv/mhugo/*`, `kv/personal/*` (user's own secrets)
 - `openclaw` — RO on `kv/{kimi,minimax,deepseek,openrouter,groq,openclaw}`
-- `mail-ingest` — RO on `kv/{office365,mistral,lightrag}`
 
 ## Immediate next steps
 
 1. ~~Install `bao` CLI on all machines via home-manager~~ ✓
 2. Confirm `bao login -method=oidc` flow on laptop + bunker
-3. Mint AppRoles for openclaw + mail-ingest; wire SecretID into their
-   systemd `EnvironmentFile` (not in-repo SOPS)
+3. Mint AppRoles for OpenClaw if the legacy node remains needed; wire
+   SecretID into its systemd `EnvironmentFile` (not in-repo SOPS)
 4. Write `bootstrap/steps/20-bao-bootstrap.sh` — reads AppRole SecretID
    (provisioned out-of-band at first enroll), logs into bao, fetches
    per-machine secrets to the right files

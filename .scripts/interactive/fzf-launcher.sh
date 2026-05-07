@@ -17,8 +17,6 @@ get_commands() {
     cat << 'EOF'
 safe-exec → Run commands with resource protection
 shell-switcher → Switch between bash/zsh/fish/nu
-mise install → Install missing development tools
-mise upgrade → Upgrade all tools to latest
 claude → Launch Claude Code assistant
 EOF
 }

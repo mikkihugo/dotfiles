@@ -82,8 +82,8 @@
 
   // API Key Formats:
   // Direct value:        "sk-..."
-  // From file:           "file://~/.config/litellm-key.txt"
-  // From env variable:   "env://LITELLM_API_KEY"
+  // From file:           "file://~/.config/provider-key.txt"
+  // From env variable:   "env://PROVIDER_API_KEY"
   
   // Examples for different providers:
   // OpenAI Chat Completion (default, backward compatible):

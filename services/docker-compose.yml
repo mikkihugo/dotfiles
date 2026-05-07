@@ -2,37 +2,6 @@
 version: '3.8'
 
 services:
-  # LiteLLM AI Gateway Service
-  litellm:
-    build: 
-      context: ./litellm
-      dockerfile: Dockerfile.litellm
-    container_name: litellm-gateway
-    restart: unless-stopped
-    ports:
-      - "${LITELLM_PORT:-10001}:4000"
-    environment:
-      # AI Service Keys
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
-      - COHERE_API_KEY=${COHERE_API_KEY}
-      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-    volumes:
-      - ./litellm/config:/app/config
-      - litellm_logs:/app/logs
-    networks:
-      - infra_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   # PostgreSQL Vault Database
   vault-db:
     image: postgres:15
@@ -75,8 +44,6 @@ services:
       - infra_network
 
 volumes:
-  litellm_logs:
-    driver: local
   vault_data:
     driver: local
 

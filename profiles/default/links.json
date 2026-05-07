@@ -1,9 +1,6 @@
 {
   "links": {
     "~/.config/starship.toml": "config/starship.toml",
-    "~/.config/zellij/config.kdl": "config/zellij/config.kdl",
-    "~/.config/zellij/layouts": "config/zellij/layouts",
-    "~/.config/zellij/themes": "config/zellij/themes",
     "~/.ripgreprc": "config/ripgreprc",
     "~/.config/opencode/opencode.json": "config/opencode/opencode.json",
     "~/.config/opencode/oh-my-opencode.json": "config/opencode/oh-my-opencode.json",

@@ -55,9 +55,6 @@
     nix-index # `nix-locate`: find which package provides a binary
     kubectl # Kubernetes CLI for Flux/k3s validation and ops
 
-    # Terminal multiplexer — persistent sessions, split panes.
-    zellij
-
     # Nerd Fonts — required for starship icons, eza glyphs, git symbols.
     # WSL2/VSCode Remote: also install on the Windows side for the terminal font:
     #   winget install -e --id DEVCOM.JetBrainsMonoNerdFont

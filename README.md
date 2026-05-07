@@ -81,7 +81,6 @@ home/
   home.nix                   Declarative user config (packages, shell, git, tools)
 config/
   starship.toml              Prompt theme (managed by programs.starship)
-  zellij/                    Terminal multiplexer config
   direnv/direnv.toml         Direnv settings (strict mode, warn timeout)
   git/                       Git config fragments (linked by programs.git)
 secrets/

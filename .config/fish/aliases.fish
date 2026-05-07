@@ -113,11 +113,6 @@ if command -v helix &>/dev/null
     alias vim 'helix'
 end
 
-if command -v zellij &>/dev/null
-    alias zj 'zellij'
-    alias tmux 'zellij'
-end
-
 # Git helpers
 if command -v git-cliff &>/dev/null
     alias changelog 'git-cliff'

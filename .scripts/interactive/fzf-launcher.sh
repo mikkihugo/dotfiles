@@ -17,9 +17,6 @@ get_commands() {
     cat << 'EOF'
 safe-exec → Run commands with resource protection
 shell-switcher → Switch between bash/zsh/fish/nu
-zj → Quick zellij session creator
-zellij list-sessions → Show existing zellij sessions
-zellij attach → Attach to session (with tab completion)
 mise install → Install missing development tools
 mise upgrade → Upgrade all tools to latest
 claude → Launch Claude Code assistant

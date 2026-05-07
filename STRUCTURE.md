@@ -7,11 +7,11 @@
 ├── bootstrap/
 │   ├── bootstrap.sh         # entrypoint called by install.sh
 │   └── steps/               # ordered scripts (00-, 10-, 20-...)
-├── config/                  # mirrors $HOME destinations (starship, zellij, git, ...)
+├── config/                  # mirrors $HOME destinations (starship, git, ...)
 ├── profiles/
 │   ├── default/links.json   # standard workstation links
 │   └── services/links.json  # optional ops stack links
-├── services/                # docker/litellm/vault manifests and service helpers
+├── services/                # docker/vault manifests and service helpers
 ├── shell/
 │   ├── shared/              # env + aliases shared across shells
 │   ├── bash/                # bash-specific entrypoints

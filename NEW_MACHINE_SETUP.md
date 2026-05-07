@@ -41,7 +41,7 @@ ssh-to-age -i ~/.ssh/id_ed25519.pub
 ### 5. Install Dotfiles
 ```bash
 # Runs bootstrap: sudoers NOPASSWD setup, SOPS preflight, home-manager,
-# tailscale install + headscale join, openclaw, etc.
+# tailscale install + headscale join, and selected per-machine services.
 #
 # Will prompt for sudo password ONCE (during 02-sudoers.sh) — after that
 # every later step + every future `hms` runs unprompted.

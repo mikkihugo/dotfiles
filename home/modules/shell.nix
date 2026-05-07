@@ -21,7 +21,7 @@ _: let
       && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
 
     # Activate mise, load SOPS secrets, handle non-interactive direnv,
-    # and source third-party completions. See shell/bash/bashrc for details.
+    # and source runtime shell hooks. See shell/bash/bashrc for details.
     [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"
     type _load_sops_secrets >/dev/null 2>&1 && _load_sops_secrets >/dev/null 2>&1 || true
 

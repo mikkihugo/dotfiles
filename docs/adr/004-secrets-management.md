@@ -36,8 +36,7 @@ All secrets follow this hierarchy:
 | `kv/mistral` | `api_key` | Hermes |
 | `kv/gemini` | `api_key` | Gemini CLI |
 | `kv/amp` | `token` | Amp CLI |
-| `kv/cloudflare` | `api_token` | Traefik DNS-01, CF Tunnel |
-| `kv/cloudflared` | `tunnel_token` | cloudflared deployment |
+| `kv/cloudflare` | `api_token` | Traefik DNS-01 |
 
 ## Consequences
 

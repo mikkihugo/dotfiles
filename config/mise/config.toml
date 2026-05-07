@@ -1,7 +1,6 @@
 [tools]
 "aqua:openai/codex" = "0.128.0"
 "github:vinhnx/vtcode" = "0.105.6"
-cloudflared = "latest"
 flyctl = "latest"
 "go:github.com/charmbracelet/crush" = "latest"
 node = "24.15.0"

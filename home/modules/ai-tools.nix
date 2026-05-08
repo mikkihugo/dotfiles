@@ -105,6 +105,7 @@ in {
     llm-pkgs.opencode # binary: opencode
     # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
     llm-pkgs.cursor-agent # binary: cursor-agent
+    pkgs.copilot-cli # binary: copilot
     llm-pkgs.droid # binary: droid
     llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml

@@ -5,7 +5,7 @@
 #   api.hermes.internal/hermes and resolves to flow's tailnet IP.
 # - This module runs a thin gateway on each machine that forwards all agent
 #   work to that host agent. Matches the "proxy mode" in Hermes docs.
-# - Replaces the legacy openclaw-node service (openclaw.nix) once enabled.
+# - Runs the local Hermes proxy gateway when enabled for this machine.
 #
 # Setup flow (once per machine):
 #   1. Add hermes.gateway_proxy_key to secrets/api-keys.yaml via `sops`

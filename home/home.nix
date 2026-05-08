@@ -35,7 +35,6 @@
       ./modules/shell.nix
       ./modules/git.nix
       ./modules/files.nix
-      ./modules/openclaw.nix
       ./modules/hermes-proxy.nix
       ./modules/hermes-tui.nix
       ./modules/ai-tools.nix
@@ -52,7 +51,7 @@
     ];
 
   # Top-level SOPS key source so every host (including dev1) can decrypt,
-  # not just hosts that trigger openclaw/hermes-proxy modules.
+  # not just hosts that trigger Hermes proxy modules.
   sops.age.keyFile = "/home/mhugo/.config/sops/age/keys.txt";
   sops.defaultSopsFile = ../secrets/api-keys.yaml;
 
@@ -69,7 +68,7 @@
     sessionPath = [
       "$HOME/.bun/bin"
       "$HOME/.local/bin" # pip/pipx, claude CLI, local tools
-      "$HOME/.npm-global/bin" # openclaw, opencode, and other npm globals
+      "$HOME/.npm-global/bin" # opencode and other npm globals
       "$HOME/.cargo/bin" # cargo-installed Rust binaries
       "$HOME/.amp/bin"
     ];

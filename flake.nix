@@ -71,7 +71,7 @@
     # a first-boot seed — pinning an older rev does not affect runtime.
     ace-coder.url = "git+file:///home/mhugo/code/ace-coder?rev=58b7a904030dfd06e139aafc2222c1ea1331746c";
 
-    # hermes-agent: self-improving agent (replaces legacy openclaw node).
+    # hermes-agent: self-improving agent.
     # Flake exposes packages.<system>.default wrapping the `hermes` binary.
     hermes-agent = {
       url = "github:NousResearch/hermes-agent";

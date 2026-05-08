@@ -16,16 +16,10 @@ in {
       description = "Local machine role selected during bootstrap.";
     };
 
-    enableOpenclawNode = lib.mkOption {
-      type = lib.types.bool;
-      default = machineConfig.enableOpenclawNode or false;
-      description = "Whether this machine should run the legacy OpenClaw node service.";
-    };
-
     enableHermesProxy = lib.mkOption {
       type = lib.types.bool;
       default = machineConfig.enableHermesProxy or false;
-      description = "Whether this machine should run the Hermes proxy gateway. Mutually exclusive with enableOpenclawNode at runtime (both write to ~/.hermes / ~/.openclaw respectively; a single host can run both services concurrently but they share no state).";
+      description = "Whether this machine should run the Hermes proxy gateway.";
     };
 
     enableTailscale = lib.mkOption {

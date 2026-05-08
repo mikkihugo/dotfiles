@@ -12,11 +12,6 @@ if [[ -f "$MACHINE_ENV" ]] && command -v systemctl >/dev/null 2>&1; then
 	# shellcheck disable=SC1090
 	source "$MACHINE_ENV"
 
-	if [[ "${DOTFILES_ENABLE_OPENCLAW_NODE:-false}" == "true" ]]; then
-		systemctl --user enable --now openclaw-node.service >/dev/null 2>&1 ||
-			echo "⚠️  could not start openclaw-node.service"
-	fi
-
 	if [[ "${DOTFILES_ENABLE_HERMES_PROXY:-false}" == "true" ]]; then
 		systemctl --user enable --now hermes-proxy.service >/dev/null 2>&1 ||
 			echo "⚠️  could not start hermes-proxy.service"

@@ -10,14 +10,12 @@ mkdir -p "$CONFIG_DIR"
 
 write_config() {
 	local role="$1"
-	local enable_openclaw="$2"
-	local enable_hermes_proxy="$3"
-	local validate_sudo="$4"
+	local enable_hermes_proxy="$2"
+	local validate_sudo="$3"
 
 	cat >"$CONFIG_JSON" <<EOF
 {
 	  "role": "${role}",
-	  "enableOpenclawNode": ${enable_openclaw},
 	  "enableHermesProxy": ${enable_hermes_proxy},
 	  "validateSudoAccess": ${validate_sudo}
 	}
@@ -25,7 +23,6 @@ EOF
 
 	cat >"$CONFIG_ENV" <<EOF
 DOTFILES_MACHINE_ROLE="${role}"
-DOTFILES_ENABLE_OPENCLAW_NODE="${enable_openclaw}"
 DOTFILES_ENABLE_HERMES_PROXY="${enable_hermes_proxy}"
 DOTFILES_VALIDATE_SUDO_ACCESS="${validate_sudo}"
 EOF
@@ -37,7 +34,6 @@ print_existing() {
 		source "$CONFIG_ENV"
 		echo "==> Machine setup already present"
 		echo "    role: ${DOTFILES_MACHINE_ROLE:-general}"
-		echo "    openclaw node: ${DOTFILES_ENABLE_OPENCLAW_NODE:-true}"
 		echo "    hermes proxy: ${DOTFILES_ENABLE_HERMES_PROXY:-false}"
 		echo "    sudo validation: ${DOTFILES_VALIDATE_SUDO_ACCESS:-true}"
 	fi
@@ -71,7 +67,6 @@ if [[ -f "$CONFIG_JSON" && "$RECONFIGURE" != "1" ]]; then
 fi
 
 role="${DOTFILES_MACHINE_ROLE:-}"
-enable_openclaw="${DOTFILES_ENABLE_OPENCLAW_NODE:-}"
 enable_hermes_proxy="${DOTFILES_ENABLE_HERMES_PROXY:-}"
 validate_sudo_access="${DOTFILES_VALIDATE_SUDO_ACCESS:-}"
 
@@ -97,7 +92,6 @@ if [[ -z "$role" ]]; then
 	role="general"
 fi
 
-default_openclaw="false"
 default_hermes_proxy="false"
 case "$role" in
 workstation | worker)
@@ -124,29 +118,6 @@ if [[ -z "$enable_hermes_proxy" ]]; then
 	enable_hermes_proxy="$default_hermes_proxy"
 fi
 
-if [[ "$enable_hermes_proxy" != "true" ]]; then
-	if [[ -z "$enable_openclaw" && -t 0 && -t 1 ]]; then
-		read -r -p "Run the legacy OpenClaw node service on this machine? [y/N]: " openclaw_choice
-		case "${openclaw_choice:-}" in
-		y | Y | yes | YES)
-			enable_openclaw="true"
-			;;
-		n | N | no | NO)
-			enable_openclaw="false"
-			;;
-		*)
-			enable_openclaw="$default_openclaw"
-			;;
-	esac
-	fi
-
-	if [[ -z "$enable_openclaw" ]]; then
-		enable_openclaw="$default_openclaw"
-	fi
-else
-	enable_openclaw="false"
-fi
-
 if [[ -z "$validate_sudo_access" && -t 0 && -t 1 ]]; then
 	read -r -p "Validate sudo access during setup? [Y/n]: " sudo_choice
 	case "${sudo_choice:-}" in
@@ -163,6 +134,6 @@ if [[ -z "$validate_sudo_access" ]]; then
 	validate_sudo_access="true"
 fi
 
-write_config "$role" "$enable_openclaw" "$enable_hermes_proxy" "$validate_sudo_access"
+write_config "$role" "$enable_hermes_proxy" "$validate_sudo_access"
 echo "==> Wrote machine setup to $CONFIG_JSON"
 validate_sudo "$validate_sudo_access"

@@ -35,14 +35,12 @@ The role metadata is stored in:
 Supported role-related options:
 
 - `dotfiles.machine.role` — machine purpose string (`laptop`, `workstation`, `worker`, `server`, `general`).
-- `dotfiles.machine.enableOpenclawNode` — enable legacy OpenClaw node service.
 - `dotfiles.machine.enableHermesProxy` — enable Hermes proxy gateway.
 - `dotfiles.machine.validateSudoAccess` — whether bootstrap validates sudo.
 
 Default semantics:
 
 - `workstation` and `worker` roles default `enableHermesProxy=true`.
-- `enableHermesProxy` disables legacy OpenClaw during bootstrap by default.
 
 ## Network Overlay
 

@@ -59,7 +59,7 @@ For the two things `bao` doesn't do for you:
 `install.sh` → `bootstrap/steps/*.sh` → home-manager.
 
 Current gaps:
-- `05-machine-setup.sh` still prompts for openclaw/sudo/role. Keep.
+- First-run machine setup still handles sudo/role.
 - First-run age-key fetch: currently SOPS-decrypts `personal-servers-ssh.yaml`
   in activation.nix. Migrate to `bao kv get kv/mhugo/age_private_key` once
   every host has an AppRole — until then SOPS is fine.
@@ -67,15 +67,12 @@ Current gaps:
 ## OpenBao policies to define
 
 - `mhugo` — full RW on `kv/mhugo/*`, `kv/personal/*` (user's own secrets)
-- `openclaw` — RO on `kv/{kimi,minimax,deepseek,openrouter,groq,openclaw}`
 
 ## Immediate next steps
 
 1. ~~Install `bao` CLI on all machines via home-manager~~ ✓
 2. Confirm `bao login -method=oidc` flow on laptop + bunker
-3. Mint AppRoles for OpenClaw if the legacy node remains needed; wire
-   SecretID into its systemd `EnvironmentFile` (not in-repo SOPS)
-4. Write `bootstrap/steps/20-bao-bootstrap.sh` — reads AppRole SecretID
+3. Write `bootstrap/steps/20-bao-bootstrap.sh` — reads AppRole SecretID
    (provisioned out-of-band at first enroll), logs into bao, fetches
    per-machine secrets to the right files
 

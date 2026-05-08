@@ -73,8 +73,8 @@ in {
       fi
     '';
 
-    # Extract personal-admin SSH key from SOPS into ~/.ssh/ for monitor, portal-automation,
-    # mailcow-openclaw, and the Hetzner storage box.
+    # Extract personal-admin SSH key from SOPS into ~/.ssh/ for monitor,
+    # portal automation, and the Hetzner storage box.
     renderPersonalAdminSshKey = lib.hm.dag.entryAfter ["installPackages"] ''
             PATH="${pkgs.sops}/bin:${pkgs.age}/bin:${pythonWithYaml}/bin:$PATH" \
             ${pythonWithYaml}/bin/python3 - <<'PY'

@@ -7,7 +7,7 @@ keys:
   # SSH-derived key — bootstrap on any machine via:
   #   ssh-to-age -private-key -i ~/.ssh/id_ed25519 > ~/.config/sops/age/keys.txt
   - &ssh_key age1mch8x334rdc94fwrfmd5efchsjutv45yshh7cauew8kjgttsdycsp0uqfj
-  # mail-hugo-new server (OpenClaw/Headscale host)
+  # mail-hugo-new server (Headscale host)
   - &mail_hugo_key age144mj9rzctzrqxnmw9x6p8s4jtww94rk7jlwtnc833yd6a90lmptqdagdkr
 
 creation_rules:

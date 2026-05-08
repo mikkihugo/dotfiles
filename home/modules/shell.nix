@@ -15,7 +15,7 @@ _: let
     # home-manager only sources hm-session-vars.sh from ~/.profile (login shells).
     # WSL/terminal-emulator bash starts as a non-login interactive shell, so PATH
     # entries from home.sessionPath (~/.bun/bin, ~/.npm-global/bin, ~/.cargo/bin,
-    # etc.) never get added. Source it here so codex/gemini/openclaw/opencode
+    # etc.) never get added. Source it here so codex/gemini/opencode
     # resolve in interactive shells.
     [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] \
       && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"

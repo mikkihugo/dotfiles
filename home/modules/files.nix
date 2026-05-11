@@ -62,5 +62,25 @@ in {
       source = ../../config/mise/config.toml;
       force = true;
     };
+
+    ".factory/settings.json" = {
+      source = ../../config/factory/settings.json;
+      force = true;
+    };
+
+    ".factory/droids/worker.md" = {
+      source = ../../config/factory/droids/worker.md;
+      force = true;
+    };
+
+    ".factory/droids/scrutiny-feature-reviewer.md" = {
+      source = ../../config/factory/droids/scrutiny-feature-reviewer.md;
+      force = true;
+    };
+
+    ".factory/droids/user-testing-flow-validator.md" = {
+      source = ../../config/factory/droids/user-testing-flow-validator.md;
+      force = true;
+    };
   };
 }

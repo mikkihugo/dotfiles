@@ -1,0 +1,369 @@
+{
+  "enabledPlugins": {
+    "core@factory-plugins": true,
+    "typescript@factory-plugins": true,
+    "droid-evolved@factory-plugins": true,
+    "autoresearch@factory-plugins": true
+  },
+  "logoAnimation": "off",
+  "model": "custom:MiniMax:-MiniMax-M2.7-highspeed-39",
+  "reasoningEffort": "none",
+  "specModeModel": "custom:Z.AI:-glm-5.1-41",
+  "specModeReasoningEffort": "none",
+  "sessionDefaultSettings": {
+    "interactionMode": "auto",
+    "autonomyLevel": "off"
+  },
+  "missionOrchestratorModel": "custom:Z.AI:-glm-5.1-41",
+  "missionOrchestratorReasoningEffort": "none",
+  "missionWorkerModel": "custom:MiniMax:-MiniMax-M2.7-highspeed-39",
+  "missionWorkerReasoningEffort": "none",
+  "validationWorkerModel": "custom:Kimi-Coding:-kimi-k2.6-40",
+  "validationWorkerReasoningEffort": "none",
+  "customModels": [
+    {
+      "model": "cogito-2.1:671b",
+      "displayName": "Ollama Cloud: cogito-2.1:671b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "glm-4.7",
+      "displayName": "Ollama Cloud: glm-4.7",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "kimi-k2.6",
+      "displayName": "Ollama Cloud: kimi-k2.6",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "qwen3-coder:480b",
+      "displayName": "Ollama Cloud: qwen3-coder:480b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "qwen3-coder-next",
+      "displayName": "Ollama Cloud: qwen3-coder-next",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "nemotron-3-nano:30b",
+      "displayName": "Ollama Cloud: nemotron-3-nano:30b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "minimax-m2",
+      "displayName": "Ollama Cloud: minimax-m2",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "minimax-m2.7",
+      "displayName": "Ollama Cloud: minimax-m2.7",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "glm-4.6",
+      "displayName": "Ollama Cloud: glm-4.6",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "devstral-2:123b",
+      "displayName": "Ollama Cloud: devstral-2:123b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "devstral-small-2:24b",
+      "displayName": "Ollama Cloud: devstral-small-2:24b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "gemini-3-flash-preview",
+      "displayName": "Ollama Cloud: gemini-3-flash-preview",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "qwen3.5:397b",
+      "displayName": "Ollama Cloud: qwen3.5:397b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "nemotron-3-super",
+      "displayName": "Ollama Cloud: nemotron-3-super",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "glm-5",
+      "displayName": "Ollama Cloud: glm-5",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "glm-5.1",
+      "displayName": "Ollama Cloud: glm-5.1",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "kimi-k2-thinking",
+      "displayName": "Ollama Cloud: kimi-k2-thinking",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "qwen3-next:80b",
+      "displayName": "Ollama Cloud: qwen3-next:80b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "deepseek-v4-pro",
+      "displayName": "Ollama Cloud: deepseek-v4-pro",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "deepseek-v3.1:671b",
+      "displayName": "Ollama Cloud: deepseek-v3.1:671b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "gemma4:31b",
+      "displayName": "Ollama Cloud: gemma4:31b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "kimi-k2.5",
+      "displayName": "Ollama Cloud: kimi-k2.5",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "gpt-oss:20b",
+      "displayName": "Ollama Cloud: gpt-oss:20b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "minimax-m2.1",
+      "displayName": "Ollama Cloud: minimax-m2.1",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "ministral-3:8b",
+      "displayName": "Ollama Cloud: ministral-3:8b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "mistral-large-3:675b",
+      "displayName": "Ollama Cloud: mistral-large-3:675b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "gemma3:12b",
+      "displayName": "Ollama Cloud: gemma3:12b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "gemma3:27b",
+      "displayName": "Ollama Cloud: gemma3:27b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "rnj-1:8b",
+      "displayName": "Ollama Cloud: rnj-1:8b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "minimax-m2.5",
+      "displayName": "Ollama Cloud: minimax-m2.5",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "qwen3-vl:235b-instruct",
+      "displayName": "Ollama Cloud: qwen3-vl:235b-instruct",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "deepseek-v4-flash",
+      "displayName": "Ollama Cloud: deepseek-v4-flash",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "gpt-oss:120b",
+      "displayName": "Ollama Cloud: gpt-oss:120b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "kimi-k2:1t",
+      "displayName": "Ollama Cloud: kimi-k2:1t",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "deepseek-v3.2",
+      "displayName": "Ollama Cloud: deepseek-v3.2",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "qwen3-vl:235b",
+      "displayName": "Ollama Cloud: qwen3-vl:235b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "ministral-3:3b",
+      "displayName": "Ollama Cloud: ministral-3:3b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "ministral-3:14b",
+      "displayName": "Ollama Cloud: ministral-3:14b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "gemma3:4b",
+      "displayName": "Ollama Cloud: gemma3:4b",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "MiniMax-M2.7-highspeed",
+      "displayName": "MiniMax: MiniMax-M2.7-highspeed",
+      "baseUrl": "https://api.minimax.io/anthropic",
+      "apiKey": "${MINIMAX_API_KEY}",
+      "provider": "anthropic",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "kimi-k2.6",
+      "displayName": "Kimi Coding: kimi-k2.6",
+      "baseUrl": "https://api.kimi.com/coding",
+      "apiKey": "${KIMI_API_KEY}",
+      "provider": "anthropic",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "glm-5.1",
+      "displayName": "Z.AI: glm-5.1",
+      "baseUrl": "https://api.z.ai/api/coding/paas/v4",
+      "apiKey": "${ZAI_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "glm-4.7",
+      "displayName": "Z.AI: glm-4.7",
+      "baseUrl": "https://api.z.ai/api/coding/paas/v4",
+      "apiKey": "${ZAI_API_KEY}",
+      "provider": "generic-chat-completion-api",
+      "maxOutputTokens": 16384
+    }
+  ]
+}

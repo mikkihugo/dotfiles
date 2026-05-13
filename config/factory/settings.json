@@ -6,8 +6,9 @@
     "autoresearch@factory-plugins": true
   },
   "logoAnimation": "off",
-  "model": "custom:MiniMax:-MiniMax-M2.7-highspeed-39",
+  "model": "custom:Z.AI:-glm-5.1-41",
   "reasoningEffort": "none",
+  "specModel": "custom:Z.AI:-glm-5.1-41",
   "specModeModel": "custom:Z.AI:-glm-5.1-41",
   "specModeReasoningEffort": "none",
   "sessionDefaultSettings": {
@@ -16,9 +17,9 @@
   },
   "missionOrchestratorModel": "custom:Z.AI:-glm-5.1-41",
   "missionOrchestratorReasoningEffort": "none",
-  "missionWorkerModel": "custom:MiniMax:-MiniMax-M2.7-highspeed-39",
+  "missionWorkerModel": "custom:Kimi-Coding:-kimi-k2.6-40",
   "missionWorkerReasoningEffort": "none",
-  "validationWorkerModel": "custom:Kimi-Coding:-kimi-k2.6-40",
+  "validationWorkerModel": "custom:Ollama-Cloud:-deepseek-v4-pro-18",
   "validationWorkerReasoningEffort": "none",
   "customModels": [
     {

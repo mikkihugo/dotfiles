@@ -2,7 +2,7 @@
 name: user-testing-flow-validator
 description: >-
   Test validation contract assertions through designated contract surfaces during mission validation. Used only within missions.
-model: custom:Kimi-Coding:-kimi-k2.6-40
+model: custom:Ollama-Cloud:-deepseek-v4-pro-18
 reasoningEffort: none
 ---
 # User Testing Flow Validator

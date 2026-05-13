@@ -4,7 +4,7 @@ description: >-
   General-purpose worker droid for delegating tasks. Use for non-trivial tasks
   that benefit from parallel execution, such as code exploration, Q&A, research,
   analysis.
-model: custom:MiniMax:-MiniMax-M2.7-highspeed-39
+model: custom:Kimi-Coding:-kimi-k2.6-40
 reasoningEffort: none
 ---
 # Worker Droid

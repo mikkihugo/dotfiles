@@ -82,10 +82,11 @@
       RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
       BAT_CONFIG_PATH = "$HOME/.config/bat/config";
       LETTA_BASE_URL = "http://127.0.0.1:8283";
-      # OpenBao CLI — served at app.hugo.dk/vault (public, Authelia on UI,
-      # token auth on API). `bao login -method=oidc` authenticates via
-      # Authelia (passkey/TOTP). bao appends /v1 so no trailing slash.
-      BAO_ADDR = "https://app.hugo.dk/vault";
+      # OpenBao CLI — served at kv.infra.centralcloud.com (public, Authentik
+      # forward-auth on /ui, token auth on API). `bao login -method=oidc`
+      # authenticates via Authentik (passkey/TOTP). bao appends /v1 so no
+      # trailing slash.
+      BAO_ADDR = "https://kv.infra.centralcloud.com";
     };
   };
 

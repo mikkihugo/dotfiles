@@ -114,6 +114,12 @@ _load_sops_secrets() {
 	val=$(_sops_val longcat api_key)
 	[ -n "$val" ] && export LONGCAT_API_KEY="$val"
 
+	# ElevenLabs
+	val=$(_sops_val elevenlabs api_key)
+	[ -n "$val" ] && export ELEVENLABS_API_KEY="$val"
+	val=$(_sops_val elevenlabs voice_id)
+	[ -n "$val" ] && export ELEVENLABS_VOICE_ID="$val"
+
 	# Hetzner
 	val=$(_sops_val hetzner api_token)
 	[ -n "$val" ] && export HETZNER_API_TOKEN="$val"

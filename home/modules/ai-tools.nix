@@ -62,6 +62,14 @@
       --provider ollama-cloud --api-key-env OLLAMA_API_KEY \
       "$@"
   '';
+
+  droidWrapper = pkgs.writeShellScriptBin "droid" ''
+    export KIMI_API_KEY="$(cat "${sopsSecrets.kimi_api_key.path}" 2>/dev/null || echo "")"
+    export MINIMAX_API_KEY="$(cat "${sopsSecrets.minimax_api_key.path}" 2>/dev/null || echo "")"
+    export OLLAMA_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
+    export ZAI_API_KEY="$(cat "${sopsSecrets.zai_api_key.path}" 2>/dev/null || echo "")"
+    exec ${llm-pkgs.droid}/bin/droid "$@"
+  '';
 in {
   sops.secrets = {
     gemini_api_key = {
@@ -89,6 +97,21 @@ in {
       mode = "0600";
       sopsFile = ../../secrets/api-keys.yaml;
     };
+    kimi_api_key = {
+      key = "sf/env/KIMI_API_KEY";
+      mode = "0600";
+      sopsFile = ../../secrets/api-keys.yaml;
+    };
+    minimax_api_key = {
+      key = "sf/env/MINIMAX_API_KEY";
+      mode = "0600";
+      sopsFile = ../../secrets/api-keys.yaml;
+    };
+    zai_api_key = {
+      key = "sf/env/ZAI_API_KEY";
+      mode = "0600";
+      sopsFile = ../../secrets/api-keys.yaml;
+    };
   };
 
   home.packages = [
@@ -107,7 +130,7 @@ in {
     llm-pkgs.cursor-agent # binary: cursor-agent
     # GitHub Copilot CLI. Do not use pkgs.copilot-cli here; that is AWS Copilot.
     pkgs.github-copilot-cli # binary: copilot
-    llm-pkgs.droid # binary: droid
+    droidWrapper
     llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
   ];

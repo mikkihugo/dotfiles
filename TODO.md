@@ -11,16 +11,16 @@ Current split:
 
 | Concern               | Component                         | Network     |
 |-----------------------|-----------------------------------|-------------|
-| Human identity        | Authelia (lldap backend, passkey) | public      |
-| Service/machine auth  | OpenBao OIDC + AppRole            | tailnet     |
-| Runtime secrets       | OpenBao KV v2 at `kv/`            | tailnet     |
-| Declarative secrets   | SOPS + age (in this repo)         | git         |
-| Network layer         | Tailscale / headscale             | overlay     |
-| Desired state         | home-manager (this repo)          | pull, `hms` |
-| Admin actions         | OpenBao UI at `app.hugo.dk/vault` | public/OIDC |
+| Human identity        | Authentik (lldap backend, passkey)         | public      |
+| Service/machine auth  | OpenBao OIDC + AppRole                     | tailnet     |
+| Runtime secrets       | OpenBao KV v2 at `kv/`                     | tailnet     |
+| Declarative secrets   | SOPS + age (in this repo)                  | git         |
+| Network layer         | Tailscale / headscale                      | overlay     |
+| Desired state         | home-manager (this repo)                   | pull, `hms` |
+| Admin actions         | OpenBao UI at `kv.infra.centralcloud.com/ui` | public/OIDC |
 
 No custom control-plane service. No home-grown device-pairing protocol.
-Humans authenticate to Authelia with a passkey; machines authenticate
+Humans authenticate to Authentik with a passkey; machines authenticate
 to OpenBao with AppRole SecretIDs handed out during bootstrap.
 
 ## Secrets model

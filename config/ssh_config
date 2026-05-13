@@ -111,6 +111,13 @@ Host vega vega.ts.hugo.dk dev1 dev1.ts.hugo.dk
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
+Host git.infra.centralcloud.com
+    HostName git.infra.centralcloud.com
+    Port 2222
+    User git
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
 Host github.com
     HostName github.com
     User git

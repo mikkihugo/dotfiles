@@ -2,7 +2,7 @@
 name: scrutiny-feature-reviewer
 description: >-
   Code review for a single feature during mission validation. Used only within missions.
-model: custom:Kimi-Coding:-kimi-k2.6-40
+model: custom:Ollama-Cloud:-deepseek-v4-pro-18
 reasoningEffort: none
 ---
 # Scrutiny Feature Reviewer

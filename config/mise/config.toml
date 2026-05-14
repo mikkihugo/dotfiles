@@ -1,5 +1,5 @@
 [tools]
-"aqua:openai/codex" = "0.128.0"
+"aqua:openai/codex" = "0.130.0"
 "github:vinhnx/vtcode" = "0.105.6"
 flyctl = "latest"
 "go:github.com/charmbracelet/crush" = "latest"

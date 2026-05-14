@@ -56,13 +56,6 @@ in {
       force = true;
     };
 
-    # Mise owns runtime shims only. AI CLIs that are packaged in Nix stay in
-    # Home Manager so command lookup is reproducible and not npm-global state.
-    ".config/mise/config.toml" = {
-      source = ../../config/mise/config.toml;
-      force = true;
-    };
-
     ".factory/settings.json" = {
       source = ../../config/factory/settings.json;
       force = true;

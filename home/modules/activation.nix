@@ -54,6 +54,23 @@ in {
       fi
     '';
 
+    linkMutableMiseConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      mkdir -p "$HOME/.config/mise"
+      target="$HOME/.dotfiles/config/mise/config.toml"
+      if [ -f "$target" ]; then
+        current=""
+        if [ -L "$HOME/.config/mise/config.toml" ]; then
+          current="$(readlink "$HOME/.config/mise/config.toml")"
+        fi
+        if [ "$current" != "$target" ]; then
+          rm -f "$HOME/.config/mise/config.toml"
+          ln -s "$target" "$HOME/.config/mise/config.toml"
+        fi
+      else
+        echo "WARNING: mise config seed missing at $target" >&2
+      fi
+    '';
+
     pushHomeManagerGenerationToCache = lib.hm.dag.entryAfter ["linkGeneration"] ''
       if [ -f "$HOME/.config/attic/config.toml" ]; then
         mkdir -p "$HOME/.cache/attic"

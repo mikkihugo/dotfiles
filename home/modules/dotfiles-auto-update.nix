@@ -28,6 +28,7 @@
     counts="$(${pkgs.git}/bin/git rev-list --left-right --count HEAD..."$upstream")"
     local_ahead="$(${pkgs.gawk}/bin/awk '{print $1}' <<<"$counts")"
     remote_ahead="$(${pkgs.gawk}/bin/awk '{print $2}' <<<"$counts")"
+    dirty_count="$(${pkgs.git}/bin/git status --porcelain | ${pkgs.gawk}/bin/awk 'END {print NR + 0}')"
 
     status="up-to-date"
     summary="dotfiles: local and remote are in sync"
@@ -41,6 +42,15 @@
       status="local-ahead:''${local_ahead}"
       summary="dotfiles has ''${local_ahead} unpushed local commit(s)"
     fi
+    if [ "$dirty_count" -gt 0 ]; then
+      if [ "$status" = "up-to-date" ]; then
+        status="dirty:''${dirty_count}"
+        summary="dotfiles has ''${dirty_count} uncommitted change(s)"
+      else
+        status="''${status}:dirty:''${dirty_count}"
+        summary="''${summary}; ''${dirty_count} uncommitted change(s)"
+      fi
+    fi
 
     mkdir -p "$state_dir"
     previous=""
@@ -51,7 +61,8 @@
     if [ "$status" != "$previous" ]; then
       printf '%s\n' "$status" > "$state_file"
       if [ "$status" != "up-to-date" ]; then
-        ${pkgs.libnotify}/bin/notify-send "Dotfiles status" "$summary"
+        ${pkgs.libnotify}/bin/notify-send "Dotfiles status" "$summary" || \
+          echo "dotfiles-auto-update: $summary"
       fi
     else
       echo "dotfiles-auto-update: unchanged status ($status)"

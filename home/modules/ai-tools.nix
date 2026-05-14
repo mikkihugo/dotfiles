@@ -76,12 +76,17 @@
   # rejects Copilot's default UA with 403, so we override it via
   # COPILOT_AGENT_REQUEST_HEADERS.
   copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
+    copilot_bin="$HOME/.local/share/mise/shims/copilot"
+    if [ ! -x "$copilot_bin" ]; then
+      echo "copilot-kimi: expected mise GitHub Copilot CLI at $copilot_bin" >&2
+      exit 127
+    fi
     export COPILOT_PROVIDER_TYPE=openai
     export COPILOT_PROVIDER_BASE_URL=https://api.kimi.com/coding/v1
     export COPILOT_PROVIDER_API_KEY="$(cat "${sopsSecrets.kimi_api_key.path}" 2>/dev/null || echo "")"
     export COPILOT_MODEL=kimi-for-coding
     export COPILOT_AGENT_REQUEST_HEADERS='{"User-Agent":"KimiCLI/1.43.0"}'
-    exec ${pkgs.github-copilot-cli}/bin/copilot "$@"
+    exec "$copilot_bin" "$@"
   '';
 in {
   sops.secrets = {
@@ -141,10 +146,8 @@ in {
     llm-pkgs.opencode # binary: opencode
     # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
     llm-pkgs.cursor-agent # binary: cursor-agent
-    # GitHub Copilot CLI. Do not use pkgs.copilot-cli here; that is AWS Copilot.
-    pkgs.github-copilot-cli # binary: copilot
     droidWrapper
-    copilotKimiWrapper # binary: copilot-kimi → routes GH Copilot CLI to Kimi K2.6
+    copilotKimiWrapper # binary: copilot-kimi -> routes mise GitHub Copilot CLI to Kimi K2.6
     llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
   ];

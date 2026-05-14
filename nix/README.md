@@ -25,7 +25,7 @@ curl -fsSL https://raw.githubusercontent.com/mhugo/.dotfiles/main/nix/install.sh
 - **Claude Code** - Anthropic's AI coding assistant
 - **Gemini CLI** - Google's AI tools
 - **Codex CLI** - OpenAI's code generation
-- **Copilot CLI** - GitHub's AI pair programmer
+- **GitHub Copilot CLI** - installed via mise using `npm:@github/copilot`; do not use `nixpkgs#copilot-cli`, which is AWS Copilot
 - **Cursor Agent** - Cursor IDE integration
 
 ### Development Utilities

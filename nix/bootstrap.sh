@@ -96,7 +96,6 @@ print_info "Installing AI development tools..."
 nix profile install nixpkgs#claude-code
 nix profile install nixpkgs#gemini-cli
 nix profile install nixpkgs#codex
-nix profile install nixpkgs#copilot-cli
 
 # Set up daily update script
 print_info "Setting up daily updates..."

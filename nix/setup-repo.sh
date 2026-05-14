@@ -57,7 +57,6 @@ if [ ! -f "flake.nix" ]; then
             pkgs.claude-code
             pkgs.gemini-cli
             pkgs.codex
-            pkgs.copilot-cli
             
             # Development tools
             pkgs.jq

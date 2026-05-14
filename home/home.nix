@@ -68,6 +68,7 @@
     sessionPath = [
       "$HOME/.bun/bin"
       "$HOME/.local/bin" # pip/pipx, claude CLI, local tools
+      "$HOME/.local/share/mise/shims" # mise-managed tools such as codex and copilot
       "$HOME/.npm-global/bin" # opencode and other npm globals
       "$HOME/.cargo/bin" # cargo-installed Rust binaries
       "$HOME/.amp/bin"

@@ -4,3 +4,4 @@
 flyctl = "latest"
 "go:github.com/charmbracelet/crush" = "latest"
 node = "26.1.0"
+"npm:@github/copilot" = "1.0.47"

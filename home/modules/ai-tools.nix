@@ -70,6 +70,19 @@
     export ZAI_API_KEY="$(cat "${sopsSecrets.zai_api_key.path}" 2>/dev/null || echo "")"
     exec ${llm-pkgs.droid}/bin/droid "$@"
   '';
+
+  # copilot-kimi — GitHub Copilot CLI routed to the Kimi Code platform via BYOK.
+  # Kimi /coding/v1 allowlists User-Agent (KimiCLI/*, Claude Code, etc.) and
+  # rejects Copilot's default UA with 403, so we override it via
+  # COPILOT_AGENT_REQUEST_HEADERS.
+  copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
+    export COPILOT_PROVIDER_TYPE=openai
+    export COPILOT_PROVIDER_BASE_URL=https://api.kimi.com/coding/v1
+    export COPILOT_PROVIDER_API_KEY="$(cat "${sopsSecrets.kimi_api_key.path}" 2>/dev/null || echo "")"
+    export COPILOT_MODEL=kimi-for-coding
+    export COPILOT_AGENT_REQUEST_HEADERS='{"User-Agent":"KimiCLI/1.43.0"}'
+    exec ${pkgs.github-copilot-cli}/bin/copilot "$@"
+  '';
 in {
   sops.secrets = {
     gemini_api_key = {
@@ -131,6 +144,7 @@ in {
     # GitHub Copilot CLI. Do not use pkgs.copilot-cli here; that is AWS Copilot.
     pkgs.github-copilot-cli # binary: copilot
     droidWrapper
+    copilotKimiWrapper # binary: copilot-kimi → routes GH Copilot CLI to Kimi K2.6
     llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
   ];

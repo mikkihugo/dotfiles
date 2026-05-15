@@ -177,6 +177,7 @@ config.visual_bell = {
 -- Dropdown next to the "+" tab button. First entry is the default for new tabs.
 config.launch_menu = {
 	{ label = "Hermes TUI",  args = { "wsl.exe", "bash", "-l", "-c", "hermes" } },
+	{ label = "vega (ET)",   args = { "wsl.exe", "bash", "-l", "-c", "et mikael@100.64.0.7" } },
 	{ label = "WSL ~/code",  args = { "wsl.exe", "bash", "-l", "-c", "cd ~/code && exec bash" } },
 	{ label = "WSL ~",       args = { "wsl.exe", "bash", "-l" } },
 	{ label = "PowerShell",  args = { "pwsh.exe" } },

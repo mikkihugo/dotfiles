@@ -3,5 +3,7 @@
 "github:vinhnx/vtcode" = "0.105.6"
 flyctl = "latest"
 "go:github.com/charmbracelet/crush" = "latest"
-node = "26.1.0"
+node = "26"
 "npm:@github/copilot" = "1.0.47"
+gcloud = "568.0.0"
+"npm:firebase-tools" = "13.35.0"

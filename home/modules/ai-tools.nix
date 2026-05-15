@@ -84,6 +84,8 @@
     export COPILOT_PROVIDER_TYPE=openai
     export COPILOT_PROVIDER_BASE_URL=https://api.kimi.com/coding/v1
     export COPILOT_PROVIDER_API_KEY="$(cat "${sopsSecrets.kimi_api_key.path}" 2>/dev/null || echo "")"
+    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=262144
+    export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=32768
     export COPILOT_MODEL=kimi-for-coding
     export COPILOT_AGENT_REQUEST_HEADERS='{"User-Agent":"KimiCLI/1.43.0"}'
     exec "$copilot_bin" "$@"

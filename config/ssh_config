@@ -109,23 +109,19 @@ Host aidev-new
     IdentityFile ~/.ssh/hetzner_ace
     IdentitiesOnly yes
 
-# VectorDrive project servers — none of this workstation's keys are
-# currently authorized. Add an IdentityFile here once a key is enrolled
-# in the VectorDrive project's SSH key registry (provision via
-# `crossplane apply` to the SSHKey CR with managementPolicies=["*"]).
-# Until then these blocks document the IPs only.
-#
-# Host vectordrive-1-core
-#     HostName 77.42.72.85
-#     User root
-#     IdentityFile ~/.ssh/personal_admin_id_ed25519   # not yet authorized
-#     IdentitiesOnly yes
-#
-# Host vectordrive-1-firecracker
-#     HostName 65.108.58.202
-#     User root
-#     IdentityFile ~/.ssh/personal_admin_id_ed25519   # not yet authorized
-#     IdentitiesOnly yes
+# VectorDrive project servers — personal_admin enrolled via Hetzner
+# SSH key registry + rescue-mode authorized_keys patch (2026-05-18).
+Host vectordrive-1-core vectordrive-core
+    HostName 77.42.72.85
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host vectordrive-1-firecracker vectordrive-firecracker
+    HostName 65.108.58.202
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
 
 # Tailscale hosts
 # NOTE: headscale node layout for the bunker host:

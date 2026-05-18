@@ -86,6 +86,47 @@ Host llm-gateway llm-gateway.centralcloud.com
     IdentityFile ~/.ssh/hetzner_ace
     IdentitiesOnly yes
 
+# Disaster Central project (cc-*) — use the hetzner-dr-repo key.
+# These are the cc-fi-hel-core-01 / cc-de-fsn-core-01 boxes used for DR.
+# fi1/de1 are the Hetzner-side names; cc-* are the k3s node names.
+Host fi1 fi1.centralcloud.com cc-fi-hel-core-01
+    HostName 204.168.217.156
+    User root
+    IdentityFile ~/.ssh/hetzner_id_ed25519
+    IdentitiesOnly yes
+
+Host de1 de1.centralcloud.com cc-de-fsn-core-01
+    HostName 49.13.125.237
+    User root
+    IdentityFile ~/.ssh/hetzner_id_ed25519
+    IdentitiesOnly yes
+
+# AIDEV project secondary node (the original `aidev` block above resolves
+# via DNS to a different host; aidev-new is the explicit new server).
+Host aidev-new
+    HostName 46.225.157.57
+    User root
+    IdentityFile ~/.ssh/hetzner_ace
+    IdentitiesOnly yes
+
+# VectorDrive project servers — none of this workstation's keys are
+# currently authorized. Add an IdentityFile here once a key is enrolled
+# in the VectorDrive project's SSH key registry (provision via
+# `crossplane apply` to the SSHKey CR with managementPolicies=["*"]).
+# Until then these blocks document the IPs only.
+#
+# Host vectordrive-1-core
+#     HostName 77.42.72.85
+#     User root
+#     IdentityFile ~/.ssh/personal_admin_id_ed25519   # not yet authorized
+#     IdentitiesOnly yes
+#
+# Host vectordrive-1-firecracker
+#     HostName 65.108.58.202
+#     User root
+#     IdentityFile ~/.ssh/personal_admin_id_ed25519   # not yet authorized
+#     IdentitiesOnly yes
+
 # Tailscale hosts
 # NOTE: headscale node layout for the bunker host:
 #   mikki-bunker             → 100.64.0.3 (WSL2 Linux, real sshd target)

@@ -223,17 +223,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1778043361,
-        "narHash": "sha256-RJg0dUhc1MnTHLq5u8qj/oGFcTi74ufO0NbQ5h0Qy1M=",
+        "lastModified": 1778939638,
+        "narHash": "sha256-qKjEndzTwrC8MeyUxFzS+3JjgoH9am+PiKC5zIimEbw=",
         "ref": "refs/heads/main",
-        "rev": "12222064d2005871b109c34bccd87fe9e768b9b0",
-        "revCount": 872,
+        "rev": "65e4127e498a9aa77065e7018ce73c236a4ebb8f",
+        "revCount": 875,
         "type": "git",
-        "url": "ssh://git@github.com/singularity-ng/inference-fabric"
+        "url": "ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git"
       },
       "original": {
         "type": "git",
-        "url": "ssh://git@github.com/singularity-ng/inference-fabric"
+        "url": "ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git"
       }
     },
     "lefthook": {

@@ -47,7 +47,7 @@
     # targetSystem comes from extraSpecialArgs (not pkgs.stdenv) to avoid
     # infinite recursion when evaluating the imports list.
     ++ lib.optionals (targetSystem == "x86_64-linux" && lib.toLower hostname == "mikki-bunker") [
-      ../services/ace-embedding-worker
+      ../services/remote-gpu-worker
     ];
 
   # Top-level SOPS key source so every host (including dev1) can decrypt,
@@ -76,6 +76,7 @@
 
     # Environment variables exported into every session before shell init runs.
     sessionVariables = {
+      LANG = "C.UTF-8";
       NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
       MINIMAX_API_HOST = "https://api.minimax.io";

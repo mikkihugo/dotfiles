@@ -27,12 +27,8 @@ in {
       rm -f "$HOME/.config/gh/config.yml"
       rm -f "$HOME/.config/jj/config.toml"
 
-      rm -f "$HOME/.config/systemd/user/dr-repo-maintenance.service"
-      rm -f "$HOME/.config/systemd/user/dr-repo-maintenance.timer"
-      rm -f "$HOME/.config/systemd/user/timers.target.wants/dr-repo-maintenance.timer"
       rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/combined.conf"
       rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/no-watchdog.conf"
-      rm -f "$HOME/.local/bin/claude"
       rm -f "$HOME/.npm-global/bin/claude"
       rm -f "$HOME/.npm-global/bin/gemini"
       rmdir "$HOME/.config/systemd/user/remote-gpu-worker.service.d" 2>/dev/null || true

@@ -57,6 +57,10 @@ in {
     '';
   };
 
+  # Claude Code is the native installer at ~/.local/bin/claude (self-updating
+  # symlink to ~/.local/share/claude/versions/<ver>). bypassPermissions is set
+  # globally via ~/.claude/settings.json, so no wrapper is needed.
+
   home.shellAliases = {
     # home-manager: resolve the explicit host profile from the current hostname.
     hms = "home-manager switch";

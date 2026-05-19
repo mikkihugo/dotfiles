@@ -81,9 +81,9 @@
     # inference-fabric: provides the remote-supervisor binary used by the
     # GPU worker service, plus fabric-ops console (charmspeed/fabricctl/
     # fabric-ssh) for managing the LLM gateway. Worker package replaces
-    # the ace-coder bundle in services/ace-embedding-worker.
+    # the ace-coder bundle in services/remote-gpu-worker.
     inference-fabric = {
-      url = "git+ssh://git@github.com/singularity-ng/inference-fabric";
+      url = "git+ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

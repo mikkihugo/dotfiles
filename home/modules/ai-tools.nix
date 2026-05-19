@@ -143,7 +143,8 @@ in {
     # Raw llm-agents packages — no key injection needed.
     # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
     # these packages compile from source — disable per-host as needed.
-    llm-pkgs.claude-code # binary: claude
+    # claude-code is installed via the native installer at ~/.local/bin/claude
+    # (self-updating symlink); see home/modules/shell.nix for context.
     # llm-pkgs.codex # disabled — Rust rebuild on aarch64
     llm-pkgs.opencode # binary: opencode
     # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64

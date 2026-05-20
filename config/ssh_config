@@ -68,10 +68,12 @@ Host wf.portal.centralcloud.com
     IdentitiesOnly yes
 
 Host aidev
-    # Local developer machine uses the normal id_ed25519 key.
+    # aidev.centralcloud.com now resolves to the AIDEV project host
+    # (same machine as aidev-new), which authorizes hetzner_ace.
     HostName aidev.centralcloud.com
     User root
-    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile ~/.ssh/hetzner_ace
+    IdentitiesOnly yes
 
 Host llm-gateway llm-gateway.centralcloud.com
     # Use hetzner_ace — the only user-level key authorized on llm-gateway today.

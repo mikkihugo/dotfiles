@@ -34,6 +34,7 @@
       ./modules/packages.nix
       ./modules/shell.nix
       ./modules/git.nix
+      ./modules/git-auto-backup.nix
       ./modules/files.nix
       ./modules/hermes-proxy.nix
       ./modules/hermes-tui.nix

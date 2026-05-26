@@ -13,9 +13,9 @@ Host rigel rigel.hugo.dk flow.hugo.dk portal-workflow
     IdentitiesOnly yes
 
 # Personal Hetzner/public servers — use the personal admin key here.
-# `lyra` is the canonical name (renamed from `monitor`); the older
-# `mon.*` and `mail.sendramp.com` aliases are kept for back-compat.
-Host lyra lyra.hugo.dk mon.hugo.dk mon.portal.centralcloud.com mail.sendramp.com
+# `cc-fi-hel-k3s-04` is the canonical name; the older `lyra`, `mon.*`,
+# and `mail.sendramp.com` aliases are kept for back-compat.
+Host cc-fi-hel-k3s-04 cc-fi-hel-k3s-04.hugo.dk lyra lyra.hugo.dk mon.hugo.dk mon.portal.centralcloud.com mail.sendramp.com
     HostName 77.42.29.242
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519

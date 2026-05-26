@@ -77,9 +77,8 @@ Host aidev
 
 Host llm-gateway llm-gateway.centralcloud.com
     # Use hetzner_ace — the only user-level key authorized on llm-gateway today.
-    # id_ed25519 is NOT authorized here (confirmed 2026-04-24). The nix
-    # remote-builder uses hetzner_ace via /etc/ssh/ssh_config.d/99-llm-gateway-builder.conf
-    # so keeping this aligned avoids split-brain auth paths.
+    # id_ed25519 is NOT authorized here (confirmed 2026-04-24).
+    # This is a normal SSH alias only; llm-gateway is not a Nix build host.
     # Do NOT try hetzner_id_ed25519 (→ mail.hugo.dk) or personal_admin_id_ed25519
     # (→ mon.portal.centralcloud.com et al) — those are SOPS-rendered for other
     # hosts and will fail auth here.
@@ -161,4 +160,11 @@ Host github.com
     HostName github.com
     User git
     IdentityFile ~/.ssh/github_mikkihugo
+    IdentitiesOnly yes
+
+# acedev — renamed from aidev-new on 2026-05-24
+Host acedev
+    HostName acedev.centralcloud.com
+    User root
+    IdentityFile ~/.ssh/hetzner_ace
     IdentitiesOnly yes

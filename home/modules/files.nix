@@ -3,21 +3,7 @@
 # Files that tools expect at specific $HOME paths, kept in version control
 # and updated atomically on every `hms`. force=true overwrites any manually
 # edited copy so the repo stays the source of truth.
-{
-  lib,
-  hostname ? "",
-  ...
-}: let
-  lowercaseHostname = lib.toLower hostname;
-  # mikki-bunker delegates worker builds to llm-gateway (remote builder) —
-  # llama-cpp + candle deps take ~20 min to compile locally. mikki-laptop
-  # stays on local-build (no SSH path to llm-gateway from there).
-  usesLocalBuildNixConfig = lowercaseHostname == "mikki-laptop";
-  nixConfigSource =
-    if usesLocalBuildNixConfig
-    then ../../config/nix/local-build.nix.conf
-    else ../../config/nix/remote-builder.nix.conf;
-in {
+_: {
   home.file = {
     ".config/ripgrep/config" = {
       source = ../../config/ripgreprc;
@@ -49,10 +35,9 @@ in {
       force = true;
     };
 
-    # Nix user config is host-specific:
-    # bunker/laptop build locally; the main Linux workstation can use llm-gateway.
+    # Nix user config: build locally, consume shared binary caches.
     ".config/nix/nix.conf" = {
-      source = nixConfigSource;
+      source = ../../config/nix/local-build.nix.conf;
       force = true;
     };
 

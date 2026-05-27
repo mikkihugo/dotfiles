@@ -25,6 +25,7 @@
       printf '%s' "$1" | ${pkgs.gnused}/bin/sed \
         -e "s|^$HOME/||" \
         -e 's|^/||' \
+        -e 's|^\.\+||' \
         -e 's|[^A-Za-z0-9._-]|-|g' \
         -e 's|-\\+|-|g'
     }
@@ -42,7 +43,7 @@
 
     push_dirty_ref() {
       local repo="$1" remote="$2" branch="$3" slug="$4"
-      local tmp_index tree commit ref
+      local tmp_index tree commit ref snapshot_ref
       tmp_index="$(${pkgs.coreutils}/bin/mktemp "$state_dir/index.XXXXXX")"
       trap 'rm -f "$tmp_index"' RETURN
 
@@ -59,9 +60,22 @@
         "$repo" "$branch" "$host" "$stamp" |
         GIT_INDEX_FILE="$tmp_index" ${pkgs.git}/bin/git -C "$repo" commit-tree "$tree" -p HEAD)"
       ref="refs/backup/$host/$slug/$branch/wip"
+      snapshot_ref="refs/backup/$host/$slug/$branch/wip-$stamp"
       ${pkgs.git}/bin/git -C "$repo" update-ref "$ref" "$commit"
-      ${pkgs.git}/bin/git -C "$repo" push --quiet "$remote" "$ref:$ref"
-      echo "dirty-backup $repo $remote $ref $commit"
+      ${pkgs.git}/bin/git -C "$repo" update-ref "$snapshot_ref" "$commit"
+      if ! ${pkgs.git}/bin/git -C "$repo" push --quiet "$remote" "$snapshot_ref:$snapshot_ref"; then
+        echo "dirty-backup-snapshot-failed $repo $remote $snapshot_ref $commit"
+        rm -f "$tmp_index"
+        trap - RETURN
+        return 1
+      fi
+      if ! ${pkgs.git}/bin/git -C "$repo" push --quiet --force "$remote" "$ref:$ref"; then
+        echo "dirty-backup-latest-failed $repo $remote $ref $commit"
+        rm -f "$tmp_index"
+        trap - RETURN
+        return 1
+      fi
+      echo "dirty-backup $repo $remote $ref $snapshot_ref $commit"
 
       rm -f "$tmp_index"
       trap - RETURN

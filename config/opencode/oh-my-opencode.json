@@ -36,6 +36,9 @@
       "enabled": true
     }
   },
+  "team_mode": {
+    "enabled": true
+  },
   "disabled_hooks": [
     "comment-checker",
     "agent-usage-reminder"

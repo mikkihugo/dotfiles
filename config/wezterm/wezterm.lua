@@ -34,23 +34,70 @@ local c = {
 	tab_inactive= "#262626",
 }
 
+-- ── Vega tmux helper ──────────────────────────────────────────────────────────
+-- Ensure Tailscale is up, then SSH to vega and attach/create a named tmux
+-- session. `tmux new -A -s NAME` attaches if NAME exists, otherwise creates
+-- it — so sessions persist on vega across wezterm restarts, reboots, drops.
+local function vega_tmux(session, cwd)
+	local tmux_cmd
+	if cwd then
+		tmux_cmd = string.format("tmux new -A -s %s -c %s", session, cwd)
+	else
+		tmux_cmd = string.format("tmux new -A -s %s", session)
+	end
+	return {
+		"powershell.exe", "-NoProfile", "-NoLogo", "-Command",
+		string.format([[
+			$ts = 'C:\Program Files\Tailscale\tailscale.exe';
+			& $ts status *> $null;
+			if ($LASTEXITCODE -ne 0) { & $ts up | Out-Null };
+			& ssh.exe -t mhugo@vega.ts.hugo.dk '%s'
+		]], tmux_cmd),
+	}
+end
+
+-- Persistent tabs spawned on every wezterm launch.
+-- { tmux_session_name, optional_starting_cwd_on_first_create }
+local PERSISTENT_TABS = {
+	{ "vega" },                -- general shell, ~ on vega
+	{ "root",    "/" },        -- root filesystem view
+	{ "space",   "~" },        -- scratch space
+	{ "work",    "~/code" },   -- work dir
+}
+
+-- On GUI startup, open one tab per persistent session and attach.
+wezterm.on("gui-startup", function(cmd)
+	-- If wezterm was invoked with CLI args (e.g. `wezterm ssh host`), let it
+	-- handle that itself and don't double-spawn our 4-tab window.
+	if cmd and cmd.args and #cmd.args > 0 then return end
+	local first = PERSISTENT_TABS[1]
+	local _, _, window = wezterm.mux.spawn_window { args = vega_tmux(first[1], first[2]) }
+	for i = 2, #PERSISTENT_TABS do
+		local t = PERSISTENT_TABS[i]
+		window:spawn_tab { args = vega_tmux(t[1], t[2]) }
+	end
+	window:gui_window():maximize()
+end)
+
 -- ── Font ──────────────────────────────────────────────────────────────────────
 config.font = wezterm.font_with_fallback({
+	{ family = "JetBrainsMonoNL Nerd Font", weight = "Regular" },
 	{ family = "JetBrainsMono Nerd Font Mono", weight = "Regular" },
 	{ family = "JetBrains Mono",               weight = "Regular" },
 	"Consolas",
 })
-config.font_size = 13.5
-config.line_height = 1.2
+config.font_size = 15.0  -- bumped for 38" hi-def
+config.line_height = 1.15
 config.cell_width = 1.0
 config.underline_thickness = 2
 config.underline_position = -4
+config.harfbuzz_features = { "calt=1", "liga=1", "clig=1" }
 
 -- No cursive italics — regular weight throughout.
 config.font_rules = {
 	{
 		italic = true,
-		font = wezterm.font("JetBrainsMono Nerd Font", { weight = "Regular", italic = false }),
+		font = wezterm.font("JetBrainsMonoNL Nerd Font", { weight = "Regular", italic = false }),
 	},
 }
 
@@ -117,7 +164,7 @@ config.window_decorations          = "INTEGRATED_BUTTONS|RESIZE"
 config.window_background_opacity   = 1.0
 config.window_padding = { left = 16, right = 16, top = 12, bottom = 8 }
 config.initial_cols = 220
-config.initial_rows = 50
+config.initial_rows = 60
 
 -- ── Tab bar ───────────────────────────────────────────────────────────────────
 config.enable_tab_bar              = true
@@ -126,33 +173,55 @@ config.tab_bar_at_bottom           = false
 config.hide_tab_bar_if_only_one_tab= false
 config.tab_max_width               = 32
 config.show_tab_index_in_tab_bar   = false
+config.show_new_tab_button_in_tab_bar = true
 config.window_frame = {
-	font      = wezterm.font("JetBrainsMono Nerd Font Mono", { weight = "Regular" }),
-	font_size = 11.5,
+	font      = wezterm.font("JetBrainsMonoNL Nerd Font", { weight = "Regular" }),
+	font_size = 12.0,
 }
 
+-- Tab title: prefer the session name set on the tab; fall back to cwd basename.
 wezterm.on("format-tab-title", function(tab, _tabs, _panes, _config, _hover, max_width)
-	local pane  = tab.active_pane
-	local title = pane.title
-	local cwd   = pane.current_working_dir
-	if cwd then
-		local parts = {}
-		for part in tostring(cwd):gmatch("[^/]+") do
-			table.insert(parts, part)
+	local title = tab.tab_title
+	if not title or #title == 0 then
+		local pane = tab.active_pane
+		title = pane.title
+		local cwd = pane.current_working_dir
+		if cwd then
+			local parts = {}
+			for part in tostring(cwd):gmatch("[^/]+") do
+				table.insert(parts, part)
+			end
+			title = parts[#parts] or title
 		end
-		title = parts[#parts] or title
 	end
 	return { { Text = "  " .. wezterm.truncate_right(title, max_width - 4) .. "  " } }
 end)
 
 wezterm.on("format-window-title", function(tab, _pane, _tabs, _panes, _config)
-	local pane  = tab.active_pane
-	local cwd   = pane.current_working_dir
-	local title = pane.title
-	if cwd then
-		title = tostring(cwd):gsub("file://[^/]*", "")
-	end
-	return title
+	local cwd = tab.active_pane.current_working_dir
+	if cwd then return (tostring(cwd):gsub("file://[^/]*", "")) end
+	return tab.active_pane.title
+end)
+
+-- Right status: orange "vega" + day/time, with powerline arrows.
+local ARROW_LEFT = wezterm.nerdfonts.pl_right_hard_divider  --
+wezterm.on("update-right-status", function(window, _pane)
+	local time_bg, time_fg = c.bg_panel, c.fg
+	window:set_right_status(wezterm.format {
+		{ Background = { Color = c.tab_bg } },
+		{ Foreground = { Color = time_bg } },
+		{ Text = ARROW_LEFT },
+		{ Background = { Color = time_bg } },
+		{ Foreground = { Color = time_fg } },
+		{ Text = " " .. wezterm.strftime("%a %H:%M") .. " " },
+		{ Foreground = { Color = c.orange } },
+		{ Background = { Color = time_bg } },
+		{ Text = ARROW_LEFT },
+		{ Background = { Color = c.orange } },
+		{ Foreground = { Color = c.tab_active_fg } },
+		{ Attribute = { Intensity = "Bold" } },
+		{ Text = "  vega " },
+	})
 end)
 
 -- ── Cursor ────────────────────────────────────────────────────────────────────
@@ -166,57 +235,60 @@ config.scrollback_lines             = 50000
 config.enable_scroll_bar            = false
 
 -- ── Bell ──────────────────────────────────────────────────────────────────────
+-- Silent. Claude Code emits BEL on task completion; health-alarm on vega
+-- uses OSC 9 desktop notifications instead, so neither flashes the window.
 config.audible_bell                 = "Disabled"
-config.visual_bell = {
-	fade_in_duration_ms  = 75,
-	fade_out_duration_ms = 75,
-	target               = "CursorColor",
-}
 
 -- ── Launch menu ───────────────────────────────────────────────────────────────
 -- Dropdown next to the "+" tab button. First entry is the default for new tabs.
 config.launch_menu = {
-	{ label = "Hermes TUI",  args = { "wsl.exe", "bash", "-l", "-c", "hermes" } },
-	{ label = "vega (ET)",   args = { "wsl.exe", "bash", "-l", "-c", "et mikael@100.64.0.7" } },
-	{ label = "WSL ~/code",  args = { "wsl.exe", "bash", "-l", "-c", "cd ~/code && exec bash" } },
-	{ label = "WSL ~",       args = { "wsl.exe", "bash", "-l" } },
-	{ label = "PowerShell",  args = { "pwsh.exe" } },
-	{ label = "cmd.exe",     args = { "cmd.exe" } },
+	{ label = "vega scratch (tmux)", args = vega_tmux("scratch") },
+	{ label = "vega root  (tmux)",   args = vega_tmux("root", "/") },
+	{ label = "vega work  (tmux)",   args = vega_tmux("work", "~/code") },
+	{ label = "WSL ~/code",           args = { "wsl.exe", "bash", "-l", "-c", "cd ~/code && exec bash" } },
+	{ label = "WSL ~",                args = { "wsl.exe", "bash", "-l" } },
+	{ label = "PowerShell",           args = { "pwsh.exe" } },
 }
-config.default_prog = { "wsl.exe", "--cd", "~", "bash", "-l" }
+-- Initial startup window prog (used only if gui-startup handler doesn't fire).
+config.default_prog = vega_tmux("scratch")
 
 -- ── Keys ──────────────────────────────────────────────────────────────────────
 config.keys = {
-	{ key = "t",          mods = "CMD",       action = act.SpawnTab("CurrentPaneDomain") },
-	{ key = "t",          mods = "CMD|SHIFT", action = act.ShowLauncherArgs({ flags = "LAUNCH_MENU_ITEMS" }) },
-	{ key = "w",          mods = "CMD",       action = act.CloseCurrentTab({ confirm = false }) },
-	{ key = "LeftArrow",  mods = "CMD|SHIFT", action = act.ActivateTabRelative(-1) },
-	{ key = "RightArrow", mods = "CMD|SHIFT", action = act.ActivateTabRelative(1) },
-	{ key = "[",          mods = "CMD|SHIFT", action = act.ActivateTabRelative(-1) },
-	{ key = "]",          mods = "CMD|SHIFT", action = act.ActivateTabRelative(1) },
-	{ key = "d",          mods = "CMD",       action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
-	{ key = "d",          mods = "CMD|SHIFT", action = act.SplitVertical({ domain = "CurrentPaneDomain" }) },
-	{ key = "w",          mods = "CMD|SHIFT", action = act.CloseCurrentPane({ confirm = false }) },
-	{ key = "LeftArrow",  mods = "OPT",       action = act.ActivatePaneDirection("Left") },
-	{ key = "RightArrow", mods = "OPT",       action = act.ActivatePaneDirection("Right") },
-	{ key = "UpArrow",    mods = "OPT",       action = act.ActivatePaneDirection("Up") },
-	{ key = "DownArrow",  mods = "OPT",       action = act.ActivatePaneDirection("Down") },
-	{ key = "=",          mods = "CMD",       action = act.IncreaseFontSize },
-	{ key = "-",          mods = "CMD",       action = act.DecreaseFontSize },
-	{ key = "0",          mods = "CMD",       action = act.ResetFontSize },
-	{ key = "k",          mods = "CMD",       action = act.ClearScrollback("ScrollbackAndViewport") },
-	{ key = "f",          mods = "CMD",       action = act.Search({ CaseInSensitiveString = "" }) },
-	{ key = "LeftArrow",  mods = "OPT",       action = act.SendString("\x1bb") },
-	{ key = "RightArrow", mods = "OPT",       action = act.SendString("\x1bf") },
-	{ key = "Home",       mods = "",          action = act.SendString("\x01") },
-	{ key = "End",        mods = "",          action = act.SendString("\x05") },
+	-- Ctrl+Shift+T → vega tmux 'scratch' (override default which would spawn pwsh).
+	{ key = "t", mods = "CTRL|SHIFT", action = act.SpawnCommandInNewTab { args = vega_tmux("scratch") } },
+	-- Ctrl+Shift+L → launcher menu (lets you pick a session or local shell).
+	{ key = "l", mods = "CTRL|SHIFT", action = act.ShowLauncherArgs({ flags = "LAUNCH_MENU_ITEMS|TABS|WORKSPACES" }) },
+
+	-- Tab navigation
+	{ key = "w",          mods = "CTRL|SHIFT", action = act.CloseCurrentTab({ confirm = false }) },
+	{ key = "LeftArrow",  mods = "CTRL|SHIFT", action = act.ActivateTabRelative(-1) },
+	{ key = "RightArrow", mods = "CTRL|SHIFT", action = act.ActivateTabRelative(1) },
+	{ key = "[",          mods = "CTRL|SHIFT", action = act.ActivateTabRelative(-1) },
+	{ key = "]",          mods = "CTRL|SHIFT", action = act.ActivateTabRelative(1) },
+
+	-- Panes
+	{ key = "d",          mods = "CTRL|SHIFT", action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
+	{ key = "D",          mods = "CTRL|SHIFT", action = act.SplitVertical({ domain = "CurrentPaneDomain" }) },
+	{ key = "LeftArrow",  mods = "ALT",        action = act.ActivatePaneDirection("Left") },
+	{ key = "RightArrow", mods = "ALT",        action = act.ActivatePaneDirection("Right") },
+	{ key = "UpArrow",    mods = "ALT",        action = act.ActivatePaneDirection("Up") },
+	{ key = "DownArrow",  mods = "ALT",        action = act.ActivatePaneDirection("Down") },
+
+	-- Font size
+	{ key = "=", mods = "CTRL", action = act.IncreaseFontSize },
+	{ key = "-", mods = "CTRL", action = act.DecreaseFontSize },
+	{ key = "0", mods = "CTRL", action = act.ResetFontSize },
+
+	-- Search / scrollback
+	{ key = "f", mods = "CTRL|SHIFT", action = act.Search({ CaseInSensitiveString = "" }) },
+	{ key = "k", mods = "CTRL|SHIFT", action = act.ClearScrollback("ScrollbackAndViewport") },
 }
 
 -- ── Mouse ─────────────────────────────────────────────────────────────────────
 config.mouse_bindings = {
 	{
 		event  = { Up = { streak = 1, button = "Left" } },
-		mods   = "CMD",
+		mods   = "CTRL",
 		action = act.OpenLinkAtMouseCursor,
 	},
 }

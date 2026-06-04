@@ -41,6 +41,7 @@
       ./modules/ai-tools.nix
       ./modules/ops-tools.nix
       ./modules/dotfiles-auto-update.nix
+      ./modules/mise-auto-update.nix
       ./modules/tailscale.nix
       ./modules/wezterm.nix
     ]

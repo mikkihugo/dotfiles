@@ -6,20 +6,20 @@
     "autoresearch@factory-plugins": true
   },
   "logoAnimation": "off",
-  "model": "custom:Z.AI:-glm-5.1-41",
+  "model": "custom:Ollama-Cloud:-glm-5.1-41",
   "reasoningEffort": "none",
-  "specModel": "custom:Z.AI:-glm-5.1-41",
-  "specModeModel": "custom:Z.AI:-glm-5.1-41",
+  "specModel": "custom:Ollama-Cloud:-glm-5.1-41",
+  "specModeModel": "custom:Ollama-Cloud:-glm-5.1-41",
   "specModeReasoningEffort": "none",
   "sessionDefaultSettings": {
     "interactionMode": "auto",
     "autonomyLevel": "off"
   },
-  "missionOrchestratorModel": "custom:Z.AI:-glm-5.1-41",
+  "missionOrchestratorModel": "custom:Ollama-Cloud:-glm-5.1-41",
   "missionOrchestratorReasoningEffort": "none",
   "missionWorkerModel": "custom:Kimi-Coding:-kimi-k2.6-40",
   "missionWorkerReasoningEffort": "none",
-  "validationWorkerModel": "custom:Ollama-Cloud:-deepseek-v4-pro-18",
+  "validationWorkerModel": "custom:Ollama-Cloud:-deepseek-v4-flash-18",
   "validationWorkerReasoningEffort": "none",
   "customModels": [
     {
@@ -352,17 +352,9 @@
     },
     {
       "model": "glm-5.1",
-      "displayName": "Z.AI: glm-5.1",
-      "baseUrl": "https://api.z.ai/api/coding/paas/v4",
-      "apiKey": "${ZAI_API_KEY}",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 16384
-    },
-    {
-      "model": "glm-4.7",
-      "displayName": "Z.AI: glm-4.7",
-      "baseUrl": "https://api.z.ai/api/coding/paas/v4",
-      "apiKey": "${ZAI_API_KEY}",
+      "displayName": "Ollama Cloud: glm-5.1",
+      "baseUrl": "https://ollama.com/v1/",
+      "apiKey": "${OLLAMA_API_KEY}",
       "provider": "generic-chat-completion-api",
       "maxOutputTokens": 16384
     }

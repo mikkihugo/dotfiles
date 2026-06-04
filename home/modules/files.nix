@@ -60,5 +60,35 @@ _: {
       source = ../../config/factory/droids/user-testing-flow-validator.md;
       force = true;
     };
+
+    ".local/share/applications/mynt-receipts.desktop" = {
+      executable = true;
+      force = true;
+      text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=Mynt Receipts
+        Comment=Open Mynt in the dedicated receipts browser profile
+        Exec=/home/mhugo/.local/bin/mynt-receipts
+        Terminal=false
+        Categories=Office;Finance;
+        StartupWMClass=ReceiptsBrowser
+      '';
+    };
+
+    ".local/share/applications/mynt-receipts-api.desktop" = {
+      executable = true;
+      force = true;
+      text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=Mynt Receipts API
+        Comment=Open Mynt with local-only CDP for receipt API discovery
+        Exec=/home/mhugo/.local/bin/mynt-receipts-api
+        Terminal=false
+        Categories=Office;Finance;
+        StartupWMClass=ReceiptsBrowserApi
+      '';
+    };
   };
 }

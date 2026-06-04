@@ -57,6 +57,159 @@ in {
     '';
   };
 
+  home.file.".local/bin/receipts-browser" = {
+    executable = true;
+    force = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      profile_dir="''${RECEIPTS_CHROME_PROFILE:-$HOME/.local/share/receipts-browser/chrome-profile}"
+      default_url="''${RECEIPTS_BROWSER_URL:-about:blank}"
+
+      case "''${1:-}" in
+        --help|-h)
+          cat <<'USAGE'
+      Usage: receipts-browser [url]
+
+      Opens Chrome/Chromium with a dedicated persistent profile for receipt
+      portals such as Mynt and supplier dashboards. Log in manually inside this
+      browser; cookies, passkeys, and normal browser state remain in this
+      dedicated profile. This launcher does not enable Chrome remote debugging.
+
+      Environment:
+        RECEIPTS_CHROME_PROFILE  Override the profile directory.
+        RECEIPTS_BROWSER_URL     Override the default URL.
+      USAGE
+          exit 0
+          ;;
+        --profile-dir)
+          printf '%s\n' "$profile_dir"
+          exit 0
+          ;;
+      esac
+
+      chrome=""
+      for candidate in google-chrome-stable google-chrome chromium chromium-browser; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+          chrome="$(command -v "$candidate")"
+          break
+        fi
+      done
+
+      if [[ -z "$chrome" ]]; then
+        echo "receipts-browser: Chrome/Chromium not found on PATH" >&2
+        exit 127
+      fi
+
+      mkdir -p "$profile_dir"
+
+      exec "$chrome" \
+        --user-data-dir="$profile_dir" \
+        --no-first-run \
+        --no-default-browser-check \
+        --class=ReceiptsBrowser \
+        --new-window \
+        "''${1:-$default_url}"
+    '';
+  };
+
+  home.file.".local/bin/mynt-receipts" = {
+    executable = true;
+    force = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [[ "''${1:-}" == "--help" || "''${1:-}" == "-h" ]]; then
+        cat <<'USAGE'
+      Usage: mynt-receipts [url]
+
+      Opens Mynt in the dedicated receipts browser profile. Use
+      receipts-browser [url] for other receipt portals that should share the
+      same authenticated receipt-viewing profile.
+      USAGE
+        exit 0
+      fi
+
+      exec "$HOME/.local/bin/receipts-browser" "''${1:-https://app.mynt.com/}"
+    '';
+  };
+
+  home.file.".local/bin/receipts-browser-api" = {
+    executable = true;
+    force = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      profile_dir="''${RECEIPTS_CHROME_PROFILE:-$HOME/.local/share/receipts-browser/chrome-profile}"
+      default_url="''${RECEIPTS_BROWSER_URL:-https://app.mynt.com/}"
+      port="''${RECEIPTS_CDP_PORT:-9223}"
+
+      case "''${1:-}" in
+        --help|-h)
+          cat <<'USAGE'
+      Usage: receipts-browser-api [url]
+
+      Opens the dedicated receipts browser profile with Chrome DevTools Protocol
+      bound to 127.0.0.1 only. Use this for manual login followed by local API
+      discovery or receipt export helpers. Do not expose the port over the LAN.
+
+      Environment:
+        RECEIPTS_CHROME_PROFILE  Override the profile directory.
+        RECEIPTS_BROWSER_URL     Override the default URL.
+        RECEIPTS_CDP_PORT        Override the local CDP port, default 9223.
+      USAGE
+          exit 0
+          ;;
+        --profile-dir)
+          printf '%s\n' "$profile_dir"
+          exit 0
+          ;;
+        --cdp-url)
+          printf 'http://127.0.0.1:%s\n' "$port"
+          exit 0
+          ;;
+      esac
+
+      chrome=""
+      for candidate in google-chrome-stable google-chrome chromium chromium-browser; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+          chrome="$(command -v "$candidate")"
+          break
+        fi
+      done
+
+      if [[ -z "$chrome" ]]; then
+        echo "receipts-browser-api: Chrome/Chromium not found on PATH" >&2
+        exit 127
+      fi
+
+      mkdir -p "$profile_dir"
+
+      exec "$chrome" \
+        --user-data-dir="$profile_dir" \
+        --no-first-run \
+        --no-default-browser-check \
+        --remote-debugging-address=127.0.0.1 \
+        --remote-debugging-port="$port" \
+        --class=ReceiptsBrowserApi \
+        --new-window \
+        "''${1:-$default_url}"
+    '';
+  };
+
+  home.file.".local/bin/mynt-receipts-api" = {
+    executable = true;
+    force = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+      exec "$HOME/.local/bin/receipts-browser-api" "''${1:-https://app.mynt.com/}"
+    '';
+  };
+
   # Claude Code is the native installer at ~/.local/bin/claude (self-updating
   # symlink to ~/.local/share/claude/versions/<ver>). bypassPermissions is set
   # globally via ~/.claude/settings.json, so no wrapper is needed.
@@ -76,6 +229,11 @@ in {
 
     # Cluster: fetch the k3s kubeconfig from rigel for off-cluster kubectl
     fetch-kubeconfig = "~/.dotfiles/scripts/fetch-kubeconfig";
+    k = "kubectl";
+    kctx = "kubectx";
+    kns = "kubens";
+    kgp = "kubectl get pods";
+    kgs = "kubectl get services";
 
     #ls replacements via eza. NOT aliasing grep→rg or find→fd — different
     # argument syntax would break scripts that rely on them.

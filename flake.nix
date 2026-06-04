@@ -33,13 +33,12 @@
   };
 
   inputs = {
-    # nixos-unstable: rolling pre-release tracking towards 26.05 (due ~May 2026).
-    # Switch to nixos-26.05 + home-manager/release-26.05 once that branch exists.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # NixOS 26.05 release branch: stable base for the user environment.
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
-    # home-manager: master follows unstable nixpkgs.
+    # Home Manager release branch follows the matching nixpkgs release.
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -78,12 +77,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # inference-fabric: provides the remote-supervisor binary used by the
-    # GPU worker service, plus fabric-ops console (charmspeed/fabricctl/
-    # fabric-ssh) for managing the LLM gateway. Worker package replaces
-    # the ace-coder bundle in services/remote-gpu-worker.
     inference-fabric = {
-      url = "git+ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git";
+      url = "git+ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

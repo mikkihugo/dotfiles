@@ -1,8 +1,12 @@
 # VT Code Configuration File
 [agent]
-provider = "opencode-go"
-default_model = "minimax-m2.7"
-api_key_env = "OPENCODE_GO_API_KEY"
+provider = "minimax-io"
+default_model = "MiniMax-M3"
+api_key_env = "MINIMAX_API_KEY"
+
+[agent.small_model]
+enabled = true
+model = "kimi-k2.6:cloud"
 
 [permissions]
 default_mode = "auto"
@@ -12,7 +16,7 @@ name = "opencode-go"
 display_name = "OpenCode Go"
 base_url = "https://opencode.ai/zen/go/v1"
 api_key_env = "OPENCODE_GO_API_KEY"
-model = "minimax-m2.7"
+model = "minimax-m3"
 
 [[custom_providers]]
 name = "kimi-code"
@@ -34,3 +38,10 @@ display_name = "Ollama Cloud"
 base_url = "https://ollama.com/v1"
 api_key_env = "OLLAMA_API_KEY"
 model = "gemma3:27b"
+
+[[custom_providers]]
+name = "minimax-io"
+display_name = "MiniMax (native, zen-independent)"
+base_url = "https://api.minimax.io/v1"
+api_key_env = "MINIMAX_API_KEY"
+model = "MiniMax-M3"

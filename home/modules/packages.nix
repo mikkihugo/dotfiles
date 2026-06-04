@@ -27,9 +27,12 @@
     # Dev tools — language runtimes and package managers available globally.
     # (project-level runtimes live in per-repo flake devShells via direnv)
     bun # JavaScript runtime/package manager for local tool builds
+    mise # polyglot runtime/tool manager; installs live under ~/.local/share/mise
+    tea # Forgejo/Gitea CLI client
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
     go # build local Go tools
+    nodejs # Node.js runtime — npm used by activation.nix for @opencode-ai/sdk
     pnpm # fast, disk-efficient Node package manager
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin
 

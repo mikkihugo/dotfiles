@@ -24,19 +24,21 @@
 # ── Mise (polyglot runtime version manager) ───────────────────────────────────
 # Must be activated per-shell so the shims and hooks are wired up.
 # Detect zsh vs bash so the right integration is loaded.
-if [ -f "$HOME/.local/bin/mise" ]; then
+mise_bin="$(command -v mise 2>/dev/null || true)"
+if [ -n "$mise_bin" ]; then
 	if [ -n "${ZSH_VERSION:-}" ]; then
-		eval "$("$HOME/.local/bin/mise" activate zsh)"
+		eval "$("$mise_bin" activate zsh)"
 	else
-		eval "$("$HOME/.local/bin/mise" activate bash)"
+		eval "$("$mise_bin" activate bash)"
 	fi
 
-	_mise_node_bin="$("$HOME/.local/bin/mise" which node 2>/dev/null || true)"
+	_mise_node_bin="$("$mise_bin" which node 2>/dev/null || true)"
 	if [ -n "$_mise_node_bin" ]; then
 		export PATH="$(dirname "$_mise_node_bin"):$PATH"
 	fi
 	unset _mise_node_bin
 fi
+unset mise_bin
 
 # ── SOPS on-demand secret loader ─────────────────────────────────────────────
 # Decrypts ~/.dotfiles/secrets/api-keys.yaml and exports LLM API credentials.
@@ -157,6 +159,17 @@ _load_sops_secrets() {
 	[ -n "$val" ] && export ZAI_API_KEY="$val"
 	val=$(_sops_sf_val XIAOMI_API_KEY)
 	[ -n "$val" ] && export XIAOMI_API_KEY="$val"
+	val=$(_sops_sf_val ALIBABA_API_KEY)
+	[ -n "$val" ] && export ALIBABA_API_KEY="$val"
+	val=$(_sops_sf_val ALIBABA_CODING_PLAN_API_KEY)
+	[ -n "$val" ] && export ALIBABA_CODING_PLAN_API_KEY="$val"
+	val=$(_sops_sf_val ALIBABA_TOKEN_PLAN_API_KEY)
+	[ -n "$val" ] && export ALIBABA_TOKEN_PLAN_API_KEY="$val"
+	val=$(_sops_sf_val GOOGLE_GENERATIVE_AI_API_KEY)
+	if [ -n "$val" ]; then
+		export GOOGLE_GENERATIVE_AI_API_KEY="$val"  # opencode google provider (AI Studio, free Flash tier)
+		export GEMINI_API_KEY="$val"
+	fi
 	val=$(_sops_sf_val OPENCODE_API_KEY)
 	[ -n "$val" ] && export OPENCODE_API_KEY="$val"
 	val=$(_sops_sf_val OPENCODE_GO_API_KEY)
@@ -175,6 +188,20 @@ _load_sops_secrets() {
 }
 
 alias load-ai-keys='_load_sops_secrets'
+
+# Kubernetes context helpers. kubectx/kubens read KUBECONFIG, which Home
+# Manager sets to ~/.kube/config.
+kctxf() {
+	local selected
+	selected="$(kubectx | fzf --height=40% --reverse --prompt='kubectx> ')" || return
+	[ -n "$selected" ] && kubectx "$selected"
+}
+
+knsf() {
+	local selected
+	selected="$(kubens | fzf --height=40% --reverse --prompt='kubens> ')" || return
+	[ -n "$selected" ] && kubens "$selected"
+}
 
 # Eager load — makes keys available to child processes (Claude Code, Cursor, CI)
 # without requiring a manual `load-ai-keys` invocation.

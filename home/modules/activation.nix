@@ -164,33 +164,6 @@ in {
       fi
     '';
 
-    # toad (batrachian.ai) is not in nixpkgs — keep it up to date on every hms.
-    # Requires Python 3.14+; uv fetches the right interpreter automatically.
-    # uv tool install -U is idempotent: no-op when already at latest.
-    installToad = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Updating toad..."
-      PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install -U batrachian-toad --python 3.14 && \
-        echo "toad ready — run: toad" || \
-        echo "WARNING: toad install failed" >&2
-    '';
-
-    installOpenhands = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Updating openhands..."
-      PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install openhands -U --python 3.12 && \
-        echo "openhands ready — run: openhands login" || \
-        echo "WARNING: openhands install failed" >&2
-    '';
-
-    installCrowCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Updating crow-cli..."
-      PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install -U crow-cli --python 3.14 && \
-        echo "crow-cli ready — run: crow-cli" || \
-        echo "WARNING: crow-cli install failed" >&2
-    '';
-
     # kimi-cli (Moonshot) is not in nixpkgs — keep it up to date on every hms.
     installKimiCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Updating kimi-cli..."
@@ -198,6 +171,18 @@ in {
       ${pkgs.uv}/bin/uv tool install -U kimi-cli && \
         echo "kimi-cli ready — run: kimi" || \
         echo "WARNING: kimi-cli install failed" >&2
+    '';
+
+    # @opencode-ai/sdk — TypeScript SDK for OpenCode API (programmatic access to
+    # both OpenAI-compatible /v1/chat/completions and Anthropic /v1/messages endpoints).
+    # Installed via npm global so it is available to ad-hoc Node scripts.
+    installOpencodeSdk = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      echo "Updating @opencode-ai/sdk..."
+      export NPM_CONFIG_PREFIX="$HOME/.npm-global"
+      PATH="${USER_TOOL_PATH}:$PATH" \
+      ${pkgs.nodejs}/bin/npm install -g @opencode-ai/sdk@latest && \
+        echo "@opencode-ai/sdk ready — import via: const { OpencodeClient } = require('@opencode-ai/sdk')" || \
+        echo "WARNING: @opencode-ai/sdk install failed" >&2
     '';
   };
 }

@@ -201,15 +201,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1778009629,
-        "narHash": "sha256-nUoQtf4Zq7DRYJrfv904hjrxjAlWVP6a1pNNFKx3FCg=",
+        "lastModified": 1780361225,
+        "narHash": "sha256-wnV9ttf4fPWNonBIQmvlrSlNpQYgx5HgWWd007mwIFA=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "00ed86e58bb6979a7921859fd1615d19382eac5c",
+        "rev": "e28654b71096e08c019d4861ca26acb646f583d8",
         "type": "github"
       },
       "original": {
         "owner": "nix-community",
+        "ref": "release-26.05",
         "repo": "home-manager",
         "type": "github"
       }
@@ -223,15 +224,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1778939638,
-        "narHash": "sha256-qKjEndzTwrC8MeyUxFzS+3JjgoH9am+PiKC5zIimEbw=",
-        "ref": "refs/heads/main",
-        "rev": "65e4127e498a9aa77065e7018ce73c236a4ebb8f",
-        "revCount": 875,
+        "lastModified": 1779985982,
+        "narHash": "sha256-NM4hoppmINYj8GJJF435LJCLgfh0Na/S6w+qNN/0aDE=",
+        "ref": "main",
+        "rev": "3f67b975fedffc42679bde8b62f41e26ddc7258d",
+        "revCount": 883,
         "type": "git",
         "url": "ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git"
       },
       "original": {
+        "ref": "main",
         "type": "git",
         "url": "ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git"
       }
@@ -314,16 +316,16 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1777954456,
-        "narHash": "sha256-hGdgeU2Nk87RAuZyYjyDjFL6LK7dAZN5RE9+hrDTkDU=",
+        "lastModified": 1780453794,
+        "narHash": "sha256-bXMRa9VTsHSPXL4Cw8R6JJLQeY3Y/IP4+YJCYVmQ7FY=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "549bd84d6279f9852cae6225e372cc67fb91a4c1",
+        "rev": "6b316287bae2ee04c9b93c8c858d930fd07d7338",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-unstable",
+        "ref": "nixos-26.05",
         "repo": "nixpkgs",
         "type": "github"
       }

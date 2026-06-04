@@ -35,3 +35,4 @@ cosign = "3.0.6"
 claude = "2.1.162"
 claude-squad = "1.0.18"
 "npm:droid" = "0.140.0"
+azure-cli = { version = "2.87.0", uvx_args = "--prerelease=allow" }

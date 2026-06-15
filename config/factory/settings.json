@@ -6,20 +6,20 @@
     "autoresearch@factory-plugins": true
   },
   "logoAnimation": "off",
-  "model": "custom:Ollama-Cloud:-glm-5.1-41",
+  "model": "custom:MiniMax-M3",
   "reasoningEffort": "none",
-  "specModel": "custom:Ollama-Cloud:-glm-5.1-41",
-  "specModeModel": "custom:Ollama-Cloud:-glm-5.1-41",
+  "specModel": "custom:MiniMax-M3",
+  "specModeModel": "custom:MiniMax-M3",
   "specModeReasoningEffort": "none",
   "sessionDefaultSettings": {
     "interactionMode": "auto",
     "autonomyLevel": "off"
   },
-  "missionOrchestratorModel": "custom:Ollama-Cloud:-glm-5.1-41",
+  "missionOrchestratorModel": "custom:MiniMax-M3",
   "missionOrchestratorReasoningEffort": "none",
-  "missionWorkerModel": "custom:Kimi-Coding:-kimi-k2.6-40",
+  "missionWorkerModel": "custom:MiniMax-M3",
   "missionWorkerReasoningEffort": "none",
-  "validationWorkerModel": "custom:Ollama-Cloud:-deepseek-v4-flash-18",
+  "validationWorkerModel": "custom:MiniMax-M3",
   "validationWorkerReasoningEffort": "none",
   "customModels": [
     {
@@ -347,6 +347,14 @@
       "displayName": "Kimi Coding: kimi-k2.6",
       "baseUrl": "https://api.kimi.com/coding",
       "apiKey": "${KIMI_API_KEY}",
+      "provider": "anthropic",
+      "maxOutputTokens": 16384
+    },
+    {
+      "model": "MiniMax-M3",
+      "displayName": "MiniMax: MiniMax-M3",
+      "baseUrl": "https://api.minimax.io/anthropic",
+      "apiKey": "${MINIMAX_API_KEY}",
       "provider": "anthropic",
       "maxOutputTokens": 16384
     },

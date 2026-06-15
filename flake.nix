@@ -107,6 +107,8 @@
         pkgs = import nixpkgs {
           system = sys;
           config.allowUnfree = true;
+          # mise pinned ahead of nixos-26.05; drop once the channel catches up.
+          overlays = [(import ./overlays/mise.nix)];
         };
         extraSpecialArgs =
           specialArgs

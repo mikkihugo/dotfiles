@@ -28,6 +28,13 @@ _: {
       force = true;
     };
 
+    # Shared cross-agent skills. Keep these in dotfiles so Codex, Claude,
+    # Gemini, and other clients read the same personal process library.
+    ".agents/skills" = {
+      source = ../../config/agents/skills;
+      force = true;
+    };
+
     # SSH client config: host aliases for all servers (mail.hugo.dk, aidev, llm-gateway).
     # hetzner_id_ed25519 is rendered from SOPS by the renderHetznerSshKey activation hook.
     ".ssh/config" = {

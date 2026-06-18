@@ -1,0 +1,4 @@
+interface:
+  display_name: "Instruction Writing"
+  short_description: "Terse prompt and agent instruction edits"
+  default_prompt: "Use $instruction-writing to tighten agent instructions without hiding enforcement debt."

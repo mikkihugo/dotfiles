@@ -164,14 +164,6 @@ in {
       fi
     '';
 
-    # kimi-cli (Moonshot) is not in nixpkgs — keep it up to date on every hms.
-    installKimiCli = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Updating kimi-cli..."
-      PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.uv}/bin/uv tool install -U kimi-cli && \
-        echo "kimi-cli ready — run: kimi" || \
-        echo "WARNING: kimi-cli install failed" >&2
-    '';
 
     # @opencode-ai/sdk — TypeScript SDK for OpenCode API (programmatic access to
     # both OpenAI-compatible /v1/chat/completions and Anthropic /v1/messages endpoints).

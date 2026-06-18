@@ -6,7 +6,7 @@ Host ai.hugo.dk vpn.hugo.dk jump.hugo.dk
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host rigel rigel.hugo.dk flow.hugo.dk portal-workflow
+Host cc-fi-hel-k3s-03 cc-fi-hel-k3s-03.centralcloud.com rigel rigel.hugo.dk flow.hugo.dk portal-workflow
     HostName 157.180.79.108
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
@@ -33,13 +33,6 @@ Host vega-public vega.hugo.dk
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host portal-automation
-    # Portal automation node on public IP uses the personal admin key.
-    HostName 157.180.79.108
-    User root
-    IdentityFile ~/.ssh/personal_admin_id_ed25519
-    IdentitiesOnly yes
-
 # Private network aliases — typically internal/legacy names.
 Host mon-private
     HostName 10.250.250.3
@@ -47,7 +40,7 @@ Host mon-private
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host portal-automation-private
+Host cc-fi-hel-k3s-03-private
     HostName 10.250.250.2
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519

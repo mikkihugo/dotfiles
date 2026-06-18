@@ -189,6 +189,20 @@ _load_sops_secrets() {
 
 alias load-ai-keys='_load_sops_secrets'
 
+# claude-squad harness shortcuts
+# default (claude) — same as plain `claude-squad`
+alias cs='claude-squad'
+# opencode + MiniMax coding plan (flat-rate sub, direct minimax-coding-plan provider)
+alias cs-minimax='claude-squad -p "opencode -m minimax/MiniMax-M3"'
+# opencode default model
+alias cs-opencode='claude-squad -p opencode'
+# codex
+alias cs-codex='claude-squad -p "/home/mhugo/.local/share/mise/installs/codex/latest/codex"'
+# opencode + Qwen3.7 Max (bailian-token-plan, flat-rate)
+alias cs-qwen='claude-squad -p "opencode -m bailian-token-plan/qwen3.7-max"'
+# opencode + Xiaomi MiMo v2.5 Pro
+alias cs-mimo='claude-squad -p "opencode -m xiaomi/mimo-v2.5-pro"'
+
 # Kubernetes context helpers. kubectx/kubens read KUBECONFIG, which Home
 # Manager sets to ~/.kube/config.
 kctxf() {

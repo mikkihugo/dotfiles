@@ -74,6 +74,7 @@
       "$HOME/.npm-global/bin" # opencode and other npm globals
       "$HOME/.cargo/bin" # cargo-installed Rust binaries
       "$HOME/.amp/bin"
+      "$HOME/.kimi-code/bin" # native Kimi Code CLI (v0.x, supersedes uv kimi-cli)
     ];
 
     # Environment variables exported into every session before shell init runs.
@@ -91,6 +92,7 @@
       NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
       MINIMAX_API_HOST = "https://api.minimax.io";
+      MISE_YES = "1";
       COLORTERM = "truecolor";
       RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
       BAT_CONFIG_PATH = "$HOME/.config/bat/config";

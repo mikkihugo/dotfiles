@@ -11,7 +11,7 @@ If dispatched as a subagent for a specific task, skip this skill.
 
 Check relevant skills before acting. The overhead is intentional: loading the
 right rule is cheaper than repairing drift after an agent acted from memory.
-`pdd-tdd-purpose` is the primary doctrine for changes: canonical 9-field PDD
+`purpose-first-tdd` is the primary doctrine for changes: canonical 9-field PDD
 contract plus failing proof before implementation.
 
 Purpose: route work through reusable process instead of memory or habit.
@@ -55,14 +55,17 @@ User/repo instructions override skills. Skills override default habit.
 
 When multiple skills apply:
 
-1. Primary doctrine first when changing behavior: `pdd-tdd-purpose`.
-2. Capability and quality gates next when surfaces change:
-   `existing-capability-first`, `quality-contracts`.
-3. Process skills next: `brainstorming`, `systematic-debugging`,
+1. Capability search first when adding/changing a surface:
+   `existing-capability-first`.
+2. Primary purpose/proof doctrine for behavior or policy:
+   `purpose-first-tdd`.
+3. Quality gates when proof, validators, exceptions, or hidden debt are in play:
+   `quality-contracts`.
+4. Process skills next: `brainstorming`, `systematic-debugging`,
    `test-driven-development`, `writing-plans`.
-4. Domain/output skills next: `instruction-writing`, `human-writing`, frontend,
+5. Domain/output skills next: `instruction-writing`, `human-writing`, frontend,
    image, API, skill writing.
-5. Verification skills before claims: `verification-before-completion`,
+6. Verification skills before claims: `verification-before-completion`,
    review/finish skills.
 
 ## Red Flags

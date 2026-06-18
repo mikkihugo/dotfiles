@@ -1,9 +1,9 @@
 ---
-name: pdd-tdd-purpose
+name: purpose-first-tdd
 description: Use when making or evaluating any behavior, plan, prompt, skill, code, test, or operational change that needs purpose, proof, consumer, or falsifier clarity.
 ---
 
-# PDD TDD Purpose
+# Purpose First TDD
 
 Purpose comes first. Tests are executable purpose. Code and instructions exist
 to satisfy a real consumer.
@@ -14,8 +14,8 @@ instructions.
 Failure consequence: changes optimize activity instead of value; tests prove
 implementation details instead of purpose; reviewers cannot tell what failure
 means.
-Falsifier: a change has a real consumer, clear value, executable proof, and no
-judgment call left unstated without invoking this skill.
+Falsifier: the change is purely cosmetic or self-contained with no behavior,
+policy, proof, consumer, or public-contract impact.
 
 ## Contract
 

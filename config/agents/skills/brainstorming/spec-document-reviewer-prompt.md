@@ -24,6 +24,8 @@ Subagent (general-purpose):
     | Clarity | Requirements ambiguous enough to cause someone to build the wrong thing |
     | Scope | Focused enough for a single plan — not covering multiple independent subsystems |
     | YAGNI | Unrequested features, over-engineering |
+    | Shape | Durable specs include Date, Status, Scope, Implementation plan, Source, Problem, Purpose, Consumer, Decision, Requirements, Non-Goals, Evidence, and Falsifier |
+    | Extraction | Spec is a compact design contract, not copied ADR or plan prose |
 
     ## Calibration
 

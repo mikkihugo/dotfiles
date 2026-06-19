@@ -2,11 +2,12 @@
 
 Use this template when dispatching a plan document reviewer subagent.
 
-**Purpose:** Verify the plan is complete, matches the spec, and has proper task decomposition.
+**Purpose:** Verify the plan is complete, matches the spec, has proper task
+decomposition, and exposes status/proof fields that can be linted.
 
 **Dispatch after:** The complete plan is written.
 
-```
+```text
 Subagent (general-purpose):
   description: "Review plan document"
   prompt: |
@@ -22,6 +23,9 @@ Subagent (general-purpose):
     | Completeness | TODOs, placeholders, incomplete tasks, missing steps |
     | Spec Alignment | Plan covers spec requirements, no major scope creep |
     | Task Decomposition | Tasks have clear boundaries, steps are actionable |
+    | Status Contract | Header has Status, Owner, Last verified, Source, Canonical issue/ADR/spec |
+    | Task Proof | Each executable task has Status, Proof, Blocker, and checkbox steps |
+    | Markdown Lint | Structure should pass markdownlint without rule disables |
     | Buildability | Could an engineer follow this plan without getting stuck? |
 
     ## Calibration
@@ -32,6 +36,7 @@ Subagent (general-purpose):
 
     Approve unless there are serious gaps — missing requirements from the spec,
     contradictory steps, placeholder content, or tasks so vague they can't be acted on.
+    Missing status/proof fields are blocking for plans saved under `docs/plans/`.
 
     ## Output Format
 

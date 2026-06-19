@@ -54,6 +54,31 @@ For small design decisions, a short approved design is enough.
 For durable specs, write to the repo-preferred location, usually:
 `docs/specs/YYYY-MM-DD-<topic>-design.md`.
 
+Durable specs are design contracts, not ADR or plan extracts. Write the spec
+before `writing-plans` unless the user explicitly asks to document already
+implemented behavior; in that case, state that it is a retrospective spec and
+name the evidence.
+
+Required durable spec shape:
+
+- `Date:`
+- `Status:`
+- `Scope:`
+- `Implementation plan:` (`none` until a plan exists)
+- `Source:`
+- `## Problem`
+- `## Purpose`
+- `## Consumer`
+- `## Decision`
+- `## Requirements`
+- `## Non-Goals`
+- `## Evidence`
+- `## Falsifier`
+
+If an ADR exists, link it as canonical context. Do not copy the ADR or plan into
+the spec. The spec states the product/runtime contract; the plan states the
+execution sequence.
+
 After approval, use `writing-plans` when implementation needs a multi-step plan.
 
 ## Visual Companion

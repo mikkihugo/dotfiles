@@ -32,18 +32,28 @@ failures without a full plan.
 ## Flow
 
 1. Read plan once. Record global constraints and shared-file owners.
-2. Preflight contradictions: task conflicts, missing dependencies, or plan text
+2. Verify the plan is status-readable: plan header has `Status:`, `Owner:`,
+   `Last verified:`, `Source:`, and `Canonical issue/ADR/spec:`; each task has
+   `Status:`, `Proof:`, and `Blocker:`.
+3. If the plan lacks status fields but is otherwise clear, normalize it before
+   dispatch.
+4. Preflight contradictions: task conflicts, missing dependencies, or plan text
    that mandates a review defect. Ask once if blocked.
-3. For each task:
+5. For each task:
+   - set task `Status: active` before dispatch;
    - dispatch implementer with only its task, global constraints, allowed paths,
      forbidden paths, unique artifact prefix, test commands, and stop rule;
    - require status: `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`;
    - inspect diff and reported tests;
    - dispatch reviewer with task requirements and diff/package;
    - fix Critical/Important findings, then re-review;
-   - mark task complete only after clean spec and quality review.
-4. After all tasks, run final branch review.
-5. Use `finishing-a-development-branch`.
+   - update task `Proof:` with command, trace, commit, PR, or file path;
+   - mark task `Status: implemented` only after clean spec and quality review.
+6. If a task blocks, set `Status: blocked` and write the concrete `Blocker:`.
+7. After all tasks, run final branch review.
+8. Update plan-level `Status:` and `Last verified:` before completion.
+9. Run markdownlint for the plan file when available.
+10. Use `finishing-a-development-branch`.
 
 ## Prompt Contract
 
@@ -58,6 +68,7 @@ Implementer prompt:
   `/tmp/<repo>-task-03-<timestamp>/`.
 - Required tests/verification commands.
 - Commit/report expectation.
+- Required plan update: task `Status:`, `Proof:`, and `Blocker:`.
 - Stop rule for ambiguity, missing context, or plan conflict.
 
 Reviewer prompt:
@@ -76,6 +87,7 @@ Reviewer prompt:
   review.
 - `NEEDS_CONTEXT`: provide missing context and re-dispatch.
 - `BLOCKED`: change context, model, task split, or plan. Do not retry unchanged.
+  Record the blocker in the plan.
 
 ## Boundaries
 
@@ -86,3 +98,4 @@ Reviewer prompt:
 - One fixer handles final-review findings as a batch.
 - Subagent summaries are evidence, not completion proof. Verify before claiming
   done.
+- A checked task without `Proof:` is not complete.

@@ -51,8 +51,12 @@ first slice instead of one giant spec.
 
 For small design decisions, a short approved design is enough.
 
-For durable specs, write to the repo-preferred location, usually:
-`docs/specs/YYYY-MM-DD-<topic>-design.md`.
+For durable specs, write to the repo-preferred location. Prefer topic filenames
+such as `docs/specs/<topic>.md` unless the repo's own spec index requires dates.
+Do not add a project prefix like `sf-` when the directory or repo already scopes
+the subject. Put verification dates in metadata such as `Last verified:
+YYYY-MM-DD`, not in the filename unless the repo explicitly requires dated spec
+filenames.
 
 Durable specs are design contracts, not ADR or plan extracts. Write the spec
 before `writing-plans` unless the user explicitly asks to document already
@@ -61,8 +65,8 @@ name the evidence.
 
 Required durable spec shape:
 
-- `Date:`
 - `Status:`
+- `Last verified:`
 - `Scope:`
 - `Implementation plan:` (`none` until a plan exists)
 - `Source:`

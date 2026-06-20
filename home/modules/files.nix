@@ -30,6 +30,11 @@ _: {
 
     # Shared cross-agent skills. Keep these in dotfiles so Codex, Claude,
     # Gemini, and other clients read the same personal process library.
+    ".agents/AGENTS.md" = {
+      source = ../../config/agents/AGENTS.md;
+      force = true;
+    };
+
     ".agents/skills" = {
       source = ../../config/agents/skills;
       force = true;

@@ -23,6 +23,7 @@ Use a worktree when:
 - Work is multi-step and branch-scale.
 - Existing dirty state is unrelated and likely to conflict.
 - Plan execution would touch many files.
+- Parallel/swarm lanes will edit files.
 
 Skip when:
 
@@ -59,6 +60,38 @@ git worktree add "$path" -b "$branch"
 
 If ignore check fails, add the directory to `.gitignore` and commit that change
 before creating project-local worktrees.
+
+## No Stash Storage
+
+Do not use `git stash` as durable storage. Stash is only a same-turn parking
+lot. If work must survive interruption, make a branch or WIP commit. If a stash
+is unavoidable, anchor it before ending the turn:
+
+```bash
+git branch "wip/stash-<n>-<topic>" "stash@{<n>}"
+```
+
+Never use `git stash pop`; use `git stash apply`, verify the result, then drop
+manually. Failure consequence: hidden stash entries expire, get overwritten, or
+are forgotten during branch cleanup. Falsifier: every stash is reachable from a
+named branch and the final report lists the branch or exact dirty files.
+
+## Branch Lifecycle
+
+Use lifecycle prefixes for non-main branches:
+
+- `work/<topic>` active implementation
+- `wip/<topic>` interrupted work
+- `review/<topic>` ready for review
+- `archive/<date>-<topic>` retained inactive work
+
+Merged local branches are cleanup candidates, not durable storage. Delete them
+after confirmation with `git branch -d <branch>`, or rename retained evidence
+under `archive/<date>-<topic>`.
+
+Before ending a turn with dirty or unmerged work, report one of: committed
+branch, active worktree path and branch, anchored stash branch, or exact dirty
+files intentionally left uncommitted.
 
 ## Baseline
 

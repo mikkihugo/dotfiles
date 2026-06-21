@@ -12,6 +12,7 @@
     "redteam"
   ],
   "skills": "./skills/",
+  "hooks": "../hooks/kimi-hooks.toml",
   "interface": {
     "displayName": "Red Team Review",
     "shortDescription": "Cross-model adversarial review across a panel of model lineages"

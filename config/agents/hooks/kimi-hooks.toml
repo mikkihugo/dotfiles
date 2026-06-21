@@ -1,0 +1,47 @@
+# Cross-CLI lifecycle hooks for Kimi.
+# Uses the 8 events common to Claude Code, Codex CLI, Copilot CLI, and Kimi.
+# Kimi reads [[hooks]] from config.toml; this file can be appended to
+# ~/.kimi-code/config.toml or included via Kimi's plugin sidecar.
+#
+# The hook scripts live in the bundle at ~/.dotfiles/config/agents/hooks/
+# and are shared with the JSON-based CLIs (Claude, Codex, Copilot).
+
+[[hooks]]
+event = "SessionStart"
+command = "node ~/.dotfiles/config/agents/hooks/session-start.mjs"
+timeout = 10
+
+[[hooks]]
+event = "UserPromptSubmit"
+command = "node ~/.dotfiles/config/agents/hooks/user-prompt-submit.mjs"
+timeout = 10
+
+[[hooks]]
+event = "PreToolUse"
+command = "node ~/.dotfiles/config/agents/hooks/pre-tool-use.mjs"
+timeout = 10
+
+[[hooks]]
+event = "PostToolUse"
+command = "node ~/.dotfiles/config/agents/hooks/post-tool-use.mjs"
+timeout = 10
+
+[[hooks]]
+event = "PreCompact"
+command = "node ~/.dotfiles/config/agents/hooks/pre-compact.mjs"
+timeout = 10
+
+[[hooks]]
+event = "SubagentStart"
+command = "node ~/.dotfiles/config/agents/hooks/subagent-start.mjs"
+timeout = 10
+
+[[hooks]]
+event = "SubagentStop"
+command = "node ~/.dotfiles/config/agents/hooks/subagent-stop.mjs"
+timeout = 10
+
+[[hooks]]
+event = "Stop"
+command = "node ~/.dotfiles/config/agents/hooks/stop.mjs"
+timeout = 15

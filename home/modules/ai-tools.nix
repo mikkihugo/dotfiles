@@ -186,6 +186,7 @@
         --auto-route-primary umans-glm-5.2 \
         --auto-route-threshold 4096 \
         --fallback-model umans-qwen3.6-35b-a3b \
+        --rate-limit-per-minute 60 \
         > "$HOME/.cache/centralcloud-ai-proxy.log" 2>&1 &
       for i in $(seq 1 10); do
         if curl -s http://127.0.0.1:8088/healthz 2>/dev/null | grep -q '"ok"'; then

@@ -5,6 +5,13 @@ description: Use when implementation is complete, verification passes, and the r
 
 # Finishing a Development Branch
 
+**Purpose:** Present clear merge/PR/keep/discard options after verification, handle the chosen workflow, clean up workspace.
+**Consumer:** Main agent with implementation work that needs to be integrated into a shared branch.
+**Failure consequence:** Broken merge into main, lost work from accidental branch deletion, or phantom state from cleaning up worktree the harness owns.
+**Falsifier:** Throwaway branch, single-commit docs-only change, or trivial edit where merge/PR ceremony adds no value.
+
+**Redteam forwarder:** Before presenting the 4-option menu for non-trivial branches, optionally run `/redteam:ultrareview` to surface concerns across multiple lenses (review + architecture + plan + verify) before merge/PR.
+
 ## Overview
 
 Guide completion of development work by presenting clear options and handling chosen workflow.

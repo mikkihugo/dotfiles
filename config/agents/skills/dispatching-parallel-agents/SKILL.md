@@ -1,9 +1,13 @@
 ---
 name: dispatching-parallel-agents
-description: Use when 2+ independent tasks, failures, or path-scoped investigations can run without shared state, shared files, or sequential dependency.
+description: Use when 2+ independent tasks, failures, research lanes, exploration lanes, or path-scoped investigations can run without shared state, shared files, or sequential dependency.
 ---
 
 # Dispatching Parallel Agents
+
+<SUBAGENT-STOP>
+If dispatched as a subagent for a specific task, skip this skill.
+</SUBAGENT-STOP>
 
 Dispatch one agent per independent problem domain. Keep shared state with the
 coordinator.

@@ -1,9 +1,13 @@
 ---
 name: subagent-driven-development
-description: Use when executing a written implementation plan through independent task lanes with implementer, review, fix, and final integration gates.
+description: Use when executing a written implementation plan, or dispatching 2+ independent implementation tasks (research, audit, exploration, or coding lanes), through implementer/review/fix/integration gates.
 ---
 
 # Subagent-Driven Development
+
+<SUBAGENT-STOP>
+If dispatched as a subagent for a specific task, skip this skill.
+</SUBAGENT-STOP>
 
 Execute a written plan with one focused implementer subagent per task, one
 review gate per task, and one final branch review.

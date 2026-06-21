@@ -5,8 +5,14 @@ description: Use when making or evaluating any behavior, plan, prompt, skill, co
 
 # Purpose First TDD
 
+<SUBAGENT-STOP>
+If dispatched as a subagent for a specific task, skip this skill.
+</SUBAGENT-STOP>
+
 Purpose comes first. Tests are executable purpose. Code and instructions exist
 to satisfy a real consumer.
+
+**Redteam forwarder:** For falsifier validation, run `/redteam:verify` to cross-check that the falsifier actually catches the intended failure mode. A falsifier that never fires is not a real falsifier. For high-stakes contracts (security, billing, policy gates), use `/redteam:review` to validate the contract holds before declaring it done.
 
 Purpose: make every change defensible before implementation.
 Consumer: agents planning, implementing, reviewing, debugging, or editing

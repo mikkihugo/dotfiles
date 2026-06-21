@@ -5,6 +5,10 @@ description: Use when a request needs product/design exploration, unclear requir
 
 # Brainstorming
 
+<SUBAGENT-STOP>
+If dispatched as a subagent for a specific task, skip this skill.
+</SUBAGENT-STOP>
+
 Turn ambiguous intent into an approved design or scoped spec. Do not use this as
 a blocker for obvious bug fixes, small config changes, mechanical edits, or
 operator-directed "do it" work.

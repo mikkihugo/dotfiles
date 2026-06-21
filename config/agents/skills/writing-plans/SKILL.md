@@ -5,6 +5,13 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 # Writing Plans
 
+**Purpose:** Decompose a spec or requirement into bite-sized, status-readable tasks with explicit proofs.
+**Consumer:** Implementer (subagent or human) who will execute the plan task-by-task.
+**Failure consequence:** Vague plan leads to wasted execution; missing proofs mean no completion signal; missing status fields make the plan un-reviewable.
+**Falsifier:** Fewer than 3 tasks, single-step work, or trivial change where decomposition adds overhead.
+
+**Redteam forwarder:** Before dispatching implementers, run `/redteam:plan` (architect lane) on the plan file. Catches missing proofs, vague success criteria, and dependency conflicts that surface only when an implementer hits them.
+
 ## Overview
 
 Write comprehensive implementation plans assuming the engineer has zero context

@@ -12,6 +12,8 @@ Consumer: agents diagnosing failures in code, tests, infra, builds, and runtime
 systems.
 Failure consequence: fixes mask the real cause, create regressions, or require
 multiple failed attempts.
+
+**Redteam forwarder:** Phase 1 (Root Cause Investigation): if 'similar bugs elsewhere' is suspected, run `/redteam:bughunt` for whole-tree discovery before narrowing scope. Use `/redteam:verify` on the proposed root cause to confirm it actually predicts the bug.
 Falsifier: the failure source is already proven by reproducible evidence and a
 minimal fix target is known.
 

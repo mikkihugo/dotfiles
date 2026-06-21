@@ -5,8 +5,14 @@ description: Use when changing production behavior, tests, policy gates, validat
 
 # Quality Contracts
 
+<SUBAGENT-STOP>
+If dispatched as a subagent for a specific task, skip this skill.
+</SUBAGENT-STOP>
+
 Quality rules are contracts with consequences and falsifiers, not style
 preferences. Invoke them only when they change proof or risk.
+
+**Redteam forwarder:** For contracts with contested scope or high-stakes outcomes (auth, billing, security-relevant paths, policy changes), run `/redteam:review` to verify the contract holds against adversarial inputs before declaring it complete. The contract's `falsifier` field should itself be testable — use `/redteam:verify` to confirm.
 
 Purpose: prevent changes from hiding defects behind prose, exemptions, or weak
 tests.

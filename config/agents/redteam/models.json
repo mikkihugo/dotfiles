@@ -1,0 +1,63 @@
+{
+  "comment": "Redteam model selection is dynamic. This file is policy only: lineage names, provider order, and narrow model-specific overrides. Kimi/models.dev plus live provider /models decide which concrete model ids are runnable.",
+  "lineages": {
+    "deepseek": "DeepSeek lineage via configured aggregators; no direct deepseek.com credits assumed.",
+    "glm": "Zai/Zhipu GLM lineage.",
+    "qwen": "Qwen coding lineage.",
+    "mimo": "Xiaomi MiMo lineage.",
+    "minimax": "MiniMax lineage.",
+    "kimi": "Moonshot/Kimi lineage.",
+    "mistral": "Mistral lineage.",
+    "nemotron": "Nvidia Nemotron lineage.",
+    "gpt-oss": "OpenAI open-weight gpt-oss lineage.",
+    "google": "Google Gemini/Gemma lineage."
+  },
+  "disabled_lineages_comment": "Lineages excluded from automatic random/backfill/scatter selection after trace evidence. Explicit --models may still target them for diagnosis.",
+  "disabled_lineages": {
+    "nemotron": "2026-06-20 nosession-RSZcsS: ollama-cloud/nemotron-3-ultra narrated/no verdict after retries; no alternate provider configured."
+  },
+  "deprioritized_lineages_comment": "Lineages kept available but moved to the end of automatic candidate pools after recent poor signal/cost.",
+  "deprioritized_lineages": {
+    "deepseek": "2026-06-20 nosession-RSZcsS: ollama/alibaba narrated and opencode-go/deepseek-v4-pro returned 401 disabled."
+  },
+  "disabled_models_comment": "Exact provider/model refs skipped inside lineage fallback chains. Use only for confirmed disabled/broken provider entries, not temporary quota.",
+  "disabled_models": {
+    "opencode-go/deepseek-v4-pro": "2026-06-20 nosession-RSZcsS: provider returned 401 Model is disabled."
+  },
+  "lineage_provider_seeds_comment": "Ordered provider preference per lineage for live /models discovery. First entry = primary. Do not infer cross-lineage fallback.",
+  "lineage_provider_seeds": {
+    "deepseek": ["ollama-cloud", "opencode-go", "alibaba-token-plan"],
+    "glm": ["zai", "ollama-cloud", "opencode-go", "alibaba-token-plan"],
+    "qwen": ["ollama-cloud", "opencode-go", "alibaba-token-plan"],
+    "mimo": ["xiaomi-token-plan-ams", "opencode-go"],
+    "minimax": ["minimax-coding-plan", "ollama-cloud", "opencode-go"],
+    "kimi": ["managed:kimi-code", "ollama-cloud", "opencode-go", "alibaba-token-plan"],
+    "mistral": ["ollama-cloud"],
+    "nemotron": ["ollama-cloud"],
+    "gpt-oss": ["ollama-cloud"],
+    "google": ["google"]
+  },
+  "provider_priority_comment": "Compatibility fallback for older runners only. Current runner uses lineage_provider_seeds.",
+  "provider_priority": ["ollama-cloud", "opencode-go", "alibaba-token-plan"],
+  "direct_provider_by_lineage": {
+    "glm": "zai",
+    "mimo": "xiaomi-token-plan-ams",
+    "minimax": "minimax-coding-plan",
+    "kimi": "managed:kimi-code",
+    "google": "google"
+  },
+  "free_comment": "Zero-cost models are discovered live from provider catalogs; this is only an empty fallback.",
+  "free": [],
+  "model_params_comment": "Narrow redteam overrides only: one wire-format exception and one temperature exception. Concrete model selection stays dynamic.",
+  "model_params": {
+    "_default": {
+      "temperature": [0]
+    },
+    "opencode-go/qwen3.7-max": {
+      "protocol": "anthropic"
+    },
+    "opencode-go/kimi-k2.7-code": {
+      "temperature": [1]
+    }
+  }
+}

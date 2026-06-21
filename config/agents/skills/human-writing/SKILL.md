@@ -5,6 +5,11 @@ description: Use when creating or revising docs, plans, records, PR text, handof
 
 # Human Writing
 
+**Purpose:** Produce prose that humans will read later (docs, plans, handoffs, PR notes) without filler, activity narration, or fake warmth.
+**Consumer:** Future readers — other engineers, your own future self, reviewers.
+**Failure consequence:** Filler and recap paragraphs accumulate; readers spend context budget on text that doesn't change what they can do.
+**Falsifier:** Output is a code change, log line, status string, or single-sentence reply where prose adds no value.
+
 Use this skill for prose that humans will read later: docs, plans, records,
 handoffs, PR notes, and status summaries.
 

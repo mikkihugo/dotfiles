@@ -5,6 +5,11 @@ description: Use when implementing any feature or bugfix, before writing impleme
 
 # Test-Driven Development (TDD)
 
+**Purpose:** Write a failing test before any implementation; minimal code to pass; refactor while green.
+**Consumer:** Main agent implementing new behavior or fixing a bug.
+**Failure consequence:** Untested behavior ships; regressions hide; test-after-coding proves nothing.
+**Falsifier:** Pure refactor (no behavior change), docs-only, test-only change, or pure-format work.
+
 ## Overview
 
 Write the test first. Watch it fail. Write minimal code to pass.

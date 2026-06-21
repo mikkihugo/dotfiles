@@ -5,6 +5,17 @@ description: Use when about to claim work is complete, fixed, passing, ready to 
 
 # Verification Before Completion
 
+<SUBAGENT-STOP>
+If dispatched as a subagent for a specific task, skip this skill.
+</SUBAGENT-STOP>
+
+**Purpose:** Run the actual verification command, read full output, confirm the claim is supported by evidence before declaring completion.
+**Consumer:** Main agent about to claim work complete, fixed, passing, or ready for merge/PR.
+**Failure consequence:** False completion claims ship; downstream agents and humans trust stale docs or unverified fixes.
+**Falsifier:** Trivial one-liner, single command with no repo consequence, or pure cosmetic change.
+
+**Redteam forwarder:** For high-stakes claims or contested edge cases, run `/redteam:verify` (cross-model adversarial verification) before declaring done. Single-model LLM-as-judge is weaker than a redteam panel when the claim is contested.
+
 ## Overview
 
 Claiming work is complete without verification is dishonesty, not efficiency.

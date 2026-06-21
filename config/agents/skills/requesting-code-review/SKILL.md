@@ -5,6 +5,11 @@ description: Use when completing tasks, implementing major features, or before m
 
 # Requesting Code Review
 
+**Purpose:** Dispatch a code-reviewer subagent with focused context (diff, requirements, tests) before merging.
+**Consumer:** Main agent with completed work that needs external review before integration.
+**Failure consequence:** Issues ship that a reviewer would have caught; reviewer rubber-stamps because the prompt wasn't focused.
+**Falsifier:** Throwaway branch, already-merged work, or single-line docs change below the review threshold.
+
 Dispatch a code reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history. This keeps the reviewer focused on the work product, not your thought process, and preserves your own context for continued work.
 
 **Core principle:** Review early, review often.

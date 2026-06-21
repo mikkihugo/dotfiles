@@ -5,6 +5,11 @@ description: Use when receiving code review feedback, before implementing sugges
 
 # Code Review Reception
 
+**Purpose:** Evaluate code-review feedback on technical merit, not performative agreement.
+**Consumer:** Main agent in review state receiving reviewer notes.
+**Failure consequence:** Blind acceptance of wrong feedback, performative thank-yous, or defensive rejection of correct feedback all damage the work.
+**Falsifier:** Solo work with no reviewer present, or trivial cosmetic comment that doesn't affect behavior.
+
 ## Overview
 
 Code review requires technical evaluation, not emotional performance.

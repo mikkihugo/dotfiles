@@ -5,6 +5,11 @@ description: Use when executing a written implementation plan inline in the curr
 
 # Executing Plans
 
+**Purpose:** Execute a written plan step-by-step with verification checkpoints when subagents are unavailable or the plan is small enough for inline execution.
+**Consumer:** Main agent with no subagent access, or small plans where subagent dispatch overhead exceeds savings.
+**Failure consequence:** Steps skipped, ordering broken, or verification missed because no external review gates the work; partial completion claimed as full.
+**Falsifier:** The plan has fewer than 3 tasks, no shared state across steps, or no critical verification gate.
+
 ## Overview
 
 Load plan, review critically, execute all tasks, report when complete.

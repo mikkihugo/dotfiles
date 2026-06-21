@@ -13,6 +13,8 @@ Consumer: agents authoring or maintaining `SKILL.md` files and supporting skill
 assets.
 Failure consequence: bloated or untested skills misroute agents, duplicate
 doctrine, or create hidden exemptions.
+
+**Redteam forwarder:** Before declaring a new or modified skill done, run `/redteam:review` with the security (`hack`) lane on the skill file. Catches prompt-injection vectors in skill instructions, ambiguous phrasing that could be misinterpreted, missing doctrinal structure (Purpose/Consumer/Failure consequence/Falsifier), and missing `<SUBAGENT-STOP>` markers in main-agent-only skills.
 Falsifier: a skill edit reliably improves agent behavior without a baseline
 failure, verification scenario, or deployment check.
 

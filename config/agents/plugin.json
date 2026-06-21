@@ -1,0 +1,49 @@
+{
+  "name": "agent-harness-suite",
+  "version": "1.0.0",
+  "description": "Unified bundle: 19 process skills (brainstorming, planning, TDD, verification, review, finishing) + 2 redteam skills (adversarial review + result handling) + redteam implementation (commands, prompts, scripts, schemas).",
+  "author": {
+    "name": "mhugo",
+    "url": "https://github.com/mhugo"
+  },
+  "homepage": "https://github.com/mhugo/singularity-forge",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "process-skills",
+    "adversarial-review",
+    "redteam",
+    "claude-code",
+    "codex",
+    "kimi",
+    "copilot",
+    "pdd",
+    "tdd"
+  ],
+  "compatibility": "Designed for Claude Code, Codex CLI, GitHub Copilot CLI (skills layer only), and Kimi (via kimi.plugin.json sidecar)",
+  "skills": "./skills/",
+  "commands": "./redteam/commands/",
+  "hooks": "./hooks.json",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Agent Harness Suite",
+    "shortDescription": "19 process skills + redteam adversarial review",
+    "longDescription": "Unified bundle of process skills (brainstorming, writing-plans, subagent-driven-development, TDD, verification-before-completion, systematic-debugging, finishing-a-development-branch, quality-contracts, purpose-first-tdd, existing-capability-first, dispatching-parallel-agents, executing-plans, human-writing, instruction-writing, receiving/requesting-code-review, using-git-worktrees, writing-skills, using-skills, plus redteam adversarial review + result handling). Designed for cross-CLI portability per the Agent Skills open standard. Redteam is read-only and uses cross-model adversarial panels via /redteam:* commands.",
+    "developerName": "mhugo",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Search",
+      "Command"
+    ],
+    "websiteURL": "https://github.com/mhugo/singularity-forge",
+    "defaultPrompt": [
+      "/brainstorm",
+      "/writing-plans",
+      "/subagent-driven-development",
+      "/verification-before-completion",
+      "/redteam:review",
+      "/redteam:ultrareview"
+    ]
+  }
+}

@@ -67,6 +67,9 @@ When multiple skills apply:
    image, API, skill writing.
 6. Verification skills before claims: `verification-before-completion`,
    review/finish skills.
+6.5. Adversarial validation: when verification, finishing, or skill-writing
+   skills apply, also consider `/redteam:*` (adversarial review + decision
+   review + hack + verify). Redteam is read-only and cross-model.
 
 ## Red Flags
 

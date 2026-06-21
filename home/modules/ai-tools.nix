@@ -147,8 +147,10 @@
 
   # copilot-all — GitHub Copilot CLI via local centralcloud-ai-proxy that
   # routes to all models through umans.ai (GLM-5.2, Kimi K2.7, umans-flash)
-  # and minimax.io (MiniMax-M3). Main model is umans-glm (GLM-5.2, strongest
-  # for coding). Use Copilot subagent model overrides to assign different models
+  # and minimax.io (MiniMax-M3). Uses auto-routing: small requests (<4096
+  # tokens) go to umans-flash (fast/cheap), large requests go to umans-glm-5.2
+  # (strongest for coding). Falls back to umans-flash on primary failure.
+  # Use Copilot subagent model overrides to assign different models
   # per subagent type (e.g. explore→umans-flash, code-review→umans-kimi).
   copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
@@ -180,6 +182,10 @@
         --external-model "umans-kimi-k2.7@https://api.code.umans.ai/v1,$UMANS_API_KEY" \
         --external-model "umans-qwen3.6-35b-a3b@https://api.code.umans.ai/v1,$UMANS_API_KEY" \
         --external-model "minimax-m3@https://api.minimax.io/v1,$MINIMAX_API_KEY,model=MiniMax-M3" \
+        --auto-route-fast umans-qwen3.6-35b-a3b \
+        --auto-route-primary umans-glm-5.2 \
+        --auto-route-threshold 4096 \
+        --fallback-model umans-qwen3.6-35b-a3b \
         > "$HOME/.cache/centralcloud-ai-proxy.log" 2>&1 &
       for i in $(seq 1 10); do
         if curl -s http://127.0.0.1:8088/healthz 2>/dev/null | grep -q '"ok"'; then
@@ -197,7 +203,7 @@
     export COPILOT_PROVIDER_TYPE=openai
     export COPILOT_PROVIDER_BASE_URL=http://127.0.0.1:8088/v1
     export COPILOT_PROVIDER_API_KEY=copilot-edge
-    export COPILOT_MODEL=umans-glm
+    export COPILOT_MODEL=auto
     export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=405504
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
     exec "$copilot_bin" "$@"

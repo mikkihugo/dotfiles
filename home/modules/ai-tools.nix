@@ -198,7 +198,7 @@
     export COPILOT_PROVIDER_BASE_URL=http://127.0.0.1:8088/v1
     export COPILOT_PROVIDER_API_KEY=copilot-edge
     export COPILOT_MODEL=umans-glm
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=1000000
+    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=405504
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
     exec "$copilot_bin" "$@"
   '';

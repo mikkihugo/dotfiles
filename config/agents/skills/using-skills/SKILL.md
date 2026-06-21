@@ -49,6 +49,24 @@ Skip skill loading only for hard self-contained tasks such as:
 Any repo file, runtime, validator, prompt, plan, code, infra, or memory-dependent
 task is not self-contained.
 
+## Phase Awareness
+
+Load skills once per phase, not per command. A "phase" is a coherent work
+mode that may span multiple turns:
+
+- **Investigation phase:** load `systematic-debugging` or `existing-capability-first`
+  once, carry it through all inspection turns.
+- **Build-fix loop:** load `systematic-debugging` once. If the loop is
+  compiler-directed (API rename, missing import), note the fast-path exemption
+  (see below) and batch fixes without reloading per turn.
+- **Implementation phase:** load `test-driven-development` once, apply to all
+  code changes in the phase.
+- **Completion phase:** load `verification-before-completion` before any
+  completion claim.
+
+Reloading the same skill every turn wastes context. Instead, state which skills
+are active for the current phase and follow them.
+
 ## Priority
 
 User/repo instructions override skills. Skills override default habit.
@@ -81,5 +99,7 @@ Stop and check skills when thinking:
 - "I'll inspect one file first."
 - "This skill is probably overkill."
 - "I'll answer then verify."
+- "It's just a sed/regex fix." (compiler-directed fixes still need systematic-debugging's fast path)
+- "I'm in a build loop, skills don't apply." (load once per phase, not per command)
 
 Action is task. Task requires skill check.

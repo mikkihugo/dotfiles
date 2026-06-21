@@ -17,6 +17,24 @@ multiple failed attempts.
 Falsifier: the failure source is already proven by reproducible evidence and a
 minimal fix target is known.
 
+## Compiler-Directed Fast Path
+
+When the compiler/linter/type-checker output names the exact change needed
+(API rename, missing import, type mismatch with a clear fix), skip Phases 1–3
+and use this shortened loop:
+
+1. Read the error. Confirm it specifies both the old and new form.
+2. Search for all occurrences of the old form across the codebase.
+3. Apply all fixes in one batch (sed, multi-file edit, or subagent).
+4. Rebuild/check once. If new errors appear, classify each as compiler-directed
+   (repeat fast path) or unknown (fall back to full Phase 1).
+
+This fast path is NOT for:
+- Linker errors (undefined symbol — root cause may be feature flags, platform)
+- Runtime panics or test failures
+- "Expected X found Y" where the fix involves design decisions
+- Errors where the compiler suggests multiple possible fixes
+
 PDD link: name the affected `consumer`, broken `contract` or
 `failureBoundary`, current `evidence`, and `falsifier` before changing the
 system.
@@ -80,5 +98,6 @@ Stop when thinking:
 - "Add several changes, then test."
 - "I do not understand it, but this might work."
 - "One more fix" after repeated failures.
+- "The compiler said exactly what to change, I don't need to investigate." (use the compiler-directed fast path, don't skip the skill entirely)
 
 Return to evidence.

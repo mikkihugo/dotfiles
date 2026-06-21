@@ -8,7 +8,7 @@ description: Use when implementing any feature or bugfix, before writing impleme
 **Purpose:** Write a failing test before any implementation; minimal code to pass; refactor while green.
 **Consumer:** Main agent implementing new behavior or fixing a bug.
 **Failure consequence:** Untested behavior ships; regressions hide; test-after-coding proves nothing.
-**Falsifier:** Pure refactor (no behavior change), docs-only, test-only change, or pure-format work.
+**Falsifier:** Pure refactor (no behavior change), docs-only, test-only change, pure-format work, or compiler-directed dependency migration (API rename, import path change, feature flag rename where the compiler output specifies the exact old→new mapping and no logic changes).
 
 ## Overview
 

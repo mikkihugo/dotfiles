@@ -40,6 +40,17 @@ _: {
       force = true;
     };
 
+    # Mirror skills into per-agent dirs so Claude Code and Copilot CLI read
+    # the same canonical copy. force=true prevents silent divergence.
+    ".claude/skills" = {
+      source = ../../config/agents/skills;
+      force = true;
+    };
+    ".copilot/skills" = {
+      source = ../../config/agents/skills;
+      force = true;
+    };
+
     # SSH client config: host aliases for all servers (mail.hugo.dk, aidev, llm-gateway).
     # hetzner_id_ed25519 is rendered from SOPS by the renderHetznerSshKey activation hook.
     ".ssh/config" = {

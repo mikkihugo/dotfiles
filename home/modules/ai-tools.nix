@@ -169,6 +169,7 @@
     UMANS_API_KEY="$(cat "${sopsSecrets.umans_api_key.path}" 2>/dev/null || echo "")"
     MINIMAX_API_KEY="$(cat "${sopsSecrets.minimax_api_key.path}" 2>/dev/null || echo "")"
     GATEWAY_API_KEY="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
+    OLLAMA_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
 
     # Start centralcloud-ai-proxy if not already running on :8088
     if ! curl -s http://127.0.0.1:8088/healthz 2>/dev/null | grep -q '"ok"'; then
@@ -182,6 +183,10 @@
         --external-model "umans-kimi-k2.7@https://api.code.umans.ai/v1,$UMANS_API_KEY" \
         --external-model "umans-qwen3.6-35b-a3b@https://api.code.umans.ai/v1,$UMANS_API_KEY" \
         --external-model "minimax-m3@https://api.minimax.io/v1,$MINIMAX_API_KEY,model=MiniMax-M3" \
+        --external-model "ollama-glm-5.2@https://ollama.com/v1,$OLLAMA_API_KEY,model=glm-5.2" \
+        --external-model "ollama-kimi-k2.7@https://ollama.com/v1,$OLLAMA_API_KEY,model=kimi-k2.7-code" \
+        --external-model "ollama-deepseek-v4-pro@https://ollama.com/v1,$OLLAMA_API_KEY,model=deepseek-v4-pro" \
+        --external-model "ollama-qwen3-coder@https://ollama.com/v1,$OLLAMA_API_KEY,model=qwen3-coder:480b" \
         --auto-route-fast umans-qwen3.6-35b-a3b \
         --auto-route-primary umans-glm-5.2 \
         --auto-route-threshold 4096 \
@@ -201,12 +206,17 @@
       fi
     fi
 
+    export RUST_LOG=warn
     export COPILOT_PROVIDER_TYPE=openai
     export COPILOT_PROVIDER_BASE_URL=http://127.0.0.1:8088/v1
     export COPILOT_PROVIDER_API_KEY=copilot-edge
     export COPILOT_MODEL=auto
     export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=405504
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
+
+    # Patch app.js to show all models in /model selector (BYOK mode shows only COPILOT_MODEL by default)
+    node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
+
     exec "$copilot_bin" "$@"
   '';
 in {

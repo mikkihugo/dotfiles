@@ -185,6 +185,23 @@
       exit 1
     fi
 
+    # Keep @github/copilot on the newest npm release. The copilot CLI's own
+    # self-updater does not work when we disable the native binary in favour
+    # of the patched JS bundle, and mise's `latest` pin is only refreshed on
+    # `mise upgrade`. Throttle to once per hour so every invocation is not a
+    # round-trip to the npm registry.
+    upgrade_stamp="$HOME/.cache/copilot-all-last-upgrade"
+    mkdir -p "$(dirname "$upgrade_stamp")"
+    if [ ! -f "$upgrade_stamp" ] || [ "$(find "$upgrade_stamp" -mmin +60 2>/dev/null)" ]; then
+      if mise upgrade --yes "npm:@github/copilot" >/dev/null 2>&1; then
+        touch "$upgrade_stamp"
+      else
+        # Upgrade failure is non-fatal; the installed version may still work.
+        touch "$upgrade_stamp"
+        echo "copilot-all: mise upgrade failed (will retry in 1 hour)" >&2
+      fi
+    fi
+
     export RUST_LOG=warn
     export COPILOT_PROVIDER_TYPE=openai
     export COPILOT_PROVIDER_BASE_URL="$sidecar_url/v1"
@@ -193,9 +210,22 @@
     export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=405504
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
 
-    # Patch app.js to show all models in /model selector (BYOK mode shows only COPILOT_MODEL by default)
+    # Patch the Copilot JS bundle so BYOK mode shows every model from the
+    # provider's /v1/models endpoint instead of only COPILOT_MODEL. The npm
+    # package layout changed in 1.0.64: app.js lives in the optional platform
+    # package, and the `copilot` shim tries the native binary first, so we run
+    # the patched node bundle directly.
     node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
 
+    copilot_app="$HOME/.local/share/mise/installs/npm-github-copilot/latest/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/app.js"
+    if [ -f "$copilot_app" ]; then
+      exec node "$copilot_app" "$@"
+    fi
+    # Fallback for pre-1.0.64 layout where app.js was in the root package.
+    fallback_app="$HOME/.local/share/mise/installs/npm-github-copilot/latest/lib/node_modules/@github/copilot/app.js"
+    if [ -f "$fallback_app" ]; then
+      exec node "$fallback_app" "$@"
+    fi
     exec "$copilot_bin" "$@"
   '';
 in {

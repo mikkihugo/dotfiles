@@ -8,21 +8,33 @@ description: Use when the operator says diag, diag sf, run diag, do a diag, chec
 One-shot, evidence-first scan of SF runtime state. Read-only by default.
 
 **Purpose:** surface every concrete SF runtime signal in one pass so the
-operator (and the agent) can act on evidence rather than guesses.
+operator (and the agent) can act on evidence rather than guesses. This
+includes both hard failures (errors, permission denials, crashes) and
+soft outcome degradation: SF may be running and emitting no errors while
+still producing wrong or sub-optimal results at the prompt/decision level
+(ignored instructions, poor tool selection, model routing regressions,
+repetitive supervisor empty-responses, triage grounding loss).
 
 **Consumer:** any AI agent (Copilot CLI, Claude Code, Gemini) running on the
 host with `.sf/` and kubectl access, called in response to a "diag" /
 "check sf" / "scan traces" / "is sf ok" / "anything flapping" type request.
 
-**Failure consequence:** agents answer "looks fine" while a degraded condition
-is sitting in another backend (Laminar span, advisory lock, blocked model
-lane, code-index grant gap); operators restart pods or edit code without
-seeing the real cause.
+**Failure consequence:** agents answer "looks fine" while SF is either broken
+or under-performing: hard errors hidden in another backend, permission
+denials degrading retrieval, or the supervisor/children producing empty or
+off-policy outcomes that the user experiences as "not following instructions".
+In all cases operators restart pods or edit code without seeing the real
+cause.
 
 **Falsifier:** a run that returns "everything looks fine" while any of the
 following are true in the system:
 
 - `process-supervisor.json` has `state != "running"` for any required child,
+- `process-supervisor.json` has `recentRestartCount > 0` or `restartCount > 3`
+  for any required child,
+- `/api/ready` or `/api/healthz` returns `ready: false` or a failing check,
+- `kubectl get events -n sf-server` shows unreported Warning events in the
+  last 15 minutes,
 - `uok-diagnostics.json` `classification != "healthy"`,
 - `uok-parity-report.json` `currentErrorEvents > 0` or
   `criticalMismatches > 0`,
@@ -33,7 +45,12 @@ following are true in the system:
   are in the journal,
 - `sf_code_index_state` has `status='failed'` or `error IS NOT NULL`,
 - a pod has `restartCount > 3`,
-- an `auto-exit` with `reason="flow-audit:recent-errors"` is unreported.
+- an `auto-exit` with `reason="flow-audit:recent-errors"` is unreported,
+- `supervisor-agent:*` traces show repeated `empty-response`, `runner-error`,
+  `tick-degraded`, or `grounding degraded` decisions,
+- recent journal triage entries show `review-gate-blocked`,
+  `review-code-disagree`, or `challenger-override` clusters that correlate
+  with user-facing "ignored instruction" reports.
 
 If any of those are present but missing from the summary, the scan is broken —
 fix the skill, don't soften the output.
@@ -64,11 +81,25 @@ Do NOT use when:
 Run Steps 0 -> 10 in order. Skip a step only if its precondition fails.
 Quote ISO timestamps in the summary.
 
-**MCP-first:** When the `observability` MCP server is reachable, call
-`sf_health` first — it returns code index state, advisory locks, blocked
-models, and SHA drift in one call. This replaces the manual kubectl-exec
-into the CNPG primary pod for Steps 3 and 9. Fall back to kubectl only
-when the MCP is unreachable or `sf_health` returns an error.
+**MCP-first:** Start each MCP-dependent step by confirming the
+`observability` MCP server is actually answering:
+
+1. Call `observability_status`.
+2. If all backends report `ok: true`, use MCP tools (`sf_health`,
+   `trace_find_errors`, `cluster_logs_errors`, etc.).
+3. If `observability_status` reports `ok: false` or a tool call returns
+   a fetch/connection error, retry the tool **once**. If it still fails,
+   fall back to the kubectl commands documented for that step and surface
+   the MCP degradation explicitly in the output (e.g. "MCP status: partial;
+   Laminar via kubectl fallback").
+
+This avoids silently missing data when the MCP server is partially
+reachable (observability_status succeeds but a specific tool endpoint is
+degraded) or when a transient fetch failure occurs mid-scan. `sf_health`
+is still the first MCP call after the status probe because it returns
+code-index state, advisory locks, blocked models, and SHA drift in one
+round-trip, replacing the manual CNPG queries in Steps 3 and 9 when it
+succeeds.
 
 ### Step 0 -- Tooling health (cheap, run first)
 
@@ -121,6 +152,23 @@ ls -t .sf/traces/supervisor-agent:*.jsonl 2>/dev/null | head -3 | \
 grep -E '"(auto-exit|triage-apply-failed|server-shutdown-signal|code-index-freshness-error|host-error)"' \
   .sf/journal/${DATE}.jsonl | tail -n 20
 ```
+
+Pay attention to **outcome-quality signals**, not just errors:
+- `workflow-command-complete` events where `data.outcome` is `fail` or `block`.
+- `triage-apply-*` events clustered with `review-gate-blocked`,
+  `review-code-disagree`, or `challenger-override` — these indicate the
+  autonomous review loop is disagreeing with itself, which often surfaces
+  to users as "SF didn't follow the instruction."
+- `supervisor-agent:*` trace `type` values:
+  - `supervisor-agent-tick-degraded`, `supervisor-agent-decision` with
+    `feedbackKind=supervisor-agent:tick-degraded`
+  - `deterministicFailure` or `runner-error`
+  - `empty-response`
+  - `autonomous-proposer-triggered` with no subsequent queued milestones
+
+These are soft-failure modes: no crash, no ERROR span, but the expected
+outcome (a dispatched unit, a merged triage, a resumed milestone) was not
+produced.
 
 Note: `code-index-freshness-error` events now include `data.error` with the
 actual error message — check it instead of kubectl-exec for the cause.
@@ -229,13 +277,33 @@ Note: `Active Milestone: None` + `Phase: pre-planning` is normal. Do not
 silently dispatch units against parked milestones -- wait for explicit
 `/unpark <id>`.
 
-### Step 6 -- Pod-level evidence (only if 1-5 point at pod issues)
+### Step 5b -- Server readiness probe (always run)
+
+The HTTP readiness and health endpoints are cheap and authoritative. Run
+them from inside the pod so they exercise the same network path as the
+web client, not just the local host loopback.
+
+```bash
+POD=$(kubectl get pods -n sf-server -l app.kubernetes.io/name=sf-server -o jsonpath='{.items[0].metadata.name}')
+kubectl exec -n sf-server "$POD" -- curl -fsS http://localhost:4000/api/ready | head -c 500
+kubectl exec -n sf-server "$POD" -- curl -fsS http://localhost:4000/api/healthz | head -c 500
+```
+
+Report `ready: false`, any failing `checks.*` field, or `db.backend`
+without `db.urlConfigured`.
+
+### Step 6 -- Pod-level evidence (always run)
+
+Pod-level evidence is no longer conditional: warning events, recent
+restarts, and supervisor process state catch degradation before the
+journal/Laminar paths surface it.
 
 ```bash
 kubectl get pods -n sf-server -l app.kubernetes.io/name=sf-server -o wide
+kubectl get events -n sf-server --field-selector type=Warning --sort-by='.lastTimestamp' | tail -10
 POD=$(kubectl get pods -n sf-server -l app.kubernetes.io/name=sf-server -o jsonpath='{.items[0].metadata.name}')
 kubectl logs -n sf-server "$POD" --tail=200 | \
-  grep -E 'sf-server|code-index|tokenizer|VectorChord|planning-flow-gate|zero-progress|SIGTERM|Unhandled'
+  grep -E 'sf-server|code-index|tokenizer|VectorChord|planning-flow-gate|zero-progress|SIGTERM|Unhandled|permission denied|stream idle|write lost'
 kubectl exec -n sf-server "$POD" -- ps aux | grep -E 'sf:|supervisor|tini' | sort -k11
 kubectl exec -n sf-server "$POD" -- sh -c '
   cd /home/mhugo/code/singularity-forge &&
@@ -328,6 +396,8 @@ Use this verbatim so scans can be diffed over time:
 - autonomous flow:    <running|paused (reason)|halted (reason)>
 - metrics flush:      <N> successes, last <N>ms, db_status=<0|1>
 - blocked model lanes: <N> providers (<list>)
+- server readiness:   <ready|not ready>  ready checks: <pass|fail list>
+- pod warning events: <N> in last 15m
 
 ### Today's journal (<N> entries)
 - top: <type>=<count> ...

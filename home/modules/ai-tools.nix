@@ -174,9 +174,10 @@
       exit 1
     fi
     # Ensure the port-forward is active. The systemd --user service is
-    # enabled by activation.nix; this is a defensive preflight so a
-    # `systemctl --user start` failure (after a `daemon-reload` race)
-    # surfaces a clear error before copilot hangs.
+    # declared below (systemd.user.services.llm-gateway-sidecar-forward);
+    # this is a defensive preflight so a `systemctl --user start` failure
+    # (after a `daemon-reload` race) surfaces a clear error before copilot
+    # hangs.
     if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
         "$sidecar_url/v1/models" >/dev/null 2>&1; then
       echo "copilot-all: sidecar at $sidecar_url not reachable" >&2
@@ -276,4 +277,24 @@ in {
     llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
   ];
+
+  # Localhost bridge to the in-cluster centralcloud-ai-proxy sidecar
+  # (svc/llm-gateway:8088 in the inference-fabric namespace). This is the
+  # path copilot-all / hermes / SF use to share the umans max-concurrent
+  # cap. Previously installed out-of-band; declared here so it is rebuilt
+  # reproducibly on every host.
+  systemd.user.services.llm-gateway-sidecar-forward = {
+    Unit = {
+      Description = "Localhost bridge to in-cluster llm-gateway centralcloud-ai-proxy sidecar (shared umans max-concurrent cap)";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "${pkgs.kubectl}/bin/kubectl -n inference-fabric port-forward --address 127.0.0.1 svc/llm-gateway 18088:8088";
+      Restart = "always";
+      RestartSec = "5s";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
 }

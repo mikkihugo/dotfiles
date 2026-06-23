@@ -145,71 +145,49 @@
     exec "$copilot_bin" "$@"
   '';
 
-  # copilot-all — GitHub Copilot CLI via local centralcloud-ai-proxy that
-  # routes to all models through umans.ai (GLM-5.2, Kimi K2.7, umans-flash)
-  # and minimax.io (MiniMax-M3). Uses auto-routing: small requests (<4096
-  # tokens) go to umans-flash (fast/cheap), large requests go to umans-glm-5.2
-  # (strongest for coding). Falls back to umans-flash on primary failure.
-  # Use Copilot subagent model overrides to assign different models
-  # per subagent type (e.g. explore→umans-flash, code-review→umans-kimi).
+  # copilot-all — GitHub Copilot CLI routed through the in-cluster
+  # centralcloud-ai-proxy SIDECAR (svc/llm-gateway:8088 in inference-fabric
+  # namespace). The sidecar is reached on the host via the systemd --user
+  # port-forward `llm-gateway-sidecar-forward.service` (127.0.0.1:18088).
+  #
+  # Why the sidecar and not a locally-spawned proxy:
+  # - The sidecar is the SAME instance hermes + SF hit, so copilot
+  #   shares its CENTRALCLOUD_AI_MAX_CONCURRENT_CHAT=4 umans cap.
+  # - The sidecar has the canonical model aliases (auto, auto-fast,
+  #   auto-code, auto-glm, auto-kimi, auto-minimax), the umans/ollama/
+  #   minimax external model endpoints, AND the fallback chains.
+  # - No local build of the Rust binary required.
+  #
+  # Going direct to api.code.umans.ai or via the public
+  # llm-gateway.centralcloud.com 503s / bypasses the umans cap. The
+  # in-cluster sidecar port is the only working path for copilot.
   copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    proxy_bin="$HOME/code/inference-fabric/target/debug/centralcloud-ai-proxy"
+    sidecar_url="http://127.0.0.1:18088"
+    edge_token="$(cat "${sopsSecrets.umans_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-all: expected mise GitHub Copilot CLI at $copilot_bin" >&2
       exit 127
     fi
-    if [ ! -x "$proxy_bin" ]; then
-      echo "copilot-all: expected centralcloud-ai-proxy at $proxy_bin" >&2
-      echo "  Build with: cd ~/code/inference-fabric && nix develop -c cargo build -p centralcloud-ai-proxy" >&2
-      exit 127
+    if [ -z "$edge_token" ]; then
+      echo "copilot-all: failed to read umans_api_key SOPS secret" >&2
+      exit 1
     fi
-
-    # Read API keys from SOPS
-    UMANS_API_KEY="$(cat "${sopsSecrets.umans_api_key.path}" 2>/dev/null || echo "")"
-    MINIMAX_API_KEY="$(cat "${sopsSecrets.minimax_api_key.path}" 2>/dev/null || echo "")"
-    GATEWAY_API_KEY="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
-    OLLAMA_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
-
-    # Start centralcloud-ai-proxy if not already running on :8088
-    if ! curl -s http://127.0.0.1:8088/healthz 2>/dev/null | grep -q '"ok"'; then
-      echo "copilot-all: starting centralcloud-ai-proxy on :8088…" >&2
-      "$proxy_bin" \
-        --listen-host 127.0.0.1 --port 8088 \
-        --upstream https://llm-gateway.centralcloud.com \
-        --upstream-token "$GATEWAY_API_KEY" \
-        --edge-token "copilot-edge" \
-        --external-model "umans-glm-5.2@https://api.code.umans.ai/v1,$UMANS_API_KEY" \
-        --external-model "umans-kimi-k2.7@https://api.code.umans.ai/v1,$UMANS_API_KEY" \
-        --external-model "umans-qwen3.6-35b-a3b@https://api.code.umans.ai/v1,$UMANS_API_KEY" \
-        --external-model "minimax-m3@https://api.minimax.io/v1,$MINIMAX_API_KEY,model=MiniMax-M3" \
-        --external-model "ollama-glm-5.2@https://ollama.com/v1,$OLLAMA_API_KEY,model=glm-5.2" \
-        --external-model "ollama-kimi-k2.7@https://ollama.com/v1,$OLLAMA_API_KEY,model=kimi-k2.7-code" \
-        --external-model "ollama-deepseek-v4-pro@https://ollama.com/v1,$OLLAMA_API_KEY,model=deepseek-v4-pro" \
-        --external-model "ollama-qwen3-coder@https://ollama.com/v1,$OLLAMA_API_KEY,model=qwen3-coder:480b" \
-        --auto-route-fast umans-qwen3.6-35b-a3b \
-        --auto-route-primary umans-glm-5.2 \
-        --auto-route-threshold 4096 \
-        --fallback-model umans-qwen3.6-35b-a3b \
-        --rate-limit-per-minute 60 \
-        > "$HOME/.cache/centralcloud-ai-proxy.log" 2>&1 &
-      for i in $(seq 1 10); do
-        if curl -s http://127.0.0.1:8088/healthz 2>/dev/null | grep -q '"ok"'; then
-          echo "copilot-all: centralcloud-ai-proxy ready" >&2
-          break
-        fi
-        sleep 1
-      done
-      if ! curl -s http://127.0.0.1:8088/healthz 2>/dev/null | grep -q '"ok"'; then
-        echo "copilot-all: centralcloud-ai-proxy failed to start, see ~/.cache/centralcloud-ai-proxy.log" >&2
-        exit 1
-      fi
+    # Ensure the port-forward is active. The systemd --user service is
+    # enabled by activation.nix; this is a defensive preflight so a
+    # `systemctl --user start` failure (after a `daemon-reload` race)
+    # surfaces a clear error before copilot hangs.
+    if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
+        "$sidecar_url/v1/models" >/dev/null 2>&1; then
+      echo "copilot-all: sidecar at $sidecar_url not reachable" >&2
+      echo "  Try: systemctl --user restart llm-gateway-sidecar-forward.service" >&2
+      exit 1
     fi
 
     export RUST_LOG=warn
     export COPILOT_PROVIDER_TYPE=openai
-    export COPILOT_PROVIDER_BASE_URL=http://127.0.0.1:8088/v1
-    export COPILOT_PROVIDER_API_KEY=copilot-edge
+    export COPILOT_PROVIDER_BASE_URL="$sidecar_url/v1"
+    export COPILOT_PROVIDER_API_KEY="$edge_token"
     export COPILOT_MODEL=auto
     export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=405504
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072

@@ -64,6 +64,12 @@ Do NOT use when:
 Run Steps 0 -> 10 in order. Skip a step only if its precondition fails.
 Quote ISO timestamps in the summary.
 
+**MCP-first:** When the `observability` MCP server is reachable, call
+`sf_health` first — it returns code index state, advisory locks, blocked
+models, and SHA drift in one call. This replaces the manual kubectl-exec
+into the CNPG primary pod for Steps 3 and 9. Fall back to kubectl only
+when the MCP is unreachable or `sf_health` returns an error.
+
 ### Step 0 -- Tooling health (cheap, run first)
 
 ```bash
@@ -75,19 +81,31 @@ If `dist/loader.js` is older than `src/loader.ts`, `bin/sf-from-source` will
 trigger `build:core` mid-scan and mask what you're observing. Either
 `kubectl exec` into the pod, or warn the operator and stop.
 
-### Step 1 -- Process supervisor & runtime projection
+### Step 1 -- SF runtime health (MCP `sf_health` + host files)
+
+Call `sf_health` via the observability MCP. This returns:
+- `codeIndexes[]` — per-repo: status, chunkCount, commitSha, headSha, shaDrift
+- `advisoryLocks[]` — lock holder pid, state, clientAddr, ageSeconds
+- `blockedModelsByRepo` — blocked providers per project
+
+Then read the host-side runtime files (MCP doesn't have filesystem access):
 
 ```bash
 cat .sf/runtime/process-supervisor.json            # web + headless-supervisor running?
 cat .sf/runtime/uok-diagnostics.json              # verdict, classification, issues
 cat .sf/runtime/uok-parity-report.json | jq '{criticalMismatches,currentErrorEvents,freshUnmatchedRuns,liveAutoLock,statuses}'
 cat .sf/runtime/sf-metrics.prom                   # flush_success_total, flush_duration_ms, database_status
-cat .sf/runtime/blocked-models.json                # blocked providers + expiresAt
 cat .sf/runtime/supervisor-intentional-pause-hold.json 2>/dev/null
 cat .sf/runtime/triage-hold-cooldown.json 2>/dev/null
 cat .sf/runtime/halt-state.json 2>/dev/null
 cat .sf/runtime/last-triage-at
 cat .sf/runtime/last-progress.json 2>/dev/null
+```
+
+If `sf_health` MCP is unavailable, read blocked models from host files:
+
+```bash
+cat .sf/runtime/blocked-models.json
 ```
 
 ### Step 2 -- Journal + supervisor traces (today, host tree)
@@ -104,6 +122,9 @@ grep -E '"(auto-exit|triage-apply-failed|server-shutdown-signal|code-index-fresh
   .sf/journal/${DATE}.jsonl | tail -n 20
 ```
 
+Note: `code-index-freshness-error` events now include `data.error` with the
+actual error message — check it instead of kubectl-exec for the cause.
+
 ### Step 2a -- `sf headless trajectory` (repo-native timeline)
 
 ```bash
@@ -115,11 +136,15 @@ timeout 30 ./bin/sf-from-source headless trajectory \
 Joins journal + Laminar + state DB rows. Skip if Step 0 warned about
 stale dist (rebuild would mask the scan).
 
-### Step 3 -- Postgres advisory lock + failed feedback queue
+### Step 3 -- Advisory lock + failed feedback queue
+
+**Advisory locks come from `sf_health` (Step 1).** Only run the manual
+kubectl query if the MCP was unavailable:
 
 ```bash
 tail -n 3 .sf/runtime/sf-feedback-queue-failed.jsonl | jq -c '{queuedAt,id,subcommand,failure:.failure[0:200]}'
 tail -n 3 .sf/runtime/sf-reconcile-queue-failed.jsonl 2>/dev/null
+# Fallback only — sf_health MCP already returned this:
 SF_PG_POD=$(scripts/sf-pg-pod.sh)
 kubectl -n databases exec "$SF_PG_POD" -c postgres -- psql -tAX sf_production -c "
   SELECT l.pid, l.granted, a.client_addr, a.state, a.backend_start,
@@ -135,7 +160,11 @@ operator terminates it.
 
 ### Step 4 -- Laminar error spans (last 1h)
 
+**Preferred: use observability MCP `trace_find_errors` and `trace_summarize`.**
+Fallback to kubectl if MCP is unreachable:
+
 ```bash
+# Fallback only — prefer trace_find_errors MCP tool
 kubectl -n monitoring exec laminar-clickhouse-0 -- clickhouse-client -q "
   SELECT name,
          simpleJSONExtractString(attributes, 'sf.worker') AS worker,
@@ -167,16 +196,20 @@ kubectl -n monitoring exec laminar-clickhouse-0 -- clickhouse-client -q "
 When the `observability` MCP server is reachable, use its bounded read-only
 tools: `observability_status`, `trace_list_services`, `trace_find`,
 `trace_find_errors`, `trace_get <trace_id>`, `trace_summarize <trace_id>`,
-`cluster_logs_search`, `cluster_logs_errors`, `cluster_logs_top`.
+`cluster_logs_search`, `cluster_logs_errors`, `cluster_logs_top`,
+`sf_health`.
 
 **Backend degradation is not MCP disconnection.** `observability_status`
 reporting `clusterLogsClickHouse: "fetch failed"` while Laminar / Loki are
 reachable means the cluster-logs backend is degraded -- surface it
 explicitly, do not mistake it for "no errors".
 
-### Step 4b -- Cluster-logs ClickHouse (Vector-captured stdout/stderr)
+### Step 4b -- Cluster-logs (MCP `cluster_logs_errors` or kubectl fallback)
+
+**Preferred: `cluster_logs_errors` MCP tool.** Fallback:
 
 ```bash
+# Fallback only — prefer cluster_logs_errors MCP tool
 kubectl -n monitoring exec cluster-logs-clickhouse-0 -- clickhouse-client -q "
   SELECT timestamp, namespace, pod, message
   FROM cluster_logs.logs
@@ -231,7 +264,8 @@ pod log line that matched.
 
 | Component | Cluster address | Port | Use |
 |---|---|---|---|
-| Observability MCP | `observability-mcp.centralcloud-mcp.svc.cluster.local` | 8097 | Bounded trace + log search (first stop) |
+| Observability MCP | `observability-mcp.centralcloud-mcp.svc.cluster.local` | 8097 | Bounded trace + log search + `sf_health` (first stop) |
+| SF Server | `sf-server.sf-server.svc.cluster.local` | 4000 | `/api/health/sf` (called by MCP `sf_health` tool) |
 | Laminar App Server | `laminar-app-server.monitoring.svc.cluster.local` | 8000 / 8002 (REST), 8001 (gRPC) | OTLP ingest + REST query |
 | Laminar Query Engine | `laminar-query-engine.monitoring.svc.cluster.local` | 8903 | gRPC; not for direct curl |
 | Laminar ClickHouse | `laminar-clickhouse.monitoring.svc.cluster.local` | 8123 | Spans / traces / signal events / Laminar logs |
@@ -242,6 +276,12 @@ pod log line that matched.
 
 ### Step 9 -- VectorChord / code index health
 
+**Code index state comes from `sf_health` (Step 1).** The `codeIndexes[]`
+array includes repo, status, chunkCount, commitSha, headSha, and shaDrift.
+
+Only run the manual kubectl queries if `sf_health` was unavailable or
+you need the extension/grant details:
+
 ```bash
 SF_PG_POD=$(scripts/sf-pg-pod.sh)
 
@@ -249,11 +289,6 @@ SF_PG_POD=$(scripts/sf-pg-pod.sh)
 kubectl -n databases exec "$SF_PG_POD" -c postgres -- psql -tAX sf_production -c "
   SELECT extname, extversion FROM pg_extension
   WHERE extname ~ 'vector|vchord|tokenizer' ORDER BY extname;"
-
-# Per-project index state (keyed by repo_identity)
-kubectl -n databases exec "$SF_PG_POD" -c postgres -- psql -tAX sf_production -c "
-  SELECT repo_identity, status, chunk_count, error IS NOT NULL AS has_err, indexed_at
-  FROM sf_code_index_state ORDER BY indexed_at DESC LIMIT 10;"
 
 # Grant check for the degraded case
 kubectl -n databases exec "$SF_PG_POD" -c postgres -- psql -tAX sf_production -c "
@@ -263,8 +298,9 @@ kubectl -n databases exec "$SF_PG_POD" -c postgres -- psql -tAX sf_production -c
   ORDER BY table_name, privilege_type;"
 ```
 
-Cross-check `code-index-freshness-error` events in the journal -- when those
-are present and grants are missing, that's the diagnosis.
+Cross-check `code-index-freshness-error` events in the journal (now with
+`data.error`) — when those are present and grants are missing, that's the
+diagnosis.
 
 ### Step 10 -- Decision rules
 
@@ -310,10 +346,10 @@ Use this verbatim so scans can be diffed over time:
 - <name> on <worker>: <cnt>
 - latest error span: <name> -- <exception.type>: <exception.message first 80 chars>
 
-### VectorChord / code index (if probed)
-- extensions: vector=<ver>, vchord=<ver>, pg_tokenizer=<ver>, vchord_bm25=<ver>
-- sf_code_index_state: <N> repos, <status counts>
-- tokenizer_catalog grant: <present|absent>  bm25_catalog grant: <present|absent>
+### VectorChord / code index (via sf_health MCP or kubectl)
+- code indexes: <N> repos, <status counts>, shaDrift=<true/false per repo>
+- extensions: vector=<ver>, vchord=<ver>, pg_tokenizer=<ver>, vchord_bm25=<ver> (kubectl only)
+- tokenizer_catalog grant: <present|absent>  bm25_catalog grant: <present|absent> (kubectl only)
 
 ### STATE.md
 - phase: <pre-planning|...>  active milestone: <id or None>  next action: <text>

@@ -176,5 +176,30 @@ in {
         echo "@opencode-ai/sdk ready — import via: const { OpencodeClient } = require('@opencode-ai/sdk')" || \
         echo "WARNING: @opencode-ai/sdk install failed" >&2
     '';
+
+    # Redteam plugin deps — bare-specifier ESM imports in
+    # config/agents/redteam/scripts/*.mjs (e.g. `import { jsonrepair } from "jsonrepair"`)
+    # require a local node_modules. The package.json declares some `file:`
+    # dependencies that resolve to a sibling kimi-code checkout which may not
+    # exist on every machine — `npm install --no-save --no-package-lock`
+    # fetches the registry deps (jsonrepair, ajv, linkedom, ...) while
+    # skipping the broken file: links, so the scripts can resolve bare
+    # specifiers without forcing a kimi-code checkout.
+    installRedteamDeps = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      REDTEAM_DIR="$HOME/.dotfiles/config/agents/redteam"
+      if [ -f "$REDTEAM_DIR/package.json" ]; then
+        echo "Refreshing redteam plugin deps (npm registry only, skips file: links)..."
+        cd "$REDTEAM_DIR"
+        PATH="${USER_TOOL_PATH}:$PATH" \
+        ${pkgs.nodejs}/bin/npm install \
+          --no-save --no-package-lock --prefer-offline \
+          --omit=optional --ignore-scripts 2>&1 | tail -5
+        if [ -d "$REDTEAM_DIR/node_modules/jsonrepair" ]; then
+          echo "redteam deps ready (jsonrepair resolvable)"
+        else
+          echo "WARNING: jsonrepair not installed in $REDTEAM_DIR/node_modules" >&2
+        fi
+      fi
+    '';
   };
 }

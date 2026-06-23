@@ -39,5 +39,15 @@ claude-squad = "latest"
 "npm:droid" = "latest"
 azure-cli = { version = "2.87.0", uvx_args = "--prerelease=allow" }
 
+[env]
+# kimi-code reads this from process.env (resolveCompletionBudget) — it is NOT a
+# kimi-code config.toml key, and the `kimi` launcher is a compiled binary. Caps
+# compaction (and turn) max_completion_tokens below provider output limits, which
+# fixes the compaction APIContextOverflowError on non-clamping providers like
+# ollama-cloud. 32768 is safe across the configured model set; raise toward 65536
+# if you only use models whose real output limit is >= 131072 (e.g. devstral-2:123b).
+# See MoonshotAI/kimi-code PR #829.
+KIMI_MODEL_MAX_COMPLETION_TOKENS = "32768"
+
 [settings]
 yes = true

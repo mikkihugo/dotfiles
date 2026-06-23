@@ -1,5 +1,6 @@
 # Build artifacts
 tools/*/node_modules/
+**/node_modules/
 *.gguf
 
 # Backup files

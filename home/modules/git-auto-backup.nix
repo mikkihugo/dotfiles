@@ -109,6 +109,26 @@
       fi
     }
 
+    mirror_branch_to_remote() {
+      # Mirror the committed branch HEAD to an additional remote (e.g. the public
+      # github mirror alongside the private forgejo origin). Branch history only;
+      # callers do NOT send dirty WIP snapshots here. Best-effort and non-fatal:
+      # on divergence we stash a force-pushed backup ref instead of the branch.
+      local repo="$1" remote="$2" branch="$3" slug="$4" backup_ref
+      [ "$branch" = "detached" ] && return 0
+      if ${pkgs.git}/bin/git -C "$repo" push --quiet "$remote" "HEAD:$branch" 2>/dev/null; then
+        echo "mirror-ok $repo $remote $branch"
+        return 0
+      fi
+      backup_ref="refs/backup/$host/$slug/$branch/head"
+      if ${pkgs.git}/bin/git -C "$repo" push --quiet --force "$remote" "HEAD:$backup_ref" 2>/dev/null; then
+        echo "mirror-diverged-backup $repo $remote $backup_ref"
+        return 0
+      fi
+      echo "mirror-push-failed $repo $remote $branch"
+      return 1
+    }
+
     handle_repo() {
       local repo="$1" remote branch slug dirty
       repo="$(${pkgs.git}/bin/git -C "$repo" rev-parse --show-toplevel 2>/dev/null || true)"
@@ -136,6 +156,18 @@
       if [ "$dirty" -gt 0 ]; then
         push_dirty_ref "$repo" "$remote" "$branch" "$slug" || echo "dirty-backup-failed $repo"
       fi
+
+      # Always keep the committed branch on every configured remote — e.g. the
+      # public github mirror alongside the primary forgejo/origin. Dirty WIP
+      # snapshots above stay on the primary only (not leaked to public mirrors).
+      while IFS= read -r other; do
+        [ -n "$other" ] || continue
+        [ "$other" = "$remote" ] && continue
+        # 'upstream' by convention is a third-party repo you forked and cannot
+        # push to — skip it so we don't retry a guaranteed failure every run.
+        [ "$other" = "upstream" ] && continue
+        mirror_branch_to_remote "$repo" "$other" "$branch" "$slug" || echo "mirror-failed $repo $other"
+      done < <(${pkgs.git}/bin/git -C "$repo" remote)
     }
 
     {

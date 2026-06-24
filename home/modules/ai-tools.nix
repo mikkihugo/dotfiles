@@ -145,25 +145,12 @@
     exec "$copilot_bin" "$@"
   '';
 
-  # copilot-all — GitHub Copilot CLI routed through the in-cluster
-  # centralcloud-ai-proxy SIDECAR (svc/llm-gateway:8088 in inference-fabric
-  # namespace). The sidecar is reached on the host via the systemd --user
-  # port-forward `llm-gateway-sidecar-forward.service` (127.0.0.1:18088).
-  #
-  # Why the sidecar and not a locally-spawned proxy:
-  # - The sidecar is the SAME instance hermes + SF hit, so copilot
-  #   shares its CENTRALCLOUD_AI_MAX_CONCURRENT_CHAT=4 umans cap.
-  # - The sidecar has the canonical model aliases (auto, auto-fast,
-  #   auto-code, auto-glm, auto-kimi, auto-minimax), the umans/ollama/
-  #   minimax external model endpoints, AND the fallback chains.
-  # - No local build of the Rust binary required.
-  #
-  # Going direct to api.code.umans.ai or via the public
-  # llm-gateway.centralcloud.com 503s / bypasses the umans cap. The
-  # in-cluster sidecar port is the only working path for copilot.
+  # copilot-all — GitHub Copilot CLI routed through the centralcloud-ai-proxy
+  # at llm-gateway.centralcloud.com (the external DNS name for the
+  # inference-fabric-edge service). No port-forward needed.
   copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    sidecar_url="http://127.0.0.1:18088"
+    gateway_url="https://llm-gateway.centralcloud.com"
     edge_token="$(cat "${sopsSecrets.umans_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-all: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -173,15 +160,9 @@
       echo "copilot-all: failed to read umans_api_key SOPS secret" >&2
       exit 1
     fi
-    # Ensure the port-forward is active. The systemd --user service is
-    # declared below (systemd.user.services.llm-gateway-sidecar-forward);
-    # this is a defensive preflight so a `systemctl --user start` failure
-    # (after a `daemon-reload` race) surfaces a clear error before copilot
-    # hangs.
     if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
-        "$sidecar_url/v1/models" >/dev/null 2>&1; then
-      echo "copilot-all: sidecar at $sidecar_url not reachable" >&2
-      echo "  Try: systemctl --user restart llm-gateway-sidecar-forward.service" >&2
+        "$gateway_url/v1/models" >/dev/null 2>&1; then
+      echo "copilot-all: gateway at $gateway_url not reachable" >&2
       exit 1
     fi
 
@@ -204,7 +185,7 @@
 
     export RUST_LOG=warn
     export COPILOT_PROVIDER_TYPE=openai
-    export COPILOT_PROVIDER_BASE_URL="$sidecar_url/v1"
+    export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
     export COPILOT_PROVIDER_API_KEY="$edge_token"
     export COPILOT_MODEL=auto
     export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=405504
@@ -307,24 +288,4 @@ in {
     llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
   ];
-
-  # Localhost bridge to the in-cluster centralcloud-ai-proxy sidecar
-  # (svc/llm-gateway:8088 in the inference-fabric namespace). This is the
-  # path copilot-all / hermes / SF use to share the umans max-concurrent
-  # cap. Previously installed out-of-band; declared here so it is rebuilt
-  # reproducibly on every host.
-  systemd.user.services.llm-gateway-sidecar-forward = {
-    Unit = {
-      Description = "Localhost bridge to in-cluster llm-gateway centralcloud-ai-proxy sidecar (shared umans max-concurrent cap)";
-      After = [ "network-online.target" ];
-      Wants = [ "network-online.target" ];
-    };
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.kubectl}/bin/kubectl -n inference-fabric port-forward --address 127.0.0.1 svc/llm-gateway 18088:8088";
-      Restart = "always";
-      RestartSec = "5s";
-    };
-    Install.WantedBy = [ "default.target" ];
-  };
 }

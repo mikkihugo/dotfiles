@@ -99,13 +99,13 @@
   copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
     gateway_url="https://llm-gateway.centralcloud.com"
-    edge_token="$(cat "${sopsSecrets.umans_api_key.path}" 2>/dev/null || echo "")"
+    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-kimi: expected mise GitHub Copilot CLI at $copilot_bin" >&2
       exit 127
     fi
     if [ -z "$edge_token" ]; then
-      echo "copilot-kimi: failed to read umans_api_key SOPS secret" >&2
+      echo "copilot-kimi: failed to read llm_gateway_api_key SOPS secret" >&2
       exit 1
     fi
     if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
@@ -137,13 +137,13 @@
   copilotGlmWrapper = pkgs.writeShellScriptBin "copilot-glm" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
     gateway_url="https://llm-gateway.centralcloud.com"
-    edge_token="$(cat "${sopsSecrets.umans_api_key.path}" 2>/dev/null || echo "")"
+    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-glm: expected mise GitHub Copilot CLI at $copilot_bin" >&2
       exit 127
     fi
     if [ -z "$edge_token" ]; then
-      echo "copilot-glm: failed to read umans_api_key SOPS secret" >&2
+      echo "copilot-glm: failed to read llm_gateway_api_key SOPS secret" >&2
       exit 1
     fi
     if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
@@ -192,13 +192,13 @@
   copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
     gateway_url="https://llm-gateway.centralcloud.com"
-    edge_token="$(cat "${sopsSecrets.umans_api_key.path}" 2>/dev/null || echo "")"
+    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-all: expected mise GitHub Copilot CLI at $copilot_bin" >&2
       exit 127
     fi
     if [ -z "$edge_token" ]; then
-      echo "copilot-all: failed to read umans_api_key SOPS secret" >&2
+      echo "copilot-all: failed to read llm_gateway_api_key SOPS secret" >&2
       exit 1
     fi
     if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \

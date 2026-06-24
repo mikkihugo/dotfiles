@@ -93,37 +93,78 @@
   # Kimi /coding/v1 allowlists User-Agent (KimiCLI/*, Claude Code, etc.) and
   # rejects Copilot's default UA with 403, so we override it via
   # COPILOT_AGENT_REQUEST_HEADERS.
+  # copilot-kimi — GitHub Copilot CLI routed to Kimi K2.7 (umans-kimi-k2.7)
+  # through the centralcloud-ai-proxy gateway at llm-gateway.centralcloud.com
+  # via BYOK. Kimi K2.7 has a 262K token context window and 32K max output.
   copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
+    gateway_url="https://llm-gateway.centralcloud.com"
+    edge_token="$(cat "${sopsSecrets.umans_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-kimi: expected mise GitHub Copilot CLI at $copilot_bin" >&2
       exit 127
     fi
+    if [ -z "$edge_token" ]; then
+      echo "copilot-kimi: failed to read umans_api_key SOPS secret" >&2
+      exit 1
+    fi
+    if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
+        "$gateway_url/v1/models" >/dev/null 2>&1; then
+      echo "copilot-kimi: gateway at $gateway_url not reachable" >&2
+      exit 1
+    fi
+    export RUST_LOG=warn
     export COPILOT_PROVIDER_TYPE=openai
-    export COPILOT_PROVIDER_BASE_URL=https://api.kimi.com/coding/v1
-    export COPILOT_PROVIDER_API_KEY="$(cat "${sopsSecrets.kimi_api_key.path}" 2>/dev/null || echo "")"
+    export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
+    export COPILOT_PROVIDER_API_KEY="$edge_token"
+    export COPILOT_MODEL=auto-kimi
     export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=262144
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=32768
-    export COPILOT_MODEL=kimi-for-coding
-    export COPILOT_AGENT_REQUEST_HEADERS='{"User-Agent":"KimiCLI/1.43.0"}'
+
+    node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
+
+    copilot_app="$HOME/.local/share/mise/installs/npm-github-copilot/latest/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/app.js"
+    if [ -f "$copilot_app" ]; then
+      exec node "$copilot_app" "$@"
+    fi
     exec "$copilot_bin" "$@"
   '';
 
-  # copilot-glm — GitHub Copilot CLI routed to GLM-5.2 on Ollama Cloud via BYOK.
-  # GLM-5.2 has a 1M token context window and 131K max output tokens.
-  # Supports tools and thinking capabilities.
+  # copilot-glm — GitHub Copilot CLI routed to GLM-5.2 (umans-glm-5.2) through
+  # the centralcloud-ai-proxy gateway at llm-gateway.centralcloud.com via BYOK.
+  # GLM-5.2 has a 405K token context window and 131K max output tokens.
+  # Top open-weight coding model: 62.1% SWE-bench Pro, 81.0% Terminal-Bench 2.1.
   copilotGlmWrapper = pkgs.writeShellScriptBin "copilot-glm" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
+    gateway_url="https://llm-gateway.centralcloud.com"
+    edge_token="$(cat "${sopsSecrets.umans_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-glm: expected mise GitHub Copilot CLI at $copilot_bin" >&2
       exit 127
     fi
+    if [ -z "$edge_token" ]; then
+      echo "copilot-glm: failed to read umans_api_key SOPS secret" >&2
+      exit 1
+    fi
+    if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
+        "$gateway_url/v1/models" >/dev/null 2>&1; then
+      echo "copilot-glm: gateway at $gateway_url not reachable" >&2
+      exit 1
+    fi
+    export RUST_LOG=warn
     export COPILOT_PROVIDER_TYPE=openai
-    export COPILOT_PROVIDER_BASE_URL=https://ollama.com/v1/
-    export COPILOT_PROVIDER_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=1000000
+    export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
+    export COPILOT_PROVIDER_API_KEY="$edge_token"
+    export COPILOT_MODEL=auto-glm
+    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=400000
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
-    export COPILOT_MODEL=glm-5.2:cloud
+
+    node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
+
+    copilot_app="$HOME/.local/share/mise/installs/npm-github-copilot/latest/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/app.js"
+    if [ -f "$copilot_app" ]; then
+      exec node "$copilot_app" "$@"
+    fi
     exec "$copilot_bin" "$@"
   '';
 
@@ -187,8 +228,8 @@
     export COPILOT_PROVIDER_TYPE=openai
     export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
     export COPILOT_PROVIDER_API_KEY="$edge_token"
-    export COPILOT_MODEL=auto-glm
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=400000
+    export COPILOT_MODEL=auto
+    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=405504
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
 
     # Patch the Copilot JS bundle so BYOK mode shows every model from the
@@ -281,8 +322,8 @@ in {
     # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
     llm-pkgs.cursor-agent # binary: cursor-agent
     # droid is managed globally by mise.
-    copilotKimiWrapper # binary: copilot-kimi -> routes mise GitHub Copilot CLI to Kimi K2.6
-    copilotGlmWrapper  # binary: copilot-glm -> routes mise GitHub Copilot CLI to GLM-5.2 on Ollama Cloud
+    copilotKimiWrapper # binary: copilot-kimi -> routes mise GitHub Copilot CLI to Kimi K2.7 (umans-kimi-k2.7) via llm-gateway
+    copilotGlmWrapper  # binary: copilot-glm -> routes mise GitHub Copilot CLI to GLM-5.2 (umans-glm-5.2) via llm-gateway
     copilotMinimaxWrapper  # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 on minimax.io
     copilotAllWrapper     # binary: copilot-all -> routes mise GitHub Copilot CLI through local centralcloud-ai-proxy (GLM-5.2 + Kimi K2.7 + umans-flash via umans.ai, MiniMax-M3 via minimax.io)
     llm-pkgs.mistral-vibe # binary: vibe

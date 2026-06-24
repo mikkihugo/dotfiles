@@ -187,8 +187,8 @@
     export COPILOT_PROVIDER_TYPE=openai
     export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
     export COPILOT_PROVIDER_API_KEY="$edge_token"
-    export COPILOT_MODEL=auto
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=405504
+    export COPILOT_MODEL=auto-glm
+    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=400000
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
 
     # Patch the Copilot JS bundle so BYOK mode shows every model from the

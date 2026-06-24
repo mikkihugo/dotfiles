@@ -168,21 +168,41 @@
     exec "$copilot_bin" "$@"
   '';
 
-  # copilot-minimax — GitHub Copilot CLI routed to MiniMax-M3 on minimax.io
-  # via BYOK (direct, not through the gateway).
-  # MiniMax-M3 has a 1M token context window and 131K max output tokens.
+  # copilot-minimax — GitHub Copilot CLI routed to MiniMax-M3
+  # (auto-minimax/MiniMax-M3) through the centralcloud-ai-proxy gateway at
+  # llm-gateway.centralcloud.com via BYOK. MiniMax-M3 has a 512K token context
+  # window and 131K max output tokens.
   copilotMinimaxWrapper = pkgs.writeShellScriptBin "copilot-minimax" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
+    gateway_url="https://llm-gateway.centralcloud.com"
+    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-minimax: expected mise GitHub Copilot CLI at $copilot_bin" >&2
       exit 127
     fi
+    if [ -z "$edge_token" ]; then
+      echo "copilot-minimax: failed to read llm_gateway_api_key SOPS secret" >&2
+      exit 1
+    fi
+    if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
+        "$gateway_url/v1/models" >/dev/null 2>&1; then
+      echo "copilot-minimax: gateway at $gateway_url not reachable" >&2
+      exit 1
+    fi
+    export RUST_LOG=warn
     export COPILOT_PROVIDER_TYPE=openai
-    export COPILOT_PROVIDER_BASE_URL=https://api.minimax.io/v1
-    export COPILOT_PROVIDER_API_KEY="$(cat "${sopsSecrets.minimax_api_key.path}" 2>/dev/null || echo "")"
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=1048576
+    export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
+    export COPILOT_PROVIDER_API_KEY="$edge_token"
+    export COPILOT_MODEL=auto-minimax
+    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=512000
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
-    export COPILOT_MODEL=MiniMax-M3
+
+    node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
+
+    copilot_app="$HOME/.local/share/mise/installs/npm-github-copilot/latest/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/app.js"
+    if [ -f "$copilot_app" ]; then
+      exec node "$copilot_app" "$@"
+    fi
     exec "$copilot_bin" "$@"
   '';
 
@@ -324,7 +344,7 @@ in {
     # droid is managed globally by mise.
     copilotKimiWrapper # binary: copilot-kimi -> routes mise GitHub Copilot CLI to Kimi K2.7 (umans-kimi-k2.7) via llm-gateway
     copilotGlmWrapper  # binary: copilot-glm -> routes mise GitHub Copilot CLI to GLM-5.2 (umans-glm-5.2) via llm-gateway
-    copilotMinimaxWrapper  # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 on minimax.io
+    copilotMinimaxWrapper  # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 (auto-minimax) via llm-gateway
     copilotAllWrapper     # binary: copilot-all -> routes mise GitHub Copilot CLI through local centralcloud-ai-proxy (GLM-5.2 + Kimi K2.7 + umans-flash via umans.ai, MiniMax-M3 via minimax.io)
     llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml

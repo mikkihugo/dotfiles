@@ -336,7 +336,7 @@ in {
     # Raw llm-agents packages — no key injection needed.
     # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
     # these packages compile from source — disable per-host as needed.
-    # claude-code is managed globally by mise.
+    pkgs.claude-code # sadjow/claude-code-nix overlay — official native binary, hourly-fresh, Cachix-cached. (Was mise; native installer's runtime self-updater is disabled in Nix.)
     # llm-pkgs.codex # disabled — Rust rebuild on aarch64
     # opencode is managed globally by mise.
     # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64

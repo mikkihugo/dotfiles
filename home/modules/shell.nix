@@ -210,9 +210,11 @@ in {
     '';
   };
 
-  # Claude Code is the native installer at ~/.local/bin/claude (self-updating
-  # symlink to ~/.local/share/claude/versions/<ver>). bypassPermissions is set
-  # globally via ~/.claude/settings.json, so no wrapper is needed.
+  # Claude Code is Nix-managed via the sadjow/claude-code-nix overlay
+  # (pkgs.claude-code in ai-tools.nix → ~/.nix-profile/bin/claude). The native
+  # runtime self-updater is disabled (read-only store); freshness comes from
+  # `nix flake update` on the claude-code input, automated by dotfiles-auto-update.
+  # bypassPermissions is set globally via ~/.claude/settings.json — no wrapper needed.
 
   home.shellAliases = {
     # home-manager: resolve the explicit host profile from the current hostname.

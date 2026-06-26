@@ -28,28 +28,9 @@ _: {
       force = true;
     };
 
-    # Shared cross-agent skills. Keep these in dotfiles so Codex, Claude,
-    # Gemini, and other clients read the same personal process library.
-    ".agents/AGENTS.md" = {
-      source = ../../config/agents/AGENTS.md;
-      force = true;
-    };
-
-    ".agents/skills" = {
-      source = ../../config/agents/skills;
-      force = true;
-    };
-
-    # Mirror skills into per-agent dirs so Claude Code and Copilot CLI read
-    # the same canonical copy. force=true prevents silent divergence.
-    ".claude/skills" = {
-      source = ../../config/agents/skills;
-      force = true;
-    };
-    ".copilot/skills" = {
-      source = ../../config/agents/skills;
-      force = true;
-    };
+    # Agent skills are installed from the pdd-redteam MCP/plugin via
+    # install_skills. Dotfiles keeps only archived legacy copies; Home Manager
+    # must not republish them as live ~/.agents, ~/.claude, or ~/.copilot skills.
 
     # SSH client config: host aliases for all servers (mail.hugo.dk, aidev, llm-gateway).
     # hetzner_id_ed25519 is rendered from SOPS by the renderHetznerSshKey activation hook.

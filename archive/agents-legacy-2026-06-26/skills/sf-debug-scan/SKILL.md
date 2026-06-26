@@ -44,6 +44,15 @@ following are true in the system:
 - a VectorChord grant gap exists while `code-index-freshness-error` events
   are in the journal,
 - `sf_code_index_state` has `status='failed'` or `error IS NOT NULL`,
+- `sf_code_index_state` has `status='stale'` with `indexed_at` older than 7d
+  while `.sf/runtime/code-index-warmup.json` shows `status=warming` and
+  `shardsDone` empty (index stall),
+- the pod runs **both** `sf:headless:<repo>` and `sf:autonomous:<repo>` for
+  the same project (writer-lock race),
+- more than one `sf:autonomous:<same-repo>` or more than one `sf:rpc:<same-repo>`
+  child is unreported,
+- advisory locks use `sf-writer:public` for a multi-project pod (wrong lock
+  namespace — should be `sf-writer:repo_<identity>`),
 - a pod has `restartCount > 3`,
 - an `auto-exit` with `reason="flow-audit:recent-errors"` is unreported,
 - `supervisor-agent:*` traces show repeated `empty-response`, `runner-error`,
@@ -81,13 +90,30 @@ Do NOT use when:
 Run Steps 0 -> 10 in order. Skip a step only if its precondition fails.
 Quote ISO timestamps in the summary.
 
-**MCP-first:** Start each MCP-dependent step by confirming the
-`observability` MCP server is actually answering:
+**MCP-first (observability server):**
+
+- **Procedure text:** `skill_sf-debug-scan`, `skill://sf-debug-scan`, or prompt
+  `sf-debug-scan` — load before writing diag instructions or runbook steps.
+- **Live evidence:** `sf_debug_scan` (verdict, falsifierHits, template, markdown).
+
+Before writing procedural instructions, checklists, or operator handoffs for this
+scan: load this skill and derive steps from it. Do not reconstruct the runbook
+from memory or paste trigger lists into AGENTS.md / prompts.
+
+Confirm the `observability` MCP server is answering:
 
 1. Call `observability_status`.
-2. If all backends report `ok: true`, use MCP tools (`sf_health`,
-   `trace_find_errors`, `cluster_logs_errors`, etc.).
-3. If `observability_status` reports `ok: false` or a tool call returns
+2. For a full pass in one round-trip, call **`sf_debug_scan`** — it runs Steps
+   0/1/4a/5b/6 server-side plus Laminar/cluster-log probes and returns:
+   - `verdict`: `healthy` | `degraded` | `broken`
+   - `falsifierHits`: programmatic hits against the skill falsifier list
+   - `template`: structured JSON matching the Output Template sections below
+   - `markdown`: pasteable scan text (same shape as the template)
+   - `raw`: underlying probe payloads for drill-down
+   Prefer rendering `markdown` to the operator or diffing `template` over time.
+3. Otherwise use atomic tools: `sf_health`, `sf_workers`,
+   `sf_warmup_markers`, `trace_find_errors`, `cluster_logs_errors`, etc.
+4. If `observability_status` reports `ok: false` or a tool call returns
    a fetch/connection error, retry the tool **once**. If it still fails,
    fall back to the kubectl commands documented for that step and surface
    the MCP degradation explicitly in the output (e.g. "MCP status: partial;
@@ -242,10 +268,12 @@ kubectl -n monitoring exec laminar-clickhouse-0 -- clickhouse-client -q "
 ### Step 4a -- Observability MCP (preferred over kubectl)
 
 When the `observability` MCP server is reachable, use its bounded read-only
-tools: `observability_status`, `trace_list_services`, `trace_find`,
+tools: `observability_status`, **`sf_debug_scan`**, `sf_health`,
+`sf_workers`, `sf_warmup_markers`, `sf_process_supervisor`,
+`sf_journal_recent`, `sf_trajectory`, `trace_list_services`, `trace_find`,
 `trace_find_errors`, `trace_get <trace_id>`, `trace_summarize <trace_id>`,
 `cluster_logs_search`, `cluster_logs_errors`, `cluster_logs_top`,
-`sf_health`.
+`span_db_errors`, `pod_recent_errors`.
 
 **Backend degradation is not MCP disconnection.** `observability_status`
 reporting `clusterLogsClickHouse: "fetch failed"` while Laminar / Loki are
@@ -294,6 +322,10 @@ without `db.urlConfigured`.
 
 ### Step 6 -- Pod-level evidence (always run)
 
+**Preferred MCP:** `sf_workers` (process inventory + `duplicateWarnings`),
+`sf_warmup_markers`, `sf_process_supervisor`. Fall back to kubectl when MCP
+is degraded.
+
 Pod-level evidence is no longer conditional: warning events, recent
 restarts, and supervisor process state catch degradation before the
 journal/Laminar paths surface it.
@@ -304,7 +336,31 @@ kubectl get events -n sf-server --field-selector type=Warning --sort-by='.lastTi
 POD=$(kubectl get pods -n sf-server -l app.kubernetes.io/name=sf-server -o jsonpath='{.items[0].metadata.name}')
 kubectl logs -n sf-server "$POD" --tail=200 | \
   grep -E 'sf-server|code-index|tokenizer|VectorChord|planning-flow-gate|zero-progress|SIGTERM|Unhandled|permission denied|stream idle|write lost'
+# Fallback only — prefer sf_workers MCP tool:
 kubectl exec -n sf-server "$POD" -- ps aux | grep -E 'sf:|supervisor|tini' | sort -k11
+```
+
+**Worker inventory (multi-project pod):** expect exactly one
+`sf:autonomous:<repo>` per project in `SF_WEB_AUTONOMOUS_PROJECTS`. Flag:
+
+- `sf:headless:<repo>` alongside `sf:autonomous:<repo>` — competes for
+  `sf-writer:repo_<id>` (web `/autonomous` workflow-command or compaction
+  resume in RPC/headless; isolated child owns autonomous).
+- duplicate `sf:autonomous:<repo>` or duplicate `sf:rpc:<repo>` — orphan
+  children from restarts; only the bridge supervisor should respawn.
+- `sf:triage:<repo>` is normal during repair; it must not hold sf-writer.
+
+`sf_workers.duplicateWarnings` should list headless+autonomous races and
+duplicate same-kind workers when MCP is current.
+
+```bash
+# Fallback only — prefer sf_warmup_markers MCP tool:
+for P in singularity-forge continuity vectordrive; do
+  echo "=== $P ==="
+  jq -c '{status,shardsDone,pid,startedAt,error}' \
+    /home/mhugo/code/$P/.sf/runtime/code-index-warmup.json 2>/dev/null || echo "(no marker)"
+done
+
 kubectl exec -n sf-server "$POD" -- sh -c '
   cd /home/mhugo/code/singularity-forge &&
   node /home/mhugo/code/singularity-forge/dist/loader.js headless --output-format json query' | head -40
@@ -327,13 +383,17 @@ pod log line that matched.
 | Self-feedback journal: `kind uses unknown domain` | New feedback kind not in `ALLOWED_KIND_DOMAINS` | Add kind to the array in `self-feedback.js` |
 | Self-feedback queue: `requires a write-mode open` | RPC drain path opens read-only when it should open write-mode | Trace call site; open with `openWriteDatabase` |
 | Self-feedback queue: `sf-writer:repo_... advisory lock held by pid N` | Live backend holds the repo writer lock | Operator terminates holder explicitly (SF refuses auto-recovery) |
+| Pod `ps`: `sf:headless:<repo>` + `sf:autonomous:<repo>` both running | `/autonomous` or compaction-resume started autonomous in RPC/generic headless while bridge child owns writer | Stop using chat `/autonomous`; use `POST /api/autonomous/start`; kill stray `sf:headless` only after operator approval |
+| Journal `code-index-freshness-error` with `advisory lock held` while caller already in write mode | `ensureWriteDatabaseOrSkip` re-opened DB (self-lock race) | Fixed in `db-owned-write.ts` — verify pod has rebuilt `dist/` |
+| `code-index-warmup.json` `warming` + `shardsDone:[]` + stale `sf_code_index_state` | Inline warmup never progressed (writer held by wrong process, or detached spawn died with `stdio:ignore`) | Confirm `sf:autonomous:*` holds lock; indexing runs **in that process**, not `headless codebase indexer warmup` |
+| `auto-exit` `feature-map-gate-failed` + lock errors in Laminar | `reconcileFeatureMap` skipped (no write authority) so gate sees stale reconciliation | Fix writer contention first; grants on `public.feature_*` are usually fine |
 
 ### Step 8 -- Observability topology
 
 | Component | Cluster address | Port | Use |
 |---|---|---|---|
-| Observability MCP | `observability-mcp.centralcloud-mcp.svc.cluster.local` | 8097 | Bounded trace + log search + `sf_health` (first stop) |
-| SF Server | `sf-server.sf-server.svc.cluster.local` | 4000 | `/api/health/sf` (called by MCP `sf_health` tool) |
+| Observability MCP | `observability-mcp.centralcloud-mcp.svc.cluster.local` | 8097 | `sf_debug_scan`, `sf_health`, traces, cluster logs |
+| SF Server | `sf-server.sf-server.svc.cluster.local` | 4000 | `/api/health/sf`, `/api/diag/*` (MCP proxies) |
 | Laminar App Server | `laminar-app-server.monitoring.svc.cluster.local` | 8000 / 8002 (REST), 8001 (gRPC) | OTLP ingest + REST query |
 | Laminar Query Engine | `laminar-query-engine.monitoring.svc.cluster.local` | 8903 | gRPC; not for direct curl |
 | Laminar ClickHouse | `laminar-clickhouse.monitoring.svc.cluster.local` | 8123 | Spans / traces / signal events / Laminar logs |
@@ -370,6 +430,15 @@ Cross-check `code-index-freshness-error` events in the journal (now with
 `data.error`) — when those are present and grants are missing, that's the
 diagnosis.
 
+**Index stall without PG error:** when `sf_code_index_state.status` is
+`stale`/`indexing` but `indexed_at` is days old and the warmup marker shows
+`warming` with empty `shardsDone`, the writer process is not completing
+`indexFullRepo`. Check Step 6 worker inventory before blaming VectorChord.
+
+**Do not use** `sf headless codebase indexer warmup` for prod full-repo
+reindex — it hits the 300s headless RPC timeout. Server-side path:
+`ensureCodeIndexFresh` in the `sf:autonomous` / `sf:rpc` write holder.
+
 ### Step 10 -- Decision rules
 
 | Question | First source | Fallback |
@@ -378,7 +447,8 @@ diagnosis.
 | Postgres query failed with "column does not exist"? | Laminar span exception message | `sf_schema_migrations` vs `PG_SCHEMA_VERSION` |
 | Pod crash? | Cluster-logs ClickHouse (pod LIKE 'sf-server%') | `kubectl logs <pod> --previous --tail=200` |
 | Autonomous flow wedged? | Journal `auto-exit` + supervisor trace `watchdog-action` | `sf headless trajectory --unit <unit-id>` |
-| Code index stale? | `sf_code_index_state` (Step 9) | `code-index-freshness-error` events |
+| Code index stale? | `sf_code_index_state` (Step 9) + warmup marker (Step 6) | `code-index-freshness-error` events |
+| Writer lock race / duplicate workers? | `ps aux` in pod (Step 6) | Laminar `db.*` + journal lock messages |
 | LLM worker error? | Laminar `span_type='LLM'` + `status='error'` | `sf_metrics_flush_duration_ms` in metrics |
 | Open-ended "is anything wrong" with no symptom? | Steps 0 -> 6 in order | Add missing check to this skill |
 
@@ -398,6 +468,7 @@ Use this verbatim so scans can be diffed over time:
 - blocked model lanes: <N> providers (<list>)
 - server readiness:   <ready|not ready>  ready checks: <pass|fail list>
 - pod warning events: <N> in last 15m
+- pod workers:        <sf:autonomous per repo; flag headless/duplicate rpc>
 
 ### Today's journal (<N> entries)
 - top: <type>=<count> ...
@@ -418,6 +489,7 @@ Use this verbatim so scans can be diffed over time:
 
 ### VectorChord / code index (via sf_health MCP or kubectl)
 - code indexes: <N> repos, <status counts>, shaDrift=<true/false per repo>
+- warmup markers: <per-repo status/shardsDone/pid or N/A>
 - extensions: vector=<ver>, vchord=<ver>, pg_tokenizer=<ver>, vchord_bm25=<ver> (kubectl only)
 - tokenizer_catalog grant: <present|absent>  bm25_catalog grant: <present|absent> (kubectl only)
 
@@ -455,6 +527,9 @@ You will be tempted to skip steps. Recognize and invert:
 
 ## Hard Rules
 
+- **Skills author instructions.** Load this skill (or `skill://sf-debug-scan`)
+  before writing diag procedures, summaries, or handoffs. Cite loaded steps;
+  do not improvise from memory.
 - **Read-only by default.** Never start a unit, kill a process, or open a
   write transaction. Ask before mutating anything.
 - **Evidence-first.** Every claim cites a journal line, trace line, span
@@ -463,10 +538,10 @@ You will be tempted to skip steps. Recognize and invert:
   include the ISO timestamp from the trace so the operator can correlate.
 - **Never claim "no errors" without checking Laminar.** Pod logs miss
   DB-level exceptions.
-- **Never duplicate this trigger list inline in AGENTS.md / CLAUDE.md /
-  GEMINI.md / repo policy.** The skill's description frontmatter is the
-  single source of truth. If a new trigger is needed, add it to the
-  description above, not to the repo doc.
+- **Never duplicate trigger lists inline** in AGENTS.md, CLAUDE.md, prompts,
+  or MCP `instructions`. This skill's frontmatter `description` is the trigger
+  source of truth. Operator sync: `~/.dotfiles/.../sf-debug-scan/SKILL.md`;
+  MCP bundle: `scripts/skills/sf-debug-scan/SKILL.md`.
 
 ## Verification
 

@@ -38,6 +38,11 @@ cosign = "3.0.6"
 claude-squad = "latest"
 "npm:droid" = "latest"
 azure-cli = { version = "2.87.0", uvx_args = "--prerelease=allow" }
+"pipx:nanobot-ai" = "0.2.2"
+"npm:wrangler" = "latest"
+oci = "latest"
+vultr-cli = "latest"
+"pipx:b2" = "latest"
 
 [env]
 # kimi-code reads this from process.env (resolveCompletionBudget) — it is NOT a

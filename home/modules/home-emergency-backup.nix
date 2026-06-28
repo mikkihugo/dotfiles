@@ -51,9 +51,16 @@
       "${homeDir}/**/result-*"
     ];
     exclude_if_present = [".nobackup"];
+    bootstrap.store_config_files = false;
     ssh_command = sshCommand;
     compression = "none";
     extra_borg_options.create = "--upload-buffer 1024 --upload-ratelimit 0";
+    borg_exit_codes = [
+      {
+        code = 105;
+        treat_as = "warning";
+      }
+    ];
     keep_hourly = 24;
     keep_daily = 7;
     keep_weekly = 4;

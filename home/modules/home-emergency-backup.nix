@@ -15,6 +15,7 @@
     source_directories = [homeDir];
     exclude_patterns = [
       "${homeDir}/.cache"
+      "${homeDir}/.kube/cache"
       "${homeDir}/.local/share/Trash"
       "${homeDir}/.local/share/baloo"
       "${homeDir}/.local/share/bun/install/cache"
@@ -49,6 +50,7 @@
       "${homeDir}/**/coverage"
       "${homeDir}/**/result"
       "${homeDir}/**/result-*"
+      "${homeDir}/.antigravity-ide-server/data/logs"
     ];
     exclude_if_present = [".nobackup"];
     bootstrap.store_config_files = false;

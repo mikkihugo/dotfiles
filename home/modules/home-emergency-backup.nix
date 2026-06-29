@@ -8,6 +8,10 @@
     if hostname != ""
     then hostname
     else "mhugo";
+  backupHost =
+    if shortHost == "cc-de-nue-k3s-03"
+    then "nue03"
+    else shortHost;
   homeDir = "/home/mhugo";
   keyPath = "${homeDir}/.ssh/storagebox-backup";
   sshCommand = "${pkgs.openssh}/bin/ssh -i ${keyPath} -p 23 -o BatchMode=yes -o StrictHostKeyChecking=yes";
@@ -82,12 +86,12 @@
     hel1 = {
       description = "HEL1";
       onBootSec = "5min";
-      path = "ssh://u579183-sub5@u579183-sub5.your-storagebox.de:23/./borg/${shortHost}";
+      path = "ssh://u579183-sub5@u579183-sub5.your-storagebox.de:23/./borg/${backupHost}";
     };
     fsn1 = {
       description = "FSN1";
       onBootSec = "35min";
-      path = "ssh://u602823-sub5@u602823-sub5.your-storagebox.de:23/./borg/${shortHost}";
+      path = "ssh://u602823-sub5@u602823-sub5.your-storagebox.de:23/./borg/${backupHost}";
     };
   };
   borgmaticConfig = name: target:
@@ -99,7 +103,7 @@
           label = "storagebox-${name}";
         }
       ];
-      archive_name_format = "{hostname}-${name}-{now:%Y-%m-%dT%H:%M:%SZ}";
+      archive_name_format = "${backupHost}-${name}-{now:%Y-%m-%dT%H:%M:%SZ}";
     };
   configPath = name: "${homeDir}/.config/borgmatic.d/home-emergency-${name}.yaml";
   restoreKeyPackage = pkgs.writeShellScriptBin "storagebox-backup-key-restore" ''

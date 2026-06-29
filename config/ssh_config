@@ -33,6 +33,12 @@ Host vega-public vega.hugo.dk
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
+Host nue3 tl.hugo.dk cc-de-nue-k3s-03
+    HostName tl.hugo.dk
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
 # Private network aliases — typically internal/legacy names.
 Host mon-private
     HostName 10.250.250.3

@@ -1,6 +1,14 @@
 # SSH host aliases and the exact key file configured for each block.
 # IdentitiesOnly=yes ensures only the listed key is used for authentication.
 
+Host *
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    ControlMaster auto
+    ControlPath ~/.ssh/cm-%r@%h:%p
+    ControlPersist 10m
+    AddKeysToAgent yes
+
 Host ai.hugo.dk vpn.hugo.dk jump.hugo.dk
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519

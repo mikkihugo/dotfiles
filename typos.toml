@@ -13,3 +13,5 @@ Ratatui = "Ratatui"
 mch = "mch"
 VaultCorp = "VaultCorp"
 Vault = "Vault"
+# "hel" is the IATA/infra abbreviation for Helsinki, used in node names (cc-fi-hel-*).
+hel = "hel"

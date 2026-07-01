@@ -31,7 +31,6 @@ kubens = "0.11.0"
 kubeseal = "0.37.0"
 "github:contabo/cntb" = "1.6"
 "github:ovh/ovhcloud-cli" = "0.12.0"
-"pipx:netcup-cli" = "0.1.4"
 awscli = { version = "2.34.64", symlink_bins = "true" }
 cosign = "3.0.6"
 # claude: managed by the native installer (~/.local/bin/claude, auto-updating), not mise.

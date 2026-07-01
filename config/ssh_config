@@ -29,14 +29,41 @@ Host cc-fi-hel-k3s-04 cc-fi-hel-k3s-04.hugo.dk lyra lyra.hugo.dk mon.hugo.dk mon
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host betelgeuse betelgeuse.hugo.dk
+Host cc-de-fsn-k3s-02 cc-de-fsn-k3s-02.centralcloud.com betelgeuse betelgeuse.hugo.dk
     HostName 178.104.218.38
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host vega-public vega.hugo.dk
-    HostName 185.230.35.242
+Host cc-fi-hel-k3s-02 cc-fi-hel-k3s-02.centralcloud.com
+    HostName 89.167.50.230
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host cc-de-fsn-k3s-01 cc-de-fsn-k3s-01.centralcloud.com
+    # Same physical box as the old `aidev-new` alias — repurposed into the
+    # infra k3s fleet; hetzner_ace is no longer authorized here (confirmed
+    # 2026-07-01), only personal_admin_id_ed25519.
+    HostName 46.225.157.57
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host cc-de-nue-k3s-01 cc-de-nue-k3s-01.centralcloud.com
+    HostName 46.38.238.49
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host cc-fr-lau-store-01 cc-fr-lau-store-01.centralcloud.com
+    HostName 185.207.251.243
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host cc-fr-lau-store-02 cc-fr-lau-store-02.centralcloud.com
+    HostName 75.119.154.193
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
@@ -74,26 +101,6 @@ Host wf.portal.centralcloud.com
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host aidev
-    # aidev.centralcloud.com now resolves to the AIDEV project host
-    # (same machine as aidev-new), which authorizes hetzner_ace.
-    HostName aidev.centralcloud.com
-    User root
-    IdentityFile ~/.ssh/hetzner_ace
-    IdentitiesOnly yes
-
-Host llm-gateway llm-gateway.centralcloud.com
-    # Use hetzner_ace — the only user-level key authorized on llm-gateway today.
-    # id_ed25519 is NOT authorized here (confirmed 2026-04-24).
-    # This is a normal SSH alias only; llm-gateway is not a Nix build host.
-    # Do NOT try hetzner_id_ed25519 (→ mail.hugo.dk) or personal_admin_id_ed25519
-    # (→ mon.portal.centralcloud.com et al) — those are SOPS-rendered for other
-    # hosts and will fail auth here.
-    HostName llm-gateway.centralcloud.com
-    User root
-    IdentityFile ~/.ssh/hetzner_ace
-    IdentitiesOnly yes
-
 # Disaster Central project (cc-*) — use the hetzner-dr-repo key.
 # These are the cc-fi-hel-core-01 / cc-de-fsn-core-01 boxes used for DR.
 # fi1/de1 are the Hetzner-side names; cc-* are the k3s node names.
@@ -107,14 +114,6 @@ Host de1 de1.centralcloud.com cc-de-fsn-core-01
     HostName 49.13.125.237
     User root
     IdentityFile ~/.ssh/hetzner_id_ed25519
-    IdentitiesOnly yes
-
-# AIDEV project secondary node (the original `aidev` block above resolves
-# via DNS to a different host; aidev-new is the explicit new server).
-Host aidev-new
-    HostName 46.225.157.57
-    User root
-    IdentityFile ~/.ssh/hetzner_ace
     IdentitiesOnly yes
 
 # VectorDrive project servers — personal_admin enrolled via Hetzner
@@ -150,12 +149,6 @@ Host mikki-laptop
     User mhugo
     IdentityFile ~/.ssh/id_ed25519
 
-Host vega vega.ts.hugo.dk dev1 dev1.ts.hugo.dk
-    HostName vega.ts.hugo.dk
-    User mhugo
-    IdentityFile ~/.ssh/personal_admin_id_ed25519
-    IdentitiesOnly yes
-
 Host git.infra.centralcloud.com
     HostName git.infra.centralcloud.com
     Port 2222
@@ -167,11 +160,4 @@ Host github.com
     HostName github.com
     User git
     IdentityFile ~/.ssh/github_mikkihugo
-    IdentitiesOnly yes
-
-# acedev — renamed from aidev-new on 2026-05-24
-Host acedev
-    HostName acedev.centralcloud.com
-    User root
-    IdentityFile ~/.ssh/hetzner_ace
     IdentitiesOnly yes

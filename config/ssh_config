@@ -68,8 +68,14 @@ Host cc-fr-lau-store-02 cc-fr-lau-store-02.centralcloud.com
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host nue3 tl.hugo.dk cc-de-nue-k3s-03
-    HostName tl.hugo.dk
+Host tl.hugo.dk cc-se-sto-devbox-01 cc-se-sto-devbox-01.centralcloud.com
+    HostName 82.197.73.216
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host nue3 nue03 cc-de-nue-k3s-02 cc-de-nue-k3s-02.centralcloud.com cc-de-nue-k3s-03
+    HostName 159.195.138.16
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes

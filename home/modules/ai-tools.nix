@@ -98,7 +98,7 @@
   # via BYOK. Kimi K2.7 has a 262K token context window and 32K max output.
   copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="https://llm-gateway.centralcloud.com"
+    gateway_url="http://inference-fabric-edge.inference-fabric.svc.cluster.local:8088"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-kimi: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -136,7 +136,7 @@
   # Top open-weight coding model: 62.1% SWE-bench Pro, 81.0% Terminal-Bench 2.1.
   copilotGlmWrapper = pkgs.writeShellScriptBin "copilot-glm" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="https://llm-gateway.centralcloud.com"
+    gateway_url="http://inference-fabric-edge.inference-fabric.svc.cluster.local:8088"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-glm: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -174,7 +174,7 @@
   # window and 131K max output tokens.
   copilotMinimaxWrapper = pkgs.writeShellScriptBin "copilot-minimax" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="https://llm-gateway.centralcloud.com"
+    gateway_url="http://inference-fabric-edge.inference-fabric.svc.cluster.local:8088"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-minimax: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -211,7 +211,7 @@
   # inference-fabric-edge service). No port-forward needed.
   copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="https://llm-gateway.centralcloud.com"
+    gateway_url="http://inference-fabric-edge.inference-fabric.svc.cluster.local:8088"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-all: expected mise GitHub Copilot CLI at $copilot_bin" >&2

@@ -270,6 +270,7 @@ in {
     direnv = {
       enable = true;
       nix-direnv.enable = true;
+      config.whitelist.prefix = ["/home/mhugo/code/"];
     };
 
     # Starship: cross-shell prompt. Config lives in config/starship.toml to

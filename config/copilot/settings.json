@@ -1,0 +1,58 @@
+{
+  "renderMarkdown": true,
+  "theme": "auto",
+  "experimental": true,
+  "allowedUrls": [
+    "https://github.com",
+    "https://github.blog",
+    "https://docs.github.com"
+  ],
+  "extensions": {
+    "mode": "load_and_augment"
+  },
+  "model": "auto",
+  "continueOnAutoMode": true,
+  "effortLevel": "high",
+  "keepAlive": "busy",
+  "memory": true,
+  "mergeStrategy": "rebase",
+  "showReasoning": true,
+  "stream": true,
+  "streamerMode": false,
+  "toolSearch": true,
+  "subagents": {
+    "agents": {
+      "explore": {
+        "model": "auto-fast",
+        "contextTier": "long_context"
+      },
+      "task": {
+        "model": "auto-kimi"
+      },
+      "general-purpose": {
+        "model": "auto-glm"
+      },
+      "code-review": {
+        "model": "ollama-deepseek-v4-pro"
+      },
+      "research": {
+        "model": "auto-minimax"
+      },
+      "security-review": {
+        "model": "ollama-deepseek-v4-pro"
+      },
+      "refactor": {
+        "model": "ollama-qwen3-coder"
+      },
+      "architect": {
+        "model": "auto-glm"
+      },
+      "debug": {
+        "model": "auto-kimi"
+      },
+      "rubber-duck": {
+        "autoInvoke": true
+      }
+    }
+  }
+}

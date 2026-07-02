@@ -45,10 +45,8 @@ _: {
       force = true;
     };
 
-    # Direnv trust policy: auto-allow repositories under ~/code while keeping
-    # ad-hoc paths explicit.
-    ".config/direnv/direnv.toml" = {
-      source = ../../.config/direnv/direnv.toml;
+    ".copilot/settings.json" = {
+      source = ../../config/copilot/settings.json;
       force = true;
     };
 

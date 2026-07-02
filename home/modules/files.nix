@@ -45,6 +45,13 @@ _: {
       force = true;
     };
 
+    # Direnv trust policy: auto-allow repositories under ~/code while keeping
+    # ad-hoc paths explicit.
+    ".config/direnv/direnv.toml" = {
+      source = ../../.config/direnv/direnv.toml;
+      force = true;
+    };
+
     ".factory/settings.json" = {
       source = ../../config/factory/settings.json;
       force = true;

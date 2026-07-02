@@ -10,6 +10,14 @@
       "type": "remote",
       "url": "https://mcp.exa.ai/mcp?exaApiKey=e9f259a8-1e04-48e8-b30c-d16d9bde946c",
       "enabled": true
+    },
+    "github": {
+      "type": "remote",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:GITHUB_TOKEN}"
+      }
     }
   },
   "provider": {

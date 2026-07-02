@@ -270,7 +270,13 @@ in {
     direnv = {
       enable = true;
       nix-direnv.enable = true;
-      config.whitelist.prefix = ["/home/mhugo/code/"];
+      config = {
+        global.warn_timeout = "5m";
+        whitelist = {
+          prefix = ["/home/mhugo/code/"];
+          exact = ["/home/mhugo/.dotfiles/.envrc"];
+        };
+      };
     };
 
     # Starship: cross-shell prompt. Config lives in config/starship.toml to

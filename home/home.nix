@@ -75,7 +75,7 @@
       "$HOME/.npm-global/bin" # opencode and other npm globals
       "$HOME/.cargo/bin" # cargo-installed Rust binaries
       "$HOME/.amp/bin"
-      "$HOME/.kimi-code/bin" # native Kimi Code CLI (v0.x, supersedes uv kimi-cli)
+      # ~/.kimi-code/bin removed — kimi is now a Nix flake package in ai-tools.nix
     ];
 
     # Environment variables exported into every session before shell init runs.

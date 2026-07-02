@@ -12,23 +12,34 @@
 #   openrouter/api_key → kv/openrouter:api_key (shared with hermes)
 #   amp/token          → kv/amp:token
 #
-# Tools not yet in llm-agents (installed via activation.nix):
-#   kimi-cli
+# Tools from first-party flakes (not in llm-agents):
+#   kimi-code → github:MoonshotAI/kimi-code (kimiWrapper in this file)
 {
   config,
   pkgs,
   lib,
   llm-agents,
+  kimi-code,
   ...
 }: let
   sopsSecrets = config.sops.secrets;
   llm-pkgs = llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
+  kimi-code-pkg = kimi-code.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   mkKeyWrapper = name: bin: keyPath: envVar:
     pkgs.writeShellScriptBin name ''
       export ${envVar}="$(cat "${keyPath}" 2>/dev/null || echo "")"
       exec ${bin} "$@"
     '';
+
+  # kimi — Nix-built SEA binary with KIMI_API_KEY injected from SOPS and
+  # DISABLE_AUTOUPDATER=1 so the runtime self-updater does not write a dead
+  # (unpatched) binary into ~/.kimi-code/bin that PATH no longer consults.
+  kimiWrapper = pkgs.writeShellScriptBin "kimi" ''
+    export KIMI_API_KEY="$(cat "${sopsSecrets.kimi_api_key.path}" 2>/dev/null || echo "")"
+    export DISABLE_AUTOUPDATER=1
+    exec ${kimi-code-pkg}/bin/kimi "$@"
+  '';
 
   geminiWrapper =
     mkKeyWrapper "gemini"
@@ -326,6 +337,7 @@ in {
 
   home.packages = [
     # API-key-injecting wrappers (shadow the raw Nix binaries for these tools).
+    kimiWrapper    # binary: kimi -> Nix-built 0.22.0 SEA, KIMI_API_KEY injected, DISABLE_AUTOUPDATER=1
     geminiWrapper
     vtcodeWrapper
     vtcodeCloudWrapper

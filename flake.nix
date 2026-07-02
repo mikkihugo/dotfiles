@@ -92,6 +92,15 @@
       url = "git+ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # kimi-code: official Nix flake from MoonshotAI. Builds a native SEA binary
+    # from source; no substituter/cache published upstream (build takes ~2 min).
+    # NOT following our nixpkgs — the flake pins nixos-25.11 for the Node 24.15
+    # floor; overriding risks a pnpmDeps hash mismatch.
+    # Replaces the self-installing ~/.kimi-code/bin approach (patchelf workaround
+    # no longer needed). DISABLE_AUTOUPDATER=1 stops the runtime self-updater
+    # from dropping a dead binary into ~/.kimi-code/bin.
+    kimi-code.url = "github:MoonshotAI/kimi-code";
   };
 
   outputs = {
@@ -104,12 +113,13 @@
     llm-agents,
     claude-code,
     inference-fabric,
+    kimi-code,
     ...
   }: let
     # builtins.currentSystem reads host arch at eval time, so switch/build must
     # pass --impure when using the mhugo alias.
     system = builtins.currentSystem;
-    specialArgs = {inherit sops-nix ace-coder hermes-agent llm-agents inference-fabric;};
+    specialArgs = {inherit sops-nix ace-coder hermes-agent llm-agents inference-fabric kimi-code;};
 
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.
     # targetSystem is passed as specialArgs so imports can branch without

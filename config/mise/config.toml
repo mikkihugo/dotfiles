@@ -55,3 +55,6 @@ KIMI_MODEL_MAX_COMPLETION_TOKENS = "32768"
 
 [settings]
 yes = true
+# Auto-trust mise config files in own repos (covers git worktrees, which
+# otherwise prompt per-path on every new worktree).
+trusted_config_paths = ["/home/mhugo/code", "/home/mhugo/.dotfiles"]

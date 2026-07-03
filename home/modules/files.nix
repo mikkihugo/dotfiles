@@ -28,6 +28,11 @@ _: {
       force = true;
     };
 
+    ".codex/AGENTS.md" = {
+      source = ../../config/codex/AGENTS.md;
+      force = true;
+    };
+
     # Agent skills are installed from the pdd-agent-tools MCP/plugin via
     # install_skills. Dotfiles keeps only archived legacy copies; Home Manager
     # must not republish them as live ~/.agents, ~/.claude, or ~/.copilot skills.

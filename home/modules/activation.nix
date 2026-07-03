@@ -152,9 +152,9 @@ in {
       PY
     '';
 
-    # Render MCP client configs (~/.gemini/settings.json, .mcp.json, .cursor/mcp.json)
-    # from SOPS-backed secrets so Gemini/Claude/Cursor always have the current ACE
-    # MCP token without a manual `install_or_repair_mcp_clients.sh`.
+    # Render ACE repo-scoped MCP client configs from SOPS-backed secrets. The
+    # global MCP normalizer below rewrites user-level MCP surfaces to the
+    # CentralCloud gateway only.
     renderMcpConfigs = lib.hm.dag.entryAfter ["installPackages"] ''
       ACE_REPO="$HOME/code/ace-coder"
       if [ -f "$ACE_REPO/scripts/render_repo_mcp_configs.sh" ]; then
@@ -162,6 +162,127 @@ in {
         bash "$ACE_REPO/scripts/render_repo_mcp_configs.sh" || \
           echo "WARNING: render_repo_mcp_configs.sh failed (MCP configs may be stale)" >&2
       fi
+    '';
+
+    normalizeGlobalMcpConfigs = lib.hm.dag.entryAfter ["renderMcpConfigs"] ''
+      ${pythonWithYaml}/bin/python3 - <<'PY'
+      import json
+      from pathlib import Path
+      import yaml
+
+      home = Path.home()
+      gateway_url = "http://mcp-gateway.svc/mcp"
+      generic = {"centralcloud-mcp-gateway": {"url": gateway_url}}
+      typed_http = {"centralcloud-mcp-gateway": {"type": "http", "url": gateway_url}}
+      opencode = {"centralcloud-mcp-gateway": {"type": "remote", "url": gateway_url}}
+      copilot = {
+          "centralcloud-mcp-gateway": {
+              "type": "http",
+              "url": gateway_url,
+              "tools": ["*"],
+          }
+      }
+      factory = {
+          "centralcloud-mcp-gateway": {
+              "type": "http",
+              "url": gateway_url,
+              "disabled": False,
+          }
+      }
+
+      specs = [
+          (home / ".mcp.json", "mcpServers", generic),
+          (home / ".cline" / "mcp.json", "mcpServers", generic),
+          (home / ".claude.json", "mcpServers", typed_http),
+          (home / ".config" / "amp" / "settings.json", "amp.mcpServers", generic),
+          (home / ".config" / "devin" / "config.json", "mcpServers", generic),
+          (home / ".gemini" / "settings.json", "mcpServers", generic),
+          (home / ".copilot" / "mcp-config.json", "mcpServers", copilot),
+          (home / ".cursor" / "mcp.json", "mcpServers", generic),
+          (home / ".factory" / "mcp.json", "mcpServers", factory),
+          (home / ".junie" / "mcp" / "mcp.json", "mcpServers", generic),
+          (home / ".kimi" / "mcp.json", "mcpServers", generic),
+          (home / ".kimi-code" / "mcp.json", "mcpServers", generic),
+          (home / ".qoder" / "settings.json", "mcpServers", generic),
+          (home / ".config" / "opencode" / "opencode.json", "mcp", opencode),
+          (home / ".config" / "crush" / "crush.json", "mcpServers", typed_http),
+      ]
+
+      for path, key, value in specs:
+          if path.exists():
+              try:
+                  data = json.loads(path.read_text(encoding="utf-8"))
+              except json.JSONDecodeError as exc:
+                  print(f"WARNING: {path} is not valid JSON: {exc}", flush=True)
+                  continue
+              if not isinstance(data, dict):
+                  print(f"WARNING: {path} does not contain a JSON object", flush=True)
+                  continue
+          else:
+              data = {}
+          data[key] = value
+          if path == home / ".qoder" / "settings.json":
+              data["mcp"] = {
+                  "enabledProjectMcpServers": [],
+                  "disabledProjectMcpServers": [],
+              }
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+      goose_path = home / ".config" / "goose" / "config.yaml"
+      goose_mcp = {
+          "centralcloud-mcp-gateway": {
+              "name": "centralcloud-mcp-gateway",
+              "type": "http",
+              "url": gateway_url,
+              "enabled": True,
+              "timeout": 300,
+          }
+      }
+      if goose_path.exists():
+          try:
+              goose_config = yaml.safe_load(goose_path.read_text(encoding="utf-8"))
+          except yaml.YAMLError as exc:
+              print(f"WARNING: {goose_path} is not valid YAML: {exc}", flush=True)
+              goose_config = None
+      else:
+          goose_config = {}
+      if goose_config is None:
+          goose_config = {}
+      if not isinstance(goose_config, dict):
+          print(f"WARNING: {goose_path} does not contain a YAML object", flush=True)
+      else:
+          goose_config["extensions"] = goose_mcp
+          goose_path.parent.mkdir(parents=True, exist_ok=True)
+          goose_path.write_text(
+              yaml.safe_dump(goose_config, sort_keys=False),
+              encoding="utf-8",
+          )
+
+      nanobot_path = home / ".nanobot" / "config.json"
+      nanobot_mcp = {
+          "centralcloud-mcp-gateway": {
+              "type": "streamableHttp",
+              "url": gateway_url,
+              "tool_timeout": 120,
+              "enabled_tools": ["*"],
+          }
+      }
+      if nanobot_path.exists():
+          try:
+              nanobot_config = json.loads(nanobot_path.read_text(encoding="utf-8"))
+          except json.JSONDecodeError as exc:
+              print(f"WARNING: {nanobot_path} is not valid JSON: {exc}", flush=True)
+          else:
+              if isinstance(nanobot_config, dict):
+                  nanobot_config.setdefault("tools", {})["mcpServers"] = nanobot_mcp
+                  nanobot_path.write_text(
+                      json.dumps(nanobot_config, indent=2) + "\n",
+                      encoding="utf-8",
+                  )
+              else:
+                  print(f"WARNING: {nanobot_path} does not contain a JSON object", flush=True)
+      PY
     '';
 
 

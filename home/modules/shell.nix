@@ -30,6 +30,27 @@ _: let
       export LETTA_API_KEY="$(cat "$HOME/.letta/api_key")"
     fi
 
+    # On SSH login, show detached tmux sessions that can be resumed.
+    if [ "''${TMUX_LOGIN_PROMPT:-}" = "1" ] && [ -n "''${SSH_CONNECTION:-}" ] && [ -z "''${TMUX:-}" ] && [ -t 1 ] && command -v tmux >/dev/null 2>&1; then
+      _tmux_detached="$(
+        tmux list-sessions -F '#{session_attached}	#{session_name}	#{session_windows}	#{session_created_string}' 2>/dev/null \
+          | awk -F '	' '$1 == 0 { printf "  %s (%s windows, created %s)\n", $2, $3, $4 }'
+      )"
+      if [ -n "$_tmux_detached" ]; then
+        printf 'Detached tmux sessions:\n%s\n' "$_tmux_detached"
+        printf 'Enter an existing session to attach, a new name to create, or empty to skip.\n'
+        if [ -r /dev/tty ]; then
+          printf 'tmux session: ' > /dev/tty
+          IFS= read -r _tmux_attach < /dev/tty || _tmux_attach=
+          if [ -n "$_tmux_attach" ]; then
+            exec tmux new-session -A -s "$_tmux_attach"
+          fi
+          unset _tmux_attach
+        fi
+      fi
+      unset _tmux_detached
+    fi
+
   '';
 in {
   home.file = {

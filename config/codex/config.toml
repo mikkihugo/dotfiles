@@ -3,9 +3,6 @@ sandbox_mode = "danger-full-access"
 approval_policy = "never"
 suppress_unstable_features_warning = true
 
-[projects."/home/mhugo/code/ace-coder"]
-trust_level = "trusted"
-
 [projects."/home/mhugo/code/unity"]
 trust_level = "trusted"
 
@@ -30,3 +27,6 @@ remote_models = true
 collaboration_modes = true
 js_repl = true
 prevent_idle_sleep = true
+
+[mcp_servers.centralcloud-mcp-gateway]
+url = "http://mcp-gateway.svc/mcp"

@@ -8,44 +8,27 @@
 # decrypted SOPS secret at invocation time — never hardcoded.
 #
 # Keys expected in secrets/api-keys.yaml (SOPS):
-#   gemini/api_key     → kv/gemini:api_key on OpenBao
 #   openrouter/api_key → kv/openrouter:api_key (shared with hermes)
 #   amp/token          → kv/amp:token
 #
-# Tools from first-party flakes (not in llm-agents):
-#   kimi-code → github:MoonshotAI/kimi-code (kimiWrapper in this file)
+# Tools managed by mise (see config/mise/config.toml) rely on the SOPS secret
+# loader in shell/bash/bashrc for API keys. Wrappers below are only for tools
+# that need key injection where the SOPS loader is not available.
 {
   config,
   pkgs,
   lib,
   llm-agents,
-  kimi-code,
   ...
 }: let
   sopsSecrets = config.sops.secrets;
   llm-pkgs = llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
-  kimi-code-pkg = kimi-code.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   mkKeyWrapper = name: bin: keyPath: envVar:
     pkgs.writeShellScriptBin name ''
       export ${envVar}="$(cat "${keyPath}" 2>/dev/null || echo "")"
       exec ${bin} "$@"
     '';
-
-  # kimi — Nix-built SEA binary with KIMI_API_KEY injected from SOPS and
-  # DISABLE_AUTOUPDATER=1 so the runtime self-updater does not write a dead
-  # (unpatched) binary into ~/.kimi-code/bin that PATH no longer consults.
-  kimiWrapper = pkgs.writeShellScriptBin "kimi" ''
-    export KIMI_API_KEY="$(cat "${sopsSecrets.kimi_api_key.path}" 2>/dev/null || echo "")"
-    export DISABLE_AUTOUPDATER=1
-    exec ${kimi-code-pkg}/bin/kimi "$@"
-  '';
-
-  geminiWrapper =
-    mkKeyWrapper "gemini"
-    "${config.home.homeDirectory}/.local/share/mise/shims/gemini"
-    sopsSecrets.gemini_api_key.path
-    "GEMINI_API_KEY";
 
   # ampWrapper disabled until `amp` section exists in secrets/api-keys.yaml.
   # When ready, re-enable + add the amp_token sops.secrets block below.
@@ -109,7 +92,7 @@
   # via BYOK. Kimi K2.7 has a 262K token context window and 32K max output.
   copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="http://inference-fabric-edge.inference-fabric.svc.cluster.local:8088"
+    gateway_url="https://llm-gateway.centralcloud.com"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-kimi: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -147,7 +130,7 @@
   # Top open-weight coding model: 62.1% SWE-bench Pro, 81.0% Terminal-Bench 2.1.
   copilotGlmWrapper = pkgs.writeShellScriptBin "copilot-glm" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="http://inference-fabric-edge.inference-fabric.svc.cluster.local:8088"
+    gateway_url="https://llm-gateway.centralcloud.com"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-glm: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -185,7 +168,7 @@
   # window and 131K max output tokens.
   copilotMinimaxWrapper = pkgs.writeShellScriptBin "copilot-minimax" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="http://inference-fabric-edge.inference-fabric.svc.cluster.local:8088"
+    gateway_url="https://llm-gateway.centralcloud.com"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-minimax: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -222,7 +205,7 @@
   # inference-fabric-edge service). No port-forward needed.
   copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="http://inference-fabric-edge.inference-fabric.svc.cluster.local:8088"
+    gateway_url="https://llm-gateway.centralcloud.com"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-all: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -283,11 +266,6 @@
   '';
 in {
   sops.secrets = {
-    gemini_api_key = {
-      key = "gemini/api_key";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
     openrouter_api_key = {
       key = "openrouter/api_key";
       mode = "0600";
@@ -305,11 +283,6 @@ in {
     };
     ollama_api_key = {
       key = "sf/env/OLLAMA_API_KEY";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
-    kimi_api_key = {
-      key = "sf/env/KIMI_API_KEY";
       mode = "0600";
       sopsFile = ../../secrets/api-keys.yaml;
     };
@@ -337,8 +310,8 @@ in {
 
   home.packages = [
     # API-key-injecting wrappers (shadow the raw Nix binaries for these tools).
-    kimiWrapper    # binary: kimi -> Nix-built 0.22.0 SEA, KIMI_API_KEY injected, DISABLE_AUTOUPDATER=1
-    geminiWrapper
+    # kimi is managed by mise (npm:@moonshot-ai/kimi-code) and wrapped in
+    # ~/.local/bin/kimi to route through the CentralCloud llm-gateway.
     vtcodeWrapper
     vtcodeCloudWrapper
     vtcodeDevstralWrapper
@@ -361,4 +334,24 @@ in {
     llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
   ];
+
+  # Shadow the mise `kimi` shim so `kimi` routes through the CentralCloud
+  # llm-gateway by default. ~/.local/bin is before ~/.local/share/mise/shims in
+  # PATH, so this wrapper wins. Falls back to native Moonshot endpoints when
+  # LLM_MUX_* are not exported (e.g. non-interactive shells without SOPS loader).
+  home.file.".local/bin/kimi" = {
+    executable = true;
+    force = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [ -n "''${LLM_MUX_API_KEY:-}" ] && [ -n "''${LLM_MUX_BASE_URL:-}" ]; then
+        export KIMI_API_KEY="$LLM_MUX_API_KEY"
+        export KIMI_BASE_URL="$LLM_MUX_BASE_URL"
+      fi
+
+      exec "$HOME/.local/share/mise/shims/kimi" "$@"
+    '';
+  };
 }

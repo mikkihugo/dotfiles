@@ -14,7 +14,7 @@
     zoxide # smarter cd (frecency-based, `z` alias)
     delta # git diff pager (side-by-side, syntax highlight)
     jq # JSON query and transform
-    yq # YAML/TOML/XML query (jq-compatible syntax)
+    yq-go # Mike Farah yq v4; repo validators rely on eval/ea and -o=json
     btop # process/resource monitor (replaces htop)
     tokei # count lines of code by language
     difftastic # structural diff (understands syntax, not just lines)
@@ -27,6 +27,7 @@
     # Dev tools — language runtimes and package managers available globally.
     # (project-level runtimes live in per-repo flake devShells via direnv)
     bun # JavaScript runtime/package manager for local tool builds
+    ccache # C/C++ compiler cache; CMake launcher env is set in home.nix
     mise # polyglot runtime/tool manager; installs live under ~/.local/share/mise
     tea # Forgejo/Gitea CLI client
     git-lfs # large file storage extension for git
@@ -34,6 +35,7 @@
     go # build local Go tools
     nodejs # Node.js runtime — npm used by activation.nix for @opencode-ai/sdk
     pnpm # fast, disk-efficient Node package manager
+    sccache # Rust compiler cache; Cargo wrapper is managed in files.nix
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin
 
     # Secret management — SOPS/age toolchain for encrypting dotfile secrets.

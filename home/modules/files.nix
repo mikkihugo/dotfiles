@@ -12,6 +12,15 @@ _: {
 
     ".config/bat/config".source = ../../config/bat/config;
 
+    # Cargo: use sccache for all Rust builds launched by this user.
+    ".cargo/config.toml" = {
+      force = true;
+      text = ''
+        [build]
+        rustc-wrapper = "sccache"
+      '';
+    };
+
     # VSCode: terminal font (Nerd Font), shell (zsh), editor defaults.
     # WSL2: also install the font on the Windows side for VSCode Remote:
     #   winget install -e --id DEVCOM.JetBrainsMonoNerdFont
@@ -33,7 +42,7 @@ _: {
       force = true;
     };
 
-    # Agent skills are installed from the pdd-agent-tools MCP/plugin via
+    # Agent skills are installed from the purpose-agent-tools MCP/plugin via
     # install_skills. Dotfiles keeps only archived legacy copies; Home Manager
     # must not republish them as live ~/.agents, ~/.claude, or ~/.copilot skills.
 

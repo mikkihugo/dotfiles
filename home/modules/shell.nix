@@ -17,6 +17,7 @@ _: let
     # entries from home.sessionPath (~/.bun/bin, ~/.npm-global/bin, ~/.cargo/bin,
     # etc.) never get added. Source it here so codex/gemini/opencode
     # resolve in interactive shells.
+    unset __HM_SESS_VARS_SOURCED
     [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] \
       && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
 

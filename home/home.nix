@@ -75,7 +75,7 @@
       "$HOME/.npm-global/bin" # opencode and other npm globals
       "$HOME/.cargo/bin" # cargo-installed Rust binaries
       "$HOME/.amp/bin"
-      # ~/.kimi-code/bin removed — kimi is now a Nix flake package in ai-tools.nix
+      # ~/.kimi-code/bin removed — kimi is managed by mise (npm:@moonshot-ai/kimi-code)
     ];
 
     # Environment variables exported into every session before shell init runs.
@@ -97,6 +97,10 @@
       COLORTERM = "truecolor";
       RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
       BAT_CONFIG_PATH = "$HOME/.config/bat/config";
+      SCCACHE_CACHE_SIZE = "20G";
+      CCACHE_DIR = "$HOME/.cache/ccache";
+      CMAKE_C_COMPILER_LAUNCHER = "ccache";
+      CMAKE_CXX_COMPILER_LAUNCHER = "ccache";
       LETTA_BASE_URL = "http://127.0.0.1:8283";
       # OpenBao CLI — served at kv.infra.centralcloud.com (public, Authentik
       # forward-auth on /ui, token auth on API). `bao login -method=oidc`

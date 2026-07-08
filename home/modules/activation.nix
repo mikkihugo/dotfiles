@@ -27,11 +27,12 @@ in {
       rm -f "$HOME/.config/gh/config.yml"
       rm -f "$HOME/.config/jj/config.toml"
 
-      rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/combined.conf"
-      rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/no-watchdog.conf"
+      if [ "$(hostname)" = "mikki-bunker" ]; then
+        rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/combined.conf"
+        rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/no-watchdog.conf"
+        rmdir "$HOME/.config/systemd/user/remote-gpu-worker.service.d" 2>/dev/null || true
+      fi
       rm -f "$HOME/.npm-global/bin/claude"
-      rm -f "$HOME/.npm-global/bin/gemini"
-      rmdir "$HOME/.config/systemd/user/remote-gpu-worker.service.d" 2>/dev/null || true
     '';
 
     seedMutableCodexConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
@@ -201,7 +202,6 @@ in {
           (home / ".cursor" / "mcp.json", "mcpServers", generic),
           (home / ".factory" / "mcp.json", "mcpServers", factory),
           (home / ".junie" / "mcp" / "mcp.json", "mcpServers", generic),
-          (home / ".kimi" / "mcp.json", "mcpServers", generic),
           (home / ".kimi-code" / "mcp.json", "mcpServers", generic),
           (home / ".qoder" / "settings.json", "mcpServers", generic),
           (home / ".config" / "opencode" / "opencode.json", "mcp", opencode),

@@ -95,6 +95,25 @@
       "$@"
   '';
 
+  # vtcode-minimax — vtcode routed to MiniMax-M3 through the
+  # centralcloud-ai-proxy gateway via BYOK. vtcode has no first-class
+  # "custom OpenAI-compatible endpoint" provider name; `openai` + a
+  # base-url override is the documented escape hatch (matches the
+  # `[providers.openai]` block vtcode.toml already scaffolds).
+  vtcodeMinimaxGatewayWrapper = pkgs.writeShellScriptBin "vtcode-minimax" ''
+    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
+    if [ -z "$edge_token" ]; then
+      echo "vtcode-minimax: failed to read llm_gateway_api_key SOPS secret" >&2
+      exit 1
+    fi
+    ${gatewayUrlResolver "vtcode-minimax"}
+    export OPENAI_API_KEY="$edge_token"
+    export OPENAI_BASE_URL="$gateway_url/v1"
+    exec ${config.home.homeDirectory}/.local/share/mise/shims/vtcode \
+      --provider openai --model minimax-m3 --api-key-env OPENAI_API_KEY \
+      "$@"
+  '';
+
   # vtcode-opencode — opencode-go glm-5.1
   vtcodeOpencodeWrapper = pkgs.writeShellScriptBin "vtcode-opencode" ''
     export OPENCODE_GO_API_KEY="$(cat "${sopsSecrets.opencode_go_api_key.path}" 2>/dev/null || echo "")"
@@ -341,6 +360,7 @@ in {
     vtcodeDevstralWrapper
     vtcodeMistralWrapper
     vtcodeKimiWrapper
+    vtcodeMinimaxGatewayWrapper # binary: vtcode-minimax -> routes vtcode to MiniMax-M3 via llm-gateway
     vtcodeOpencodeWrapper
     # Raw llm-agents packages — no key injection needed.
     # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)

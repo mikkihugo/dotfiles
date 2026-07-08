@@ -1,8 +1,9 @@
 [tools]
 codex = "latest"
+"npm:@moonshot-ai/kimi-code" = "latest"
 "github:vinhnx/vtcode" = "latest"
 flyctl = "0.4.58"
-node = "26.3.0"
+"aqua:nodejs/node" = "24.18.0"
 "npm:@github/copilot" = "latest"
 "npm:@hrrrsn/mcp-vnc" = "1.0.2"
 "npm:@playwright/mcp" = "0.0.75"
@@ -35,6 +36,7 @@ awscli = { version = "2.34.64", symlink_bins = "true" }
 cosign = "3.0.6"
 # claude: managed by the native installer (~/.local/bin/claude, auto-updating), not mise.
 claude-squad = "latest"
+"npm:@kilocode/cli" = "latest"
 "npm:droid" = "latest"
 azure-cli = { version = "2.87.0", uvx_args = "--prerelease=allow" }
 "pipx:nanobot-ai" = "0.2.2"

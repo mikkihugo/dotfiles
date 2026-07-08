@@ -200,6 +200,35 @@
     exec "$copilot_bin" "$@"
   '';
 
+  # claude-minimax — Claude Code CLI routed to MiniMax-M3 through the
+  # centralcloud-ai-proxy gateway's Anthropic-Messages-compatible endpoint
+  # (llm-gateway.centralcloud.com/v1/messages) via BYOK. The gateway's `auto`/
+  # `umans-*` aliases currently hang on this route (only wired through the
+  # OpenAI-compatible /v1/chat/completions path) — minimax-m3 is confirmed
+  # working, so it's pinned explicitly rather than left to alias resolution.
+  claudeMinimaxWrapper = pkgs.writeShellScriptBin "claude-minimax" ''
+    claude_bin="$HOME/.local/bin/claude"
+    gateway_url="https://llm-gateway.centralcloud.com"
+    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
+    if [ ! -x "$claude_bin" ]; then
+      echo "claude-minimax: expected Claude Code CLI at $claude_bin" >&2
+      exit 127
+    fi
+    if [ -z "$edge_token" ]; then
+      echo "claude-minimax: failed to read llm_gateway_api_key SOPS secret" >&2
+      exit 1
+    fi
+    if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
+        "$gateway_url/v1/models" >/dev/null 2>&1; then
+      echo "claude-minimax: gateway at $gateway_url not reachable" >&2
+      exit 1
+    fi
+    export ANTHROPIC_BASE_URL="$gateway_url"
+    export ANTHROPIC_API_KEY="$edge_token"
+    export API_TIMEOUT_MS=120000
+    exec "$claude_bin" --model minimax-m3 "$@"
+  '';
+
   # copilot-all — GitHub Copilot CLI routed through the centralcloud-ai-proxy
   # at llm-gateway.centralcloud.com (the external DNS name for the
   # inference-fabric-edge service). No port-forward needed.
@@ -331,6 +360,7 @@ in {
     copilotGlmWrapper  # binary: copilot-glm -> routes mise GitHub Copilot CLI to GLM-5.2 (umans-glm-5.2) via llm-gateway
     copilotMinimaxWrapper  # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 (auto-minimax) via llm-gateway
     copilotAllWrapper     # binary: copilot-all -> routes mise GitHub Copilot CLI through local centralcloud-ai-proxy (GLM-5.2 + Kimi K2.7 + umans-flash via umans.ai, MiniMax-M3 via minimax.io)
+    claudeMinimaxWrapper   # binary: claude-minimax -> routes Claude Code CLI to MiniMax-M3 via llm-gateway's Anthropic-Messages endpoint
     llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
   ];

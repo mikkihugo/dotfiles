@@ -30,6 +30,26 @@
       exec ${bin} "$@"
     '';
 
+  # llm-gateway is reachable two ways: the in-cluster Service
+  # (http://llm-gateway.svc, ~0.1-0.3s, only resolves on Cilium-meshed hosts)
+  # and the public edge (https://llm-gateway.centralcloud.com, DNS-round-robins
+  # 3 IPs and has seen cold-request latency up to ~5s). Try internal first —
+  # fast fail via DNS if unreachable — then fall back to public with a longer
+  # budget so the check doesn't flake on a slow-but-fine cold request. Assumes
+  # `edge_token` is already set (and checked non-empty) by the caller.
+  gatewayUrlResolver = binName: ''
+    gateway_url="http://llm-gateway.svc"
+    if ! curl -sS --max-time 1 -H "authorization: Bearer $edge_token" \
+        "$gateway_url/v1/models" >/dev/null 2>&1; then
+      gateway_url="https://llm-gateway.centralcloud.com"
+      if ! curl -sS --max-time 6 -H "authorization: Bearer $edge_token" \
+          "$gateway_url/v1/models" >/dev/null 2>&1; then
+        echo "${binName}: gateway not reachable (tried llm-gateway.svc and llm-gateway.centralcloud.com)" >&2
+        exit 1
+      fi
+    fi
+  '';
+
   # ampWrapper disabled until `amp` section exists in secrets/api-keys.yaml.
   # When ready, re-enable + add the amp_token sops.secrets block below.
 
@@ -92,7 +112,6 @@
   # via BYOK. Kimi K2.7 has a 262K token context window and 32K max output.
   copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="https://llm-gateway.centralcloud.com"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-kimi: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -102,11 +121,7 @@
       echo "copilot-kimi: failed to read llm_gateway_api_key SOPS secret" >&2
       exit 1
     fi
-    if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
-        "$gateway_url/v1/models" >/dev/null 2>&1; then
-      echo "copilot-kimi: gateway at $gateway_url not reachable" >&2
-      exit 1
-    fi
+    ${gatewayUrlResolver "copilot-kimi"}
     export RUST_LOG=warn
     export COPILOT_PROVIDER_TYPE=openai
     export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
@@ -130,7 +145,6 @@
   # Top open-weight coding model: 62.1% SWE-bench Pro, 81.0% Terminal-Bench 2.1.
   copilotGlmWrapper = pkgs.writeShellScriptBin "copilot-glm" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="https://llm-gateway.centralcloud.com"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-glm: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -140,11 +154,7 @@
       echo "copilot-glm: failed to read llm_gateway_api_key SOPS secret" >&2
       exit 1
     fi
-    if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
-        "$gateway_url/v1/models" >/dev/null 2>&1; then
-      echo "copilot-glm: gateway at $gateway_url not reachable" >&2
-      exit 1
-    fi
+    ${gatewayUrlResolver "copilot-glm"}
     export RUST_LOG=warn
     export COPILOT_PROVIDER_TYPE=openai
     export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
@@ -168,7 +178,6 @@
   # window and 131K max output tokens.
   copilotMinimaxWrapper = pkgs.writeShellScriptBin "copilot-minimax" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="https://llm-gateway.centralcloud.com"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-minimax: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -178,11 +187,7 @@
       echo "copilot-minimax: failed to read llm_gateway_api_key SOPS secret" >&2
       exit 1
     fi
-    if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
-        "$gateway_url/v1/models" >/dev/null 2>&1; then
-      echo "copilot-minimax: gateway at $gateway_url not reachable" >&2
-      exit 1
-    fi
+    ${gatewayUrlResolver "copilot-minimax"}
     export RUST_LOG=warn
     export COPILOT_PROVIDER_TYPE=openai
     export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
@@ -208,7 +213,6 @@
   # working, so it's pinned explicitly rather than left to alias resolution.
   claudeMinimaxWrapper = pkgs.writeShellScriptBin "claude-minimax" ''
     claude_bin="$HOME/.local/bin/claude"
-    gateway_url="https://llm-gateway.centralcloud.com"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$claude_bin" ]; then
       echo "claude-minimax: expected Claude Code CLI at $claude_bin" >&2
@@ -218,11 +222,7 @@
       echo "claude-minimax: failed to read llm_gateway_api_key SOPS secret" >&2
       exit 1
     fi
-    if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
-        "$gateway_url/v1/models" >/dev/null 2>&1; then
-      echo "claude-minimax: gateway at $gateway_url not reachable" >&2
-      exit 1
-    fi
+    ${gatewayUrlResolver "claude-minimax"}
     export ANTHROPIC_BASE_URL="$gateway_url"
     export ANTHROPIC_API_KEY="$edge_token"
     export API_TIMEOUT_MS=120000
@@ -234,7 +234,6 @@
   # inference-fabric-edge service). No port-forward needed.
   copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    gateway_url="https://llm-gateway.centralcloud.com"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
       echo "copilot-all: expected mise GitHub Copilot CLI at $copilot_bin" >&2
@@ -244,11 +243,7 @@
       echo "copilot-all: failed to read llm_gateway_api_key SOPS secret" >&2
       exit 1
     fi
-    if ! curl -sS --max-time 2 -H "authorization: Bearer $edge_token" \
-        "$gateway_url/v1/models" >/dev/null 2>&1; then
-      echo "copilot-all: gateway at $gateway_url not reachable" >&2
-      exit 1
-    fi
+    ${gatewayUrlResolver "copilot-all"}
 
     # Keep @github/copilot on the newest npm release. The copilot CLI's own
     # self-updater does not work when we disable the native binary in favour

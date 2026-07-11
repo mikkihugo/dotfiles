@@ -74,7 +74,6 @@ in {
           shift
           exec "$real_home_manager" switch \
             --flake "$HOME/.dotfiles#$("$HOME/.dotfiles/scripts/current-home-profile")" \
-            --impure \
             --extra-experimental-features 'nix-command flakes' \
             "$@"
         fi

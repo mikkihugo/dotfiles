@@ -1,7 +1,7 @@
 # overlays/mise.nix — pin mise ahead of nixpkgs
 #
 # Why: nixos-26.05 (and even nixos-unstable) lag upstream mise. As of
-# 2026-06-10 the stable channel ships 2026.5.12 while upstream is at 2026.6.1,
+# 2026-07-11 the stable channel ships 2025.11.7 while upstream is at 2026.7.5,
 # which mise nags about on every invocation. The binary lives in the read-only
 # Nix store, so `mise self-update` cannot work; the only correct upgrade path
 # is to override the package version here.
@@ -15,17 +15,17 @@
 #   (vendor hash: build once with lib.fakeHash and read the mismatch)
 final: prev: {
   mise = prev.mise.overrideAttrs (old: rec {
-    version = "2026.6.1";
+    version = "2026.7.5";
     src = prev.fetchFromGitHub {
       owner = "jdx";
       repo = "mise";
       tag = "v${version}";
-      hash = "sha256-njEmL3Ne4vWNcqe/2ZsWNcuip7+G9kkRFB9qz/ceddk=";
+      hash = "sha256-oHZXd9u+FbwOs60yrmg5oSnQoHskVCi29TRgu0RKOpM=";
     };
     cargoDeps = prev.rustPlatform.fetchCargoVendor {
       inherit src;
       name = "mise-${version}-vendor";
-      hash = "sha256-S94b7cuAVNEGKUIeEI3cAiBmWkcPYY5TFfj1Qd8w2XU=";
+      hash = "sha256-JXipQn9gN5cJx6PSpDYHuxjYLNRyAwpjSaROxqSvIog=";
     };
   });
 }

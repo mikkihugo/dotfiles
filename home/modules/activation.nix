@@ -27,7 +27,7 @@ in {
       rm -f "$HOME/.config/gh/config.yml"
       rm -f "$HOME/.config/jj/config.toml"
 
-      if [ "$(hostname)" = "mikki-bunker" ]; then
+      if [ "$(${pkgs.hostname}/bin/hostname)" = "mikki-bunker" ]; then
         rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/combined.conf"
         rm -f "$HOME/.config/systemd/user/remote-gpu-worker.service.d/no-watchdog.conf"
         rmdir "$HOME/.config/systemd/user/remote-gpu-worker.service.d" 2>/dev/null || true
@@ -65,25 +65,6 @@ in {
         fi
       else
         echo "WARNING: mise config seed missing at $target" >&2
-      fi
-    '';
-
-    pushHomeManagerGenerationToCache = lib.hm.dag.entryAfter ["linkGeneration"] ''
-      if [ -f "$HOME/.config/attic/config.toml" ]; then
-        mkdir -p "$HOME/.cache/attic"
-        (
-          ${pkgs.util-linux}/bin/flock -n 9 || exit 0
-          for attempt in 1 2 3; do
-            ${pkgs.attic-client}/bin/attic push centralcloud:default "$newGenPath" && exit 0
-            status=$?
-            echo "attic push attempt $attempt failed with exit $status" >&2
-            [ "$attempt" -lt 3 ] || exit "$status"
-            sleep "$((attempt * 30))"
-          done
-        ) 9>"$HOME/.cache/attic/home-manager-push.lock" \
-          >"$HOME/.cache/attic/home-manager-push.log" 2>&1 &
-        echo "Started background push of Home Manager generation to centralcloud:default"
-        echo "Log: $HOME/.cache/attic/home-manager-push.log"
       fi
     '';
 
@@ -285,7 +266,6 @@ in {
       PY
     '';
 
-
     # @opencode-ai/sdk — TypeScript SDK for OpenCode API (programmatic access to
     # both OpenAI-compatible /v1/chat/completions and Anthropic /v1/messages endpoints).
     # Installed via npm global so it is available to ad-hoc Node scripts.
@@ -297,6 +277,5 @@ in {
         echo "@opencode-ai/sdk ready — import via: const { OpencodeClient } = require('@opencode-ai/sdk')" || \
         echo "WARNING: @opencode-ai/sdk install failed" >&2
     '';
-
   };
 }

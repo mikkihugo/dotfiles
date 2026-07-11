@@ -9,7 +9,8 @@ set -euo pipefail
 # Profiles:
 #   mikki-bunker  — x86_64 WSL2 desktop (GPU/CUDA worker)
 #   mikki-laptop  — aarch64 laptop (no GPU)
-#   mhugo         — fallback: auto-detects current system arch
+#   cc-se-sto-devbox-01 — x86_64 fleet devbox (no GPU role)
+#   mhugo         — generic x86_64 fallback (no GPU role)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
 
@@ -35,14 +36,14 @@ HOSTNAME="$(hostname -s 2>/dev/null || cat /etc/hostname 2>/dev/null | tr -d '[:
 case "$HOSTNAME" in
 mikki-bunker) PROFILE="mikki-bunker" ;;
 Mikki-Laptop) PROFILE="mikki-laptop" ;;
-*) PROFILE="mhugo" ;; # auto-detects arch via builtins.currentSystem
+cc-se-sto-devbox-01) PROFILE="cc-se-sto-devbox-01" ;;
+*) PROFILE="mhugo" ;;
 esac
 
 echo "==> Applying home-manager profile: $PROFILE (hostname: $HOSTNAME)"
 
 home-manager switch \
 	--flake "${ROOT_DIR}#${PROFILE}" \
-	--impure \
 	--extra-experimental-features 'nix-command flakes' \
 	-b backup
 

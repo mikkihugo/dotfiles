@@ -5,18 +5,17 @@
 #
 #   homeConfigurations."mikki-bunker"  — x86_64 WSL2 desktop (GPU worker, CUDA)
 #   homeConfigurations."mikki-laptop"  — aarch64 laptop (no GPU, no CUDA)
-#   homeConfigurations."mhugo"         — username alias, resolves to current host
+#   homeConfigurations."cc-se-sto-devbox-01" — x86_64 fleet devbox (no GPU role)
+#   homeConfigurations."mhugo"         — generic x86_64 fallback (no GPU role)
 #
 #   devShells.default  — lightweight shell for dotfiles maintenance.
 #
-# Requires --impure because the default mhugo profile reads the current system.
-# The home-manager shell wrapper, hms alias, and installer all pass --impure.
 {
   description = "mhugo dotfiles — home-manager + SOPS (multi-arch)";
 
   nixConfig = {
     extra-substituters = [
-      "https://cache.centralcloud.com/default"
+      "https://cache.flakecache.com/default"
       "https://cuda-maintainers.cachix.org"
       "https://nix-community.cachix.org"
       "https://cache.numtide.com"
@@ -106,9 +105,6 @@
     inference-fabric,
     ...
   }: let
-    # builtins.currentSystem reads host arch at eval time, so switch/build must
-    # pass --impure when using the mhugo alias.
-    system = builtins.currentSystem;
     specialArgs = {inherit sops-nix ace-coder hermes-agent llm-agents inference-fabric;};
 
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.
@@ -141,14 +137,19 @@
         "mikki-bunker" = mkHome "x86_64-linux" "mikki-bunker";
         # mikki-laptop: aarch64 portable machine (GPU worker skipped automatically).
         "mikki-laptop" = mkHome "aarch64-linux" "mikki-laptop";
-        # Username alias — resolves to the current host arch via builtins.currentSystem.
-        "mhugo" = mkHome system (builtins.getEnv "HOSTNAME");
+        # CentralCloud development host: x86_64 without the bunker GPU role.
+        "cc-se-sto-devbox-01" = mkHome "x86_64-linux" "cc-se-sto-devbox-01";
+        # Generic username fallback. Named machines use their explicit profile,
+        # so pure evaluation never depends on evaluator state and an unknown
+        # host cannot accidentally enable the bunker GPU role.
+        "mhugo" = mkHome "x86_64-linux" "";
       };
     }
     // flake-utils.lib.eachDefaultSystem (sys: let
       maintenance-pkgs = import nixpkgs {
         system = sys;
         config.allowUnfree = true;
+        overlays = [(import ./overlays/mise.nix)];
       };
     in {
       # `nix develop` — for editing secrets and running dotfiles linters.
@@ -158,7 +159,21 @@
         packages = with maintenance-pkgs; [
           go # build and validate local Go tools
           cargo # build and validate local Rust tools
+          just # operator entrypoints for dotfiles maintenance tasks
+          mise # run/update mise-managed tools from the maintenance shell
+          gnumake # required by mise/python-build when tracking python@latest
           pkg-config # native dependency discovery for rust crates when needed
+          openssl # CPython ssl/hashlib modules for mise/python-build
+          zlib # CPython zlib module; ensurepip needs this to unpack pip wheels
+          bzip2 # CPython bz2 module
+          xz # CPython lzma module
+          zstd # CPython zstd module
+          libffi # CPython ctypes module
+          readline # CPython readline module
+          sqlite # CPython sqlite3 module
+          ncurses # CPython curses/readline terminal support
+          gdbm # CPython dbm module
+          tk # CPython tkinter module
           sops # encrypt/decrypt secrets/api-keys.yaml
           age # age key generation and encryption backend
           ssh-to-age # derive age public key from SSH ed25519 key

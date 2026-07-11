@@ -5,7 +5,7 @@
     export HOME="/home/mhugo"
     export MISE_YES=1
     export MISE_JOBS=4
-    export PATH="${pkgs.mise}/bin:$HOME/.local/share/mise/shims:${pkgs.coreutils}/bin:${pkgs.bash}/bin:$PATH"
+    export PATH="${pkgs.nix}/bin:${pkgs.mise}/bin:$HOME/.local/share/mise/shims:${pkgs.coreutils}/bin:${pkgs.bash}/bin:$PATH"
 
     mise_bin="${pkgs.mise}/bin/mise"
     if [ ! -x "$mise_bin" ]; then
@@ -13,7 +13,8 @@
       exit 0
     fi
 
-    "$mise_bin" upgrade -y
+    cd "$HOME/.dotfiles"
+    ${pkgs.nix}/bin/nix --extra-experimental-features 'nix-command flakes' develop "$HOME/.dotfiles" --command just mise-upgrade
   '';
 in {
   systemd.user.services.mise-auto-update = {

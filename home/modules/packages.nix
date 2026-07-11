@@ -4,6 +4,9 @@
 # Grouped by role — remove a whole group if a machine doesn't need it.
 {pkgs, ...}: {
   home.packages = with pkgs; [
+    # Networking — resilient remote shell.
+    mosh # UDP-based ssh replacement, survives roaming/sleep, local echo
+
     # Modern CLI replacements — faster, friendlier alternatives to coreutils.
     # Aliases (ls→eza, man→batman) are declared in shell.nix shellAliases.
     eza # ls replacement (tree view, git status, icons)
@@ -33,7 +36,6 @@
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
     go # build local Go tools
-    nodejs # Node.js runtime — npm used by activation.nix for @opencode-ai/sdk
     pnpm # fast, disk-efficient Node package manager
     sccache # Rust compiler cache; Cargo wrapper is managed in files.nix
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin

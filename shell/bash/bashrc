@@ -136,7 +136,7 @@ _load_sops_secrets() {
 		export CLOUDFLARE_API_EMAIL="$CF_API_EMAIL"
 	fi
 
-	# GOG Galaxy
+	# gog Google Workspace CLI encrypted file keyring
 	val=$(_sops_val gog keyring_password)
 	[ -n "$val" ] && export GOG_KEYRING_PASSWORD="$val"
 
@@ -167,7 +167,7 @@ _load_sops_secrets() {
 	[ -n "$val" ] && export ALIBABA_TOKEN_PLAN_API_KEY="$val"
 	val=$(_sops_sf_val GOOGLE_GENERATIVE_AI_API_KEY)
 	if [ -n "$val" ]; then
-		export GOOGLE_GENERATIVE_AI_API_KEY="$val"  # opencode google provider (AI Studio, free Flash tier)
+		export GOOGLE_GENERATIVE_AI_API_KEY="$val" # opencode google provider (AI Studio, free Flash tier)
 		export GEMINI_API_KEY="$val"
 	fi
 	val=$(_sops_sf_val OPENCODE_API_KEY)

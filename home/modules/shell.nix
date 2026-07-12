@@ -278,6 +278,34 @@ in {
     bash = {
       enable = true;
       initExtra = shellInit;
+
+      # home-manager's own .bashrc template puts a bare
+      # `[[ $- == *i* ]] || return` right after bashrcExtra, so
+      # `source ~/.bashrc` always exits 1 in a non-interactive shell —
+      # even though that's normal, by-design behavior (interactive-only
+      # setup should skip). Non-interactive callers that chain on the
+      # exit code (coder/codex's sandbox wrapper runs
+      # `source ~/.bashrc && (cmd)`) treat that as a fatal error and
+      # never run the actual command: every tool call failed instantly
+      # with exit 1 and no output, regardless of which command was
+      # requested (see /home/mhugo/code coder/codex investigation,
+      # 2026-07-12). bashrcExtra runs *before* that guard, so handle the
+      # non-interactive case here and return 0 explicitly before
+      # home-manager's own guard is ever reached. This also makes the
+      # non-interactive direnv-export/secrets-loading logic in
+      # shell/bash/bashrc actually reachable, which it previously wasn't
+      # (it lived in initExtra, past the guard, so it was dead code for
+      # any non-interactive shell despite explicitly checking for one).
+      bashrcExtra = ''
+        if [[ $- != *i* ]]; then
+          export DOTFILES_ROOT="${dotfilesRoot}"
+          export HM_MANAGED=1
+          [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] \
+            && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+          [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && . "$DOTFILES_ROOT/shell/bash/bashrc"
+          return 0
+        fi
+      '';
     };
 
     # zsh uses initContent (home-manager 24.11+); same init sequence as bash.

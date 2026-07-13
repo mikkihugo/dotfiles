@@ -49,6 +49,7 @@
       "${homeDir}/**/.pytest_cache"
       "${homeDir}/**/.mypy_cache"
       "${homeDir}/**/.ruff_cache"
+      "${homeDir}/**/.repowise"
       "${homeDir}/**/.gradle/caches"
       "${homeDir}/**/.m2/repository"
       "${homeDir}/**/coverage"
@@ -99,7 +100,7 @@
     // {
       repositories = [
         {
-          path = target.path;
+          inherit (target) path;
           label = "storagebox-${name}";
         }
       ];

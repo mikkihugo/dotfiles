@@ -1,4 +1,6 @@
 personality = "pragmatic"
+model = "auto"
+model_provider = "llm-gateway"
 sandbox_mode = "danger-full-access"
 approval_policy = "never"
 suppress_unstable_features_warning = true
@@ -19,6 +21,7 @@ hide_full_access_warning = true
 unified_exec = true
 shell_snapshot = true
 multi_agent = true
+multi_agent_v2 = { enabled = true, hide_spawn_agent_metadata = false, tool_namespace = "agents" }
 steer = true
 personality = true
 undo = true
@@ -30,3 +33,15 @@ prevent_idle_sleep = true
 
 [mcp_servers.centralcloud-mcp-gateway]
 url = "http://mcp-gateway.svc/mcp"
+
+[model_providers.llm-gateway]
+name = "CentralCloud LLM Gateway"
+base_url = "http://llm-gateway.svc:80/v1"
+env_key = "LLM_MUX_API_KEY"
+wire_api = "responses"
+
+[model_providers.llm-gateway-models-codex]
+name = "CentralCloud LLM Gateway (Codex models catalog only)"
+base_url = "http://llm-gateway.svc:80/codex/v1"
+env_key = "LLM_MUX_API_KEY"
+wire_api = "responses"

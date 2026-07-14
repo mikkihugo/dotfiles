@@ -247,8 +247,8 @@ Verified solutions are more valuable than plausible explanations.
 
 <!-- markdownlint-disable -->
 <!-- prettier-ignore-start -->
-<!-- BEGIN purpose-agent-tools skills (58c871807c74) -->
-Instruction block hash: 68a6f86fe3c0
+<!-- BEGIN purpose-agent-tools skills (bb00a63f9a3d) -->
+Instruction block hash: eb76399cc9b5
 ## Purpose-First hard gate
 
 Before any repo, runtime, infra, GitOps, Kubernetes, policy, planning, debugging, or implementation task:
@@ -293,8 +293,11 @@ No behavior, plan, prompt, skill, code, test, or operational change without a cl
 - **VCS backend fallback:** if `.jj/` exists, jj is the local revision/workspace backend. If `.jj/` is absent and `.git/` exists, Git is the local revision/workspace backend. Git remains valid in jj repos only for documented Git interop such as CI mirrors, remotes, object inspection, or repo-specific publish recipes.
 - **Worktree guard:** before multi-step, multi-file, branch-scale, or concurrent editing work on `main`, `master`, or a shared primary checkout, load `branch-lifecycle-worktree` and create an isolated session workspace. Reuse an existing workspace only for the same task after verifying its owner and state. Use `jj_workspace_spawn` for jj repos and `git_worktree_add` for Git repos.
 - **Workspace closure:** before handoff, inventory session-created and stale workspaces. Remove a workspace only when its work is integrated or explicitly abandoned, clean, and not owned by a live process. Preserve and report dirty, unintegrated, or active workspaces; unregister through the selected VCS backend before deleting its directory.
+- **Workspace identity:** distinguish repository root, current working directory, registered workspace name/path, and shared VCS store. A Git worktree or Jujutsu workspace is a checkout view, not an independent repository. Resolve commands against the intended registered workspace; inventory and cleanup through the canonical repository registry and workspace root.
+- **Publication closure:** when the user authorizes commit, merge, and push, continue through description/commit, integration, guarded publication, remote revision readback, and clean session-workspace removal. Do not stop at a verified diff. Inventory generated/build garbage; remove only reproducible, unowned artifacts within scope, and report anything preserved.
 - **Repo command layers:** root instructions name the orchestration surface; `just/AGENTS.md` or equivalent owns recipe implementation; deeper scoped AGENTS files name local verification recipes. Follow the nearest scoped layer, but keep stable root recipe aliases when changing public commands.
 - **Repo commands:** when a repo has a `justfile`, use `nix develop --command just check` as the default repo-wide verification gate when available, and `nix develop --command just <target>` for focused build, lint, test, typecheck, dev, start, sync, and check operations. Inspect `just --summary` or `just --list` before inventing commands. If a recurring repo operation lacks a Just recipe, add one instead of teaching agents direct package-manager commands.
+- **Command-surface ownership:** treat `just` as the stable agent-facing facade for repo operations, including Nix-backed checks, VCS, discovery, repo maps, feature maps, and structural search when those recipe groups exist. A declared VCS group owns status, mutation, workspaces, remote sync, and publication; do not duplicate publication under `ops`. Reserve `ops` for runtime and service operations. Purpose Agent Tools owns this generic doctrine; repo instructions record only concrete recipe mappings, local constraints, and exceptions.
 - **Nix environment:** if the repo has `flake.nix`, `shell.nix`, or `default.nix`, run commands inside `nix develop`. Check `IN_NIX_SHELL`. Fail loudly outside Nix. Use direct package-manager commands only for dependency installation or one-off package-manager work with no stable Just recipe.
 - **Durable memory:** if prior decisions, runbooks, incidents, or operational memory matter, call `search_memory` first. Share findings through `operations_memory` with evidence, named consumer, and scope.
 - **Repo observations:** before finishing non-trivial work, explicitly account for harvestable side observations from research, exploration, debugging, review, or implementation: append a valid `OBSERVATIONS.md` entry and verify it, or state that no harvestable side observation was found. Use `nix develop --command just lint-observations` when that recipe exists.
@@ -402,7 +405,7 @@ Purpose-First artifact homes are the default repo normalizer: plans use `docs/pl
 
 ## Repo instruction sync
 
-Compute the current bundle hash from `list_skills.bundleHash` and the instruction-block hash from `install_skills.agentsBlock.hash`. If the active repo `AGENTS.md` does not contain a managed block with bundle hash `58c871807c74` and the current instruction hash, run `install_skills` to refresh it. Preserve all handwritten content outside the managed block.
+Compute the current bundle hash from `list_skills.bundleHash` and the instruction-block hash from `install_skills.agentsBlock.hash`. If the active repo `AGENTS.md` does not contain a managed block with bundle hash `bb00a63f9a3d` and the current instruction hash, run `install_skills` to refresh it. Preserve all handwritten content outside the managed block.
 
 ## This block is managed
 

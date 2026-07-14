@@ -247,137 +247,166 @@ Verified solutions are more valuable than plausible explanations.
 
 <!-- markdownlint-disable -->
 <!-- prettier-ignore-start -->
-<!-- BEGIN purpose-agent-tools skills (304c815db6c0) -->
-Instruction block hash: 5ff57d1f7378
-Purpose-First MCP skills via purpose-agent-tools (CentralCloud fleet).
+<!-- BEGIN purpose-agent-tools skills (58c871807c74) -->
+Instruction block hash: 68a6f86fe3c0
+## Purpose-First hard gate
 
-TERMINOLOGY: Purpose-First Development — purpose → contract test → evidence on disk.
-Not prompt-driven development. Use Purpose-First naming for the discipline.
+Before any repo, runtime, infra, GitOps, Kubernetes, policy, planning, debugging, or implementation task:
 
-DOUBT (not decimal self-confidence): Process doubt is ordinal 0–4 on claims; panel redteam findings use doubt_grade 0|1 only. Load skill_file_read({ name: "purpose-first", path: "references/doubt-doctrine.md" }) before ship or review gates. Never use 0.98-style self-confidence for merge decisions.
+1. **Load `using-skills` first.** Call `load_skill({ name: "using-skills" })` before any other tool or answer.
+2. **Follow the skill it tells you to load.** `using-skills` routes your task to the right rule.
+3. **Router-only clients:** use `mcp_tool_call(server=purpose_agent_tools, tool=purpose_agent_tools_load_skill, arguments={name:"using-skills"})`.
 
-HARD GATE: Before any repo, runtime, infra, GitOps, Kubernetes, policy, planning, debugging, or implementation task, call load_skill({ name: "using-skills" }) before all other tools or answers. If only router tools are exposed, call mcp_tool_call(server=purpose_agent_tools, tool=purpose_agent_tools_load_skill, arguments={name:"using-skills"}).
+## What this means
 
-Repo instruction sync: Compute the current Purpose-First skills bundle hash from list_skills.bundleHash and the current instruction block hash from install_skills.agentsBlock.hash. If the active repo root AGENTS.md does not contain a purpose-agent-tools managed block with this bundle hash (304c815db6c0) and instruction hash, add or replace that block before repo/runtime work continues. Preserve all handwritten content outside the managed block.
+Purpose-First Development: purpose → contract test → evidence on disk.
+No behavior, plan, prompt, skill, code, test, or operational change without a clear purpose, consumer, contract, evidence, and falsifier.
 
-IMPORTANT: Skills load via the single load_skill tool, which returns guidance text and takes no action by itself.
-RULE: Before starting any task that matches a skill trigger below, CALL the matching
-skill by name via load_skill({ name }) first (it takes no action, just returns instructions), then follow those instructions.
+**DOUBT:** Process doubt is ordinal 0–4 on claims. Load `skill_file_read({ name: "purpose-first", path: "references/doubt-doctrine.md" })` before ship or review gates. Never use 0.98-style self-confidence for merge decisions.
 
-MCP QUICK PATH:
-  • BOOTSTRAP: Call initial_instructions if client startup instructions were missed, truncated, or may be stale.
-  • list_skills returns the machine-readable index and bundleHash.
-  • Load guidance with load_skill({ name }); names and aliases come from list_skills.
-  • If only router/catalog tools are exposed, load skills with mcp_tool_call(server=purpose_agent_tools, tool=purpose_agent_tools_load_skill, arguments={name,task?}). Do not hardcode promoted wrapper names such as purpose_agent_tools__purpose_agent_tools_load_skill; wrapper names are client/session-specific.
-  • Package files: use skill://purpose_agent_tools/<name>/... resources when exposed; otherwise skill_manifest(name) then skill_file_read(name, path).
-  • Repo files: use file_read(path) with an absolute path.
-  • Through a router-only gateway, use mcp_tool_call(server=purpose_agent_tools, tool=purpose_agent_tools_skill_file_read, arguments={name,path}) or the exact discovered downstream tool name. Do not assume package files are unavailable because they are not top-level tools.
-  • Through a router-only gateway, use mcp_tool_call(server=purpose_agent_tools, tool=purpose_agent_tools_file_read, arguments={path}) or the exact discovered downstream tool name.
-  • check_update reports npm-backed stdio package freshness. It does not validate the CentralCloud cluster image.
-  • install_skills refreshes this managed block and can return optional native skill files.
-  • Default install uses no command hooks and no local skill files.
+## Quick path
 
-CALLABLE MCP TOOLS:
-  • Skill guidance: load_skill, list_skills, skill_file_read, skill_manifest, file_read.
-  • Research-to-implementation: purpose_research_to_implementation runs the evidence-to-design gate; purpose_research_to_implementation_list_jobs, purpose_research_to_implementation_job_trace, and purpose_research_to_implementation_job_result read jobs back.
-  • Redteam: redteam_run(mode, input, ...) evaluates prepared-opposer panel gates; redteam_list_jobs, redteam_job_trace, and redteam_job_result read panel jobs.
-  • Work harness: scaffold_work creates work/<change-id>/ from templates; validate_work checks JSON schemas, linkage, and evidence files. CLI: purpose-validate-work.
-  • Diagnostics: server_info, server_logs, check_update, initial_instructions.
-  • If a client exposes only a router/catalog, search for purpose_agent_tools tools first, then call the downstream tool by exact name through mcp_tool_call. Missing direct wrappers do not mean the capability is absent.
+- **Start:** `load_skill({ name: "using-skills" })`; router fallback: `mcp_tool_call(server=purpose_agent_tools, tool=purpose_agent_tools_load_skill, arguments={name:"using-skills"})`.
+- **Behind CentralCloud proxy:** direct wrappers are supported shortcuts named like `purpose_agent_tools__load_skill`. If a wrapper is hidden, absent, or fails with a wrapper/schema/tool-name error, retry through `mcp_tool_call(server=purpose_agent_tools, tool=purpose_agent_tools_<tool>, arguments={...})` before declaring the downstream tool unavailable.
+- **Setup / refresh:** `list_skills` for `bundleHash`; `install_skills` for `agentsBlock.full`; `check_agents_block({ repoRoot })` to verify installed instruction blocks. Router tools: `purpose_agent_tools_list_skills`, `purpose_agent_tools_install_skills`, `purpose_agent_tools_check_agents_block`.
+- **Redteam:** `redteam_run({ mode, input })`; router tool: `purpose_agent_tools_redteam_run`; modes: review, architect, plan, decision, hack, bughunt, harvest, verify, ultrareview. Poll long jobs with `redteam_job_trace({ jobId })` / `redteam_job_result({ jobId })` or router tools `purpose_agent_tools_redteam_job_trace` / `purpose_agent_tools_redteam_job_result`.
+- **RTI:** `purpose_research_to_implementation` translates research evidence into local options; router tool: `purpose_agent_tools_purpose_research_to_implementation`; read back with its job trace/result tools.
 
-SCOPED INSTRUCTIONS:
-  • Before editing a path, look upward for the nearest AGENTS.md / CLAUDE.md / host instruction file that governs that subtree; deeper files override parent files.
-  • If the edit changes ownership, workflow, verification, runtime wiring, public contract, or generated artifacts for that subtree, update the scoped instruction file in the same turn.
-  • Use workflow-plan/templates/scoped-agents-template.md for new scoped AGENTS.md files; nested AGENTS.md files are ownership maps, not plan storage.
-  • Purpose-First artifact homes are the default repo normalizer: plans use docs/plans/, evidence and policy/control records use docs/records/, ADRs use docs/adr/, specs use docs/specs/; framework names and control IDs stay repo-local.
-  • If disk-first work harness files exist, docs should link to work/<change-id>/ and name the relevant purpose.contract.json, work.spec.json, and evidence.bundle.json paths.
-  • Repo-local artifact-home overrides need purpose, consumer, verification command, and falsifier in the scoped instruction file.
-  • Repo-local skills are overlays on Purpose-First base skills: repo-specific facts, tools, or invariants only. Frontmatter: extends (purpose-first/...), repo_overlay (<repo-slug>), addon_for (<repo-only reason>). Layout: .agents/skills/<name>/SKILL.md unless documented otherwise. Load the base first; load overlays only on repo-specific triggers. Full contract: load_skill({ name: "repo-skill-overlays" }). If generic, improve purpose-agent-tools instead of adding a local override.
+## How to use skills
 
-MEMORY AND OBSERVATIONS:
-  • Durable shared context: if prior decisions, runbooks, incidents, or operational memory matter, call search_memory first; downstream source is operations_memory.
-  • Share cross-session findings through operations_memory only with evidence, named consumer, and scope. Never store secrets, transient TODOs, private reasoning, or current-task checklists.
-  • Repo side observations: before finishing, ask "Did this work reveal any useful observation outside the current task?" If yes, record it in THOUGHTS.md using the template and verify with nix develop --command pnpm run lint:thoughts.
-  • THOUGHTS.md is not backlog, ADR, or plan storage. Promote a thought only by linking it to a real plan, ADR, issue, or tracked task; otherwise leave it open or discard it with evidence.
+- **Find the skill:** run `list_skills`. Match your task to the skill trigger.
+- **Load it:** call `load_skill({ name })`. Aliases resolve to canonical names (e.g. `brainstorming` → `workflow-discover`).
+- **Router-only gateway:** do not hardcode generated wrapper names. Use `mcp_tool_call` with the exact downstream tool name. Wrapper failure is not downstream failure unless the same call fails through `mcp_tool_call`.
 
-ENVIRONMENT OPTIONS:
-  • Nix repos: if flake.nix, shell.nix, or default.nix exists, run repo commands inside Nix. Check IN_NIX_SHELL before command execution; IN_NIX_SHELL=impure from direnv is valid.
-  • Re-check IN_NIX_SHELL after shell changes, long-running resumes, or unexpected toolchain failures.
-  • If IN_NIX_SHELL is empty in a Nix repo, use direnv exec . <command> or nix develop -c <command>. Do not silently use host tools; scripts, Make targets, and agent entrypoints that require repo tooling should fail loudly outside Nix.
+## CentralCloud MCP discovery gate
 
-SKILL INDEX (grouped by category; skill name — trigger; call load_skill with name):
-  [meta]
-    • instruction-authoring-skills — Use when creating, editing, pruning, or verifying skills before deployment. Not for one-off repo policy (put those in AGENTS.md or CLAUDE.md) or general instruction editing (use instruction-authoring-instructions).
-      alias: writing-skills → load with name=instruction-authoring-skills
-    • purpose-first — Use when making or evaluating any behavior, plan, prompt, skill, code, test, or operational change that needs purpose, proof, consumer, or falsifier clarity. Alias `purpose-contract` returns the canonical 9-field purpose contract template. Not for purely cosmetic or self-contained changes with no behavior, policy, proof, consumer, or public-contract impact.
-      alias: code-quality-purpose → load with name=purpose-first
-      alias: purpose-first-tdd → load with name=purpose-first
-      alias: purpose-contract → load with name=purpose-first
-    • repo-skill-overlays — Use when adding or maintaining repo-local skill overlays on top of Purpose-First base skills. Not for one-off repo policy (AGENTS.md/CLAUDE.md only) or authoring new base skills (instruction-authoring-skills).
-    • using-skills — Use when starting any conversation or task, before clarifying, inspecting files, planning, editing, or answering. Not for self-contained tasks with no repo, runtime, workflow, policy, or user-history dependency.
-    • workflow-forensics — Use when an agent workflow, plan execution, review loop, deploy path, or tool-driven task got stuck, contradicted itself, lost work, produced suspect artifacts, or needs post-mortem diagnosis. Not for ordinary code bugs with a live repro; use code-quality-debug for those.
-  [process]
-    • benchmark-design — Use when designing evals, benchmarks, scoring rubrics, goldens, trace replay, model or agent comparisons, retrieval/RAG harnesses, success metrics, or promotion gates. Not for ordinary unit tests whose expected behavior is already fully specified.
-    • branch-lifecycle — Use only when unsure which branch-lifecycle child skill applies — it routes to the child. For a concrete branch or worktree action, load that child directly.
-    • branch-lifecycle-finish — Use when implementation is complete, verification passes, and the remaining decision is how to integrate, merge, PR, clean up, or finish the branch. Not for throwaway branches, docs-only single commits, or trivial edits where merge/PR ceremony adds no value.
-      alias: finishing-a-development-branch → load with name=branch-lifecycle-finish
-    • branch-lifecycle-worktree — Use when creating, reusing, recovering, or cleaning up git worktrees; when branch-scale work, parallel agents, generated wrappers, crash recovery, or dirty checkout isolation matters. Also use when Gate says skip worktree isolation (narrow/urgent/GitOps/live-ops work) but the tree is shared with another possibly-concurrent agent — covers presence/heartbeat so uncommitted work from a dead or live session isn't lost or clobbered. Not for already-isolated workspaces or edits explicitly targeting the current checkout.
-      alias: using-git-worktrees → load with name=branch-lifecycle-worktree
-    • code-quality — Use only when unsure which code-quality child skill applies — it routes to the child. For a concrete quality action, load that child directly.
-    • code-quality-contracts — Use when changing production behavior, tests, policy gates, validators, docs, or exceptions where correctness, hidden debt, magic constants, stale contracts, or silent failures could ship. Not for cosmetic changes that cannot affect behavior, proof, observability, policy scope, or a public contract.
-      alias: quality-contracts → load with name=code-quality-contracts
-    • code-quality-debug — Use when encountering a bug, test failure, production incident, unexpected behavior, performance issue, build failure, or integration failure before proposing fixes. Not for cases where root cause is already proven by reproducible evidence and a minimal fix target is known.
-      alias: systematic-debugging → load with name=code-quality-debug
-    • code-quality-tdd — Use when implementing any feature or bugfix, before writing implementation code, to turn the Purpose-First contract into executable proof. Not for pure refactors, docs-only, test-only, formatting, or compiler-directed migrations with no behavior change.
-      alias: test-driven-development → load with name=code-quality-tdd
-    • code-quality-verify — Use when about to claim work is complete, fixed, passing, ready to commit, or ready for PR, especially after code, docs, config, or validator changes. Not for trivial one-liners, single commands with no repo consequence, or pure cosmetic changes.
-      alias: verification-before-completion → load with name=code-quality-verify
-    • research-to-implementation — Use when a task needs external research, local source tracing, benchmark comparison, architecture pattern extraction, agent-role design, self-evolution design, memory/planning systems, or a grounded implementation plan. Not for ordinary bugfixes or bounded implementation work where local behavior is already clear.
-    • source-tracing — Use when source, runtime path, data origin, config flow, generated artifacts, or ownership must be traced before claiming behavior present, partial, obsolete, or missing. Not for bug symptoms with a known failure; use code-quality-debug and root-cause tracing for those.
-      alias: runtime-path-tracing → load with name=source-tracing
-      alias: provenance-tracing → load with name=source-tracing
-    • workflow — Use only when unsure which workflow child skill applies — it routes to the child. For a concrete workflow action, load that child directly.
-    • workflow-check-existing — Use when adding or changing a capability surface such as a public function, API, command, prompt, workflow, schema/helper, policy, or reusable instruction. Not for pure formatting, refactoring, or test-only changes that do not alter a contract or reusable surface.
-      alias: existing-capability-first → load with name=workflow-check-existing
-    • workflow-discover — Use when a request needs product/design exploration, unclear requirements, multiple viable approaches, UI/UX choices, naming/ownership decisions, or new behavior whose intent is not yet bounded. Not for obvious bug fixes, small config changes, mechanical edits, or operator-directed tasks that are mechanically specified with exact target, behavior, constraints, and acceptance evidence.
-      alias: brainstorming → load with name=workflow-discover
-    • workflow-execute — Use when executing a written implementation plan in the current session. Not for plans that need per-task subagent implementers and review gates — use subagent-driven-development instead.
-      alias: executing-plans → load with name=workflow-execute
-    • workflow-goal — Use when the user explicitly asks to create, write, refine, inspect, continue, or finish a durable goal for multi-turn autonomous work. Not for ordinary one-shot requests, vague discussions, or implementation plans that only need docs/plans.
-      alias: goal-setting → load with name=workflow-goal
-      alias: write-goal → load with name=workflow-goal
-      alias: goals → load with name=workflow-goal
-    • workflow-plan — Use when you have a spec or requirements for a multi-step task, before touching code. Not for single-step changes, trivial edits, or work with fewer than 3 tasks where decomposition adds overhead.
-      alias: writing-plans → load with name=workflow-plan
-    • workflow-work-harness — Use when creating or validating disk-first Purpose-first work directories (purpose.contract.json, work.spec.json, evidence.bundle.json) before or after implementation. Not for markdown-only plans without JSON contracts.
-      alias: work-harness → load with name=workflow-work-harness
-      alias: disk-work-contract → load with name=workflow-work-harness
-  [review]
-    • code-review — Use only when unsure which code-review child skill applies — it routes to the child. For a concrete review action, load that child directly.
-    • code-review-receive — Use when receiving code review feedback, especially before implementing reviewer suggestions or resolving disputed technical comments. Not for solo work with no reviewer present, or trivial cosmetic comments that do not affect behavior.
-      alias: receiving-code-review → load with name=code-review-receive
-    • code-review-request — Use when completing tasks, implementing major features, or before merging to verify work meets requirements. Not for throwaway branches, already-merged work, or single-line changes below the review threshold.
-      alias: requesting-code-review → load with name=code-review-request
-    • redteam — Use when the user asks for advisory review, adversarial review, plan review, security audit, or cross-model critique. Not for in-flow redteam steps — each Purpose-First skill forwards to the right mode itself.
-  [writing]
-    • instruction-authoring — Use only when unsure which instruction-authoring child skill applies — it routes to the child. For a concrete authoring action, load that child directly.
-    • instruction-authoring-instructions — Use when changing prompts, AGENTS.md, CLAUDE.md, MCP/tool instructions, skills, governance docs, or instruction surfaces where wording can change agent behavior. Not for human-facing docs or prose (use instruction-authoring-prose) or skill lifecycle work (use instruction-authoring-skills).
-      alias: instruction-writing → load with name=instruction-authoring-instructions
-    • instruction-authoring-prose — Use when creating or revising docs, plans, records, PR text, handoffs, or other prose that should be sparse, direct, and low-context. Not for code changes, log output, status strings, or agent-facing instruction surfaces (use instruction-authoring-instructions for those).
-      alias: human-writing → load with name=instruction-authoring-prose
-  [orchestration]
-    • multi-agent-work — Use only when unsure which multi-agent-work child skill applies — it routes to the child. For a concrete dispatch or orchestration action, load that child directly.
-    • multi-agent-work-dispatch — Use when 2+ independent tasks, failures, research lanes, exploration lanes, or path-scoped investigations can run in separate ownership lanes; pair with branch-lifecycle-worktree before any lane may edit files. Not for shared-root-cause failures, whole-system tracing, or tasks requiring the same file.
-      alias: dispatching-parallel-agents → load with name=multi-agent-work-dispatch
-    • multi-agent-work-orchestrate — Use when executing a written implementation plan, or dispatching 2+ independent implementation tasks (research, audit, exploration, or coding lanes), through implementer/review/fix/integration gates. Not for ad hoc parallel failures without a written plan (use dispatch) or small inline work when subagents are unavailable.
-      alias: subagent-driven-development → load with name=multi-agent-work-orchestrate
-  [diagnostics]
-    • monitoring — Use when debugging, investigating, or verifying system behavior that requires querying metrics, logs, or health signals from monitoring backends (VictoriaMetrics, Prometheus, Kubernetes, Longhorn, CNPG, Holmes, or any registered provider). Not for general debugging without metrics — use code-quality-debug first.
+- **Operational reads:** when the CentralCloud MCP gateway is available, inspect `mcp_router_hints` before Forgejo, Kubernetes, Flux, logs, metrics, memory, browser, or other remote-system reads.
+- **Discovery:** use discover -> describe selected listing -> checkout: grouped search tools first, `mcp_tool_describe` when schema detail matters, then direct wrapper or `mcp_tool_call` with the exact downstream server and tool. Do not infer that a capability is missing from an absent direct wrapper or a failing direct wrapper.
+- **Local grounding:** when work depends on local code behavior, use workspace scope/tools first when a workspace authority exists, then repo metadata/taxonomy/runbooks, then repo-declared code-intel/repo-map/feature-map tools when present, `ast-grep` for structural matches when available, and `rg` for text fallback. Record the scope, metadata source, path, symbol, test, trace, or runtime proof used.
+- **Docs grounding:** when work depends on current dependency behavior, upstream repo structure, framework/API docs, or repo/wiki context, use `search_docs` first. Prefer DeepWiki first for upstream repo/wiki/dependency architecture; use Context7 for library/framework/API docs and examples. Do this before guessing from memory. Treat docs as external evidence; local source, tests, traces, or runtime state prove local behavior.
+- **Boundary:** use provider MCP tools for remote state. Use the local shell for repository edits and repo-owned verification, or when MCP lacks the required capability; state the fallback.
 
-PREPARED-OPPOSER REVIEW: Use redteam_run({ mode, input }) for cross-model review panels. Valid modes: review, architect, plan, decision, hack, bughunt, harvest, verify, ultrareview.
-  These are long-running (30-120s), read-only, and use factual opposition to make work stand on its own feet.
-  Keep the union of distinct evidence-backed findings; do not collapse to consensus before objections are refuted.
-  Each redteam_run result includes a jobId for the redteam job-trace/result tools.
+## Critical rules for every task
+
+- **Scoped instructions:** before editing a path, look upward for the nearest `AGENTS.md` / `CLAUDE.md` / host instruction file. Deeper files override parent files. Update the scoped file when your edit changes ownership, workflow, verification, runtime wiring, public contract, or generated artifacts.
+- **VCS orchestration:** if a repository declares a VCS orchestration surface, use it exclusively and do not bypass it with native VCS commands. If none exists, use the repository's detected native backend. Detect the declared surface from root instructions and the repository command registry before selecting Git or jj.
+- **VCS backend fallback:** if `.jj/` exists, jj is the local revision/workspace backend. If `.jj/` is absent and `.git/` exists, Git is the local revision/workspace backend. Git remains valid in jj repos only for documented Git interop such as CI mirrors, remotes, object inspection, or repo-specific publish recipes.
+- **Worktree guard:** before multi-step, multi-file, branch-scale, or concurrent editing work on `main`, `master`, or a shared primary checkout, load `branch-lifecycle-worktree` and create an isolated session workspace. Reuse an existing workspace only for the same task after verifying its owner and state. Use `jj_workspace_spawn` for jj repos and `git_worktree_add` for Git repos.
+- **Workspace closure:** before handoff, inventory session-created and stale workspaces. Remove a workspace only when its work is integrated or explicitly abandoned, clean, and not owned by a live process. Preserve and report dirty, unintegrated, or active workspaces; unregister through the selected VCS backend before deleting its directory.
+- **Repo command layers:** root instructions name the orchestration surface; `just/AGENTS.md` or equivalent owns recipe implementation; deeper scoped AGENTS files name local verification recipes. Follow the nearest scoped layer, but keep stable root recipe aliases when changing public commands.
+- **Repo commands:** when a repo has a `justfile`, use `nix develop --command just check` as the default repo-wide verification gate when available, and `nix develop --command just <target>` for focused build, lint, test, typecheck, dev, start, sync, and check operations. Inspect `just --summary` or `just --list` before inventing commands. If a recurring repo operation lacks a Just recipe, add one instead of teaching agents direct package-manager commands.
+- **Nix environment:** if the repo has `flake.nix`, `shell.nix`, or `default.nix`, run commands inside `nix develop`. Check `IN_NIX_SHELL`. Fail loudly outside Nix. Use direct package-manager commands only for dependency installation or one-off package-manager work with no stable Just recipe.
+- **Durable memory:** if prior decisions, runbooks, incidents, or operational memory matter, call `search_memory` first. Share findings through `operations_memory` with evidence, named consumer, and scope.
+- **Repo observations:** before finishing non-trivial work, explicitly account for harvestable side observations from research, exploration, debugging, review, or implementation: append a valid `OBSERVATIONS.md` entry and verify it, or state that no harvestable side observation was found. Use `nix develop --command just lint-observations` when that recipe exists.
+- **Repo-local skills:** `.agents/skills/` are overlays only — repo paths, verify commands, org facts on top of a base skill. Load base from PAT first, overlay second. Do not embed repo routes in the managed block; if generic, improve purpose-agent-tools instead.
+
+## MCP tools you will need
+
+- **Skill guidance:** `load_skill`, `list_skills`, `skill_file_read`, `skill_manifest`, `file_read`, `install_skills`, `check_agents_block`.
+- **Local jj workspaces:** `jj_workspace_spawn`, `jj_workspace_list`, `jj_workspace_forget`, `jj_workspace_prepare_abandon`, `jj_workspace_confirm_abandon`, `jj_classify_command` (mounted jj repos on this MCP host only).
+- **Research-to-implementation:** `purpose_research_to_implementation` and its job-trace/result readers.
+- **Redteam:** `redteam_run`, `redteam_job_trace`, `redteam_job_result`.
+- **Work harness:** `scaffold_work`, `validate_work`, `check_harness_homes`, `validate_taxonomy_config`. CLIs: `purpose-validate-work`, `purpose-validate-taxonomy`.
+- **Diagnostics:** `server_info`, `server_logs`, `check_update`, `initial_instructions`.
+
+## Skill index
+
+Run `list_skills` for the canonical grouped index. Load a skill by its canonical name.
+
+- **[meta]**
+  - instruction-authoring-skills — Use when creating, editing, pruning, or verifying skills before deployment. Not for one-off repo policy (put those in AGENTS.md or CLAUDE.md) or general instruction editing (use instruction-authoring-instructions).
+    - alias: writing-skills → load with name=instruction-authoring-skills
+  - purpose-first — Use when making or evaluating any behavior, plan, prompt, skill, code, test, or operational change that needs purpose, proof, consumer, or falsifier clarity. Alias `purpose-contract` returns the canonical 9-field purpose contract template. Not for purely cosmetic or self-contained changes with no behavior, policy, proof, consumer, or public-contract impact.
+    - alias: code-quality-purpose → load with name=purpose-first
+    - alias: purpose-first-tdd → load with name=purpose-first
+    - alias: purpose-contract → load with name=purpose-first
+  - repo-skill-overlays — Use when adding or maintaining repo-local skill overlays on top of Purpose-First base skills. Not for one-off repo policy (AGENTS.md/CLAUDE.md only) or authoring new base skills (instruction-authoring-skills).
+  - using-skills — Use when starting any conversation or task, before clarifying, inspecting files, planning, editing, or answering. Not for self-contained tasks with no repo, runtime, workflow, policy, or user-history dependency.
+  - workflow-forensics — Use when an agent workflow, plan execution, review loop, deploy path, or tool-driven task got stuck, contradicted itself, lost work, produced suspect artifacts, or needs post-mortem diagnosis. Not for ordinary code bugs with a live repro; use code-quality-debug for those.
+- **[process]**
+  - benchmark-design — Use when designing evals, benchmarks, scoring rubrics, goldens, trace replay, model or agent comparisons, retrieval/RAG harnesses, success metrics, or promotion gates. Not for ordinary unit tests whose expected behavior is already fully specified.
+  - branch-lifecycle — Use only when unsure which branch-lifecycle child skill applies — it routes to the child. For a concrete branch or worktree action, load that child directly.
+  - branch-lifecycle-finish — Use when implementation is complete, verification passes, and the remaining decision is how to integrate, merge, PR, clean up, or finish the branch. Not for throwaway branches, docs-only single commits, or trivial edits where merge/PR ceremony adds no value.
+    - alias: finishing-a-development-branch → load with name=branch-lifecycle-finish
+  - branch-lifecycle-worktree — Use when creating, reusing, recovering, or cleaning up isolated Git worktrees or jj workspaces; when branch-scale work, parallel agents, generated wrappers, crash recovery, or dirty checkout isolation matters. Also use when Gate says skip isolation (narrow/urgent/GitOps/live-ops work) but the tree is shared with another possibly-concurrent agent — covers presence/heartbeat so uncommitted work from a dead or live session isn't lost or clobbered. Not for already-isolated workspaces or edits explicitly targeting the current checkout.
+    - alias: using-git-worktrees → load with name=branch-lifecycle-worktree
+  - code-quality — Use only when unsure which code-quality child skill applies — it routes to the child. For a concrete quality action, load that child directly.
+  - code-quality-contracts — Use when changing production behavior, tests, policy gates, validators, docs, or exceptions where correctness, hidden debt, magic constants, stale contracts, or silent failures could ship. Not for cosmetic changes that cannot affect behavior, proof, observability, policy scope, or a public contract.
+    - alias: quality-contracts → load with name=code-quality-contracts
+  - code-quality-debug — Use when encountering a bug, test failure, production incident, unexpected behavior, performance issue, build failure, or integration failure before proposing fixes. Not for cases where root cause is already proven by reproducible evidence and a minimal fix target is known.
+    - alias: systematic-debugging → load with name=code-quality-debug
+  - code-quality-tdd — Use when implementing any feature or bugfix, before writing implementation code, to turn the Purpose-First contract into executable proof. Not for pure refactors, docs-only, test-only, formatting, or compiler-directed migrations with no behavior change.
+    - alias: test-driven-development → load with name=code-quality-tdd
+  - code-quality-verify — Use when about to claim work is complete, fixed, passing, ready to commit, or ready for PR, especially after code, docs, config, or validator changes. Not for trivial one-liners, single commands with no repo consequence, or pure cosmetic changes.
+    - alias: verification-before-completion → load with name=code-quality-verify
+  - research — Use when preparing a research outline, source plan, candidate item list, field framework, or evidence budget before deep research or research-to-implementation. Not for final architecture/adoption decisions or local implementation planning.
+  - research-deep — Use when executing item-by-item deep research from an outline into structured evidence files with resumable batches, source quality screening, validation, and synthesis handoff. Not for preliminary outline creation or final implementation planning.
+  - research-to-implementation — Use when a task needs external research, local source tracing, benchmark comparison, architecture pattern extraction, agent-role design, self-evolution design, memory/planning systems, or a grounded implementation plan. Not for ordinary bugfixes or bounded implementation work where local behavior is already clear.
+  - source-tracing — Use when source, runtime path, data origin, config flow, generated artifacts, or ownership must be traced before claiming behavior present, partial, obsolete, or missing — including conversational answers that call anything dead, unused, obsolete, legacy, superseded, or zero-callers; status words are classification claims. Not for bug symptoms with a known failure; use code-quality-debug and root-cause tracing for those.
+    - alias: runtime-path-tracing → load with name=source-tracing
+    - alias: provenance-tracing → load with name=source-tracing
+  - version-control-with-jj — Use when the local repository has `.jj/` and any VCS read, mutation, remote synchronization, or workspace isolation is needed. Enforces a declared repository orchestration surface first, with native jj only as the fallback when none exists. Not for pure-Git repos (`.git` only, no `.jj`).
+    - alias: using-jj → load with name=version-control-with-jj
+  - workflow — Use only when unsure which workflow child skill applies — it routes to the child. For a concrete workflow action, load that child directly.
+  - workflow-check-existing — Use when adding or changing a capability surface such as a public function, API, command, prompt, workflow, schema/helper, policy, or reusable instruction. Not for pure formatting, refactoring, or test-only changes that do not alter a contract or reusable surface.
+    - alias: existing-capability-first → load with name=workflow-check-existing
+  - workflow-discover — Use when a request needs product/design exploration, unclear requirements, multiple viable approaches, UI/UX choices, naming/ownership decisions, or new behavior whose intent is not yet bounded. Not for obvious bug fixes, small config changes, mechanical edits, or operator-directed tasks that are mechanically specified with exact target, behavior, constraints, and acceptance evidence.
+    - alias: brainstorming → load with name=workflow-discover
+  - workflow-execute — Use when executing a written implementation plan in the current session. Not for plans that need per-task subagent implementers and review gates — use subagent-driven-development instead.
+    - alias: executing-plans → load with name=workflow-execute
+  - workflow-goal — Use when the user explicitly asks to create, write, refine, inspect, continue, or finish a durable goal for multi-turn autonomous work. Not for ordinary one-shot requests, vague discussions, or implementation plans that only need docs/plans.
+    - alias: goal-setting → load with name=workflow-goal
+    - alias: write-goal → load with name=workflow-goal
+    - alias: goals → load with name=workflow-goal
+  - workflow-plan — Use when you have a spec or requirements for a multi-step task, before touching code. Not for single-step changes, trivial edits, or work with fewer than 3 tasks where decomposition adds overhead.
+    - alias: writing-plans → load with name=workflow-plan
+  - workflow-polyrepo-workspace — Use when work spans multiple independent git repositories coordinated by a workspace or consolidation authority (repo metadata, manifest.yml, meta-repo, or repo-of-repos layout), including scope selection, status, bootstrap, migration, or fan-out commands. Not for work confined to one git root or uncoordinated repositories with no declared authority.
+    - alias: polyrepo-workspace → load with name=workflow-polyrepo-workspace
+    - alias: ws-workspace → load with name=workflow-polyrepo-workspace
+  - workflow-quarry-port — Use when finding or porting algorithms from a read-only donor tree (quarry, vendor snapshot, archived service) into this repo. Not for running the donor in production, full product integration, or trivial one-file copies with no contract change.
+    - alias: quarry-port → load with name=workflow-quarry-port
+    - alias: donor-port → load with name=workflow-quarry-port
+    - alias: find-donor → load with name=workflow-quarry-port
+  - workflow-work-harness — Use when creating or validating disk-first Purpose-first work directories (purpose.contract.json, work.spec.json, evidence.bundle.json) before or after implementation. Not for markdown-only plans without JSON contracts.
+    - alias: work-harness → load with name=workflow-work-harness
+    - alias: disk-work-contract → load with name=workflow-work-harness
+- **[review]**
+  - code-review — Use only when unsure which code-review child skill applies — it routes to the child. For a concrete review action, load that child directly.
+  - code-review-receive — Use when receiving code review feedback, especially before implementing reviewer suggestions or resolving disputed technical comments. Not for solo work with no reviewer present, or trivial cosmetic comments that do not affect behavior.
+    - alias: receiving-code-review → load with name=code-review-receive
+  - code-review-request — Use when completing tasks, implementing major features, or before merging to verify work meets requirements. Not for throwaway branches, already-merged work, or single-line changes below the review threshold.
+    - alias: requesting-code-review → load with name=code-review-request
+  - redteam — Use when the user asks for advisory review, adversarial review, plan review, security audit, or cross-model critique. Not for in-flow redteam steps — each Purpose-First skill forwards to the right mode itself.
+- **[writing]**
+  - instruction-authoring — Use only when unsure which instruction-authoring child skill applies — it routes to the child. For a concrete authoring action, load that child directly.
+  - instruction-authoring-instructions — Use when changing prompts, AGENTS.md, CLAUDE.md, MCP/tool instructions, skills, governance docs, or instruction surfaces where wording can change agent behavior. Not for human-facing docs or prose (use instruction-authoring-prose) or skill lifecycle work (use instruction-authoring-skills).
+    - alias: instruction-writing → load with name=instruction-authoring-instructions
+  - instruction-authoring-prose — Use when creating or revising docs, plans, records, PR text, handoffs, or other prose that should be sparse, direct, and low-context. Not for code changes, log output, status strings, or agent-facing instruction surfaces (use instruction-authoring-instructions for those).
+    - alias: human-writing → load with name=instruction-authoring-prose
+- **[orchestration]**
+  - multi-agent-work — Use only when unsure which multi-agent-work child skill applies — it routes to the child. For a concrete dispatch or orchestration action, load that child directly.
+  - multi-agent-work-dispatch — Use when 2+ independent tasks, failures, research lanes, exploration lanes, or path-scoped investigations can run in separate ownership lanes; pair with branch-lifecycle-worktree before any lane may edit files. Not for shared-root-cause failures, whole-system tracing, or tasks requiring the same file.
+    - alias: dispatching-parallel-agents → load with name=multi-agent-work-dispatch
+  - multi-agent-work-orchestrate — Use when executing a written implementation plan, or dispatching 2+ independent implementation tasks (research, audit, exploration, or coding lanes), through implementer/review/fix/integration gates. Not for ad hoc parallel failures without a written plan (use dispatch) or small inline work when subagents are unavailable.
+    - alias: subagent-driven-development → load with name=multi-agent-work-orchestrate
+- **[diagnostics]**
+  - monitoring — Use when debugging, investigating, or verifying system behavior that requires querying metrics, logs, or health signals from monitoring backends (VictoriaMetrics, Prometheus, Kubernetes, Longhorn, CNPG, Holmes, or any registered provider). Not for general debugging without metrics — use code-quality-debug first.
+
+**Prepared-opposer review:** use "/redteam" or call `redteam_run({ mode, input })`. Valid modes: review, architect, plan, decision, hack, bughunt, harvest, verify, ultrareview. Each result includes a jobId for trace/result reads.
+
+## Templates and scoped instructions
+
+`install_skills` exposes template hints for plans, specs, evidence records, runbooks, and scoped `AGENTS.md` files. Nested scoped `AGENTS.md` files (e.g. `docs/AGENTS.md`) can also carry this managed block; pass them as `instructionFiles`.
+
+Purpose-First artifact homes are the default repo normalizer: plans use `docs/plans/`, evidence and policy/control records use `docs/records/`, ADRs use `docs/adr/`, specs use `docs/specs/`. Framework names and control IDs stay repo-local. Plan-based workfiles from the disk-first work harness live under `docs/work/<change-id>/` as `purpose.contract.json`, `work.spec.json`, and `evidence.bundle.json`.
+
+## Repo instruction sync
+
+Compute the current bundle hash from `list_skills.bundleHash` and the instruction-block hash from `install_skills.agentsBlock.hash`. If the active repo `AGENTS.md` does not contain a managed block with bundle hash `58c871807c74` and the current instruction hash, run `install_skills` to refresh it. Preserve all handwritten content outside the managed block.
+
+## This block is managed
+
+Do not edit manually. Refresh with `install_skills`.
 <!-- END purpose-agent-tools skills -->
 <!-- prettier-ignore-end -->
 <!-- markdownlint-enable -->

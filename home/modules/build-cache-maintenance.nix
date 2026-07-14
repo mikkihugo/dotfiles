@@ -8,7 +8,10 @@
   # by the existing secret-loading path and are never written to the Nix store.
   home.sessionVariables = {
     SCCACHE_CACHE_SIZE = lib.mkForce "8G";
+    SCCACHE_DIR = "$HOME/.cache/sccache";
     SCCACHE_WEBDAV_ENDPOINT = "https://cache.flakecache.com/default/sccache/project/singularity-engine";
+    SCCACHE_MULTILEVEL_CHAIN = "disk,webdav";
+    SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY = "l0";
     SCCACHE_IDLE_TIMEOUT = "0";
   };
 

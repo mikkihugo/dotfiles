@@ -37,6 +37,7 @@
       ./modules/git-auto-backup.nix
       ./modules/home-emergency-backup.nix
       ./modules/files.nix
+      ./modules/build-cache-maintenance.nix
       ./modules/hermes-proxy.nix
       ./modules/hermes-tui.nix
       ./modules/ai-tools.nix
@@ -97,7 +98,6 @@
       COLORTERM = "truecolor";
       RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
       BAT_CONFIG_PATH = "$HOME/.config/bat/config";
-      SCCACHE_CACHE_SIZE = "20G";
       CCACHE_DIR = "$HOME/.cache/ccache";
       CMAKE_C_COMPILER_LAUNCHER = "ccache";
       CMAKE_CXX_COMPILER_LAUNCHER = "ccache";

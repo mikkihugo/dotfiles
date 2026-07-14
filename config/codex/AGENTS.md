@@ -90,6 +90,29 @@ Don't repeatedly suggest the next step if you can perform it yourself.
 
 ---
 
+## Codex v2 subagent lifecycle
+
+When `spawn_agent` reports `agent thread limit reached`, inspect the live agent
+tree before declaring subagents unavailable. In multi-agent v2, `interrupt_agent`
+stops only the current turn; the agent identity remains reusable and should not
+be described as permanently consuming an unreleasable slot.
+
+An interrupted or completed resident is normally eligible for eviction on the
+next spawn, but an active turn or queued mailbox input can prevent eviction. If
+an obsolete agent blocks capacity:
+
+1. send a short `followup_task` that asks it to finish immediately, clearing
+   pending mailbox input;
+2. wait for completion, or interrupt that drain turn after it starts;
+3. retry the requested spawn;
+4. verify the requested model and reasoning override from the successful tool
+   result instead of substituting another model silently.
+
+If behavior still disagrees with the exposed tool contract, inspect the current
+Codex source or manual before generalizing from one failed call.
+
+---
+
 ## Make decisions
 
 Make reasonable engineering decisions without asking for confirmation when the trade-off is obvious.

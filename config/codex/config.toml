@@ -21,7 +21,7 @@ hide_full_access_warning = true
 unified_exec = true
 shell_snapshot = true
 multi_agent = true
-multi_agent_v2 = { enabled = true, hide_spawn_agent_metadata = false, tool_namespace = "agents" }
+multi_agent_v2 = { enabled = true, hide_spawn_agent_metadata = false, max_concurrent_threads_per_session = 8, tool_namespace = "agents" }
 steer = true
 personality = true
 undo = true
@@ -30,6 +30,9 @@ remote_models = true
 collaboration_modes = true
 js_repl = true
 prevent_idle_sleep = true
+
+[agents]
+max_depth = 2
 
 [mcp_servers.centralcloud-mcp-gateway]
 url = "http://mcp-gateway.svc/mcp"

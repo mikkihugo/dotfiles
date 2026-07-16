@@ -1,4 +1,4 @@
-model = "auto-fast-minimax"
+model = "auto-minimax"
 model_provider = "llm-gateway"
 model_reasoning_effort = "low"
 sandbox_mode = "workspace-write"

@@ -69,6 +69,17 @@ push)
 	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"
 	printf 'published=main revision=%s forgejo_readback=true github_readback=true\n' "$local_revision"
 	;;
+push-github)
+	branch="${1:-main}"
+	[[ "$branch" == main ]] || die 'publication owns only main'
+	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
+	(cd "$root" && just check)
+	GIT_SSH_COMMAND="$remote_ssh" timeout 120 git -C "$root" push "$github_url" main
+	local_revision="$(git -C "$root" rev-parse main)"
+	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
+	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"
+	printf 'published=main revision=%s github_readback=true forgejo_pending=true\n' "$local_revision"
+	;;
 worktree-create)
 	[[ $# -eq 2 ]] || die 'worktree-create requires name and revision'
 	name="$1"
@@ -94,10 +105,10 @@ contract-test)
 	[[ $# -eq 0 ]] || die 'contract-test takes no arguments'
 	grep -q "mod vcs 'just/vcs.just'" "$root/justfile"
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
-	for recipe in status diff log show worktree-list fetch describe push worktree-create worktree-drop test; do
+	for recipe in status diff log show worktree-list fetch describe push push-github worktree-create worktree-drop test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"
 	done
 	printf 'dotfiles VCS contract: ok\n'
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|describe|push|worktree-create|worktree-drop|contract-test}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|describe|push|push-github|worktree-create|worktree-drop|contract-test}' ;;
 esac

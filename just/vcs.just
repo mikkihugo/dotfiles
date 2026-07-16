@@ -30,6 +30,9 @@ describe MESSAGE:
 push BRANCH="main":
     @{{runner}} push "$1"
 
+push-github BRANCH="main":
+    @{{runner}} push-github "$1"
+
 worktree-create NAME REVISION="main":
     @{{runner}} worktree-create "$1" "$2"
 

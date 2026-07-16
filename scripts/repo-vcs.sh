@@ -7,6 +7,8 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 remote_ssh="${DOTFILES_GIT_SSH_COMMAND:-ssh -o ControlMaster=no -o ControlPath=none -o ControlPersist=no}"
+forgejo_url="https://git.infra.centralcloud.com/mhugo/dotfiles.git"
+github_url="git@github.com:mikkihugo/dotfiles.git"
 
 die() {
 	printf 'dotfiles-vcs: %s\n' "$*" >&2
@@ -43,11 +45,14 @@ push)
 	run_remote git -C "$root" fetch origin main
 	git -C "$root" merge-base --is-ancestor origin/main main || die 'main does not contain origin/main'
 	(cd "$root" && just check)
-	run_remote git -C "$root" push origin main
+	timeout 120 git -C "$root" push "$forgejo_url" main
+	GIT_SSH_COMMAND="$remote_ssh" timeout 120 git -C "$root" push "$github_url" main
 	local_revision="$(git -C "$root" rev-parse main)"
-	remote_revision="$(run_remote git -C "$root" ls-remote origin refs/heads/main | cut -f1)"
-	[[ "$local_revision" == "$remote_revision" ]] || die "remote readback mismatch"
-	printf 'published=main revision=%s remote_readback=true\n' "$remote_revision"
+	forgejo_revision="$(timeout 30 git -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
+	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
+	[[ "$local_revision" == "$forgejo_revision" ]] || die "Forgejo remote readback mismatch"
+	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"
+	printf 'published=main revision=%s forgejo_readback=true github_readback=true\n' "$local_revision"
 	;;
 worktree-create)
 	[[ $# -eq 2 ]] || die 'worktree-create requires name and revision'

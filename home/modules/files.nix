@@ -42,6 +42,29 @@ _: {
       force = true;
     };
 
+    ".codex/hooks.json" = {
+      source = ../../config/codex/hooks.json;
+      force = true;
+    };
+
+    ".codex/hooks/swarm-messages.mjs" = {
+      source = ../../config/codex/hooks/swarm-messages.mjs;
+      executable = true;
+      force = true;
+    };
+
+    ".claude/hooks/swarm-messages.sh" = {
+      source = ../../config/claude/hooks/swarm-messages.sh;
+      executable = true;
+      force = true;
+    };
+
+    ".kimi-code/hooks/swarm-messages.sh" = {
+      source = ../../config/kimi-code/hooks/swarm-messages.sh;
+      executable = true;
+      force = true;
+    };
+
     ".codex/agents/default.toml" = {
       source = ../../config/codex/agents/default.toml;
       force = true;

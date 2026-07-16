@@ -42,7 +42,7 @@ _: {
       force = true;
     };
 
-    # Agent skills are installed from the purpose-agent-tools MCP/plugin via
+    # Agent skills are installed from the Engine-owned Purpose Tool MCP/plugin via
     # install_skills. Dotfiles keeps only archived legacy copies; Home Manager
     # must not republish them as live ~/.agents, ~/.claude, or ~/.copilot skills.
 

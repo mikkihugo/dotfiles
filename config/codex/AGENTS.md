@@ -266,6 +266,21 @@ Observed evidence is more valuable than assumptions.
 
 Verified solutions are more valuable than plausible explanations.
 
+---
+
+# Codex MCP Capability Discovery
+
+`ALL_TOOLS` inside `functions.exec` is only the orchestration helper's nested
+tool registry. It is not the authoritative inventory of MCP tools attached to
+the Codex thread.
+
+Never infer that an MCP server, direct wrapper, or downstream capability is
+unavailable solely because it is absent from nested `ALL_TOOLS`. Inspect the
+thread-attached tool surface first. For CentralCloud, then use
+`mcp_router_hints` and the routed `mcp_tool_call` fallback. Declare a downstream
+capability unavailable only after the applicable thread-attached direct path
+and routed fallback have both been checked and failed.
+
 ## Managed Tool Instructions
 
 <!-- markdownlint-disable -->

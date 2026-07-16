@@ -7,7 +7,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 remote_ssh="${DOTFILES_GIT_SSH_COMMAND:-ssh -o ControlMaster=no -o ControlPath=none -o ControlPersist=no}"
-forgejo_url="https://git.infra.centralcloud.com/mhugo/dotfiles.git"
+forgejo_url="ssh://git@git.infra.centralcloud.com:2222/mhugo/dotfiles.git"
 github_url="git@github.com:mikkihugo/dotfiles.git"
 
 die() {
@@ -15,21 +15,6 @@ die() {
 	exit 1
 }
 run_remote() { GIT_SSH_COMMAND="$remote_ssh" "$@"; }
-run_forgejo() {
-	local askpass
-	askpass="$(mktemp)"
-	trap 'rm -f -- "$askpass"' RETURN
-	cat >"$askpass" <<'ASKPASS'
-#!/usr/bin/env bash
-case "$1" in
-*Username*) printf '%s\n' mhugo ;;
-*Password*) awk '/^[[:space:]]+token:/ { print $2; exit }' "$HOME/.config/tea/config.yml" ;;
-*) exit 1 ;;
-esac
-ASKPASS
-	chmod 700 "$askpass"
-	GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 "$@"
-}
 valid_name() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid worktree name: $1"; }
 
 command_name="${1:-}"
@@ -60,10 +45,10 @@ push)
 	run_remote git -C "$root" fetch origin main
 	git -C "$root" merge-base --is-ancestor origin/main main || die 'main does not contain origin/main'
 	(cd "$root" && just check)
-	run_forgejo timeout 120 git -C "$root" push "$forgejo_url" main
+	run_remote timeout 120 git -C "$root" push "$forgejo_url" main
 	GIT_SSH_COMMAND="$remote_ssh" timeout 120 git -C "$root" push "$github_url" main
 	local_revision="$(git -C "$root" rev-parse main)"
-	forgejo_revision="$(run_forgejo timeout 30 git -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
+	forgejo_revision="$(run_remote timeout 30 git -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
 	[[ "$local_revision" == "$forgejo_revision" ]] || die "Forgejo remote readback mismatch"
 	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"

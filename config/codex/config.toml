@@ -1,6 +1,7 @@
 personality = "pragmatic"
-model = "auto"
-model_provider = "llm-gateway"
+model = "gpt-5.6-sol"
+model_provider = "openai"
+model_reasoning_effort = "low"
 sandbox_mode = "danger-full-access"
 approval_policy = "never"
 suppress_unstable_features_warning = true
@@ -21,7 +22,6 @@ hide_full_access_warning = true
 unified_exec = true
 shell_snapshot = true
 multi_agent = true
-multi_agent_v2 = { enabled = true, hide_spawn_agent_metadata = false, max_concurrent_threads_per_session = 8, tool_namespace = "agents" }
 steer = true
 personality = true
 undo = true
@@ -31,20 +31,74 @@ collaboration_modes = true
 js_repl = true
 prevent_idle_sleep = true
 
+[features.multi_agent_v2]
+enabled = true
+hide_spawn_agent_metadata = false
+max_concurrent_threads_per_session = 6
+multi_agent_mode_hint_text = "Proactive multi-agent delegation is active for the root agent. The root should use sub-agents when independent parallel work would materially improve speed or quality. Spawned sub-agents must not create further sub-agents unless the parent explicitly assigns a bounded nested decomposition."
+tool_namespace = "agents"
+
 [agents]
 max_depth = 2
 
+[agents.default]
+description = "Balanced general-purpose subagent (GPT-5.6 Terra): bounded mixed work that does not match a narrower specialist."
+config_file = "agents/default.toml"
+
+[agents.worker]
+description = "Standard implementer (GLM 5.2 via Umans): normal feature work and fixes with an established contract or root cause."
+config_file = "agents/worker.toml"
+
+[agents.coder_fast]
+description = "Fast mechanical implementer (MiniMax M3, thinking off): boilerplate, rote refactors, and precisely specified repetitive edits."
+config_file = "agents/coder-fast.toml"
+
+[agents.coder_smart]
+description = "Deep implementer (Kimi K2.7): hard algorithms and subtle correctness work that needs sustained reasoning."
+config_file = "agents/coder-smart.toml"
+
+[agents.test_writer]
+description = "Independent red-test writer (MiniMax M3): turns a precise purpose contract into the smallest failing test before implementation."
+config_file = "agents/test-writer.toml"
+
+[agents.debugger]
+description = "Systematic debugger (DeepSeek V4 Pro): reproduce, falsify hypotheses, identify root cause, apply a minimal fix, and prove it."
+config_file = "agents/debugger.toml"
+
+[agents.reviewer]
+description = "Independent read-only code reviewer (DeepSeek V4 Pro): spec compliance, correctness, proof, and scope."
+config_file = "agents/reviewer.toml"
+
+[agents.verifier]
+description = "Adversarial read-only verifier (Nemotron 3 Ultra): independent falsification for high-stakes claims and contested decisions."
+config_file = "agents/verifier.toml"
+
+[agents.web_researcher]
+description = "Broad web researcher (Kimi K2.7): primary-source research, creative search, cross-source validation, and cited synthesis."
+config_file = "agents/web-researcher.toml"
+
+[agents.explorer]
+description = "Fast read-only explorer (Qwen 3.6 35B-A3B): file, symbol, reference, and candidate discovery in a tightly bounded scope."
+config_file = "agents/explorer.toml"
+
+[agents.taxonomy_worker]
+description = "Taxonomy discovery worker (GPT-5.6 Terra): source extraction, clustering, normalization, and boundary proposals."
+config_file = "agents/taxonomy-worker.toml"
+
+[agents.taxonomy_validator]
+description = "Mechanical taxonomy validator (GPT-5.6 Luna): labeling, duplicate detection, schema checks, and format validation."
+config_file = "agents/taxonomy-validator.toml"
+
+[agents.singularity_engine_harvester]
+description = "Singularity Engine harvester (GPT-5.6 Terra): source-grounded architecture and capability harvesting from donor systems."
+config_file = "agents/singularity-engine-harvester.toml"
+
 [mcp_servers.centralcloud-mcp-gateway]
 url = "http://mcp-gateway.svc/mcp"
+required = true
 
 [model_providers.llm-gateway]
 name = "CentralCloud LLM Gateway"
-base_url = "http://llm-gateway.svc:80/v1"
-env_key = "LLM_MUX_API_KEY"
-wire_api = "responses"
-
-[model_providers.llm-gateway-models-codex]
-name = "CentralCloud LLM Gateway (Codex models catalog only)"
 base_url = "http://llm-gateway.svc:80/codex/v1"
 env_key = "LLM_MUX_API_KEY"
 wire_api = "responses"

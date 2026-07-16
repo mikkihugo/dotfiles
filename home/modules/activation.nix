@@ -44,6 +44,10 @@ in {
       fi
     '';
 
+    removeRetiredCodexAgentRoles = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      rm -f "$HOME/.codex/agents/coder.toml"
+    '';
+
     applySharedCodexPreferences = lib.hm.dag.entryAfter ["seedMutableCodexConfig"] ''
       if [ -f "$HOME/.dotfiles/config/codex/shared-preferences.toml" ]; then
         ${pkgs.python3}/bin/python3 "$HOME/.dotfiles/scripts/codex-preferences" apply

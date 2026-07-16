@@ -42,7 +42,72 @@ _: {
       force = true;
     };
 
-    # Agent skills are installed from the purpose-agent-tools MCP/plugin via
+    ".codex/agents/default.toml" = {
+      source = ../../config/codex/agents/default.toml;
+      force = true;
+    };
+
+    ".codex/agents/worker.toml" = {
+      source = ../../config/codex/agents/worker.toml;
+      force = true;
+    };
+
+    ".codex/agents/coder-fast.toml" = {
+      source = ../../config/codex/agents/coder-fast.toml;
+      force = true;
+    };
+
+    ".codex/agents/coder-smart.toml" = {
+      source = ../../config/codex/agents/coder-smart.toml;
+      force = true;
+    };
+
+    ".codex/agents/test-writer.toml" = {
+      source = ../../config/codex/agents/test-writer.toml;
+      force = true;
+    };
+
+    ".codex/agents/debugger.toml" = {
+      source = ../../config/codex/agents/debugger.toml;
+      force = true;
+    };
+
+    ".codex/agents/reviewer.toml" = {
+      source = ../../config/codex/agents/reviewer.toml;
+      force = true;
+    };
+
+    ".codex/agents/verifier.toml" = {
+      source = ../../config/codex/agents/verifier.toml;
+      force = true;
+    };
+
+    ".codex/agents/web-researcher.toml" = {
+      source = ../../config/codex/agents/web-researcher.toml;
+      force = true;
+    };
+
+    ".codex/agents/explorer.toml" = {
+      source = ../../config/codex/agents/explorer.toml;
+      force = true;
+    };
+
+    ".codex/agents/taxonomy-worker.toml" = {
+      source = ../../config/codex/agents/taxonomy-worker.toml;
+      force = true;
+    };
+
+    ".codex/agents/taxonomy-validator.toml" = {
+      source = ../../config/codex/agents/taxonomy-validator.toml;
+      force = true;
+    };
+
+    ".codex/agents/singularity-engine-harvester.toml" = {
+      source = ../../config/codex/agents/singularity-engine-harvester.toml;
+      force = true;
+    };
+
+    # Agent skills are installed from the Engine-owned Purpose Tool MCP/plugin via
     # install_skills. Dotfiles keeps only archived legacy copies; Home Manager
     # must not republish them as live ~/.agents, ~/.claude, or ~/.copilot skills.
 

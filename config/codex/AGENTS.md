@@ -285,8 +285,8 @@ and routed fallback have both been checked and failed.
 
 <!-- markdownlint-disable -->
 <!-- prettier-ignore-start -->
-<!-- BEGIN purpose-tool skills (71d182285744) -->
-Instruction block hash: 5825996a06f2
+<!-- BEGIN purpose-tool skills (336c7d54c3ee) -->
+Instruction block hash: 87335ae97bdd
 ## Purpose-First hard gate
 
 Before any repo, runtime, infra, GitOps, Kubernetes, policy, planning, debugging, or implementation task:
@@ -327,8 +327,8 @@ No behavior, plan, prompt, skill, code, test, or operational change without a cl
 ## Critical rules for every task
 
 - **Scoped instructions:** before editing a path, look upward for the nearest `AGENTS.md` / `CLAUDE.md` / host instruction file. Deeper files override parent files. Update the scoped file when your edit changes ownership, workflow, verification, runtime wiring, public contract, or generated artifacts.
-- **VCS orchestration:** if a repository declares a VCS orchestration surface, use it exclusively for all VCS reads, mutations, workspace lifecycle, remote synchronization, and publication. Native `git` and `jj` commands are forbidden outside the declared facade implementation and explicitly documented Git interoperability. If no facade exists, use the repository's detected native backend. Detect and verify the declared surface from root instructions and the repository command registry before selecting Git or jj.
-- **VCS backend fallback:** if `.jj/` exists, jj is the local revision/workspace backend. If `.jj/` is absent and the current path is a validated Git worktree or repository root, Git is the local revision/workspace backend. Do not classify a directory as a Git repository from an unvalidated ancestor `.git` marker. Git remains valid in jj repos only for documented Git interop such as CI mirrors, remotes, object inspection, or repo-specific publish recipes.
+- **VCS orchestration:** use the repository's declared VCS orchestration surface exclusively for all VCS reads, mutations, workspace lifecycle, remote synchronization, and publication. Native `git` and `jj` commands are forbidden outside the facade implementation. If no facade exists, add a minimal repository-owned facade before any VCS action; do not fall back to agent-facing native commands. Detect and verify the declared surface from root instructions and the repository command registry.
+- **VCS facade backend:** inside the facade implementation, use jj when `.jj/` exists; otherwise use Git only when the current path is a validated Git worktree or repository root. Do not classify a directory as a Git repository from an unvalidated ancestor `.git` marker. Git in jj repos is limited to documented interop inside the facade, such as CI mirrors, remotes, object inspection, or publication.
 - **Worktree guard:** before multi-step, multi-file, branch-scale, or concurrent editing work on `main`, `master`, or a shared primary checkout, load `branch-lifecycle-worktree` and create an isolated session workspace. Reuse an existing workspace only for the same task after verifying its owner and state. Use `jj_workspace_spawn` for jj repos and `git_worktree_add` for Git repos.
 - **Workspace closure:** before handoff, inventory session-created and stale workspaces. Close a workspace only when its work is integrated or explicitly abandoned, clean, and not owned by a live process. Before closing a workspace from another registered workspace, refresh that workspace to the integrated revision and verify its current managed instruction hash and declared VCS facade/closure command; a bundle hash alone is insufficient. Fail closed when either proof is missing. Preserve and report dirty, unintegrated, or active workspaces. Unregister through the selected VCS backend; if Purpose Tool returns `cleanup_required`, route `directory_preserved_at` and `preservation_record_at` through the repository's declared VCS cleanup authority and do not use raw recursive deletion or claim closure while either remains.
 - **Workspace identity:** distinguish repository root, current working directory, registered workspace name/path, and shared VCS store. A Git worktree or Jujutsu workspace is a checkout view, not an independent repository. Resolve commands against the intended registered workspace; inventory and cleanup through the canonical repository registry and workspace root.
@@ -386,7 +386,7 @@ Run `list_skills` for the canonical grouped index. Load a skill by its canonical
   - source-tracing — Use when source, runtime path, data origin, config flow, generated artifacts, or ownership must be traced before claiming behavior present, partial, obsolete, or missing — including conversational answers that call anything dead, unused, obsolete, legacy, superseded, or zero-callers; status words are classification claims. Not for bug symptoms with a known failure; use code-quality-debug and root-cause tracing for those.
     - alias: runtime-path-tracing → load with name=source-tracing
     - alias: provenance-tracing → load with name=source-tracing
-  - version-control-with-jj — Use when the local repository has `.jj/` and any VCS read, mutation, remote synchronization, or workspace isolation is needed. Enforces a declared repository orchestration surface first, with native jj only as the fallback when none exists. Not for pure-Git repos (`.git` only, no `.jj`).
+  - version-control-with-jj — Use when the local repository has `.jj/` and any VCS read, mutation, remote synchronization, or workspace isolation is needed. Requires a repository-owned VCS facade and forbids agent-facing native jj and Git commands. Not for pure-Git repos (`.git` only, no `.jj`).
     - alias: using-jj → load with name=version-control-with-jj
   - workflow — Use only when unsure which workflow child skill applies — it routes to the child. For a concrete workflow action, load that child directly.
   - workflow-check-existing — Use when adding or changing a capability surface such as a public function, API, command, prompt, workflow, schema/helper, policy, or reusable instruction. Not for pure formatting, refactoring, or test-only changes that do not alter a contract or reusable surface.
@@ -443,7 +443,7 @@ Purpose-First artifact homes are the default repo normalizer: plans use `docs/pl
 
 ## Repo instruction sync
 
-Compute the current bundle hash from `list_skills.bundleHash` and the instruction-block hash from `install_skills.agentsBlock.hash`. If the active repo `AGENTS.md` does not contain a managed block with bundle hash `71d182285744` and the current instruction hash, run `install_skills` to refresh it. Preserve all handwritten content outside the managed block.
+Compute the current bundle hash from `list_skills.bundleHash` and the instruction-block hash from `install_skills.agentsBlock.hash`. If the active repo `AGENTS.md` does not contain a managed block with bundle hash `336c7d54c3ee` and the current instruction hash, run `install_skills` to refresh it. Preserve all handwritten content outside the managed block.
 
 ## This block is managed
 

@@ -2,7 +2,32 @@
 #
 # Installed into the user profile (available on PATH without a shell hook).
 # Grouped by role — remove a whole group if a machine doesn't need it.
-{pkgs, ...}: {
+{pkgs, ...}: let
+  teaVersion = "0.14.2";
+  teaArch =
+    if pkgs.stdenv.hostPlatform.isx86_64
+    then "amd64"
+    else if pkgs.stdenv.hostPlatform.isAarch64
+    then "arm64"
+    else throw "tea ${teaVersion}: unsupported Linux architecture ${pkgs.stdenv.hostPlatform.system}";
+  teaHash =
+    if teaArch == "amd64"
+    then "sha256-vkqxNXUoJasiPPqH0w5/MoMSokEgtwF2tnwb1KuhnMM=" # pragma: allowlist secret
+    else "sha256-8gH2ukE28RKemeYxivB5AMDBapIDBki9GG/ycGezRWg="; # pragma: allowlist secret
+  teaLatest = pkgs.stdenvNoCC.mkDerivation {
+    pname = "tea";
+    version = teaVersion;
+    src = pkgs.fetchurl {
+      url = "https://gitea.com/gitea/tea/releases/download/v${teaVersion}/tea-${teaVersion}-linux-${teaArch}";
+      hash = teaHash;
+    };
+    dontUnpack = true;
+    installPhase = ''
+      install -Dm755 "$src" "$out/bin/tea"
+    '';
+    meta.mainProgram = "tea";
+  };
+in {
   home.packages = with pkgs; [
     # Networking — resilient remote shell.
     mosh # UDP-based ssh replacement, survives roaming/sleep, local echo
@@ -32,7 +57,7 @@
     bun # JavaScript runtime/package manager for local tool builds
     ccache # C/C++ compiler cache; CMake launcher env is set in home.nix
     mise # polyglot runtime/tool manager; installs live under ~/.local/share/mise
-    tea # Forgejo/Gitea CLI client
+    teaLatest # Forgejo/Gitea CLI client; official release until nixpkgs catches up
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
     go # build local Go tools

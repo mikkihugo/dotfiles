@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-07-17",
+  "files": {
+    "config/codex/AGENTS.md": {
+      "bundleHash": "47440c934104",
+      "instructionHash": "f7f85657c851"
+    }
+  }
+}

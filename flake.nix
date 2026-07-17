@@ -183,6 +183,7 @@
 
         shellHook = ''
           export DOTFILES_ROOT="$(pwd -P)"
+          export PATH="$DOTFILES_ROOT/bin:$PATH"
           export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
           mkdir -p "$(dirname "$SOPS_AGE_KEY_FILE")"
 

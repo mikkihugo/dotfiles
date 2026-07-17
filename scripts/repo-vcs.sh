@@ -9,6 +9,12 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 remote_ssh="${DOTFILES_GIT_SSH_COMMAND:-ssh -o ControlMaster=no -o ControlPath=none -o ControlPersist=no}"
 forgejo_url="ssh://git@git.infra.centralcloud.com:2222/mhugo/dotfiles.git"
 github_url="git@github.com:mikkihugo/dotfiles.git"
+push_timeout="${DOTFILES_GIT_PUSH_TIMEOUT:-300}"
+
+[[ "$push_timeout" =~ ^[1-9][0-9]*$ ]] || {
+	printf 'dotfiles-vcs: DOTFILES_GIT_PUSH_TIMEOUT must be a positive integer\n' >&2
+	exit 1
+}
 
 die() {
 	printf 'dotfiles-vcs: %s\n' "$*" >&2
@@ -45,8 +51,8 @@ push)
 	run_remote git -C "$root" fetch origin main
 	git -C "$root" merge-base --is-ancestor origin/main main || die 'main does not contain origin/main'
 	(cd "$root" && just check)
-	run_remote timeout 120 git -C "$root" push "$forgejo_url" main
-	GIT_SSH_COMMAND="$remote_ssh" timeout 120 git -C "$root" push "$github_url" main
+	run_remote timeout "$push_timeout" git -C "$root" push "$forgejo_url" main
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" git -C "$root" push "$github_url" main
 	local_revision="$(git -C "$root" rev-parse main)"
 	forgejo_revision="$(run_remote timeout 30 git -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
@@ -59,11 +65,29 @@ push-github)
 	[[ "$branch" == main ]] || die 'publication owns only main'
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
 	(cd "$root" && just check)
-	GIT_SSH_COMMAND="$remote_ssh" timeout 120 git -C "$root" push "$github_url" main
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" git -C "$root" push "$github_url" main
 	local_revision="$(git -C "$root" rev-parse main)"
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
 	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"
 	printf 'published=main revision=%s github_readback=true forgejo_pending=true\n' "$local_revision"
+	;;
+land)
+	[[ $# -eq 0 ]] || die 'land takes no arguments'
+	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
+	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be landed'
+	[[ "$branch" == codex/* ]] || die 'land requires a codex/* task branch'
+	run_remote git -C "$root" fetch origin main
+	git -C "$root" merge-base --is-ancestor origin/main HEAD || die 'task branch does not contain origin/main'
+	"$root/scripts/repo-check.sh"
+	run_remote timeout "$push_timeout" git -C "$root" push "$forgejo_url" HEAD:main
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" git -C "$root" push "$github_url" HEAD:main
+	local_revision="$(git -C "$root" rev-parse HEAD)"
+	forgejo_revision="$(run_remote timeout 30 git -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
+	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
+	[[ "$local_revision" == "$forgejo_revision" ]] || die 'Forgejo remote readback mismatch'
+	[[ "$local_revision" == "$github_revision" ]] || die 'GitHub remote readback mismatch'
+	run_remote git -C "$root" fetch origin main
+	printf 'landed=main revision=%s forgejo_readback=true github_readback=true source=%s\n' "$local_revision" "$branch"
 	;;
 worktree-create)
 	[[ $# -eq 2 ]] || die 'worktree-create requires name and revision'
@@ -82,7 +106,10 @@ worktree-drop)
 	[[ "$(realpath "$root")" != "$(realpath "$path")" ]] || die 'cannot drop current worktree'
 	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'worktree is not registered'
 	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'worktree is dirty'
-	git -C "$root" merge-base --is-ancestor "codex/$name" main || die 'worktree branch is not integrated into main'
+	if ! git -C "$root" merge-base --is-ancestor "codex/$name" main; then
+		run_remote git -C "$root" fetch origin main
+		git -C "$root" merge-base --is-ancestor "codex/$name" origin/main || die 'worktree branch is not integrated into main'
+	fi
 	git -C "$root" worktree remove "$path"
 	git -C "$root" branch -d "codex/$name"
 	;;
@@ -90,10 +117,15 @@ contract-test)
 	[[ $# -eq 0 ]] || die 'contract-test takes no arguments'
 	grep -q "mod vcs 'just/vcs.just'" "$root/justfile"
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
+	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
 	for recipe in status diff log show worktree-list fetch describe push push-github worktree-create worktree-drop test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"
 	done
 	printf 'dotfiles VCS contract: ok\n'
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|describe|push|push-github|worktree-create|worktree-drop|contract-test}' ;;
+config)
+	[[ $# -eq 0 ]] || die 'config takes no arguments'
+	printf 'push_timeout=%s\n' "$push_timeout"
+	;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|describe|push|push-github|land|worktree-create|worktree-drop|contract-test|config}' ;;
 esac

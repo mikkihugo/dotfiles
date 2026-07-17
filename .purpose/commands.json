@@ -1,0 +1,180 @@
+{
+  "schema_version": "repo-command-contract/v1",
+  "cli_name": "repo",
+  "commands": [
+    {
+      "path": ["check"],
+      "description": "Run the dotfiles repository verification gate",
+      "class": "check",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-check.sh"
+      }
+    },
+    {
+      "path": ["sync", "mise-upgrade"],
+      "description": "Install and upgrade mise-managed tools",
+      "class": "sync",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-maintenance.sh",
+        "args": ["mise-upgrade"]
+      }
+    },
+    {
+      "path": ["vcs", "status"],
+      "description": "Show repository status",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["status"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "diff"],
+      "description": "Show repository changes",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["diff"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "log"],
+      "description": "Show revision history",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["log"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "show"],
+      "description": "Show one revision",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["show"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "worktree-list"],
+      "description": "List registered worktrees",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["worktree-list"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "fetch"],
+      "description": "Fetch the Forgejo integration remote",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["fetch"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "describe"],
+      "description": "Commit the current workspace changes",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["describe"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "push"],
+      "description": "Verify and publish local main to both remotes",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["push"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "push-github"],
+      "description": "Verify and publish local main to GitHub only",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["push-github"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "land"],
+      "description": "Verify and publish a clean task workspace as main",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["land"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "worktree-create"],
+      "description": "Create an isolated task worktree",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["worktree-create"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "worktree-drop"],
+      "description": "Remove an integrated clean task worktree",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["worktree-drop"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": ["vcs", "test"],
+      "description": "Verify the repository VCS facade contract",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["contract-test"],
+        "authority": "repository-vcs-facade"
+      }
+    }
+  ],
+  "migration": {
+    "legacy_commands": ["just"],
+    "active_roots": [],
+    "definition_roots": ["justfile", "just"],
+    "exclusions": [
+      {
+        "path": "archive",
+        "classification": "historical",
+        "reason": "immutable historical agent instructions"
+      }
+    ]
+  }
+}

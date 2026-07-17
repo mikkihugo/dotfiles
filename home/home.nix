@@ -34,6 +34,7 @@
       ./modules/packages.nix
       ./modules/shell.nix
       ./modules/git.nix
+      ./modules/cursor-stable-shell.nix
       ./modules/git-auto-backup.nix
       ./modules/home-emergency-backup.nix
       ./modules/files.nix

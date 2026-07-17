@@ -51,8 +51,11 @@ push)
 	run_remote git -C "$root" fetch origin main
 	git -C "$root" merge-base --is-ancestor origin/main main || die 'main does not contain origin/main'
 	(cd "$root" && just check)
-	run_remote timeout "$push_timeout" git -C "$root" push "$forgejo_url" main
+	# Forgejo synchronously mirrors this repository to GitHub. Publish GitHub
+	# first so Forgejo's post-receive mirror is already converged and cannot
+	# hold the client until the publication timeout.
 	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" git -C "$root" push "$github_url" main
+	run_remote timeout "$push_timeout" git -C "$root" push "$forgejo_url" main
 	local_revision="$(git -C "$root" rev-parse main)"
 	forgejo_revision="$(run_remote timeout 30 git -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
@@ -79,8 +82,9 @@ land)
 	run_remote git -C "$root" fetch origin main
 	git -C "$root" merge-base --is-ancestor origin/main HEAD || die 'task branch does not contain origin/main'
 	"$root/scripts/repo-check.sh"
-	run_remote timeout "$push_timeout" git -C "$root" push "$forgejo_url" HEAD:main
+	# Keep the server-side Forgejo mirror a no-op during its post-receive hook.
 	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" git -C "$root" push "$github_url" HEAD:main
+	run_remote timeout "$push_timeout" git -C "$root" push "$forgejo_url" HEAD:main
 	local_revision="$(git -C "$root" rev-parse HEAD)"
 	forgejo_revision="$(run_remote timeout 30 git -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"

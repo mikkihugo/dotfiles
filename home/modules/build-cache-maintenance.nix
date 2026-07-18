@@ -1,17 +1,16 @@
 {
-  config,
   pkgs,
   lib,
   ...
 }: {
-  # Keep the local compiler cache bounded. WebDAV credentials remain injected
-  # by the existing secret-loading path and are never written to the Nix store.
+  # Keep the local compiler cache bounded. Do NOT export WebDAV endpoint or a
+  # disk,webdav multilevel chain here: session vars apply even when the
+  # FlakeCache action token failed to load, and sccache then 401s on
+  # `.sccache_check`. WebDAV is enabled only from bashrc when the token is
+  # present (and by Engine `nix develop` when credentials are in the env).
   home.sessionVariables = {
     SCCACHE_CACHE_SIZE = lib.mkForce "8G";
     SCCACHE_DIR = "$HOME/.cache/sccache";
-    SCCACHE_WEBDAV_ENDPOINT = "https://cache.flakecache.com/default/sccache/project/singularity-engine";
-    SCCACHE_MULTILEVEL_CHAIN = "disk,webdav";
-    SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY = "l0";
     SCCACHE_IDLE_TIMEOUT = "0";
   };
 

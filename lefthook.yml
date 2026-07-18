@@ -10,6 +10,10 @@ pre-commit:
       # statix check accepts only one target at a time; loop over staged files
       run: for f in {staged_files}; do statix check "$f" || exit 1; done
 
+    deadnix:
+      glob: "*.nix"
+      run: deadnix --fail {staged_files}
+
     shellcheck:
       glob: "*.sh"
       run: shellcheck --external-sources {staged_files}

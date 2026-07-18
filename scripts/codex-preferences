@@ -10,6 +10,7 @@ SHARED_KEYS = [
     "model_reasoning_effort",
     "model_reasoning_summary",
 ]
+SHARED_TUI_KEYS = ["status_line"]
 
 
 def load_toml(path: Path) -> dict:
@@ -24,6 +25,8 @@ def toml_value(value) -> str:
         return "true" if value else "false"
     if isinstance(value, (int, float)):
         return str(value)
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return "[" + ", ".join(toml_value(item) for item in value) + "]"
     return '"' + str(value).replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
@@ -32,6 +35,8 @@ def save(args) -> None:
     target = Path(args.target).expanduser()
     data = load_toml(source)
     prefs = {key: data[key] for key in SHARED_KEYS if key in data}
+    tui = data.get("tui", {})
+    tui_prefs = {key: tui[key] for key in SHARED_TUI_KEYS if key in tui}
 
     target.parent.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -41,10 +46,14 @@ def save(args) -> None:
         "",
     ]
     lines.extend(f"{key} = {toml_value(prefs[key])}" for key in SHARED_KEYS if key in prefs)
+    if tui_prefs:
+        lines.extend(["", "[tui]"])
+        lines.extend(f"{key} = {toml_value(tui_prefs[key])}" for key in SHARED_TUI_KEYS if key in tui_prefs)
     target.write_text("\n".join(lines).rstrip() + "\n")
 
-    if prefs:
-        print(f"saved {', '.join(prefs.keys())} to {target}")
+    saved = list(prefs) + [f"tui.{key}" for key in tui_prefs]
+    if saved:
+        print(f"saved {', '.join(saved)} to {target}")
     else:
         print(f"no shared Codex preferences found in {source}", file=sys.stderr)
         sys.exit(1)
@@ -54,28 +63,59 @@ def apply(args) -> None:
     source = Path(args.source).expanduser()
     target = Path(args.target).expanduser()
     prefs = {key: value for key, value in load_toml(source).items() if key in SHARED_KEYS}
-    if not prefs:
+    source_data = load_toml(source)
+    source_tui = source_data.get("tui", {})
+    tui_prefs = {key: source_tui[key] for key in SHARED_TUI_KEYS if key in source_tui}
+    if not prefs and not tui_prefs:
         return
 
     target.parent.mkdir(parents=True, exist_ok=True)
     original = target.read_text().splitlines() if target.exists() else []
     seen = set()
+    seen_tui = set()
     output = []
     top_level_key = re.compile(r"^([A-Za-z0-9_]+)\s*=")
+    section_header = re.compile(r"^\s*\[([^]]+)]\s*$")
+    section = None
 
     for line in original:
+        section_match = section_header.match(line)
+        if section_match:
+            if section == "tui":
+                for key in SHARED_TUI_KEYS:
+                    if key in tui_prefs and key not in seen_tui:
+                        output.append(f"{key} = {toml_value(tui_prefs[key])}")
+                        seen_tui.add(key)
+            section = section_match.group(1)
         match = top_level_key.match(line)
-        if match and match.group(1) in prefs:
+        if section is None and match and match.group(1) in prefs:
             key = match.group(1)
             output.append(f"{key} = {toml_value(prefs[key])}")
             seen.add(key)
+        elif section == "tui" and match and match.group(1) in tui_prefs:
+            key = match.group(1)
+            output.append(f"{key} = {toml_value(tui_prefs[key])}")
+            seen_tui.add(key)
         else:
             output.append(line)
+
+    if section == "tui":
+        for key in SHARED_TUI_KEYS:
+            if key in tui_prefs and key not in seen_tui:
+                output.append(f"{key} = {toml_value(tui_prefs[key])}")
+                seen_tui.add(key)
 
     missing = [key for key in SHARED_KEYS if key in prefs and key not in seen]
     if missing:
         insert = [f"{key} = {toml_value(prefs[key])}" for key in missing]
         output = insert + ([""] if output and output[0] else []) + output
+
+    missing_tui = [key for key in SHARED_TUI_KEYS if key in tui_prefs and key not in seen_tui]
+    if missing_tui:
+        if output and output[-1]:
+            output.append("")
+        output.append("[tui]")
+        output.extend(f"{key} = {toml_value(tui_prefs[key])}" for key in missing_tui)
 
     target.write_text("\n".join(output).rstrip() + "\n")
 

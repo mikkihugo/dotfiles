@@ -15,3 +15,10 @@ VaultCorp = "VaultCorp"
 Vault = "Vault"
 # "hel" is the IATA/infra abbreviation for Helsinki, used in node names (cc-fi-hel-*).
 hel = "hel"
+# "nd" is a shell alias for `nom` diff mode (alongside `nb`/`ns`), not a
+# misspelling of "and". Defined in home/modules/shell.nix and documented in
+# README.md's nix-dev-tooling section.
+nd = "nd"
+# "ue" is an EZA_COLORS key (user-execute), not a misspelling of "use"/"due".
+# See config/rust-tools.sh.
+ue = "ue"

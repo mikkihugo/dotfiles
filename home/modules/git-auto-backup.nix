@@ -5,6 +5,15 @@
     export HOME="/home/mhugo"
     export GIT_TERMINAL_PROMPT=0
 
+    # A single unresponsive remote must not stall the whole sweep. Without
+    # keepalives a stalled git-receive-pack hangs forever: on 2026-07-18 the
+    # mhugo/dotfiles Forgejo repo stopped answering ref advertisement and,
+    # being the first root, blocked backups for all 61 repositories behind it.
+    # ConnectTimeout bounds the handshake; ServerAlive* bounds an established
+    # session that stops responding (~60s). ControlMaster is disabled so a
+    # shared mux socket cannot couple unrelated repositories together.
+    export GIT_SSH_COMMAND="ssh -o ControlMaster=no -o ControlPath=none -o ControlPersist=no -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
+
     state_dir="$HOME/.local/state/git-auto-backup"
     log_dir="$state_dir/logs"
     mkdir -p "$log_dir"
@@ -20,6 +29,14 @@
     )
 
     declare -A seen
+
+    git_net() {
+      # Hard bound on any network git call. SSH keepalives are not enough:
+      # a server can answer at the transport layer while git-receive-pack /
+      # git-upload-pack never completes ref advertisement (observed against
+      # mhugo/dotfiles on 2026-07-18), which hangs the process indefinitely.
+      ${pkgs.coreutils}/bin/timeout --kill-after=10s 180s ${pkgs.git}/bin/git "$@"
+    }
 
     slugify() {
       printf '%s' "$1" | ${pkgs.gnused}/bin/sed \
@@ -63,13 +80,13 @@
       snapshot_ref="refs/backup/$host/$slug/$branch/wip-$stamp"
       ${pkgs.git}/bin/git -C "$repo" update-ref "$ref" "$commit"
       ${pkgs.git}/bin/git -C "$repo" update-ref "$snapshot_ref" "$commit"
-      if ! ${pkgs.git}/bin/git -C "$repo" push --quiet "$remote" "$snapshot_ref:$snapshot_ref"; then
+      if ! git_net -C "$repo" push --quiet "$remote" "$snapshot_ref:$snapshot_ref"; then
         echo "dirty-backup-snapshot-failed $repo $remote $snapshot_ref $commit"
         rm -f "$tmp_index"
         trap - RETURN
         return 1
       fi
-      if ! ${pkgs.git}/bin/git -C "$repo" push --quiet --force "$remote" "$ref:$ref"; then
+      if ! git_net -C "$repo" push --quiet --force "$remote" "$ref:$ref"; then
         echo "dirty-backup-latest-failed $repo $remote $ref $commit"
         rm -f "$tmp_index"
         trap - RETURN
@@ -85,10 +102,24 @@
       local repo="$1" remote="$2" branch="$3" slug="$4"
       local upstream counts local_ahead remote_ahead backup_ref
 
+      # Colocated jj repositories: git's HEAD/index can lag jj's working copy,
+      # so a live-branch push here can publish state jj never staged — or
+      # silently push nothing while reporting success. Back these up to the
+      # refs/backup namespace only and let jj own branch publication.
+      if [ -d "$repo/.jj" ]; then
+        backup_ref="refs/backup/$host/$slug/$branch/head"
+        if git_net -C "$repo" push --quiet --force "$remote" "HEAD:$backup_ref"; then
+          echo "head-backup-jj $repo $remote $backup_ref"
+        else
+          echo "head-backup-jj-failed $repo $remote $backup_ref"
+        fi
+        return 0
+      fi
+
       upstream="$(${pkgs.git}/bin/git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
       if [ -z "$upstream" ]; then
         backup_ref="refs/backup/$host/$slug/$branch/head"
-        ${pkgs.git}/bin/git -C "$repo" push --quiet "$remote" "HEAD:$backup_ref"
+        git_net -C "$repo" push --quiet "$remote" "HEAD:$backup_ref"
         echo "head-backup-no-upstream $repo $remote $backup_ref"
         return 0
       fi
@@ -98,11 +129,11 @@
       remote_ahead="$(printf '%s\n' "$counts" | ${pkgs.gawk}/bin/awk '{print $2}')"
 
       if [ "$local_ahead" -gt 0 ] && [ "$remote_ahead" -eq 0 ]; then
-        ${pkgs.git}/bin/git -C "$repo" push --quiet "$remote" "HEAD:$branch"
+        git_net -C "$repo" push --quiet "$remote" "HEAD:$branch"
         echo "branch-pushed $repo $remote $branch +$local_ahead"
       elif [ "$local_ahead" -gt 0 ]; then
         backup_ref="refs/backup/$host/$slug/$branch/head"
-        ${pkgs.git}/bin/git -C "$repo" push --quiet "$remote" "HEAD:$backup_ref"
+        git_net -C "$repo" push --quiet "$remote" "HEAD:$backup_ref"
         echo "head-backup-diverged $repo $remote $backup_ref local+$local_ahead remote+$remote_ahead"
       else
         echo "branch-current $repo $upstream"
@@ -116,12 +147,21 @@
       # on divergence we stash a force-pushed backup ref instead of the branch.
       local repo="$1" remote="$2" branch="$3" slug="$4" backup_ref
       [ "$branch" = "detached" ] && return 0
-      if ${pkgs.git}/bin/git -C "$repo" push --quiet "$remote" "HEAD:$branch" 2>/dev/null; then
+      # Same jj reasoning as push_branch_or_backup: never mirror a live branch
+      # out of a colocated jj repo.
+      if [ -d "$repo/.jj" ]; then
+        backup_ref="refs/backup/$host/$slug/$branch/head"
+        git_net -C "$repo" push --quiet --force "$remote" "HEAD:$backup_ref" 2>/dev/null &&
+          echo "mirror-jj-backup $repo $remote $backup_ref" ||
+          echo "mirror-jj-failed $repo $remote $backup_ref"
+        return 0
+      fi
+      if git_net -C "$repo" push --quiet "$remote" "HEAD:$branch" 2>/dev/null; then
         echo "mirror-ok $repo $remote $branch"
         return 0
       fi
       backup_ref="refs/backup/$host/$slug/$branch/head"
-      if ${pkgs.git}/bin/git -C "$repo" push --quiet --force "$remote" "HEAD:$backup_ref" 2>/dev/null; then
+      if git_net -C "$repo" push --quiet --force "$remote" "HEAD:$backup_ref" 2>/dev/null; then
         echo "mirror-diverged-backup $repo $remote $backup_ref"
         return 0
       fi
@@ -145,7 +185,7 @@
       branch="$(${pkgs.git}/bin/git -C "$repo" symbolic-ref --quiet --short HEAD 2>/dev/null || echo detached)"
       slug="$(slugify "$repo")"
 
-      ${pkgs.git}/bin/git -C "$repo" fetch --quiet "$remote" || {
+      git_net -C "$repo" fetch --quiet "$remote" || {
         echo "fetch-failed $repo $remote"
         return 0
       }
@@ -198,14 +238,25 @@ in {
     Service = {
       Type = "oneshot";
       ExecStart = "${backupScript}";
+      # Backstop for anything the SSH keepalives cannot bound (a wedged local
+      # git process, a stalled HTTPS remote). A run that cannot finish inside
+      # this window is failing, not working; kill it so the next tick is clean.
+      TimeoutStartSec = "20min";
     };
   };
 
   systemd.user.timers.git-auto-backup = {
     Unit.Description = "Periodically back up local Git repositories";
     Timer = {
-      OnBootSec = "5min";
-      OnUnitActiveSec = "15min";
+      # Wall-clock schedule, not monotonic anchors. OnBootSec/OnUnitActiveSec
+      # left this timer permanently unarmed after the 2026-07-01 reboot: the
+      # timer started 79min after boot (past the OnBootSec window), and
+      # OnUnitActiveSec had no anchor because the service never ran that boot,
+      # so next_elapse resolved to infinity and backups silently stopped for
+      # 19 days. Persistent= only ever applied to OnCalendar, so it could not
+      # rescue the monotonic form; with OnCalendar it does catch up after
+      # downtime.
+      OnCalendar = "*:0/15";
       Persistent = true;
       Unit = "git-auto-backup.service";
     };

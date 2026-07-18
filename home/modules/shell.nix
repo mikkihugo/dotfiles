@@ -243,8 +243,15 @@ in {
   # bypassPermissions is set globally via ~/.claude/settings.json — no wrapper needed.
 
   home.shellAliases = {
-    # home-manager: resolve the explicit host profile from the current hostname.
-    hms = "home-manager switch";
+    # home-manager switch, then nvd-diff the last two HM profile generations.
+    # Use `command ls` — `ls` is aliased to eza and breaks -dv / glob sorting.
+    # Fail soft on first generation (only one link) so switch still succeeds.
+    hms = "home-manager switch && { nvd diff $(command ls -1dv \"$HOME\"/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | tail -n 2) || true; }";
+
+    # Prefer nix-output-monitor wrappers for readable flake builds.
+    nb = "nom build";
+    nd = "nom develop";
+    ns = "nom shell";
 
     # Promote the currently committed ACE revision into the dotfiles flake input.
     promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";

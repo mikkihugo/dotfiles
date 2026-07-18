@@ -184,6 +184,22 @@ _load_sops_secrets() {
 	val=$(_sops_val llm_gateway bearer_key)
 	[ -n "$val" ] && export LLM_GATEWAY_BEARER_KEY="$val"
 
+	# FlakeCache WebDAV action token (sccache remote backend).
+	# Endpoint + multilevel chain only when the token loaded; otherwise clear
+	# inherited Home Manager / parent-shell WebDAV state so sccache can start
+	# on local disk instead of 401ing `.sccache_check`.
+	val=$(_sops_val flakecache sccache_action_token)
+	if [ -n "$val" ]; then
+		export SCCACHE_WEBDAV_TOKEN="$val"
+		export SCCACHE_WEBDAV_ENDPOINT="https://cache.flakecache.com/default/sccache/project/singularity-engine"
+		export SCCACHE_MULTILEVEL_CHAIN="disk,webdav"
+		export SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY="l0"
+	else
+		unset SCCACHE_WEBDAV_TOKEN SCCACHE_WEBDAV_ENDPOINT
+		unset SCCACHE_WEBDAV_USERNAME SCCACHE_WEBDAV_PASSWORD
+		unset SCCACHE_MULTILEVEL_CHAIN SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY
+	fi
+
 	unset -f _sops_val _sops_sf_val
 }
 

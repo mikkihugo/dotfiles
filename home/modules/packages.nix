@@ -31,6 +31,7 @@ in {
   home.packages = with pkgs; [
     # Networking — resilient remote shell.
     mosh # UDP-based ssh replacement, survives roaming/sleep, local echo
+    abduco # session detach/attach only (no multiplexing); pairs with mosh
 
     # Modern CLI replacements — faster, friendlier alternatives to coreutils.
     # Aliases (ls→eza, man→batman) are declared in shell.nix shellAliases.
@@ -79,12 +80,12 @@ in {
 
     # Nix tooling — meta-tools for working with the Nix ecosystem.
     nixd # Nix language server (autocomplete, diagnostics in editors)
-    alejandra # opinionated Nix formatter (used in pre-commit)
-    statix # Nix linter — catches anti-patterns (used in pre-commit)
-    deadnix # finds unused Nix expressions (dead code)
-    nix-tree # visualise the derivation dependency tree
-    nvd # diff between home-manager / NixOS generations
-    nix-output-monitor # prettier `nix build` output
+    alejandra # opinionated Nix formatter (used in lefthook + nix-dev-tooling skill)
+    statix # Nix linter — anti-patterns (lefthook + nix-dev-tooling)
+    deadnix # unused Nix bindings (lefthook --fail + nix-dev-tooling)
+    nix-tree # derivation/closure browser (nix-dev-tooling runbook)
+    nvd # HM/NixOS generation diff (wired into `hms` alias)
+    nix-output-monitor # `nom build|develop|shell` (aliases nb/nd/ns)
     nix-index # `nix-locate`: find which package provides a binary
     kubectl # Kubernetes CLI for Flux/k3s validation and ops
 

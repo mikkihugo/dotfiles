@@ -89,8 +89,10 @@ secrets/
 shell/
   bash/bashrc                On-demand load-ai-keys function (sourced by HM)
 .sops.yaml                   Age key recipients for secret re-encryption
-lefthook.yml                 Git hooks: alejandra, statix, shellcheck, shfmt,
-                             typos, detect-secrets on pre-commit
+lefthook.yml                 Git hooks: alejandra, statix, deadnix, shellcheck,
+                             shfmt, typos, detect-secrets on pre-commit
+                             (jj backend does not auto-run these — agents:
+                             `lefthook run` / `repo check`, never raw git/jj)
 ```
 
 ## Secrets
@@ -164,15 +166,19 @@ editing a dotfile directly will be overwritten on the next `hms`.
 
 ## Code quality (pre-commit hooks)
 
-lefthook runs on every commit:
+lefthook runs on every **git** commit (jj does not — run `lefthook run pre-commit`
+explicitly). Agent doctrine: Purpose skill `nix-dev-tooling`.
 
 | Hook | What it checks |
 |------|---------------|
 | `alejandra` | Nix formatting |
 | `statix` | Nix anti-patterns |
+| `deadnix` | Unused Nix bindings |
 | `shellcheck` | Shell script correctness |
 | `shfmt` | Shell script formatting |
 | `typos` | Spell checking |
 | `detect-secrets` | Credential leak prevention |
+
+Also on PATH (see `nix-dev-tooling` runbook): `nom` (`nb`/`nd`/`ns` aliases), `nvd` (via `hms`), `nix-tree`, `nix-locate`.
 
 Run manually: `lefthook run pre-commit`

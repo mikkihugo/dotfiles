@@ -1,0 +1,20 @@
+{
+  "result_id": "codex-hosted-search-red",
+  "status": "failed",
+  "observed_at": "2026-07-19T20:26:56Z",
+  "command": "node --test scripts/test-codex-hosted-search.mjs",
+  "exit_code": 1,
+  "failures": [
+    "coder-fast.toml used model_provider=llm-gateway without an explicit web_search=disabled setting"
+  ],
+  "prior_failures": [
+    {
+      "observed_at": "2026-07-19T18:33:00Z",
+      "command": "python3 scripts/test-codex-preferences.py; node --test scripts/test-codex-hosted-search.mjs",
+      "failures": [
+        "codex-preferences left web_search=live instead of applying disabled",
+        "the managed seed lacked a top-level web_search=disabled setting"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-07-19-codex-hosted-search-disabled-current-spec",
+  "source": {
+    "uri": "repository://config/codex",
+    "revision": "827b262b4e7a8f39ded1069cc90e363831d123e0"
+  },
+  "requirements": []
+}

@@ -1,0 +1,123 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-07-19-codex-hosted-search-disabled-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-07-19-codex-hosted-search-disabled"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-07-19-codex-hosted-search-disabled",
+      "revision": "initial"
+    },
+    "objective": {
+      "id": "2026-07-19-codex-hosted-search-disabled-objective",
+      "statement": "Stop Codex clients that use the CentralCloud Responses provider from advertising unsupported hosted web_search tools while preserving the separate MCP browser/search capability.",
+      "measure": "Every activated Codex root and role configuration disables hosted web search, a captured fresh-client request contains no tool with type web_search, and the CentralCloud MCP/web tool remains configured."
+    },
+    "need": {
+      "id": "2026-07-19-codex-hosted-search-disabled-need",
+      "statement": "Stop Codex clients that use the CentralCloud Responses provider from advertising unsupported hosted web_search tools while preserving the separate MCP browser/search capability.",
+      "stakeholders": [
+        "Codex root sessions and subagents routed through llm-gateway."
+      ],
+      "baseline": "The shared configuration omits web_search and the web-researcher role overrides it to live. Current Codex therefore sends a hosted web_search tool to configured Responses providers, and llm-gateway rejects subagent requests with HTTP 422 before the worker starts.",
+      "consequence_of_no_action": "Codex subagents continue failing before execution and swarm work cannot fan out reliably.",
+      "assumptions": [],
+      "alternatives_considered": [
+        "Teach llm-gateway to pretend it supports OpenAI hosted web search",
+        "Remove browser/search MCP tools",
+        "Change the model catalog web_search_tool_type field"
+      ]
+    }
+  },
+  "admission": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-07-19T18:30:45Z",
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "2595529cc22a029e06c3a8f04b47b0b4f44560831895de0e6a056dcd41e45be8"
+    },
+    "policy": {
+      "id": "operator-directed-purpose-admission/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e"
+      }
+    },
+    "validators": [
+      "purpose-contract-v2.schema.json",
+      "subject-digest",
+      "operator-authority"
+    ],
+    "evidence_refs": [
+      "user-request:fix-all-issues-and-deploy",
+      "observed:subagent-http-422-tools-30-web-search",
+      "upstream-codex:provider-capabilities-default-web-search"
+    ]
+  },
+  "purpose": "Stop Codex clients that use the CentralCloud Responses provider from advertising unsupported hosted web_search tools while preserving the separate MCP browser/search capability.",
+  "consumer": "Codex root sessions and subagents routed through llm-gateway.",
+  "contract": "Every activated Codex root and role configuration disables hosted web search, a captured fresh-client request contains no tool with type web_search, and the CentralCloud MCP/web tool remains configured.",
+  "failure_boundary": "Do not remove or disable the CentralCloud MCP gateway or its browser/search namespace. If the managed preference cannot be applied to the mutable live config or a fresh request still advertises hosted web_search, do not publish the change.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "Preference tests prove web_search is applied durably without destroying unrelated mutable configuration; a fresh-client request capture proves the hosted tool is absent.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "The change stops unsupported hosted web search without removing MCP search.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Run preference/config tests and capture a fresh Codex request; any hosted web_search tool or missing MCP gateway falsifies the claim.",
+      "command": "python3 scripts/test-codex-preferences.py && node --test scripts/test-codex-hosted-search.mjs"
+    }
+  },
+  "non_goals": [
+    "Implement OpenAI hosted web search in llm-gateway",
+    "Remove the web.run or CentralCloud MCP capability",
+    "Change gateway model catalog semantics",
+    "Change model or reasoning preferences"
+  ],
+  "invariants": [
+    "The mutable live Codex configuration preserves machine-local and runtime-owned fields",
+    "The CentralCloud MCP gateway remains required and configured",
+    "All subagent role overrides inherit or explicitly enforce hosted-search disabled"
+  ],
+  "assumptions": [
+    {
+      "statement": "The installed Codex version honors the documented top-level web_search disabled setting for configured Responses providers.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "A captured request from a fresh installed Codex process still contains a tool whose type is web_search."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "medium",
+    "blast_radius": "local",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "client",
+    "tool"
+  ],
+  "plane_constraints": [
+    "Home Manager and dotfiles own durable Codex configuration; llm-gateway remains unchanged in this slice."
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-07-19-codex-hosted-search-disabled-work",
+  "purpose_contract_id": "2026-07-19-codex-hosted-search-disabled-purpose",
+  "handover": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "accepting_authority": {
+      "kind": "policy",
+      "id": "purpose-first-tdd-handover"
+    },
+    "decided_at": "2026-07-19T18:30:45Z",
+    "purpose_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "2595529cc22a029e06c3a8f04b47b0b4f44560831895de0e6a056dcd41e45be8"
+    },
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+        "value": "f7cd45b559b0b33be561407773875bb601b32c14f7402e3bc19243666d103d51"
+    },
+    "policy": {
+      "id": "workspec-content-handover/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "21f4dad52f9e5f5a53ee16625c7bf75e01251002911d667e879f3e06147e7192"
+      }
+    },
+    "validators": [
+      "workspec-v4.schema.json",
+      "subject-digest",
+      "purpose-first-tdd-handover"
+    ],
+    "evidence_refs": [
+      "purpose.contract.json#admission",
+      "upstream-codex-source-trace",
+      "fresh-client-request-capture"
+    ]
+  },
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-07-19-codex-hosted-search-disabled",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-07-19-codex-hosted-search-disabled-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "8347a0a4a628a135bc8bdddee25689d1bf358e55b09d51b292330854c722de15"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "The shared Codex preference path shall apply web_search disabled to mutable root configuration and every llm-gateway-backed managed role shall explicitly disable hosted web search.",
+        "acceptance_criteria": [
+          "codex-preferences apply adds or replaces top-level web_search while preserving unrelated top-level and table values",
+          "the checked-in seed and shared preferences both set web_search to disabled",
+          "every role whose model_provider is llm-gateway explicitly sets web_search to disabled",
+          "Home Manager activation consumes the evaluated revision rather than a possibly stale primary checkout",
+          "the CentralCloud MCP gateway remains required and configured"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Managed Codex configuration",
+            "response": "disable hosted web search without disabling MCP tools"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "a managed Codex role or fresh request still enables hosted web search",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "The shared Codex preference path shall apply web_search disabled to mutable root configuration and every llm-gateway-backed managed role shall explicitly disable hosted web search.",
+      "acceptance_criteria": [
+        "codex-preferences apply adds or replaces top-level web_search while preserving unrelated top-level and table values",
+        "the checked-in seed and shared preferences both set web_search to disabled",
+        "every role whose model_provider is llm-gateway explicitly sets web_search to disabled",
+        "Home Manager activation consumes the evaluated revision rather than a possibly stale primary checkout",
+        "the CentralCloud MCP gateway remains required and configured"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Managed Codex configuration",
+          "response": "disable hosted web search without disabling MCP tools"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "a managed Codex role or fresh request still enables hosted web search",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      ".secrets.baseline",
+      "docs/work/2026-07-19-codex-hosted-search-disabled/**",
+      "config/codex/config.toml",
+      "config/codex/shared-preferences.toml",
+      "config/codex/AGENTS.md",
+      "config/codex/agents/*.toml",
+      "scripts/codex-preferences",
+      "scripts/test-codex-preferences.py",
+      "scripts/test-codex-hosted-search.mjs",
+      "scripts/repo-check.sh",
+      "home/modules/activation.nix"
+    ],
+    "blocked": [],
+    "expected_files": []
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Config and preference tests reject missing or live hosted-search settings while retaining the MCP gateway; a fresh client capture rejects any hosted web_search tool.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "python3 scripts/test-codex-preferences.py",
+      "node --test scripts/test-codex-hosted-search.mjs",
+      "./bin/repo check",
+      "node /home/mhugo/code/singularity-engine/tool/servers/purpose-tool/dist/bin/validate-work.js docs/work/2026-07-19-codex-hosted-search-disabled --repo-root . --require-evidence"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-07-19-codex-hosted-search-disabled",
+    "target_planes": [
+      "client",
+      "tool"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "process",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

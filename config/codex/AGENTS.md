@@ -281,6 +281,13 @@ thread-attached tool surface first. For CentralCloud, then use
 capability unavailable only after the applicable thread-attached direct path
 and routed fallback have both been checked and failed.
 
+## Hosted web search boundary
+
+Every Codex role configured with `model_provider = "llm-gateway"` must also set
+`web_search = "disabled"` until that gateway has a verified provider-hosted
+search executor. CentralCloud MCP browser and search tools are separate
+capabilities and remain enabled.
+
 ## Managed Tool Instructions
 
 <!-- markdownlint-disable -->

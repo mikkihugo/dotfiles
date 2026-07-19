@@ -1,0 +1,44 @@
+{
+  "schema": "codex-hosted-search-disabled-result/v1",
+  "observed_at": "2026-07-19T20:36:22Z",
+  "checks": [
+    {
+      "command": "node --test scripts/test-codex-hosted-search.mjs",
+      "status": "passed",
+      "summary": "The root, shared preference source, and every llm-gateway-backed role explicitly disable provider-hosted web search while the required CentralCloud MCP gateway remains configured."
+    },
+    {
+      "command": "python3 scripts/test-codex-preferences.py",
+      "status": "passed",
+      "summary": "The mutable preference updater applies web_search=disabled without losing unrelated root or table values."
+    },
+    {
+      "command": "./bin/repo check",
+      "status": "passed",
+      "summary": "The VCS contract, Codex preference tests, hosted-search contract, and Home Manager activation-package build passed."
+    },
+    {
+      "command": "node /home/mhugo/code/singularity-engine/tool/servers/purpose-tool/dist/bin/validate-work.js docs/work/2026-07-19-codex-hosted-search-disabled --repo-root .",
+      "status": "passed",
+      "summary": "Purpose, WorkSpec, admission, handover, snapshot, and derived-requirement gates passed."
+    },
+    {
+      "command": "home-manager switch --flake path:.#cc-se-sto-devbox-01 --impure",
+      "status": "passed",
+      "summary": "Home Manager activated the exact isolated-worktree generation."
+    },
+    {
+      "command": "fresh explorer subagent through llm-gateway plus gateway pod log readback",
+      "status": "passed",
+      "summary": "The fresh auto-fast subagent completed multiple Responses turns and the deployed gateway logged HTTP 200 instead of the former tools[30] HTTP 422 conversion failure."
+    }
+  ],
+  "remaining_findings": [
+    {
+      "id": "codex-v2-task-payload-not-delivered",
+      "scope": "Codex multi-agent control plane",
+      "status": "open",
+      "summary": "The new worker reached the model successfully, but neither its spawn task nor follow-up task appeared in the worker rollout and it acted on unrelated context. This is separate from hosted-search request conversion."
+    }
+  ]
+}

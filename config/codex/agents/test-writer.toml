@@ -2,6 +2,7 @@ model = "auto-minimax"
 model_provider = "llm-gateway"
 model_reasoning_effort = "low"
 sandbox_mode = "workspace-write"
+web_search = "disabled"
 
 developer_instructions = """
 You are the independent TEST WRITER running MiniMax M3 with thinking off. Your

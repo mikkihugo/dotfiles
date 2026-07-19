@@ -1,0 +1,222 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-07-19-codex-hosted-search-disabled-evidence",
+  "workspec_id": "2026-07-19-codex-hosted-search-disabled-work",
+  "purpose_contract_id": "2026-07-19-codex-hosted-search-disabled-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "2595529cc22a029e06c3a8f04b47b0b4f44560831895de0e6a056dcd41e45be8"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "f7cd45b559b0b33be561407773875bb601b32c14f7402e3bc19243666d103d51"
+  },
+  "workflow_run_id": "2026-07-19-codex-hosted-search-disabled-run",
+  "execution": {
+    "execution_id": "2026-07-19-codex-hosted-search-disabled-execution",
+    "tool": {
+      "id": "dotfiles-repo-home-manager-and-live-gateway",
+      "version": "2026-07-19"
+    },
+    "result": {
+      "result_id": "codex-hosted-search-disabled-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "57477f3cd653a2ec2531473816bbe30385a07b85295c0c68654c7b8a597f21b4"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "codex-hosted-search-disabled-result",
+        "uri": "evidence/result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "57477f3cd653a2ec2531473816bbe30385a07b85295c0c68654c7b8a597f21b4"
+        }
+      },
+      {
+        "artifact_id": "codex-hosted-search-disabled-live-proof",
+        "uri": "evidence/live-proof.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f6488c2f78409be559b76f36757b3a00bd0938e9d9946fddfa6bce15c6dd364c"
+        }
+      },
+      {
+        "artifact_id": "codex-hosted-search-disabled-red-proof",
+        "uri": "evidence/red-proof.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "80af4bffb0d4d31f7cca9e8b301a65e8b66bb4af40415ecd42c19ffa69d63c29"
+        }
+      },
+      {
+        "artifact_id": "codex-hosted-search-disabled-changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f2f6e3f242fc4d555ae03c258d100130540d358566dc9014f498054d94ea7a67"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-07-19-codex-hosted-search-disabled-trace",
+    "started_at": "2026-07-19T18:30:45Z",
+    "completed_at": "2026-07-19T20:36:22Z"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Contract tests prove durable root and role hosted-search suppression while retaining the CentralCloud MCP gateway; live gateway responses prove the former conversion failure is absent.",
+      "result_id": "codex-hosted-search-disabled-result",
+      "artifact_ids": [
+        "codex-hosted-search-disabled-result",
+        "codex-hosted-search-disabled-live-proof"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-07-19T20:36:22Z",
+      "red_proof": {
+        "result_id": "codex-hosted-search-red",
+        "artifact_id": "codex-hosted-search-disabled-red-proof",
+        "output_uri": "evidence/red-proof.json",
+        "observed_at": "2026-07-19T20:26:56Z"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "f7cd45b559b0b33be561407773875bb601b32c14f7402e3bc19243666d103d51"
+      },
+      "artifact_ids": ["codex-hosted-search-disabled-result"],
+      "producer": {
+        "kind": "service",
+        "id": "dotfiles-repo-check"
+      },
+      "observed_at": "2026-07-19T20:28:40Z",
+      "rationale": "The preference contract, all gateway-role assertions, VCS facade contract, and Home Manager activation-package build passed."
+    },
+    {
+      "gate_id": "live-deploy",
+      "kind": "deploy",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "f7cd45b559b0b33be561407773875bb601b32c14f7402e3bc19243666d103d51"
+      },
+      "artifact_ids": ["codex-hosted-search-disabled-live-proof"],
+      "producer": {
+        "kind": "agent",
+        "id": "codex-root"
+      },
+      "observed_at": "2026-07-19T20:36:22Z",
+      "rationale": "Home Manager installed nine explicit gateway-role overrides and a fresh auto-fast subagent completed repeated gateway requests with HTTP 200 instead of the former tools[30] conversion failure."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "codex-hosted-search-disabled-changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "f2f6e3f242fc4d555ae03c258d100130540d358566dc9014f498054d94ea7a67"
+      },
+      "files": [
+        ".secrets.baseline",
+        "config/codex/AGENTS.md",
+        "config/codex/agents/coder-fast.toml",
+        "config/codex/agents/coder-smart.toml",
+        "config/codex/agents/debugger.toml",
+        "config/codex/agents/explorer.toml",
+        "config/codex/agents/reviewer.toml",
+        "config/codex/agents/test-writer.toml",
+        "config/codex/agents/verifier.toml",
+        "config/codex/agents/web-researcher.toml",
+        "config/codex/agents/worker.toml",
+        "config/codex/config.toml",
+        "config/codex/shared-preferences.toml",
+        "docs/work/2026-07-19-codex-hosted-search-disabled/README.md",
+        "docs/work/2026-07-19-codex-hosted-search-disabled/current-spec.snapshot.json",
+        "docs/work/2026-07-19-codex-hosted-search-disabled/evidence.bundle.json",
+        "docs/work/2026-07-19-codex-hosted-search-disabled/evidence/changed-files.json",
+        "docs/work/2026-07-19-codex-hosted-search-disabled/evidence/live-proof.json",
+        "docs/work/2026-07-19-codex-hosted-search-disabled/evidence/red-proof.json",
+        "docs/work/2026-07-19-codex-hosted-search-disabled/evidence/result.json",
+        "docs/work/2026-07-19-codex-hosted-search-disabled/purpose.contract.json",
+        "docs/work/2026-07-19-codex-hosted-search-disabled/validation.report.json",
+        "docs/work/2026-07-19-codex-hosted-search-disabled/work.spec.json",
+        "home/modules/activation.nix",
+        "scripts/codex-preferences",
+        "scripts/repo-check.sh",
+        "scripts/test-codex-hosted-search.mjs",
+        "scripts/test-codex-preferences.py"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "All installed llm-gateway role files explicitly disable hosted search, the required CentralCloud MCP gateway remains configured, and fresh auto-fast requests received HTTP 200 from the deployed gateway.",
+    "output_uri": "evidence/live-proof.json"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "8347a0a4a628a135bc8bdddee25689d1bf358e55b09d51b292330854c722de15"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "bbb32b3a368ac1c13a6bd45f53e68db0e4d5b8408427e7f2141721939d698997"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "5c762fbbc0d6de69a81e86ba491aa90b9119129d8aad9f611d8846b6ff3a928b"
+    },
+    "witness_artifact_id": "codex-hosted-search-disabled-live-proof"
+  },
+  "reviews": [],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "codex-hosted-search-disabled-red-proof",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "f7cd45b559b0b33be561407773875bb601b32c14f7402e3bc19243666d103d51"
+      },
+      "observed_at": "2026-07-19T20:26:56Z",
+      "rationale": "The expanded role contract rejected the pre-fix configuration because coder-fast used llm-gateway without explicitly disabling hosted web search."
+    }
+  ]
+}

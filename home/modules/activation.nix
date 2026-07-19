@@ -46,7 +46,7 @@ in {
       mkdir -p "$HOME/.codex"
       if [ -L "$HOME/.codex/config.toml" ] || [ ! -e "$HOME/.codex/config.toml" ]; then
         rm -f "$HOME/.codex/config.toml"
-        cp "${config.home.homeDirectory}/.dotfiles/config/codex/config.toml" "$HOME/.codex/config.toml"
+        cp "${../../config/codex/config.toml}" "$HOME/.codex/config.toml"
         chmod 600 "$HOME/.codex/config.toml"
       fi
     '';
@@ -56,10 +56,9 @@ in {
     '';
 
     applySharedCodexPreferences = lib.hm.dag.entryAfter ["seedMutableCodexConfig"] ''
-      if [ -f "$HOME/.dotfiles/config/codex/shared-preferences.toml" ]; then
-        ${pkgs.python3}/bin/python3 "$HOME/.dotfiles/scripts/codex-preferences" apply
-        chmod 600 "$HOME/.codex/config.toml"
-      fi
+      ${pkgs.python3}/bin/python3 "${../../scripts/codex-preferences}" apply \
+        --source "${../../config/codex/shared-preferences.toml}"
+      chmod 600 "$HOME/.codex/config.toml"
     '';
 
     linkMutableMiseConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''

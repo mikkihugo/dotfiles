@@ -1,0 +1,42 @@
+{
+  "schema": "codex-hosted-search-disabled-live-proof/v1",
+  "observed_at": "2026-07-19T20:36:22Z",
+  "activation": {
+    "command": "home-manager switch --flake path:.#cc-se-sto-devbox-01 --impure",
+    "status": "passed"
+  },
+  "installed_configuration": {
+    "root_web_search": "disabled",
+    "centralcloud_mcp_required": true,
+    "gateway_roles_with_explicit_disable": [
+      "coder-fast",
+      "coder-smart",
+      "debugger",
+      "explorer",
+      "reviewer",
+      "test-writer",
+      "verifier",
+      "web-researcher",
+      "worker"
+    ],
+    "role_files_resolved_to_nix_store": true
+  },
+  "fresh_client": {
+    "agent_path": "/root/gateway_role_smoke_2",
+    "session_id": "019f7c12-981f-7083-8eb6-963ccd2cdae2",
+    "model_provider": "llm-gateway",
+    "model": "auto-fast",
+    "gateway_http_status": 200,
+    "gateway_request_ids": [
+      "cc-1784493024364667515",
+      "cc-1784493033838965376",
+      "cc-1784493040669263393"
+    ],
+    "former_failure_absent": "unsupported_protocol_conversion at tools[30]"
+  },
+  "separate_open_finding": {
+    "id": "codex-v2-task-payload-not-delivered",
+    "evidence": "The worker rollout contains trigger_turn metadata but no supplied spawn or follow-up task text, and the worker responded with unrelated repository exploration.",
+    "contract_impact": "Does not falsify hosted-search conversion; does block the broader swarm-execution completion claim."
+  }
+}

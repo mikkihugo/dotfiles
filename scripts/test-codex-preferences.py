@@ -17,13 +17,15 @@ class CodexPreferencesTest(unittest.TestCase):
             live = root / "config.toml"
             shared.write_text(
                 'model = "gpt-5.6-sol"\n'
-                'model_reasoning_effort = "low"\n\n'
+                'model_reasoning_effort = "low"\n'
+                'web_search = "disabled"\n\n'
                 '[tui]\n'
                 'status_line = ["model-with-reasoning", "thread-id"]\n'
             )
             live.write_text(
                 'model = "gpt-5.5"\n'
                 'model_reasoning_effort = "medium"\n'
+                'web_search = "live"\n'
                 'personality = "pragmatic"\n\n'
                 '[projects."/home/mhugo"]\n'
                 'trust_level = "trusted"\n\n'
@@ -42,6 +44,7 @@ class CodexPreferencesTest(unittest.TestCase):
             parsed = tomllib.loads(rendered)
             self.assertEqual(parsed["model"], "gpt-5.6-sol")
             self.assertEqual(parsed["model_reasoning_effort"], "low")
+            self.assertEqual(parsed["web_search"], "disabled")
             self.assertEqual(parsed["tui"]["status_line"], ["model-with-reasoning", "thread-id"])
             self.assertEqual(parsed["tui"]["terminal_title"], ["activity", "project-name"])
             self.assertTrue(parsed["tui"]["status_line_use_colors"])

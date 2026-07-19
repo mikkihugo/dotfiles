@@ -1,0 +1,136 @@
+{
+	"schema_version": "workspec/v4",
+	"workspec_id": "2026-07-19-repo-memory-client-hooks-work",
+	"purpose_contract_id": "2026-07-19-repo-memory-client-hooks-purpose",
+	"handover": {
+		"state": "accepted",
+		"producer": { "kind": "agent", "id": "scaffold_work" },
+		"accepting_authority": { "kind": "policy", "id": "purpose-first-tdd-handover" },
+		"decided_at": "2026-07-19T16:11:00Z",
+		"purpose_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "4550388463080f1599afc3e3316682a4cee85c3dc096f4fcda9bd27ca058e716" },
+		"subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "fd83ade4f8309c8f6ea434e54535db4f476a0335c1122635b58939c2895343ab" },
+		"policy": { "id": "workspec-content-handover/v1", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "21f4dad52f9e5f5a53ee16625c7bf75e01251002911d667e879f3e06147e7192" } },
+		"validators": ["workspec-v4.schema.json", "subject-digest", "purpose-first-tdd-handover"],
+		"evidence_refs": ["purpose.contract.json#admission", "official-client-hook-contracts", "live-repo-memory-swarm-proof"]
+	},
+	"feature_tree_target": {
+		"kind": "unknown",
+		"name": "2026-07-19-repo-memory-client-hooks",
+		"status": "planned"
+	},
+	"current_spec": {
+		"snapshot_id": "2026-07-19-repo-memory-client-hooks-current-spec",
+		"uri": "current-spec.snapshot.json",
+		"digest": {
+			"algorithm": "sha256",
+			"canonicalization": "raw-bytes",
+			"value": "27b738ebbf37214f4eebeb263a93548a451bb0c3e4542a0c83de170bd3bb78ff"
+		}
+	},
+	"requirement_delta": {
+		"added": [
+			{
+				"id": "R1",
+				"statement": "The shared hook adapter shall poll and post through the CentralCloud MCP gateway, defer acknowledgement until the next lifecycle boundary, and retain the local filesystem adapter as a fail-open migration path.",
+				"acceptance_criteria": [
+					"A fake MCP gateway observes initialize, initialized, poll, post, and later ack calls",
+					"The first successful delivery is not acknowledged in the same process",
+					"A later hook boundary acknowledges prior durable and local deliveries",
+					"MCP failure still exposes messages from the existing local adapter"
+				],
+				"requirement_form": {
+					"ears": {
+						"pattern": "ubiquitous",
+						"system": "Shared swarm hook adapter",
+						"response": "deliver durable messages at least once through MCP while preserving migration fallback"
+					}
+				},
+				"breaker": {
+					"breaker_id": "B1",
+					"condition": "validation accepts an implementation without the promised behavior",
+					"witness_kind": "contract-test",
+					"expected": "rejected"
+				},
+				"risk": "low",
+				"source": "purpose_contract"
+			}
+		],
+		"modified": [],
+		"removed": [],
+		"renamed": []
+	},
+	"requirements": [
+		{
+			"id": "R1",
+			"statement": "The shared hook adapter shall poll and post through the CentralCloud MCP gateway, defer acknowledgement until the next lifecycle boundary, and retain the local filesystem adapter as a fail-open migration path.",
+			"acceptance_criteria": [
+				"A fake MCP gateway observes initialize, initialized, poll, post, and later ack calls",
+				"The first successful delivery is not acknowledged in the same process",
+				"A later hook boundary acknowledges prior durable and local deliveries",
+				"MCP failure still exposes messages from the existing local adapter"
+			],
+			"requirement_form": {
+				"ears": {
+					"pattern": "ubiquitous",
+					"system": "Shared swarm hook adapter",
+					"response": "deliver durable messages at least once through MCP while preserving migration fallback"
+				}
+			},
+			"breaker": {
+				"breaker_id": "B1",
+				"condition": "validation accepts an implementation without the promised behavior",
+				"witness_kind": "contract-test",
+				"expected": "rejected"
+			},
+			"risk": "low",
+			"source": "purpose_contract"
+		}
+	],
+	"scope": {
+		"allowed": [".secrets.baseline", "docs/work/2026-07-19-repo-memory-client-hooks/**", "config/codex/hooks/swarm-messages.mjs", "config/codex/hooks.json", "config/claude/hooks/swarm-messages.sh", "config/kimi-code/hooks/swarm-messages.sh", "config/copilot/hooks/swarm-messages.json", "config/cursor/hooks.json", "config/agent-hooks/install-swarm-hooks.mjs", "home/modules/files.nix", "home/modules/activation.nix", "home/modules/ai-tools.nix", "scripts/test-swarm-messages.mjs", "scripts/test-swarm-hook-config.mjs", "justfile"],
+		"blocked": [],
+		"expected_files": []
+	},
+	"test_plan": [
+		{
+			"id": "T1",
+			"requirement_id": "R1",
+			"kind": "contract",
+			"description": "Node contract tests for the shared adapter, delayed receipts, native output renderers, configuration, and activation merge behavior.",
+			"must_fail_first": true
+		}
+	],
+	"verification_plan": {
+		"commands": ["node --test scripts/test-swarm-messages.mjs scripts/test-swarm-hook-config.mjs", "python3 scripts/test-codex-preferences.py", "nix build path:.#homeConfigurations.cc-se-sto-devbox-01.activationPackage --no-link", "purpose-validate-work docs/work/2026-07-19-repo-memory-client-hooks --repo-root ."],
+		"evidence_required": ["test", "quality", "falsifier"]
+	},
+	"model_requirements": {
+		"coding": 0.6,
+		"debugging": 0.4
+	},
+	"run_control": {
+		"autonomous_allowed": true,
+		"approval_required": false,
+		"max_doubt_to_proceed": 2
+	},
+	"traceability": {
+		"owner": { "kind": "agent", "id": "scaffold_work" },
+		"agent_role": "implementer",
+		"source_node_id": "2026-07-19-repo-memory-client-hooks",
+		"target_planes": ["tool", "client"],
+		"dependencies": [],
+		"retry_policy": {
+			"max_attempts": 1,
+			"backoff": "none",
+			"retryable_terminal_reasons": []
+		},
+		"dispatch_scope": { "kind": "local" }
+	},
+	"execution_constraints": {
+		"required_capabilities": [],
+		"requested_isolation": "process",
+		"side_effect_policy": "fenced",
+		"expected_artifact_schemas": [],
+		"deterministic_replay_required": true
+	}
+}

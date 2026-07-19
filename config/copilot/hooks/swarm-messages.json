@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "/home/mhugo/.codex/hooks/swarm-messages.mjs copilot sessionStart",
+        "timeoutSec": 10
+      }
+    ],
+    "userPromptTransformed": [
+      {
+        "type": "command",
+        "bash": "/home/mhugo/.codex/hooks/swarm-messages.mjs copilot userPromptTransformed",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}

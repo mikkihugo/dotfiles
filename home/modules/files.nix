@@ -3,7 +3,7 @@
 # Files that tools expect at specific $HOME paths, kept in version control
 # and updated atomically on every `hms`. force=true overwrites any manually
 # edited copy so the repo stays the source of truth.
-_: {
+{pkgs, ...}: {
   home.file = {
     ".config/ripgrep/config" = {
       source = ../../config/ripgreprc;
@@ -48,20 +48,38 @@ _: {
     };
 
     ".codex/hooks/swarm-messages.mjs" = {
-      source = ../../config/codex/hooks/swarm-messages.mjs;
+      source = pkgs.replaceVars ../../config/codex/hooks/swarm-messages.mjs {
+        node = "${pkgs.nodejs}/bin/node";
+      };
       executable = true;
       force = true;
     };
 
     ".claude/hooks/swarm-messages.sh" = {
-      source = ../../config/claude/hooks/swarm-messages.sh;
+      source = pkgs.replaceVars ../../config/claude/hooks/swarm-messages.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
       executable = true;
       force = true;
     };
 
     ".kimi-code/hooks/swarm-messages.sh" = {
-      source = ../../config/kimi-code/hooks/swarm-messages.sh;
+      source = pkgs.replaceVars ../../config/kimi-code/hooks/swarm-messages.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
       executable = true;
+      force = true;
+    };
+
+    ".copilot/hooks/swarm-messages.json" = {
+      source = ../../config/copilot/hooks/swarm-messages.json;
+      force = true;
+    };
+
+    ".cursor/hooks.json" = {
+      source = ../../config/cursor/hooks.json;
       force = true;
     };
 

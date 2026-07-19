@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs cursor sessionStart",
+        "timeout": 10
+      }
+    ]
+  }
+}

@@ -20,6 +20,13 @@ in {
       ${pkgs.systemd}/bin/systemctl --user reset-failed || true
     '';
 
+    # Claude and Kimi keep mutable user settings alongside provider/runtime
+    # state. Merge only the repo-memory hook groups and preserve every other
+    # field or TOML table byte-for-byte.
+    installRepoMemorySwarmHooks = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      ${pkgs.nodejs}/bin/node ${../../config/agent-hooks/install-swarm-hooks.mjs}
+    '';
+
     # programs.gh and programs.jujutsu own these files as nix-store symlinks.
     # If they exist as plain files (written by `gh auth` or `jj init`) home-manager
     # aborts with "would be clobbered". Remove them before checkLinkTargets.

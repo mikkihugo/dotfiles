@@ -1,0 +1,72 @@
+{
+	"schema_version": "purpose-contract/v2",
+	"contract_id": "2026-07-19-repo-memory-client-hooks-purpose",
+	"source": {
+		"system": "tool",
+		"repository": ".",
+		"request_id": "2026-07-19-repo-memory-client-hooks"
+	},
+	"lineage": {
+		"origin": { "kind": "request", "id": "2026-07-19-repo-memory-client-hooks", "revision": "initial" },
+		"objective": { "id": "2026-07-19-repo-memory-client-hooks-objective", "statement": "Inject durable repo-memory swarm messages into Codex, Claude Code, Kimi Code, GitHub Copilot CLI, and Cursor through their native lifecycle hooks.", "measure": "One shared hook adapter polls repo_memory over MCP, emits only client-native context output, delays acknowledgement until the next lifecycle boundary, preserves the filesystem bus as a migration fallback, and never treats messaging as authority." },
+		"need": {
+			"id": "2026-07-19-repo-memory-client-hooks-need",
+			"statement": "Inject durable repo-memory swarm messages into Codex, Claude Code, Kimi Code, GitHub Copilot CLI, and Cursor through their native lifecycle hooks.",
+			"stakeholders": ["Agent clients on the devbox that share the CentralCloud MCP gateway and repo-memory swarm bus."],
+			"baseline": "Claude Code and Kimi Code invoke one shared hook, but it only polls the host-local /tmp JSON bus. Codex installs the script with an empty hooks.json, while Copilot CLI and Cursor have no repo-memory delivery hook. All five clients already receive the CentralCloud MCP gateway configuration.",
+			"consequence_of_no_action": "Durable PostgreSQL-backed messages remain invisible unless an agent remembers to call repo-memory manually, and cross-host coordination continues to depend on ephemeral local files.",
+			"assumptions": ["The devbox can reach http://mcp-gateway.svc/mcp without embedding a downstream repo-memory credential."],
+			"alternatives_considered": ["Keep the filesystem-only hook", "Give every client a separate transport implementation", "Read PostgreSQL directly from hooks", "Remove the filesystem adapter immediately"]
+		}
+	},
+	"admission": {
+		"state": "accepted",
+		"producer": { "kind": "agent", "id": "scaffold_work" },
+		"accepting_authority": { "kind": "human", "id": "mhugo" },
+		"decided_at": "2026-07-19T16:10:00Z",
+		"subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "4550388463080f1599afc3e3316682a4cee85c3dc096f4fcda9bd27ca058e716" },
+		"policy": { "id": "operator-directed-purpose-admission/v1", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e" } },
+		"validators": ["purpose-contract-v2.schema.json", "subject-digest", "operator-authority"],
+		"evidence_refs": ["user-request:hooks-first", "user-request:fix-the-messaging", "live-baseline:filesystem-only-client-hook"]
+	},
+	"purpose": "Inject durable repo-memory swarm messages into Codex, Claude Code, Kimi Code, GitHub Copilot CLI, and Cursor through their native lifecycle hooks.",
+	"consumer": "Agent clients on the devbox that share the CentralCloud MCP gateway and repo-memory swarm bus.",
+	"contract": "One shared hook adapter polls repo_memory over MCP, emits only client-native context output, delays acknowledgement until the next lifecycle boundary, preserves the filesystem bus as a migration fallback, and never treats messaging as authority.",
+	"failure_boundary": "Gateway, protocol, malformed-message, or client-format failures fail open without acknowledging the durable message. The existing filesystem adapter remains available during migration, and no hook receives database credentials.",
+	"evidence": [
+		{
+			"kind": "test",
+			"description": "Node contract tests prove MCP initialization/calls, client-native output, next-boundary acknowledgements, idempotent availability, and filesystem fallback; Home Manager evaluation proves durable installation.",
+			"status": "expected"
+		}
+	],
+	"falsifier": {
+		"claim": "The change delivers the promised contract.",
+		"executable_check": {
+			"kind": "test",
+			"description": "Run the contract test; any failure falsifies the claim.",
+			"command": "node --test scripts/test-swarm-messages.mjs scripts/test-swarm-hook-config.mjs && nix build path:.#homeConfigurations.cc-se-sto-devbox-01.activationPackage --no-link"
+		}
+	},
+	"non_goals": ["Claiming lifecycle hooks wake idle clients", "Replacing Codex local memories", "Removing the local filesystem bus in this slice", "Letting messages authorize edits, VCS, deployments, secrets, or completion", "Adding direct PostgreSQL access to clients"],
+	"invariants": ["Repo-memory is reached through MCP", "Messages are acknowledged only at a later observed client boundary", "One shared adapter owns transport and rendering", "Client output follows each native hook schema", "No secret is written to hook configuration or output"],
+	"assumptions": [
+		{
+			"statement": "Cursor can inject swarm context only at sessionStart; mid-session delivery remains MCP polling by the agent until Cursor exposes a documented prompt-context hook.",
+			"status": "unverified",
+			"doubt": 2,
+			"falsifier": "Current Cursor hook documentation or a live hook probe demonstrates supported beforeSubmitPrompt context injection."
+		}
+	],
+	"run_control": {
+		"autonomous_allowed": true,
+		"risk": "medium",
+		"blast_radius": "local",
+		"reversibility": "easy",
+		"max_active_doubt": 1
+	},
+	"target_planes": ["tool", "client"],
+	"plane_constraints": [
+		"Repo-memory owns durable messages; CentralCloud MCP gateway owns downstream routing; Home Manager owns user-level client hook configuration."
+	]
+}

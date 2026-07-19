@@ -17,18 +17,11 @@
 {
   config,
   pkgs,
-  lib,
   llm-agents,
   ...
 }: let
   sopsSecrets = config.sops.secrets;
   llm-pkgs = llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
-
-  mkKeyWrapper = name: bin: keyPath: envVar:
-    pkgs.writeShellScriptBin name ''
-      export ${envVar}="$(cat "${keyPath}" 2>/dev/null || echo "")"
-      exec ${bin} "$@"
-    '';
 
   # llm-gateway is reachable two ways: the in-cluster Service
   # (http://llm-gateway.svc, ~0.1-0.3s, only resolves on Cilium-meshed hosts)
@@ -252,6 +245,10 @@
   # at llm-gateway.centralcloud.com (the external DNS name for the
   # inference-fabric-edge service). No port-forward needed.
   copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
+    # Copilot's native hook processor launches the configured POSIX command
+    # through the literal executable name `bash`.  Keep that runtime and the
+    # shared Node hook deterministic even when the caller has a minimal PATH.
+    export PATH="${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.nodejs}/bin:$PATH"
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
@@ -372,10 +369,10 @@ in {
     llm-pkgs.cursor-agent # binary: cursor-agent
     # droid is managed globally by mise.
     copilotKimiWrapper # binary: copilot-kimi -> routes mise GitHub Copilot CLI to Kimi K2.7 (umans-kimi-k2.7) via llm-gateway
-    copilotGlmWrapper  # binary: copilot-glm -> routes mise GitHub Copilot CLI to GLM-5.2 (umans-glm-5.2) via llm-gateway
-    copilotMinimaxWrapper  # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 (auto-minimax) via llm-gateway
-    copilotAllWrapper     # binary: copilot-all -> routes mise GitHub Copilot CLI through local centralcloud-ai-proxy (GLM-5.2 + Kimi K2.7 + umans-flash via umans.ai, MiniMax-M3 via minimax.io)
-    claudeMinimaxWrapper   # binary: claude-minimax -> routes Claude Code CLI to MiniMax-M3 via llm-gateway's Anthropic-Messages endpoint
+    copilotGlmWrapper # binary: copilot-glm -> routes mise GitHub Copilot CLI to GLM-5.2 (umans-glm-5.2) via llm-gateway
+    copilotMinimaxWrapper # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 (auto-minimax) via llm-gateway
+    copilotAllWrapper # binary: copilot-all -> routes mise GitHub Copilot CLI through local centralcloud-ai-proxy (GLM-5.2 + Kimi K2.7 + umans-flash via umans.ai, MiniMax-M3 via minimax.io)
+    claudeMinimaxWrapper # binary: claude-minimax -> routes Claude Code CLI to MiniMax-M3 via llm-gateway's Anthropic-Messages endpoint
     llm-pkgs.mistral-vibe # binary: vibe
     # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
   ];

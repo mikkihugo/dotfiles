@@ -1,0 +1,9 @@
+{
+	"schema_version": "current-spec-snapshot/v1",
+	"snapshot_id": "2026-07-19-repo-memory-client-hooks-current-spec",
+	"source": {
+		"uri": "repository://current-spec",
+		"revision": "scaffold"
+	},
+	"requirements": []
+}

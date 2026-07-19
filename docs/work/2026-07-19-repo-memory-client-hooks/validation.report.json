@@ -1,0 +1,78 @@
+{
+  "schema_version": "validation-report/v0",
+  "ok": true,
+  "authorizes_execution": true,
+  "work_dir": "docs/work/2026-07-19-repo-memory-client-hooks",
+  "repo_root": ".",
+  "gates": [
+    {
+      "id": "linkage:schema-major",
+      "status": "pass",
+      "message": "purpose-contract/v2 is the admitted intent source for workspec/v4"
+    },
+    {
+      "id": "linkage:purpose-work",
+      "status": "pass",
+      "message": "purpose and work IDs match"
+    },
+    {
+      "id": "admission:independent-authority",
+      "status": "pass",
+      "message": "admission producer and accepting authority differ"
+    },
+    {
+      "id": "admission:subject-digest",
+      "status": "pass",
+      "message": "admission decision matches the current artifact digest"
+    },
+    {
+      "id": "handover:independent-authority",
+      "status": "pass",
+      "message": "handover producer and accepting authority differ"
+    },
+    {
+      "id": "handover:subject-digest",
+      "status": "pass",
+      "message": "handover decision matches the current artifact digest"
+    },
+    {
+      "id": "handover:purpose-digest",
+      "status": "pass",
+      "message": "handover references the current PurposeContract digest"
+    },
+    {
+      "id": "spec:snapshot-path",
+      "status": "pass",
+      "message": "current_spec.uri must resolve inside the work directory"
+    },
+    {
+      "id": "spec:snapshot-digest",
+      "status": "pass",
+      "message": "current_spec.digest must bind the exact snapshot bytes"
+    },
+    {
+      "id": "spec:snapshot-id",
+      "status": "pass",
+      "message": "current_spec.snapshot_id must match the referenced snapshot"
+    },
+    {
+      "id": "spec:snapshot-requirements-unique",
+      "status": "pass",
+      "message": "current spec snapshot requirement IDs must be unique"
+    },
+    {
+      "id": "spec:delta-targets",
+      "status": "pass",
+      "message": "delta sources must exist once, added IDs must be new, and rename/modify IDs must be coherent"
+    },
+    {
+      "id": "spec:derived-requirements",
+      "status": "pass",
+      "message": "WorkSpec requirements must equal the deterministic snapshot plus delta result"
+    }
+  ],
+  "schema_errors": {
+    "purpose": null,
+    "work": null
+  }
+}

@@ -4,6 +4,7 @@ import {
   chmodSync,
   existsSync,
   mkdirSync,
+  realpathSync,
   readFileSync,
   readdirSync,
   renameSync,
@@ -386,6 +387,7 @@ async function main() {
       eventName,
       payload,
       workspace: selected.identity,
+      stateDir: process.env.REPO_MEMORY_SWARM_STATE_DIR || DEFAULT_STATE_DIR,
       buses,
       emitOutput: writeOutput,
     });
@@ -394,6 +396,15 @@ async function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+let invokedAsMain = false;
+try {
+  invokedAsMain = Boolean(
+    process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href,
+  );
+} catch {
+  // An unresolved argv path is not an executable main-module identity.
+}
+
+if (invokedAsMain) {
   main().catch(() => process.exit(0));
 }

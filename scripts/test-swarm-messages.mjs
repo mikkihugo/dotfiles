@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { execFile as execFileCallback } from "node:child_process";
+import { chmod, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -23,6 +24,16 @@ const message = {
   body: "Review revision abc123 after its focused checks pass.",
   origin: "repo-memory",
 };
+
+function execFileWithClosedInput(file, args, options) {
+  return new Promise((resolve, reject) => {
+    const child = execFileCallback(file, args, options, (error, stdout, stderr) => {
+      if (error) reject(error);
+      else resolve({ stdout, stderr });
+    });
+    child.stdin.end();
+  });
+}
 
 test("workspace selection is durable and scoped to the active repository", async () => {
   const base = await mkdtemp(join(tmpdir(), "repo-memory-workspaces-"));
@@ -105,6 +116,54 @@ test("MCP transport initializes and calls the lazy repo-memory route", async (t)
 
   assert.deepEqual(methods.slice(0, 3), ["initialize", "notifications/initialized", "tools/call"]);
   assert.equal(result.messages[0].sequence, 7);
+});
+
+test("Home Manager symlink execution enters the hook main routine", async (t) => {
+  const base = await mkdtemp(join(tmpdir(), "repo-memory-hook-symlink-"));
+  const target = join(base, "store-hook.mjs");
+  const link = join(base, "swarm-messages.mjs");
+  const stateDir = join(base, "state");
+  const source = await readFile(new URL("../config/codex/hooks/swarm-messages.mjs", import.meta.url), "utf8");
+  await writeFile(target, source.replace("#!@node@", `#!${process.execPath}`));
+  await chmod(target, 0o555);
+  await symlink(target, link);
+
+  const server = createServer(async (request, response) => {
+    if (request.method === "DELETE") {
+      response.writeHead(204).end();
+      return;
+    }
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    const rpc = body ? JSON.parse(body) : {};
+    if (rpc.method === "notifications/initialized") {
+      response.writeHead(202).end();
+      return;
+    }
+    response.setHeader("Content-Type", "application/json");
+    response.setHeader("Mcp-Session-Id", "symlink-test-session");
+    const result = rpc.method === "initialize"
+      ? { protocolVersion: "2025-11-25", capabilities: { tools: {} }, serverInfo: { name: "test", version: "1" } }
+      : { content: [{ type: "text", text: JSON.stringify({ messages: [message], next_cursor: 7 }) }] };
+    response.end(JSON.stringify({ jsonrpc: "2.0", id: rpc.id, result }));
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => server.close());
+  t.after(() => rm(base, { recursive: true, force: true }));
+
+  const address = server.address();
+  const { stdout } = await execFileWithClosedInput(link, ["codex", "UserPromptSubmit"], {
+    cwd: base,
+    env: {
+      ...process.env,
+      MCP_GATEWAY_URL: `http://127.0.0.1:${address.port}/mcp`,
+      REPO_MEMORY_SWARM_DISABLE_LOCAL: "1",
+      REPO_MEMORY_SWARM_WORKSPACE: "symlink-live-proof",
+      REPO_MEMORY_SWARM_STATE_DIR: stateDir,
+    },
+    timeout: 5_000,
+  });
+  assert.match(stdout, /Review revision abc123/);
 });
 
 test("delivery is acknowledged only at the next observed hook boundary", async () => {

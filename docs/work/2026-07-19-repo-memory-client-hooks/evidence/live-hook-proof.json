@@ -1,0 +1,31 @@
+{
+  "schema": "repo-memory-live-hook-proof/v1",
+  "observed_at": "2026-07-19T17:54:14Z",
+  "workspace": "hook-live-89cbc802-01",
+  "message": {
+    "id": "d437d8fe-6fc3-452f-9776-e21db441bd10",
+    "sequence": 5,
+    "sender": "live-proof",
+    "recipient": "root",
+    "type": "verification",
+    "body": "Home Manager symlink delivery 89cbc802"
+  },
+  "first_boundary": {
+    "installed_path": "/home/mhugo/.codex/hooks/swarm-messages.mjs",
+    "event": "UserPromptSubmit",
+    "exit_code": 0,
+    "native_output": "hookSpecificOutput",
+    "message_observed": true,
+    "pending_receipt_count": 1
+  },
+  "second_boundary": {
+    "event": "UserPromptSubmit",
+    "exit_code": 0,
+    "stdout_bytes": 0,
+    "pending_receipt_count": 0
+  },
+  "authoritative_poll_after_second_boundary": {
+    "messages": [],
+    "next_cursor": 5
+  }
+}

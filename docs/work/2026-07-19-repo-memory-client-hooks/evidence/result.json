@@ -1,0 +1,31 @@
+{
+  "schema": "repo-memory-client-hooks-result/v1",
+  "revision": "89cbc8025c035e24b6aac4d3e4583d0273825b3e",
+  "checks": [
+    {
+      "command": "node --test scripts/test-swarm-messages.mjs scripts/test-swarm-hook-config.mjs",
+      "status": "passed",
+      "summary": "10 tests passed, including Home Manager symlink execution and next-boundary acknowledgement"
+    },
+    {
+      "command": "bin/repo check",
+      "status": "passed",
+      "summary": "Codex preferences, hook contracts, VCS contract, and Home Manager activation-package build passed"
+    },
+    {
+      "command": "node /home/mhugo/code/singularity-engine/tool/servers/purpose-tool/dist/bin/validate-work.js docs/work/2026-07-19-repo-memory-client-hooks --repo-root .",
+      "status": "passed",
+      "summary": "Purpose and WorkSpec schema, admission, handover, snapshot, and derived-requirement gates passed"
+    },
+    {
+      "command": "home-manager switch --flake /home/mhugo/.dotfiles-worktrees/repo-memory-client-hooks#mhugo --impure",
+      "status": "passed",
+      "summary": "Home Manager activated the generation containing the published hook revision"
+    }
+  ],
+  "publication": {
+    "forgejo_readback": true,
+    "github_readback": true,
+    "revision": "89cbc8025c035e24b6aac4d3e4583d0273825b3e"
+  }
+}

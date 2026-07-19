@@ -1,0 +1,218 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-07-19-repo-memory-client-hooks-evidence",
+  "workspec_id": "2026-07-19-repo-memory-client-hooks-work",
+  "purpose_contract_id": "2026-07-19-repo-memory-client-hooks-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "4550388463080f1599afc3e3316682a4cee85c3dc096f4fcda9bd27ca058e716"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "fd83ade4f8309c8f6ea434e54535db4f476a0335c1122635b58939c2895343ab"
+  },
+  "workflow_run_id": "2026-07-19-repo-memory-client-hooks-run",
+  "execution": {
+    "execution_id": "2026-07-19-repo-memory-client-hooks-execution",
+    "tool": {
+      "id": "dotfiles-repo-and-purpose-harness",
+      "version": "2026-07-19"
+    },
+    "result": {
+      "result_id": "repo-memory-client-hooks-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "5894dcd248a645561ed71768829baf016ea0ee7db9653b061414af17adbb25f4"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "repo-memory-client-hooks-result",
+        "uri": "evidence/result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "5894dcd248a645561ed71768829baf016ea0ee7db9653b061414af17adbb25f4"
+        }
+      },
+      {
+        "artifact_id": "repo-memory-client-hooks-live-proof",
+        "uri": "evidence/live-hook-proof.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "c04f07070930d7c2e2af6550ea721308d496b3f45af227180587216696c970b3"
+        }
+      },
+      {
+        "artifact_id": "repo-memory-client-hooks-red-proof",
+        "uri": "evidence/symlink-red-proof.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f6ddd24a0776271d34b68fc6dfa84c5f12250c10b9b1b1d10c423f03e15835f6"
+        }
+      },
+      {
+        "artifact_id": "repo-memory-client-hooks-changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "42a085b3200426035c34967c2b447c290f5516a68c75c610f8b160eaa3a55cda"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-07-19-repo-memory-client-hooks-trace",
+    "started_at": "2026-07-19T16:10:00Z",
+    "completed_at": "2026-07-19T17:55:00Z"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Ten contract tests prove MCP routing, native client rendering, Home Manager symlink execution, next-boundary acknowledgement, and filesystem fail-open behavior.",
+      "result_id": "repo-memory-client-hooks-result",
+      "artifact_ids": [
+        "repo-memory-client-hooks-result",
+        "repo-memory-client-hooks-live-proof"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-07-19T17:54:30Z",
+      "red_proof": {
+        "result_id": "repo-memory-client-hooks-red-proof",
+        "artifact_id": "repo-memory-client-hooks-red-proof",
+        "output_uri": "evidence/symlink-red-proof.json",
+        "observed_at": "2026-07-19T17:45:00Z"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "fd83ade4f8309c8f6ea434e54535db4f476a0335c1122635b58939c2895343ab"
+      },
+      "artifact_ids": ["repo-memory-client-hooks-result"],
+      "producer": {
+        "kind": "service",
+        "id": "dotfiles-repo-check"
+      },
+      "observed_at": "2026-07-19T17:52:00Z",
+      "rationale": "The hook contract suite, dotfiles VCS contract, and Home Manager activation-package build passed."
+    },
+    {
+      "gate_id": "live-deploy",
+      "kind": "deploy",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "fd83ade4f8309c8f6ea434e54535db4f476a0335c1122635b58939c2895343ab"
+      },
+      "artifact_ids": ["repo-memory-client-hooks-live-proof"],
+      "producer": {
+        "kind": "agent",
+        "id": "codex-root"
+      },
+      "observed_at": "2026-07-19T17:54:30Z",
+      "rationale": "The activated Home Manager symlink delivered one durable MCP message and acknowledged it only at the next lifecycle boundary."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "repo-memory-client-hooks-changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "42a085b3200426035c34967c2b447c290f5516a68c75c610f8b160eaa3a55cda"
+      },
+      "files": [
+        ".secrets.baseline",
+        "config/agent-hooks/install-swarm-hooks.mjs",
+        "config/claude/hooks/swarm-messages.sh",
+        "config/codex/hooks.json",
+        "config/codex/hooks/swarm-messages.mjs",
+        "config/copilot/hooks/swarm-messages.json",
+        "config/cursor/hooks.json",
+        "config/kimi-code/hooks/swarm-messages.sh",
+        "docs/work/2026-07-19-repo-memory-client-hooks/README.md",
+        "docs/work/2026-07-19-repo-memory-client-hooks/current-spec.snapshot.json",
+        "docs/work/2026-07-19-repo-memory-client-hooks/evidence.bundle.json",
+        "docs/work/2026-07-19-repo-memory-client-hooks/evidence/changed-files.json",
+        "docs/work/2026-07-19-repo-memory-client-hooks/evidence/live-hook-proof.json",
+        "docs/work/2026-07-19-repo-memory-client-hooks/evidence/result.json",
+        "docs/work/2026-07-19-repo-memory-client-hooks/evidence/symlink-red-proof.json",
+        "docs/work/2026-07-19-repo-memory-client-hooks/purpose.contract.json",
+        "docs/work/2026-07-19-repo-memory-client-hooks/validation.report.json",
+        "docs/work/2026-07-19-repo-memory-client-hooks/work.spec.json",
+        "home/modules/activation.nix",
+        "home/modules/ai-tools.nix",
+        "home/modules/files.nix",
+        "justfile",
+        "scripts/test-swarm-hook-config.mjs",
+        "scripts/test-swarm-messages.mjs"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "The declared contract tests and activation-package build passed; the live post, first-boundary delivery, second-boundary acknowledgement, and empty authoritative poll did not falsify the contract.",
+    "output_uri": "evidence/live-hook-proof.json"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "27b738ebbf37214f4eebeb263a93548a451bb0c3e4542a0c83de170bd3bb78ff"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "5b041041c22d6745dff0b8f458596ed9dca0f05d2b930551dd27fd388edef1fd"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "2026388985579680d5920163e516d0eb4976dbcd7eeffcf7821437a6e170e047"
+    },
+    "witness_artifact_id": "repo-memory-client-hooks-live-proof"
+  },
+  "reviews": [],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "repo-memory-client-hooks-red-proof",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "fd83ade4f8309c8f6ea434e54535db4f476a0335c1122635b58939c2895343ab"
+      },
+      "observed_at": "2026-07-19T17:45:00Z",
+      "rationale": "The new symlink contract test rejected the pre-fix implementation because the executable produced no hook output."
+    }
+  ]
+}

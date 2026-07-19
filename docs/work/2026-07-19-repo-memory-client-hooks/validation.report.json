@@ -16,6 +16,16 @@
       "message": "purpose and work IDs match"
     },
     {
+      "id": "linkage:evidence-purpose",
+      "status": "pass",
+      "message": "evidence purpose_contract_id matches"
+    },
+    {
+      "id": "linkage:evidence-work",
+      "status": "pass",
+      "message": "evidence workspec_id matches"
+    },
+    {
       "id": "admission:independent-authority",
       "status": "pass",
       "message": "admission producer and accepting authority differ"
@@ -69,10 +79,296 @@
       "id": "spec:derived-requirements",
       "status": "pass",
       "message": "WorkSpec requirements must equal the deterministic snapshot plus delta result"
+    },
+    {
+      "id": "evidence:purpose-subject-digest",
+      "status": "pass",
+      "message": "evidence must bind the exact accepted PurposeContract digest"
+    },
+    {
+      "id": "evidence:workspec-subject-digest",
+      "status": "pass",
+      "message": "evidence must bind the exact accepted WorkSpec digest"
+    },
+    {
+      "id": "evidence:artifact:repo-memory-client-hooks-result",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:repo-memory-client-hooks-live-proof",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:repo-memory-client-hooks-red-proof",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:repo-memory-client-hooks-changed-files",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:execution-identity",
+      "status": "pass",
+      "message": "evidence must identify execution, tool, result, and unique artifacts"
+    },
+    {
+      "id": "coverage:requirements-unique",
+      "status": "pass",
+      "message": "requirement IDs must be unique"
+    },
+    {
+      "id": "coverage:planned-tests-unique",
+      "status": "pass",
+      "message": "planned test IDs must be unique"
+    },
+    {
+      "id": "coverage:planned:T1",
+      "status": "pass",
+      "message": "planned test must reference an existing requirement"
+    },
+    {
+      "id": "coverage:requirement:R1",
+      "status": "pass",
+      "message": "every semantic requirement needs a planned test"
+    },
+    {
+      "id": "coverage:evidence-tests-unique",
+      "status": "pass",
+      "message": "evidence test IDs must be unique"
+    },
+    {
+      "id": "coverage:evidence:T1",
+      "status": "pass",
+      "message": "evidence test must bind one planned test, result, and declared artifacts"
+    },
+    {
+      "id": "coverage:red-first:T1",
+      "status": "pass",
+      "message": "must_fail_first requires distinct red result/artifact evidence ordered before green"
+    },
+    {
+      "id": "coverage:planned-evidence:T1",
+      "status": "pass",
+      "message": "every planned test needs passed evidence; skipped, failed, and not_run do not complete coverage"
+    },
+    {
+      "id": "evidence:changed-file-manifest",
+      "status": "pass",
+      "message": "changed-file manifest must be a digest-bound artifact produced by the repository VCS facade"
+    },
+    {
+      "id": "scope:changed:.secrets.baseline",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:config/agent-hooks/install-swarm-hooks.mjs",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:config/claude/hooks/swarm-messages.sh",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:config/codex/hooks.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:config/codex/hooks/swarm-messages.mjs",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:config/copilot/hooks/swarm-messages.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:config/cursor/hooks.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:config/kimi-code/hooks/swarm-messages.sh",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-07-19-repo-memory-client-hooks/README.md",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-07-19-repo-memory-client-hooks/current-spec.snapshot.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-07-19-repo-memory-client-hooks/evidence.bundle.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-07-19-repo-memory-client-hooks/evidence/changed-files.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-07-19-repo-memory-client-hooks/evidence/live-hook-proof.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-07-19-repo-memory-client-hooks/evidence/result.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-07-19-repo-memory-client-hooks/evidence/symlink-red-proof.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-07-19-repo-memory-client-hooks/purpose.contract.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-07-19-repo-memory-client-hooks/validation.report.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-07-19-repo-memory-client-hooks/work.spec.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:home/modules/activation.nix",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:home/modules/ai-tools.nix",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:home/modules/files.nix",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:justfile",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:scripts/test-swarm-hook-config.mjs",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:scripts/test-swarm-messages.mjs",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "reconciliation:evidence-version",
+      "status": "pass",
+      "message": "completion evidence for workspec/v4 must use evidence-bundle/v3"
+    },
+    {
+      "id": "reconciliation:status",
+      "status": "pass",
+      "message": "completion requires reconciliation.status=reconciled"
+    },
+    {
+      "id": "reconciliation:runtime-status",
+      "status": "pass",
+      "message": "completion reconciliation requires runtime.status=completed"
+    },
+    {
+      "id": "reconciliation:snapshot-digest",
+      "status": "pass",
+      "message": "reconciliation must bind the exact current spec snapshot digest"
+    },
+    {
+      "id": "reconciliation:delta-digest",
+      "status": "pass",
+      "message": "reconciliation must bind the exact WorkSpec requirement delta"
+    },
+    {
+      "id": "reconciliation:requirement-set-digest",
+      "status": "pass",
+      "message": "reconciliation must bind the deterministic derived requirement set"
+    },
+    {
+      "id": "reconciliation:witness",
+      "status": "pass",
+      "message": "reconciliation must reference a declared digest-verified witness artifact"
+    },
+    {
+      "id": "completion:gates",
+      "status": "pass",
+      "message": "typed completion gates must pass or carry an authority-bound waiver and reference digest-bound artifacts"
+    },
+    {
+      "id": "completion:required-evidence:test",
+      "status": "pass",
+      "message": "verification_plan.evidence_required=test must have corresponding successful typed evidence"
+    },
+    {
+      "id": "completion:required-evidence:quality",
+      "status": "pass",
+      "message": "verification_plan.evidence_required=quality must have corresponding successful typed evidence"
+    },
+    {
+      "id": "completion:required-evidence:falsifier",
+      "status": "pass",
+      "message": "verification_plan.evidence_required=falsifier must have corresponding successful typed evidence"
+    },
+    {
+      "id": "completion:breakers-unique",
+      "status": "pass",
+      "message": "each WorkSpec requirement must declare a unique breaker ID"
+    },
+    {
+      "id": "completion:breaker-witness-set",
+      "status": "pass",
+      "message": "breaker witnesses must form a one-to-one set with declared requirement and breaker pairs"
+    },
+    {
+      "id": "completion:breaker:R1",
+      "status": "pass",
+      "message": "each requirement breaker needs exactly one passed, work-digest-bound artifact witness"
+    },
+    {
+      "id": "completion:contract-preserved",
+      "status": "pass",
+      "message": "completion evidence must affirm contract_preserved.status=true"
+    },
+    {
+      "id": "artifact:test:T1",
+      "status": "pass",
+      "message": "test artifact present: evidence/result.json"
+    },
+    {
+      "id": "artifact:falsifier",
+      "status": "pass",
+      "message": "falsifier artifact present: evidence/live-hook-proof.json"
     }
   ],
   "schema_errors": {
     "purpose": null,
-    "work": null
+    "work": null,
+    "evidence": null
   }
 }

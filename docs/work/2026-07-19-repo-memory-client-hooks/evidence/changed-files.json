@@ -1,0 +1,29 @@
+{
+  "source": "repository-vcs-facade",
+  "files": [
+  ".secrets.baseline",
+  "config/agent-hooks/install-swarm-hooks.mjs",
+  "config/claude/hooks/swarm-messages.sh",
+  "config/codex/hooks.json",
+  "config/codex/hooks/swarm-messages.mjs",
+  "config/copilot/hooks/swarm-messages.json",
+  "config/cursor/hooks.json",
+  "config/kimi-code/hooks/swarm-messages.sh",
+  "docs/work/2026-07-19-repo-memory-client-hooks/README.md",
+  "docs/work/2026-07-19-repo-memory-client-hooks/current-spec.snapshot.json",
+  "docs/work/2026-07-19-repo-memory-client-hooks/evidence.bundle.json",
+  "docs/work/2026-07-19-repo-memory-client-hooks/evidence/changed-files.json",
+  "docs/work/2026-07-19-repo-memory-client-hooks/evidence/live-hook-proof.json",
+  "docs/work/2026-07-19-repo-memory-client-hooks/evidence/result.json",
+  "docs/work/2026-07-19-repo-memory-client-hooks/evidence/symlink-red-proof.json",
+  "docs/work/2026-07-19-repo-memory-client-hooks/purpose.contract.json",
+  "docs/work/2026-07-19-repo-memory-client-hooks/validation.report.json",
+  "docs/work/2026-07-19-repo-memory-client-hooks/work.spec.json",
+  "home/modules/activation.nix",
+  "home/modules/ai-tools.nix",
+  "home/modules/files.nix",
+  "justfile",
+  "scripts/test-swarm-hook-config.mjs",
+    "scripts/test-swarm-messages.mjs"
+  ]
+}

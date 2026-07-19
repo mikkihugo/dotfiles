@@ -1,0 +1,13 @@
+{
+  "schema": "repo-memory-hook-red-proof/v1",
+  "result_id": "repo-memory-client-hooks-red-proof",
+  "status": "failed",
+  "observed_at": "2026-07-19T17:45:00Z",
+  "test": "Home Manager symlink execution enters the hook main routine",
+  "pre_fix_result": {
+    "status": "failed",
+    "installed_symlink_stdout_bytes": 0,
+    "expected_pattern": "Review revision abc123"
+  },
+  "root_cause": "Node resolved the imported module URL to the Nix store target while process.argv[1] retained the Home Manager symlink path, so the script rejected its own executable invocation as an import and skipped main."
+}

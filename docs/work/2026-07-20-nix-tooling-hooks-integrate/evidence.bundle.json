@@ -1,0 +1,276 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-07-20-nix-tooling-hooks-integrate-evidence",
+  "workspec_id": "2026-07-20-nix-tooling-hooks-integrate-work",
+  "purpose_contract_id": "2026-07-20-nix-tooling-hooks-integrate-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "b489ab21d08e9a33c45f5e0986a9a06eaaf4b8956f6af7efd4fb03b589d69d77"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "e96e2201cfe6aa4db14540e30472a9631e1746bb2c37f8674df62536fbf7a643"
+  },
+  "workflow_run_id": "2026-07-20-nix-tooling-hooks-integrate-run",
+  "execution": {
+    "execution_id": "2026-07-20-nix-tooling-hooks-integrate-execution",
+    "tool": {
+      "id": "dotfiles-repo-and-purpose-harness",
+      "version": "2026-07-20"
+    },
+    "result": {
+      "result_id": "nix-tooling-hooks-integrate-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "bae67bf197dd193b09f134513281db69dee5cf7a19426b6824c7bdc4c3d32e75"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "nix-tooling-hooks-integrate-result",
+        "uri": "evidence/result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "bae67bf197dd193b09f134513281db69dee5cf7a19426b6824c7bdc4c3d32e75"
+        }
+      },
+      {
+        "artifact_id": "nix-tooling-hooks-live-activation",
+        "uri": "evidence/live-activation-proof.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "1ee7c1e9db974cdd1349e53042e8c53eac3354401cd633f5736712845053636c"
+        }
+      },
+      {
+        "artifact_id": "nix-tooling-hooks-red-result",
+        "uri": "evidence/red-proof.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "40b46e7109095bb2ac1ea46fbcb4d512f998651204df5eeaa858b6de85f5a432"
+        }
+      },
+      {
+        "artifact_id": "nix-tooling-hooks-review-proof",
+        "uri": "evidence/review-proof.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "173c07d60935e654e5c81fe15aa0798c22a5ef1cd9c49013566faeb967c5ef7c"
+        }
+      },
+      {
+        "artifact_id": "nix-tooling-hooks-changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "473822fa4bb5c2964020e76bfcb995baefaa9479bbab8c21393f9d82d43b2dfe"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-07-20-nix-tooling-hooks-integrate-trace",
+    "started_at": "2026-07-20T01:20:27Z",
+    "completed_at": "2026-07-20T01:54:00Z"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Five focused contracts prove the requested package set, tea removal, timer ownership, dynamic profile resolution, shell aliases, and hermetic canonical check path.",
+      "result_id": "nix-tooling-hooks-integrate-result",
+      "artifact_ids": [
+        "nix-tooling-hooks-integrate-result",
+        "nix-tooling-hooks-red-result"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-07-20T01:53:04.884Z",
+      "red_proof": {
+        "result_id": "nix-tooling-hooks-red-result",
+        "artifact_id": "nix-tooling-hooks-red-result",
+        "output_uri": "evidence/red-proof.json",
+        "observed_at": "2026-07-20T01:53:04.646Z"
+      }
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "description": "Ten retained hook contracts and a live generation-213 MCP delivery prove all managed client surfaces and delayed acknowledgement.",
+      "result_id": "nix-tooling-hooks-integrate-result",
+      "artifact_ids": [
+        "nix-tooling-hooks-integrate-result",
+        "nix-tooling-hooks-live-activation"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-07-20T01:53:46Z"
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "e96e2201cfe6aa4db14540e30472a9631e1746bb2c37f8674df62536fbf7a643"
+      },
+      "artifact_ids": [
+        "nix-tooling-hooks-integrate-result",
+        "nix-tooling-hooks-review-proof"
+      ],
+      "producer": {
+        "kind": "service",
+        "id": "dotfiles-repo-check"
+      },
+      "observed_at": "2026-07-20T01:53:46Z",
+      "rationale": "The unified gate passed 16 Node contracts, the Python and VCS checks, and nix-fast-build evaluation after all review fixes."
+    },
+    {
+      "gate_id": "runtime",
+      "kind": "runtime",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "e96e2201cfe6aa4db14540e30472a9631e1746bb2c37f8674df62536fbf7a643"
+      },
+      "artifact_ids": [
+        "nix-tooling-hooks-live-activation"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "codex-root"
+      },
+      "observed_at": "2026-07-20T01:51:20.834Z",
+      "rationale": "The live installed hook delivered sequence 54, preserved it unacknowledged for one boundary, acknowledged it at the next boundary, and left no unread delivery."
+    },
+    {
+      "gate_id": "deploy",
+      "kind": "deploy",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "e96e2201cfe6aa4db14540e30472a9631e1746bb2c37f8674df62536fbf7a643"
+      },
+      "artifact_ids": [
+        "nix-tooling-hooks-live-activation"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "codex-root"
+      },
+      "observed_at": "2026-07-20T01:51:20.834Z",
+      "rationale": "Home Manager generation 213 is current, all five client surfaces exist, requested tools resolve, tea is absent, and both managed timers are active and enabled."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "nix-tooling-hooks-changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "473822fa4bb5c2964020e76bfcb995baefaa9479bbab8c21393f9d82d43b2dfe"
+      },
+      "files": [
+        ".secrets.baseline",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/README.md",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/current-spec.snapshot.json",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence.bundle.json",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence/changed-files.json",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence/live-activation-proof.json",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence/red-proof.json",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence/result.json",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence/review-proof.json",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/purpose.contract.json",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/validation.report.json",
+        "docs/work/2026-07-20-nix-tooling-hooks-integrate/work.spec.json",
+        "flake.nix",
+        "home/home.nix",
+        "home/modules/dotfiles-auto-update.nix",
+        "home/modules/nix-index.nix",
+        "home/modules/packages.nix",
+        "home/modules/shell.nix",
+        "justfile",
+        "scripts/repo-check.sh",
+        "scripts/test-nix-tooling.mjs"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "The clean remote-main baseline failed all five new contracts while the integrated source passed them; the full gate and live activated-hook proof did not falsify the promised contract.",
+    "output_uri": "evidence/live-activation-proof.json"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "63f971c45d242c7c28aaa94784ce609da888441bdabb46db868194fee75a1844"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "9b57ad4667c110494af4ab8a5a705848dfe6064ab3514ffb46d8118c522ad9ae"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "cb5e96164268099045db9e97f10ade5086bd1c2bde3f675d97397fec702a340b"
+    },
+    "witness_artifact_id": "nix-tooling-hooks-live-activation"
+  },
+  "reviews": [],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "nix-tooling-hooks-red-result",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "e96e2201cfe6aa4db14540e30472a9631e1746bb2c37f8674df62536fbf7a643"
+      },
+      "observed_at": "2026-07-20T01:53:04.646Z",
+      "rationale": "The clean remote-main audit tree was rejected by all five focused contracts."
+    },
+    {
+      "breaker_id": "B2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "witness_kind": "runtime-probe",
+      "observed_outcome": "detected",
+      "artifact_id": "nix-tooling-hooks-live-activation",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "e96e2201cfe6aa4db14540e30472a9631e1746bb2c37f8674df62536fbf7a643"
+      },
+      "observed_at": "2026-07-20T01:51:20.834Z",
+      "rationale": "The live probe explicitly measured one pending delivery before acknowledgement, one receipt after the next boundary, and zero unread messages afterward."
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "source": "repository-vcs-facade",
+  "files": [
+    ".secrets.baseline",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/README.md",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/current-spec.snapshot.json",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence.bundle.json",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence/changed-files.json",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence/live-activation-proof.json",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence/red-proof.json",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence/result.json",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/evidence/review-proof.json",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/purpose.contract.json",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/validation.report.json",
+    "docs/work/2026-07-20-nix-tooling-hooks-integrate/work.spec.json",
+    "flake.nix",
+    "home/home.nix",
+    "home/modules/dotfiles-auto-update.nix",
+    "home/modules/nix-index.nix",
+    "home/modules/packages.nix",
+    "home/modules/shell.nix",
+    "justfile",
+    "scripts/repo-check.sh",
+    "scripts/test-nix-tooling.mjs"
+  ]
+}

@@ -243,10 +243,13 @@ in {
   # bypassPermissions is set globally via ~/.claude/settings.json — no wrapper needed.
 
   home.shellAliases = {
-    # home-manager switch, then nvd-diff the last two HM profile generations.
-    # Use `command ls` — `ls` is aliased to eza and breaks -dv / glob sorting.
-    # Fail soft on first generation (only one link) so switch still succeeds.
-    hms = "home-manager switch && { nvd diff $(command ls -1dv \"$HOME\"/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | tail -n 2) || true; }";
+    # Build first and show the generation diff before activation. nh owns
+    # profile discovery, so this does not parse generation symlinks by hand.
+    hms = "nh home switch --ask";
+    # Explain why the current and previous Home Manager generations differ.
+    nixwhy = "nix-diff $(command ls -1dv \"$HOME\"/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | tail -n 2 | head -n 1) $(readlink -f \"$HOME\"/.local/state/nix/profiles/home-manager)";
+    # Show store roots over 500 MB as text.
+    nixdu = "nix-du -s 500MB --dot=false";
 
     # Prefer nix-output-monitor wrappers for readable flake builds.
     nb = "nom build";

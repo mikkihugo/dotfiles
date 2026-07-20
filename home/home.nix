@@ -43,6 +43,7 @@
       ./modules/hermes-tui.nix
       ./modules/ai-tools.nix
       ./modules/ops-tools.nix
+      ./modules/nix-index.nix
       ./modules/dotfiles-auto-update.nix
       ./modules/mise-auto-update.nix
       ./modules/tailscale.nix

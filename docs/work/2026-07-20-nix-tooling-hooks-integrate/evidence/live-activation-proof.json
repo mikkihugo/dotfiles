@@ -1,0 +1,83 @@
+{
+  "schema": "nix-tooling-hooks-live-activation-proof/v1",
+  "observed_at": "2026-07-20T01:51:20.834Z",
+  "home_manager": {
+    "generation": 213,
+    "store_path": "/nix/store/q9pjr6bbv5wnqbj3l19k23jw2acvsswn-home-manager-generation",
+    "activation_exit_code": 0,
+    "rollback_generation": 212
+  },
+  "tools": {
+    "fj": "fj v0.5.0",
+    "nh": "nh 4.3.2",
+    "nix_fast_build_path": "/home/mhugo/.nix-profile/bin/nix-fast-build",
+    "tea_present": false
+  },
+  "timers": {
+    "dotfiles_auto_update": {
+      "active": true,
+      "enabled": true,
+      "service_result": "success",
+      "network_online_dependency_present": false
+    },
+    "nix_index_update": {
+      "active": true,
+      "enabled": true
+    }
+  },
+  "client_surfaces": {
+    "codex": {
+      "installed": true,
+      "user_hooks_empty": true,
+      "managed_session_start_hooks": 1,
+      "managed_user_prompt_submit_hooks": 1
+    },
+    "claude": {
+      "installed": true,
+      "session_start_hooks": 1,
+      "user_prompt_submit_hooks": 1
+    },
+    "kimi_code": {
+      "installed": true,
+      "session_start_hooks": 1,
+      "user_prompt_submit_hooks": 1
+    },
+    "cursor": {
+      "installed": true,
+      "session_start_hooks": 1
+    },
+    "copilot": {
+      "installed": true,
+      "session_start_hooks": 1,
+      "user_prompt_transformed_hooks": 1
+    }
+  },
+  "swarm_delivery": {
+    "workspace": "hook-live-final-1784512279578",
+    "message": {
+      "id": "7b7ec57c-d551-4caf-8b31-91bdf77f0d5d",
+      "sequence": 54,
+      "sender": "final-activation-proof",
+      "recipient": "root",
+      "type": "verification",
+      "body": "generation 213 installed-hook delivery"
+    },
+    "installed_path": "/home/mhugo/.codex/hooks/swarm-messages.mjs",
+    "first_boundary": {
+      "exit_code": 0,
+      "message_observed": true,
+      "pending_receipt_count": 1,
+      "receipts_before_ack": 0
+    },
+    "second_boundary": {
+      "exit_code": 0,
+      "stdout_bytes": 0,
+      "pending_receipt_count": 0,
+      "receipts_after_ack": 1
+    },
+    "authoritative_poll_after_ack": {
+      "message_count": 0,
+      "next_cursor": 54
+    }
+  }
+}

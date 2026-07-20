@@ -1,0 +1,19 @@
+{
+  "schema": "nix-tooling-hooks-red-proof/v1",
+  "result_id": "nix-tooling-hooks-red-result",
+  "status": "failed",
+  "observed_at": "2026-07-20T01:53:04.646Z",
+  "command": "DOTFILES_CONTRACT_ROOT=/home/mhugo/.dotfiles-worktrees/repo-memory-client-hooks-audit node --test scripts/test-nix-tooling.mjs",
+  "baseline": "clean remote-main audit worktree at ec5db502b0c24037fe2d16eb37cf1c00fa8e99df",
+  "exit_code": 1,
+  "tests": 5,
+  "passed": 0,
+  "failed": 5,
+  "failed_contracts": [
+    "Home Manager preserves the requested Forgejo and fast-Nix toolchain without tea",
+    "Home Manager owns nix-index database refresh wiring",
+    "shell aliases consume the managed Nix tooling",
+    "the maintenance shell supplies every executable used by the canonical check",
+    "just check delegates to the single repository check implementation"
+  ]
+}

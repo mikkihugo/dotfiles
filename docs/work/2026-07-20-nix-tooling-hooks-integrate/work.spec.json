@@ -1,0 +1,201 @@
+{
+	"schema_version": "workspec/v4",
+	"workspec_id": "2026-07-20-nix-tooling-hooks-integrate-work",
+	"purpose_contract_id": "2026-07-20-nix-tooling-hooks-integrate-purpose",
+	"handover": {
+		"state": "accepted",
+		"producer": { "kind": "agent", "id": "scaffold_work" },
+		"accepting_authority": { "kind": "policy", "id": "purpose-first-tdd-handover" },
+		"decided_at": "2026-07-20T01:20:27Z",
+		"purpose_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "b489ab21d08e9a33c45f5e0986a9a06eaaf4b8956f6af7efd4fb03b589d69d77" },
+		"subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "e96e2201cfe6aa4db14540e30472a9631e1746bb2c37f8674df62536fbf7a643" },
+		"policy": { "id": "workspec-content-handover/v1", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "21f4dad52f9e5f5a53ee16625c7bf75e01251002911d667e879f3e06147e7192" } },
+		"validators": ["workspec-v4.schema.json", "subject-digest", "purpose-first-tdd-handover"],
+		"evidence_refs": ["purpose.contract.json#admission", "live-baseline:home-manager-generation-211", "closure-diff:remote-main-regresses-tooling"]
+	},
+	"feature_tree_target": {
+		"kind": "unknown",
+		"name": "2026-07-20-nix-tooling-hooks-integrate",
+		"status": "planned"
+	},
+	"current_spec": {
+		"snapshot_id": "2026-07-20-nix-tooling-hooks-integrate-current-spec",
+		"uri": "current-spec.snapshot.json",
+		"digest": {
+			"algorithm": "sha256",
+			"canonicalization": "raw-bytes",
+			"value": "63f971c45d242c7c28aaa94784ce609da888441bdabb46db868194fee75a1844"
+		}
+	},
+	"requirement_delta": {
+		"added": [
+			{
+				"id": "R1",
+				"statement": "The Home Manager source and hermetic repository check shall preserve the requested fj and fast-Nix toolchain, remove tea, and own the nix-index and dotfiles-update timers.",
+				"acceptance_criteria": [
+					"home.packages includes forgejo-cli, nix-fast-build, nh, comma, nix-diff, nix-du, nurl, and nix-index while excluding tea",
+					"home/home.nix imports the nix-index module and the periodic update timers evaluate",
+					"the Nix dev shell supplies node, python, and nix-fast-build so just check does not depend on a prior Home Manager activation",
+					"just check runs one canonical repository check path and builds without a repository result symlink"
+				],
+				"requirement_form": {
+					"ears": {
+						"pattern": "ubiquitous",
+						"system": "Managed dotfiles generation",
+						"response": "provide the requested Forgejo and fast-Nix tools without tea through a hermetic check and Home Manager activation"
+					}
+				},
+				"breaker": {
+					"breaker_id": "B1",
+					"condition": "the repository check passes while a requested package is absent, tea is restored, or the check relies on ambient node, python, or nix-fast-build",
+					"witness_kind": "contract-test",
+					"expected": "rejected"
+				},
+				"risk": "medium",
+				"source": "purpose_contract"
+			},
+			{
+				"id": "R2",
+				"statement": "The combined Home Manager generation shall retain the landed repo-memory MCP hook contract and install the native Cursor and Copilot hook files without duplicating Codex's system-managed hooks.",
+				"acceptance_criteria": [
+					"the existing shared hook and configuration contract tests remain green",
+					"the activation package contains Cursor, Copilot, Claude, Kimi, and Codex hook surfaces owned by Home Manager",
+					"live Cursor and Copilot hook files exist after activation while Codex hooks.json stays empty and /etc/codex/requirements.toml remains the sole managed lifecycle-hook authority",
+					"a live MCP swarm post, poll, delayed ack, and status readback succeeds through the activated hook client"
+				],
+				"requirement_form": {
+					"ears": {
+						"pattern": "state-driven",
+						"system": "Managed agent-client hook generation",
+						"precondition": "the combined Home Manager generation is activated",
+						"response": "expose durable repo-memory swarm messages through each supported client's native hook contract"
+					}
+				},
+				"breaker": {
+					"breaker_id": "B2",
+					"condition": "the combined generation omits a client hook, acknowledges a message in its delivery boundary, or creates a second managed Codex hook authority",
+					"witness_kind": "runtime-probe",
+					"expected": "detected"
+				},
+				"risk": "medium",
+				"source": "purpose_contract"
+			}
+		],
+		"modified": [],
+		"removed": [],
+		"renamed": []
+	},
+	"requirements": [
+		{
+			"id": "R1",
+			"statement": "The Home Manager source and hermetic repository check shall preserve the requested fj and fast-Nix toolchain, remove tea, and own the nix-index and dotfiles-update timers.",
+			"acceptance_criteria": [
+				"home.packages includes forgejo-cli, nix-fast-build, nh, comma, nix-diff, nix-du, nurl, and nix-index while excluding tea",
+				"home/home.nix imports the nix-index module and the periodic update timers evaluate",
+				"the Nix dev shell supplies node, python, and nix-fast-build so just check does not depend on a prior Home Manager activation",
+				"just check runs one canonical repository check path and builds without a repository result symlink"
+			],
+			"requirement_form": {
+				"ears": {
+					"pattern": "ubiquitous",
+					"system": "Managed dotfiles generation",
+					"response": "provide the requested Forgejo and fast-Nix tools without tea through a hermetic check and Home Manager activation"
+				}
+			},
+			"breaker": {
+				"breaker_id": "B1",
+				"condition": "the repository check passes while a requested package is absent, tea is restored, or the check relies on ambient node, python, or nix-fast-build",
+				"witness_kind": "contract-test",
+				"expected": "rejected"
+			},
+			"risk": "medium",
+			"source": "purpose_contract"
+		},
+		{
+			"id": "R2",
+			"statement": "The combined Home Manager generation shall retain the landed repo-memory MCP hook contract and install the native Cursor and Copilot hook files without duplicating Codex's system-managed hooks.",
+			"acceptance_criteria": [
+				"the existing shared hook and configuration contract tests remain green",
+				"the activation package contains Cursor, Copilot, Claude, Kimi, and Codex hook surfaces owned by Home Manager",
+				"live Cursor and Copilot hook files exist after activation while Codex hooks.json stays empty and /etc/codex/requirements.toml remains the sole managed lifecycle-hook authority",
+				"a live MCP swarm post, poll, delayed ack, and status readback succeeds through the activated hook client"
+			],
+			"requirement_form": {
+				"ears": {
+					"pattern": "state-driven",
+					"system": "Managed agent-client hook generation",
+					"precondition": "the combined Home Manager generation is activated",
+					"response": "expose durable repo-memory swarm messages through each supported client's native hook contract"
+				}
+			},
+			"breaker": {
+				"breaker_id": "B2",
+				"condition": "the combined generation omits a client hook, acknowledges a message in its delivery boundary, or creates a second managed Codex hook authority",
+				"witness_kind": "runtime-probe",
+				"expected": "detected"
+			},
+			"risk": "medium",
+			"source": "purpose_contract"
+		}
+	],
+	"scope": {
+		"allowed": [".secrets.baseline", "docs/work/2026-07-20-nix-tooling-hooks-integrate/**", "flake.nix", "home/home.nix", "home/modules/nix-index.nix", "home/modules/packages.nix", "home/modules/shell.nix", "home/modules/dotfiles-auto-update.nix", "justfile", "scripts/repo-check.sh", "scripts/test-nix-tooling.mjs", "OBSERVATIONS.md"],
+		"blocked": ["result", "result-", "config/codex/hooks/swarm-messages.mjs", "config/codex/hooks.json", "config/claude/**", "config/kimi-code/**", "config/copilot/**", "config/cursor/**"],
+		"expected_files": []
+	},
+	"test_plan": [
+		{
+			"id": "T1",
+			"requirement_id": "R1",
+			"kind": "contract",
+			"description": "Node static contract test for the requested package set, removed tea, module/timer wiring, hermetic dev-shell tools, and canonical repository check path.",
+			"path": "scripts/test-nix-tooling.mjs",
+			"command": "nix develop path:. --command node --test scripts/test-nix-tooling.mjs",
+			"must_fail_first": true
+		},
+		{
+			"id": "T2",
+			"requirement_id": "R2",
+			"kind": "contract",
+			"description": "Existing hook transport and Home Manager configuration tests plus live activated-generation inspection.",
+			"path": "scripts/test-swarm-hook-config.mjs",
+			"command": "nix develop path:. --command node --test scripts/test-swarm-messages.mjs scripts/test-swarm-hook-config.mjs",
+			"must_fail_first": false
+		}
+	],
+	"verification_plan": {
+		"commands": ["nix develop path:. --command node --test scripts/test-nix-tooling.mjs", "nix develop path:. --command node --test scripts/test-swarm-messages.mjs scripts/test-swarm-hook-config.mjs", "nix develop path:. --command just check", "nix build path:.#homeConfigurations.cc-se-sto-devbox-01.activationPackage --out-link /home/mhugo/.cache/codex-builds/nix-tooling-hooks-integrate-activation", "purpose-validate-work docs/work/2026-07-20-nix-tooling-hooks-integrate --repo-root ."],
+		"evidence_required": ["test", "quality", "runtime", "deploy", "falsifier"],
+		"deploy_required": true,
+		"rollback_required": true
+	},
+	"model_requirements": {
+		"coding": 0.6,
+		"debugging": 0.4
+	},
+	"run_control": {
+		"autonomous_allowed": true,
+		"approval_required": false,
+		"max_doubt_to_proceed": 1
+	},
+	"traceability": {
+		"owner": { "kind": "agent", "id": "scaffold_work" },
+		"agent_role": "implementer",
+		"source_node_id": "2026-07-20-nix-tooling-hooks-integrate",
+		"target_planes": ["tool", "client"],
+		"dependencies": [],
+		"retry_policy": {
+			"max_attempts": 1,
+			"backoff": "none",
+			"retryable_terminal_reasons": []
+		},
+		"dispatch_scope": { "kind": "local" }
+	},
+	"execution_constraints": {
+		"required_capabilities": [],
+		"requested_isolation": "process",
+		"side_effect_policy": "fenced",
+		"expected_artifact_schemas": [],
+		"deterministic_replay_required": true
+	}
+}

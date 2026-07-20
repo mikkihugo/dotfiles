@@ -1,0 +1,78 @@
+{
+	"schema_version": "purpose-contract/v2",
+	"contract_id": "2026-07-20-nix-tooling-hooks-integrate-purpose",
+	"source": {
+		"system": "tool",
+		"repository": ".",
+		"request_id": "2026-07-20-nix-tooling-hooks-integrate"
+	},
+	"lineage": {
+		"origin": { "kind": "request", "id": "2026-07-20-nix-tooling-hooks-integrate", "revision": "initial" },
+		"objective": { "id": "2026-07-20-nix-tooling-hooks-integrate-objective", "statement": "Preserve the requested Nix/FJ toolchain fixes while activating the already-landed repo-memory swarm hooks from current remote main.", "measure": "The published and activated dotfiles revision keeps fj and nix-fast-build available with tea absent, retains all remote-main client hook contracts, and installs the live Cursor and Copilot hook files without regressing Codex, Claude, or Kimi." },
+		"need": {
+			"id": "2026-07-20-nix-tooling-hooks-integrate-need",
+			"statement": "Preserve the requested Nix/FJ toolchain fixes while activating the already-landed repo-memory swarm hooks from current remote main.",
+			"stakeholders": ["Mikael and the managed Codex, Claude, Kimi, Cursor, and Copilot clients on cc-se-sto-devbox-01."],
+			"baseline": "Remote main already contains the shared repo-memory MCP adapter and all five client configurations, but Home Manager generation 211 was built from an older dirty checkout and lacks the Cursor and Copilot hook files. Activating clean remote main alone would remove the already-requested fj, nix-fast-build, nh, comma, nix-diff, nix-du, nurl, and nix-index tooling and would restore tea.",
+			"consequence_of_no_action": "Cursor and Copilot remain unable to receive repo-memory swarm context automatically, while a direct hook activation risks undoing the operator's Nix tooling fixes.",
+			"assumptions": ["The dirty primary-checkout Nix changes are the operator-requested toolchain slice and can be ported without its result- build symlink."],
+			"alternatives_considered": ["Activate clean remote main and regress the requested tooling", "Keep generation 211 and leave Cursor and Copilot unwired", "Copy live hook files outside Home Manager ownership"]
+		}
+	},
+	"admission": {
+		"state": "accepted",
+		"producer": { "kind": "agent", "id": "scaffold_work" },
+		"accepting_authority": { "kind": "human", "id": "mhugo" },
+		"decided_at": "2026-07-20T01:20:27Z",
+		"subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "b489ab21d08e9a33c45f5e0986a9a06eaaf4b8956f6af7efd4fb03b589d69d77" },
+		"policy": { "id": "operator-directed-purpose-admission/v1", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e" } },
+		"validators": ["purpose-contract-v2.schema.json", "subject-digest", "operator-authority"],
+		"evidence_refs": ["user-request:repo-mem-and-hooks-first", "user-request:remove-tea-install-fj", "live-baseline:home-manager-generation-211", "closure-diff:remote-main-regresses-tooling"]
+	},
+	"purpose": "Preserve the requested Nix/FJ toolchain fixes while activating the already-landed repo-memory swarm hooks from current remote main.",
+	"consumer": "Mikael and the managed Codex, Claude, Kimi, Cursor, and Copilot clients on cc-se-sto-devbox-01.",
+	"contract": "The published and activated dotfiles revision keeps fj and nix-fast-build available with tea absent, retains all remote-main client hook contracts, and installs the live Cursor and Copilot hook files without regressing Codex, Claude, or Kimi.",
+	"failure_boundary": "Do not publish or activate if the source contract tests, full repository check, activation build, closure comparison, live client-hook inspection, or live tool probes fail. Preserve the previous Home Manager generation as rollback.",
+	"evidence": [
+		{
+			"kind": "test",
+			"description": "Static contract tests prove the requested package set, hermetic check toolchain, timer/module wiring, retained swarm-hook tests, and Home Manager-managed Cursor and Copilot hook paths; live probes prove the activated generation.",
+			"status": "expected"
+		}
+	],
+	"falsifier": {
+		"claim": "The change delivers the promised contract.",
+		"executable_check": {
+			"kind": "test",
+			"description": "Run the unified repository check and live activation probes; any missing requested tool, present tea binary, missing client hook, duplicate managed Codex hook, or removed requested package falsifies the claim.",
+			"command": "nix develop path:. --command just check"
+		}
+	},
+	"non_goals": ["Removing the filesystem swarm fallback", "Changing MCP gateway or repo-memory semantics", "Modifying unrelated dirty primary-checkout files", "Cleaning unrelated worktrees", "Checking a result or result- build symlink into the repository"],
+	"invariants": ["The remote-main repo-memory hook implementation and tests remain intact", "System-managed Codex lifecycle hooks have one authority in /etc/codex/requirements.toml", "No secrets enter source or hook output", "Build outputs live under /home/mhugo/.cache/codex-builds rather than the repository", "All VCS operations use the repository facade"],
+	"assumptions": [
+		{
+			"statement": "The dirty primary-checkout Nix changes are the operator-requested fj and fast-Nix tooling slice.",
+			"status": "verified",
+			"doubt": 1,
+			"falsifier": "The primary diff or live installed binaries contradict the requested fj, nix-fast-build, nix-index, and tea-removal behavior."
+		},
+		{
+			"statement": "The requested packages remain available in the pinned nixos-26.05 inputs.",
+			"status": "verified",
+			"doubt": 1,
+			"falsifier": "The combined Home Manager activation package fails to evaluate or build because a package is unavailable."
+		}
+	],
+	"run_control": {
+		"autonomous_allowed": true,
+		"risk": "medium",
+		"blast_radius": "local",
+		"reversibility": "easy",
+		"max_active_doubt": 1
+	},
+	"target_planes": ["tool", "client"],
+	"plane_constraints": [
+		"Home Manager owns the local client files and package generation; repo-memory owns durable swarm messages; CentralCloud MCP owns downstream routing."
+	]
+}

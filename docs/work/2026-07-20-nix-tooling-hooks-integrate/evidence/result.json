@@ -1,0 +1,40 @@
+{
+  "schema": "nix-tooling-hooks-integrate-result/v1",
+  "result_id": "nix-tooling-hooks-integrate-result",
+  "observed_at": "2026-07-20T01:53:46Z",
+  "checks": [
+    {
+      "command": "DOTFILES_CONTRACT_ROOT=/home/mhugo/.dotfiles-worktrees/repo-memory-client-hooks-audit node --test scripts/test-nix-tooling.mjs",
+      "status": "failed-as-required",
+      "summary": "The remote-main baseline failed all 5 new toolchain and integration contracts."
+    },
+    {
+      "command": "DOTFILES_CONTRACT_ROOT=/home/mhugo/.dotfiles-worktrees/nix-tooling-hooks-integrate node --test scripts/test-nix-tooling.mjs",
+      "status": "passed",
+      "summary": "5 focused contracts passed."
+    },
+    {
+      "command": "nix develop path:. --command just check",
+      "status": "passed",
+      "summary": "The VCS contract, Python preference test, 16 Node contracts, and nix-fast-build activation evaluation passed."
+    },
+    {
+      "command": "home-manager switch --flake path:/home/mhugo/.dotfiles-worktrees/nix-tooling-hooks-integrate#cc-se-sto-devbox-01 --extra-experimental-features 'nix-command flakes'",
+      "status": "passed",
+      "summary": "Home Manager generation 213 activated successfully with generation 212 retained for rollback."
+    },
+    {
+      "command": "installed Home Manager swarm hook post, deliver, delayed ack, status, and poll probe",
+      "status": "passed",
+      "summary": "Durable message sequence 54 was delivered on the first boundary, acknowledged on the second, and absent from the final authoritative poll."
+    }
+  ],
+  "review": {
+    "redteam_job_id": "job-41fa1625-fbae-4194-b204-517898ddb52a",
+    "status": "findings-addressed",
+    "summary": "All three actionable Kimi findings were resolved and reverified; GPT-OSS reported approval."
+  },
+  "remaining": [
+    "The llm-gateway Responses encrypted_content conversion defect still blocks independent Codex subagents and belongs to the next inference-gateway slice."
+  ]
+}

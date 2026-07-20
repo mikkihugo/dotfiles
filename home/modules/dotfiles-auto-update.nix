@@ -71,11 +71,10 @@
   '';
 in {
   systemd.user.services.dotfiles-auto-update = {
-    Unit = {
-      Description = "Observe dotfiles remote status and notify on drift";
-      After = ["network-online.target"];
-      Wants = ["network-online.target"];
-    };
+    # User managers do not own the system network-online target. The hourly
+    # timer is the retry boundary when a fetch encounters transient network
+    # failure, so no cross-manager ordering dependency is needed here.
+    Unit.Description = "Observe dotfiles remote status and notify on drift";
     Service = {
       Type = "oneshot";
       ExecStart = "${observerScript}";
@@ -85,8 +84,10 @@ in {
   systemd.user.timers.dotfiles-auto-update = {
     Unit.Description = "Periodically check dotfiles remote status";
     Timer = {
-      OnBootSec = "3min";
-      OnUnitActiveSec = "1h";
+      # Use a wall-clock schedule so Persistent can catch up after downtime.
+      # Monotonic-only anchors can leave a long-lived user manager unarmed.
+      OnCalendar = "hourly";
+      RandomizedDelaySec = "5min";
       Persistent = true;
       Unit = "dotfiles-auto-update.service";
     };

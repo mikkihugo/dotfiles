@@ -1,0 +1,38 @@
+{
+  "schema": "nix-tooling-hooks-review-proof/v1",
+  "recorded_at": "2026-07-20T01:54:00Z",
+  "redteam_job_id": "job-41fa1625-fbae-4194-b204-517898ddb52a",
+  "provider_results": {
+    "kimi": "changes-required",
+    "gpt-oss": "approved",
+    "other_configured_lanes": "provider or empty-response failure"
+  },
+  "findings": [
+    {
+      "severity": "high",
+      "finding": "The user service carried a network-online.target dependency that is not provided by the user manager.",
+      "disposition": "fixed",
+      "change": "Removed the cross-manager Wants and After dependency and documented the hourly retry boundary.",
+      "verification": "Generation 213 has Wants empty, After contains only user-manager units, and the service Result is success."
+    },
+    {
+      "severity": "medium",
+      "finding": "The canonical repository check hardcoded one Home Manager profile.",
+      "disposition": "fixed",
+      "change": "Resolved the profile through scripts/current-home-profile before invoking nix-fast-build.",
+      "verification": "The portability assertion and the 16-test unified check passed."
+    },
+    {
+      "severity": "low",
+      "finding": "The static test encoded the same hardcoded profile.",
+      "disposition": "fixed",
+      "change": "Changed the contract test to require dynamic current-profile resolution.",
+      "verification": "The focused review regression was red with two failures before the fixes and green afterward."
+    }
+  ],
+  "independent_subagent_constraint": {
+    "status": "blocked",
+    "error": "llm-gateway returned 422 unsupported_protocol_conversion for opaque Responses encrypted_content",
+    "scope": "broader inference-gateway goal; not a dotfiles test failure"
+  }
+}

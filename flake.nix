@@ -159,7 +159,10 @@
         packages = with maintenance-pkgs; [
           go # build and validate local Go tools
           cargo # build and validate local Rust tools
+          nodejs # run Node contract tests from the canonical repo check
+          python3 # run Python preference/configuration contract tests
           just # operator entrypoints for dotfiles maintenance tasks
+          nix-fast-build # parallel activation evaluation/build for `just check`
           mise # run/update mise-managed tools from the maintenance shell
           gnumake # required by mise/python-build when tracking python@latest
           pkg-config # native dependency discovery for rust crates when needed

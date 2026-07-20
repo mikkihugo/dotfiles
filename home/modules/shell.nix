@@ -332,7 +332,11 @@ in {
       config = {
         global.warn_timeout = "5m";
         whitelist = {
-          prefix = ["/home/mhugo/code/"];
+          prefix = [
+            "/home/mhugo/code/"
+            "/srv/infra/"
+            "/home/mhugo/vendors/"
+          ];
           exact = ["/home/mhugo/.dotfiles/.envrc"];
         };
       };

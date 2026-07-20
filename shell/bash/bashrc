@@ -184,7 +184,8 @@ _load_sops_secrets() {
 	val=$(_sops_val llm_gateway bearer_key)
 	[ -n "$val" ] && export LLM_GATEWAY_BEARER_KEY="$val"
 
-	# FlakeCache WebDAV action token (sccache remote backend).
+	# FlakeCache WebDAV action token (sccache remote backend). Same host as the
+	# Nix substituter in config/nix/local-build.nix.conf — one fleet cache URL.
 	# Endpoint + multilevel chain only when the token loaded; otherwise clear
 	# inherited Home Manager / parent-shell WebDAV state so sccache can start
 	# on local disk instead of 401ing `.sccache_check`.

@@ -88,6 +88,17 @@
       }
     },
     {
+      "path": ["vcs", "rebase"],
+      "description": "Rebase the owned task branch onto one revision",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["rebase"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
       "path": ["vcs", "describe"],
       "description": "Commit the current workspace changes",
       "class": "vcs",

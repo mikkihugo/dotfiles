@@ -24,6 +24,9 @@ worktree-list:
 fetch:
     @{{runner}} fetch
 
+rebase REVISION:
+    @{{runner}} rebase "$1"
+
 describe MESSAGE:
     @{{runner}} describe "$1"
 

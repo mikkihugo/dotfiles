@@ -67,6 +67,13 @@ fetch)
 	[[ $# -eq 0 ]] || die 'fetch takes no arguments'
 	run_remote git -C "$root" fetch origin --prune
 	;;
+rebase)
+	[[ $# -eq 1 ]] || die 'rebase requires one revision'
+	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be rebased'
+	[[ "$branch" == codex/* ]] || die 'rebase requires a codex/* task branch'
+	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
+	git -C "$root" rebase "$1"
+	;;
 describe)
 	[[ $# -eq 1 ]] || die 'describe requires one message'
 	git -C "$root" add --all
@@ -154,7 +161,7 @@ contract-test)
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
 	grep -Fq "branch -D \"codex/\$name\"" "$root/scripts/repo-vcs.sh"
 	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
-	for recipe in status diff log show worktree-list fetch describe push push-github worktree-create worktree-drop test; do
+	for recipe in status diff log show worktree-list fetch rebase describe push push-github worktree-create worktree-drop test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"
 	done
 	printf 'dotfiles VCS contract: ok\n'
@@ -163,5 +170,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|describe|push|push-github|land|worktree-create|worktree-drop|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|describe|push|push-github|land|worktree-create|worktree-drop|contract-test|config}' ;;
 esac

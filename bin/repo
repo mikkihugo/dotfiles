@@ -6,22 +6,140 @@ show_help() {
   cat <<'PURPOSE_REPO_HELP'
 Usage: repo <command> [args...]
 
-Commands:
-  repo check                Run the dotfiles repository verification gate
-  repo sync mise-upgrade    Install and upgrade mise-managed tools
-  repo vcs describe         Commit the current workspace changes
-  repo vcs diff             Show repository changes
-  repo vcs fetch            Fetch the Forgejo integration remote
-  repo vcs land             Verify and publish a clean task workspace as main
-  repo vcs log              Show revision history
-  repo vcs push             Verify and publish local main to both remotes
-  repo vcs push-github      Verify and publish local main to GitHub only
-  repo vcs show             Show one revision
-  repo vcs status           Show repository status
-  repo vcs test             Verify the repository VCS facade contract
-  repo vcs worktree-create  Create an isolated task worktree
-  repo vcs worktree-drop    Remove an integrated clean task worktree
-  repo vcs worktree-list    List registered worktrees
+Commands are listed like MCP tools: what, when, steps, falsifier, and access mode.
+
+Environment:
+  Load the repository environment through direnv.
+
+  Steps:
+    1. Run `direnv allow`, then `eval "$(direnv export bash)"` once per session.
+    2. Use bare `repo <command>` for the rest of that session.
+    3. Use `direnv exec . repo <command>` only for a one-shot command when the shell cannot persist.
+  Falsifier: If `repo` is unavailable or resolves outside this repository, stop and load direnv.
+
+Checks:
+  Prove environment, packages, and contract gates before mutating.
+
+  repo check
+    What: Run the dotfiles repository verification gate
+    When: Before handoff or after changing the behavior this gate covers.
+    Steps:
+      1. Run `repo check`.
+      2. Verify the declared result before continuing to the next lifecycle step.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+
+Version control:
+  Read state, isolate work, mutate, then land/publish.
+
+  repo vcs status
+    What: Show repository status
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs status`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs diff
+    What: Show repository changes
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs diff`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs log
+    What: Show revision history
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs log`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs show
+    What: Show one revision
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs show`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs describe
+    What: Commit the current workspace changes
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs describe`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs rebase
+    What: Rebase the owned task branch onto one revision
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs rebase`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs fetch
+    What: Fetch the Forgejo integration remote
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs fetch`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs land
+    What: Verify and publish a clean task workspace as main
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs land`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs push
+    What: Verify and publish local main to both remotes
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs push`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs push-github
+    What: Verify and publish local main to GitHub only
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs push-github`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs test
+    What: Verify the repository VCS facade contract
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs test`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs worktree-create
+    What: Create an isolated task worktree
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs worktree-create`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs worktree-drop
+    What: Remove an integrated clean task worktree
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs worktree-drop`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs worktree-list
+    What: List registered worktrees
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs worktree-list`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+
+Changelog & sync:
+  Record release fragments before synchronized version bumps.
+
+  repo sync mise-upgrade
+    What: Install and upgrade mise-managed tools
+    When: When the command's named lifecycle action is the next verified step.
+    Steps:
+      1. Run `repo sync mise-upgrade`.
+      2. Verify the declared result before continuing to the next lifecycle step.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 PURPOSE_REPO_HELP
 }
 if [[ ${#} -eq 0 || "${1:-}" == "--help" || "${1:-}" == "help" ]]; then
@@ -36,6 +154,7 @@ elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'land' ]]; then shift 2; exec "$R
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'log' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'log' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'push' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push-github' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'push-github' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'rebase' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'rebase' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'show' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'show' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'status' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'status' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'test' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'contract-test' "$@"

@@ -130,12 +130,15 @@ worktree-drop)
 		git -C "$root" merge-base --is-ancestor "codex/$name" origin/main || die 'worktree branch is not integrated into main'
 	fi
 	git -C "$root" worktree remove "$path"
-	git -C "$root" branch -d "codex/$name"
+	# The primary checkout may intentionally lag origin/main. Integration was
+	# proven above, so delete the local task ref without re-checking stale main.
+	git -C "$root" branch -D "codex/$name"
 	;;
 contract-test)
 	[[ $# -eq 0 ]] || die 'contract-test takes no arguments'
 	grep -q "mod vcs 'just/vcs.just'" "$root/justfile"
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
+	grep -Fq "branch -D \"codex/\$name\"" "$root/scripts/repo-vcs.sh"
 	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
 	for recipe in status diff log show worktree-list fetch describe push push-github worktree-create worktree-drop test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"

@@ -3,6 +3,7 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 profile="$("$root/scripts/current-home-profile")"
 "$root/scripts/test-repo-vcs.sh"
+HOME_MANAGER_PROFILE="$profile" bash "$root/scripts/test-ast-grep-shim.sh"
 python3 "$root/scripts/test-codex-preferences.py"
 (
 	cd "$root"

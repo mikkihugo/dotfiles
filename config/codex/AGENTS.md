@@ -224,6 +224,14 @@ Follow existing project conventions unless there is a compelling reason not to.
 
 Keep changes focused.
 
+## Structural search
+
+`sg` is the Home Manager-managed compatibility entrypoint for the pinned
+ast-grep package. Before its first use in a session, verify that `sg --version`
+reports ast-grep. If it resolves to the system group utility or is unavailable,
+use the explicit `ast-grep` binary or the repository's declared code-map/search
+surface and continue with `rg` as the text fallback; do not stop the task.
+
 ---
 
 # Failure Handling

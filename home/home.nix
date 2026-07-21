@@ -37,6 +37,7 @@ in {
       ./modules/machine-role.nix
       ./modules/activation.nix
       ./modules/packages.nix
+      ./modules/ast-grep.nix
       ./modules/shell.nix
       ./modules/git.nix
       ./modules/cursor-stable-shell.nix

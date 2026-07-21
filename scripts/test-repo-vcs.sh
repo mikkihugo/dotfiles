@@ -14,6 +14,10 @@ actual="$({ PATH="$tmp/refuse:$PATH" SE_GIT_BIN="$tmp/pinned/git" "$root/scripts
 	printf 'facade did not use pinned SE_GIT_BIN: %s\n' "$actual" >&2
 	exit 1
 }
+if grep -Eq 'timeout[^\n]*[[:space:]]git[[:space:]]+-C' "$root/scripts/repo-vcs.sh"; then
+	printf 'timeout-wrapped publication bypasses pinned Git\n' >&2
+	exit 1
+fi
 
 "$root/scripts/repo-vcs.sh" contract-test
 "$root/bin/repo" help | grep -q 'repo vcs land'

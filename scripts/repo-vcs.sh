@@ -83,11 +83,11 @@ push)
 	# Forgejo synchronously mirrors this repository to GitHub. Publish GitHub
 	# first so Forgejo's post-receive mirror is already converged and cannot
 	# hold the client until the publication timeout.
-	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" git -C "$root" push "$github_url" main
-	run_forgejo_https timeout "$push_timeout" git -C "$root" push "$forgejo_https_url" main
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" main
+	run_forgejo_https timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_https_url" main
 	local_revision="$(git -C "$root" rev-parse main)"
-	forgejo_revision="$(run_forgejo_https timeout 30 git -C "$root" ls-remote "$forgejo_https_url" refs/heads/main | cut -f1)"
-	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
+	forgejo_revision="$(run_forgejo_https timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_https_url" refs/heads/main | cut -f1)"
+	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
 	[[ "$local_revision" == "$forgejo_revision" ]] || die "Forgejo remote readback mismatch"
 	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"
 	printf 'published=main revision=%s forgejo_readback=true github_readback=true\n' "$local_revision"
@@ -97,9 +97,9 @@ push-github)
 	[[ "$branch" == main ]] || die 'publication owns only main'
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
 	(cd "$root" && just check)
-	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" git -C "$root" push "$github_url" main
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" main
 	local_revision="$(git -C "$root" rev-parse main)"
-	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
+	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
 	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"
 	printf 'published=main revision=%s github_readback=true forgejo_pending=true\n' "$local_revision"
 	;;
@@ -112,11 +112,11 @@ land)
 	git -C "$root" merge-base --is-ancestor origin/main HEAD || die 'task branch does not contain origin/main'
 	"$root/scripts/repo-check.sh"
 	# Keep the server-side Forgejo mirror a no-op during its post-receive hook.
-	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" git -C "$root" push "$github_url" HEAD:main
-	run_forgejo_https timeout "$push_timeout" git -C "$root" push "$forgejo_https_url" HEAD:main
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" HEAD:main
+	run_forgejo_https timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_https_url" HEAD:main
 	local_revision="$(git -C "$root" rev-parse HEAD)"
-	forgejo_revision="$(run_forgejo_https timeout 30 git -C "$root" ls-remote "$forgejo_https_url" refs/heads/main | cut -f1)"
-	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 git -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
+	forgejo_revision="$(run_forgejo_https timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_https_url" refs/heads/main | cut -f1)"
+	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
 	[[ "$local_revision" == "$forgejo_revision" ]] || die 'Forgejo remote readback mismatch'
 	[[ "$local_revision" == "$github_revision" ]] || die 'GitHub remote readback mismatch'
 	run_remote git -C "$root" fetch origin main

@@ -10,6 +10,20 @@ remote_ssh="${DOTFILES_GIT_SSH_COMMAND:-ssh -o ControlMaster=no -o ControlPath=n
 forgejo_https_url="https://git.infra.centralcloud.com/mhugo/dotfiles.git"
 github_url="git@github.com:mikkihugo/dotfiles.git"
 push_timeout="${DOTFILES_GIT_PUSH_TIMEOUT:-300}"
+git_bin="${SE_GIT_BIN:-}"
+
+if [[ -z "$git_bin" ]]; then
+	git_bin="$(command -v git || true)"
+fi
+[[ "$git_bin" == /* && -x "$git_bin" && ! -d "$git_bin" ]] || {
+	printf 'dotfiles-vcs: missing executable Git; set SE_GIT_BIN to the pinned Nix Git path\n' >&2
+	exit 1
+}
+
+# Keep native Git private to this repository facade. Agent-facing PATH may
+# intentionally resolve `git` to a refusal shim; every backend call uses the
+# pinned executable selected above instead.
+git() { "$git_bin" "$@"; }
 
 [[ "$push_timeout" =~ ^[1-9][0-9]*$ ]] || {
 	printf 'dotfiles-vcs: DOTFILES_GIT_PUSH_TIMEOUT must be a positive integer\n' >&2

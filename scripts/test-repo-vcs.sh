@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf -- "$tmp"' EXIT
+mkdir -p "$tmp/refuse" "$tmp/pinned"
+printf '#!/usr/bin/env bash\nexit 126\n' >"$tmp/refuse/git"
+printf '#!/usr/bin/env bash\nprintf "pinned-git %%s\\n" "$*"\n' >"$tmp/pinned/git"
+chmod 0755 "$tmp/refuse/git" "$tmp/pinned/git"
+
+actual="$({ PATH="$tmp/refuse:$PATH" SE_GIT_BIN="$tmp/pinned/git" "$root/scripts/repo-vcs.sh" status; } 2>&1)"
+[[ "$actual" == "pinned-git -C $root status" ]] || {
+	printf 'facade did not use pinned SE_GIT_BIN: %s\n' "$actual" >&2
+	exit 1
+}
+
 "$root/scripts/repo-vcs.sh" contract-test
 "$root/bin/repo" help | grep -q 'repo vcs land'
 [[ "$(env -u DOTFILES_GIT_PUSH_TIMEOUT "$root/scripts/repo-vcs.sh" config)" == "push_timeout=300" ]]

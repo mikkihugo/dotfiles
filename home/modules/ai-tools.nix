@@ -313,7 +313,7 @@
     exec "$copilot_bin" "$@"
   '';
   # goose — aaif-goose via mise.
-  # Default: openai → llm-gateway.svc /v1 (SOPS/bao token), model minimax (ctx 1M, no monthly cap).
+  # Default: openai → llm-gateway.svc /v1 (SOPS/bao token), model minimax-ai/MiniMax-M3 (ctx 128K, tools).
   # Swarm alternatives: kimi-code/k3 (1M ctx), ollama-deepseek-v4-pro (524K ctx).
   # ACP backends (claude-acp / codex-acp) stay available via wrappers but are disabled in config.
   # Provider resolution: $GOOSE_PROVIDER > config active_provider > openai.
@@ -380,8 +380,8 @@
 
         ${gatewayUrlResolver "goose"}
         # Goose OPENAI_HOST is the API root (no /v1); client calls ''${OPENAI_HOST}/v1/models.
-        export GOOSE_MODEL="''${GOOSE_MODEL:-minimax}"
-        export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-405504}"
+        export GOOSE_MODEL="''${GOOSE_MODEL:-minimax-ai/MiniMax-M3}"
+        export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-128000}"
         export OPENAI_API_KEY="$edge_token"
         export OPENAI_HOST="$gateway_url"
         export OPENAI_BASE_URL="$gateway_url/v1"
@@ -410,7 +410,7 @@
           exit 1
         fi
         ${gatewayUrlResolver "goose-models"}
-        echo "# backend: openai → llm-gateway (default: minimax, ctx 405504)"
+        echo "# backend: openai → llm-gateway (default: minimax-ai/MiniMax-M3, ctx 128K)"
         echo "# gateway: $gateway_url/v1/models"
         curl -sS --max-time 15 -H "authorization: Bearer $edge_token" \
           "$gateway_url/v1/models" \
@@ -447,8 +447,8 @@
   gooseGateway = pkgs.writeShellScriptBin "goose-gateway" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="''${GOOSE_MODEL:-minimax}"
-    export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-405504}"
+    export GOOSE_MODEL="''${GOOSE_MODEL:-minimax-ai/MiniMax-M3}"
+    export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-128000}"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 

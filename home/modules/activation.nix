@@ -262,9 +262,9 @@ in {
           goose_config["OPENAI_HOST"] = "http://llm-gateway.svc"
           goose_config["GOOSE_DISABLE_KEYRING"] = True
           # From llm-gateway /v1/models context_length for umans-glm.
-          goose_config["GOOSE_CONTEXT_LIMIT"] = 405504
+          goose_config["GOOSE_CONTEXT_LIMIT"] = 128000
           # CLI — Claude Code-like: clean, minimal noise
-          goose_config["GOOSE_MODEL"] = "minimax"
+          goose_config["GOOSE_MODEL"] = "minimax-ai/MiniMax-M3"
           goose_config["GOOSE_FAST_MODEL"] = "auto-fast"
           goose_config["GOOSE_CLI_THEME"] = "dark"
           goose_config["GOOSE_CLI_MIN_PRIORITY"] = 0.3

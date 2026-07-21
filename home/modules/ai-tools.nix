@@ -313,7 +313,7 @@
     exec "$copilot_bin" "$@"
   '';
   # goose — aaif-goose via mise.
-  # Default: openai → llm-gateway.svc /v1 (SOPS/bao token), model minimax-ai/MiniMax-M3 (ctx 128K, tools).
+  # Default: openai → llm-gateway.svc /v1 (SOPS/bao token), model minimax-coding-plan/MiniMax-M3 (1M ctx, tools+reasoning).
   # Swarm alternatives: kimi-code/k3 (1M ctx), ollama-deepseek-v4-pro (524K ctx).
   # ACP backends (claude-acp / codex-acp) stay available via wrappers but are disabled in config.
   # Provider resolution: $GOOSE_PROVIDER > config active_provider > openai.
@@ -380,8 +380,8 @@
 
         ${gatewayUrlResolver "goose"}
         # Goose OPENAI_HOST is the API root (no /v1); client calls ''${OPENAI_HOST}/v1/models.
-        export GOOSE_MODEL="''${GOOSE_MODEL:-minimax-ai/MiniMax-M3}"
-        export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-128000}"
+        export GOOSE_MODEL="''${GOOSE_MODEL:-minimax-coding-plan/MiniMax-M3}"
+        export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-1000000}"
         export OPENAI_API_KEY="$edge_token"
         export OPENAI_HOST="$gateway_url"
         export OPENAI_BASE_URL="$gateway_url/v1"
@@ -410,7 +410,7 @@
           exit 1
         fi
         ${gatewayUrlResolver "goose-models"}
-        echo "# backend: openai → llm-gateway (default: minimax-ai/MiniMax-M3, ctx 128K)"
+        echo "# backend: openai → llm-gateway (default: minimax-coding-plan/MiniMax-M3, ctx 1M)"
         echo "# gateway: $gateway_url/v1/models"
         curl -sS --max-time 15 -H "authorization: Bearer $edge_token" \
           "$gateway_url/v1/models" \
@@ -447,8 +447,62 @@
   gooseGateway = pkgs.writeShellScriptBin "goose-gateway" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="''${GOOSE_MODEL:-minimax-ai/MiniMax-M3}"
-    export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-128000}"
+    export GOOSE_MODEL="''${GOOSE_MODEL:-minimax-coding-plan/MiniMax-M3}"
+    export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-1000000}"
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  # goose-kimi — kimi-code/k3 (1M ctx, tools+reasoning+vision)
+  gooseKimi = pkgs.writeShellScriptBin "goose-kimi" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=openai
+    export GOOSE_MODEL="kimi-code/k3"
+    export GOOSE_CONTEXT_LIMIT="1048576"
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  # goose-deepseek — ollama-deepseek-v4-pro (524K ctx, tools+reasoning)
+  gooseDeepseek = pkgs.writeShellScriptBin "goose-deepseek" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=openai
+    export GOOSE_MODEL="ollama-deepseek-v4-pro"
+    export GOOSE_CONTEXT_LIMIT="524288"
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  # goose-minimax — minimax-ai/MiniMax-M3 direct (128K ctx, tools, minimax.io)
+  gooseMinimax = pkgs.writeShellScriptBin "goose-minimax" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=openai
+    export GOOSE_MODEL="minimax-ai/MiniMax-M3"
+    export GOOSE_CONTEXT_LIMIT="128000"
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  # goose-umans — umans-glm (405K ctx, tools+reasoning+structured_output)
+  gooseUmans = pkgs.writeShellScriptBin "goose-umans" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=openai
+    export GOOSE_MODEL="umans-glm"
+    export GOOSE_CONTEXT_LIMIT="405504"
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  # goose-umans-flash — umans-flash (262K ctx, tools+reasoning+vision)
+  gooseUmansFlash = pkgs.writeShellScriptBin "goose-umans-flash" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=openai
+    export GOOSE_MODEL="umans-flash"
+    export GOOSE_CONTEXT_LIMIT="262144"
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  # goose-umans-fast — umans-fast (262K ctx, tools+reasoning+vision)
+  gooseUmansFast = pkgs.writeShellScriptBin "goose-umans-fast" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=openai
+    export GOOSE_MODEL="umans-fast"
+    export GOOSE_CONTEXT_LIMIT="262144"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
@@ -573,6 +627,12 @@ in {
       gooseClaude # binary: goose-claude -> claude-acp
       gooseChatgpt # binary: goose-chatgpt -> codex-acp (~/.codex OAuth)
       gooseGateway # binary: goose-gateway -> openai via llm-gateway
+      gooseKimi # binary: goose-kimi -> kimi-code/k3 (1M ctx)
+      gooseDeepseek # binary: goose-deepseek -> ollama-deepseek-v4-pro (524K ctx)
+      gooseMinimax # binary: goose-minimax -> minimax-ai/MiniMax-M3 (128K, direct)
+      gooseUmans # binary: goose-umans -> umans-glm (405K ctx)
+      gooseUmansFlash # binary: goose-umans-flash -> umans-flash (262K ctx)
+      gooseUmansFast # binary: goose-umans-fast -> umans-fast (262K ctx)
       codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
       llm-pkgs.mistral-vibe # binary: vibe
       # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
@@ -781,6 +841,42 @@ in {
         executable = true;
         force = true;
         source = "${gooseGateway}/bin/goose-gateway";
+      };
+
+      ".local/bin/goose-kimi" = {
+        executable = true;
+        force = true;
+        source = "${gooseKimi}/bin/goose-kimi";
+      };
+
+      ".local/bin/goose-deepseek" = {
+        executable = true;
+        force = true;
+        source = "${gooseDeepseek}/bin/goose-deepseek";
+      };
+
+      ".local/bin/goose-minimax" = {
+        executable = true;
+        force = true;
+        source = "${gooseMinimax}/bin/goose-minimax";
+      };
+
+      ".local/bin/goose-umans" = {
+        executable = true;
+        force = true;
+        source = "${gooseUmans}/bin/goose-umans";
+      };
+
+      ".local/bin/goose-umans-flash" = {
+        executable = true;
+        force = true;
+        source = "${gooseUmansFlash}/bin/goose-umans-flash";
+      };
+
+      ".local/bin/goose-umans-fast" = {
+        executable = true;
+        force = true;
+        source = "${gooseUmansFast}/bin/goose-umans-fast";
       };
     };
   };

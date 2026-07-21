@@ -6,9 +6,9 @@
 active_provider: openai
 OPENAI_HOST: http://llm-gateway.svc
 
-# Model — MiniMax-M3 via minimax.io (128K ctx, tools, no monthly cap)
+# Model — MiniMax-M3 via minimax.io coding-plan (1M ctx, tools+reasoning)
 # Swarm alternatives: kimi-code/k3 (1M ctx), ollama-deepseek-v4-pro (524K ctx)
-GOOSE_MODEL: minimax-ai/MiniMax-M3
+GOOSE_MODEL: minimax-coding-plan/MiniMax-M3
 GOOSE_FAST_MODEL: auto-fast
 
 # Security
@@ -18,7 +18,7 @@ GOOSE_DISABLE_KEYRING: true    # Headless/WSL — use secrets.yaml instead of ke
 GOOSE_TELEMETRY_ENABLED: true   # Anonymous usage data
 
 # Context
-GOOSE_CONTEXT_LIMIT: 128000
+GOOSE_CONTEXT_LIMIT: 1000000
 
 # CLI — Claude Code-like: clean, minimal noise
 GOOSE_CLI_THEME: dark
@@ -34,7 +34,7 @@ providers:
   openai:
     enabled: true
     configured: true
-    model: minimax-ai/MiniMax-M3
+    model: minimax-coding-plan/MiniMax-M3
   claude-acp:
     enabled: false
     configured: false

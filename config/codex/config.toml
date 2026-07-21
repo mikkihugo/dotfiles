@@ -33,7 +33,7 @@ js_repl = true
 prevent_idle_sleep = true
 
 [features.multi_agent_v2]
-enabled = true
+enabled = false
 hide_spawn_agent_metadata = false
 max_concurrent_threads_per_session = 6
 multi_agent_mode_hint_text = "Proactive multi-agent delegation is active for the root agent. The root should use sub-agents when independent parallel work would materially improve speed or quality. Spawned sub-agents must not create further sub-agents unless the parent explicitly assigns a bounded nested decomposition."

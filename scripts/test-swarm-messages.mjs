@@ -157,7 +157,6 @@ test("Home Manager symlink execution enters the hook main routine", async (t) =>
     env: {
       ...process.env,
       MCP_GATEWAY_URL: `http://127.0.0.1:${address.port}/mcp`,
-      REPO_MEMORY_SWARM_DISABLE_LOCAL: "1",
       REPO_MEMORY_SWARM_WORKSPACE: "symlink-live-proof",
       REPO_MEMORY_SWARM_STATE_DIR: stateDir,
     },
@@ -206,18 +205,11 @@ test("delivery is acknowledged only at the next observed hook boundary", async (
   }
 });
 
-test("MCP failure preserves filesystem fallback delivery", async () => {
-  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-fallback-"));
+test("MCP poll failure does not invent a filesystem bus", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-nofallback-"));
   const durable = {
     name: "repo-memory",
     async poll() { throw new Error("gateway unavailable"); },
-    async ack() {},
-    async post() {},
-    async close() {},
-  };
-  const local = {
-    name: "filesystem",
-    async poll() { return [{ ...message, id: "local-1", origin: "filesystem" }]; },
     async ack() {},
     async post() {},
     async close() {},
@@ -230,9 +222,11 @@ test("MCP failure preserves filesystem fallback delivery", async () => {
       payload: { cwd: "/workspace" },
       workspace: "engine",
       stateDir,
-      buses: [durable, local],
+      buses: [durable],
     });
-    assert.match(result.output, /filesystem/);
+    assert.equal(result.output, null);
+    assert.equal(result.deliveries.length, 0);
+    assert.match(result.errors[0]?.error ?? "", /gateway unavailable/);
   } finally {
     await rm(stateDir, { recursive: true, force: true });
   }

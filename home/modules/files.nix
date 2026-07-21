@@ -83,6 +83,11 @@
       force = true;
     };
 
+    ".config/goose/config.yaml" = {
+      source = ../../config/goose/config.yaml;
+      force = true;
+    };
+
     ".codex/agents/default.toml" = {
       source = ../../config/codex/agents/default.toml;
       force = true;

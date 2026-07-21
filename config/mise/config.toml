@@ -1,6 +1,9 @@
 [tools]
 "aqua:openai/codex" = "latest"
 "npm:@moonshot-ai/kimi-code" = "latest"
+"aqua:aaif-goose/goose" = "latest"
+# Qoder CLI is not in the mise registry; pin the OSS release tarball (http backend).
+"http:qodercli" = { version = "1.1.1", url = "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/1.1.1/qodercli-linux-x64.tar.gz", checksum = "sha256:21b60e3d0d9db9c35e5385c6d9523628e18735b7be5bbbc1a91996e4ed6a2b2a" }
 "github:vinhnx/vtcode" = "latest"
 flyctl = "latest"
 "aqua:nodejs/node" = "24"
@@ -47,6 +50,7 @@ oci = "latest"
 vultr-cli = "latest"
 "pipx:b2" = "latest"
 "go:github.com/steipete/gogcli/cmd/gog" = "latest"
+"npm:@just-every/code" = "latest"
 
 [env]
 # kimi-code reads this from process.env (resolveCompletionBudget) — it is NOT a
@@ -63,3 +67,4 @@ yes = true
 # Auto-trust mise config files in own repos (covers git worktrees, which
 # otherwise prompt per-path on every new worktree).
 trusted_config_paths = ["/home/mhugo/code", "/home/mhugo/.dotfiles"]
+minimum_release_age = "1h"

@@ -1,12 +1,10 @@
 #!@node@
-import { execFileSync } from "node:child_process";
 import {
   chmodSync,
   existsSync,
   mkdirSync,
   realpathSync,
   readFileSync,
-  readdirSync,
   renameSync,
   writeFileSync,
 } from "node:fs";
@@ -15,7 +13,6 @@ import { pathToFileURL } from "node:url";
 
 const DEFAULT_GATEWAY_URL = "http://mcp-gateway.svc/mcp";
 const DEFAULT_PRIMARY_WORKSPACE = "/home/mhugo/code/singularity-engine";
-const DEFAULT_LOCAL_SWARM = "/home/mhugo/.codex/skills/singularity-engine-forward/scripts/swarm-message.sh";
 const DEFAULT_STATE_DIR = "/home/mhugo/.local/state/repo-memory-hooks";
 const SUPPORTED_PROTOCOL = "2025-11-25";
 
@@ -139,62 +136,6 @@ export class RepoMemoryBus {
   async close() { await this.client.close(); }
 }
 
-export class FilesystemBus {
-  constructor(worktree, script = DEFAULT_LOCAL_SWARM) {
-    this.name = "filesystem";
-    this.worktree = worktree;
-    this.script = script;
-  }
-
-  async poll(_workspace, consumer) {
-    const stdout = execFileSync(this.script, ["poll", this.worktree, consumer], {
-      encoding: "utf8",
-      timeout: 4_000,
-    });
-    return stdout
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => ({ ...JSON.parse(line), origin: this.name }));
-  }
-
-  async ack(_workspace, consumer, delivery) {
-    execFileSync(this.script, ["ack", this.worktree, consumer, delivery.id], {
-      stdio: "ignore",
-      timeout: 4_000,
-    });
-  }
-
-  async post(_workspace, message) {
-    execFileSync(this.script, [
-      "post",
-      this.worktree,
-      message.sender,
-      message.recipient,
-      message.type,
-      message.body,
-    ], { stdio: "ignore", timeout: 4_000 });
-  }
-
-  async close() {}
-}
-
-function matchingLocalWorkspace(cwd, base = "/tmp/codex-swarms") {
-  if (!existsSync(base)) return null;
-  let best = null;
-  for (const entry of readdirSync(base, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    try {
-      const metadata = JSON.parse(readFileSync(join(base, entry.name, "metadata.json"), "utf8"));
-      const worktree = resolve(metadata.workspace);
-      if (cwd !== worktree && !cwd.startsWith(`${worktree}${sep}`)) continue;
-      if (!best || worktree.length > best.worktree.length) best = { identity: basename(worktree), worktree };
-    } catch {
-      // Malformed migration buses are ignored; the durable MCP path still runs.
-    }
-  }
-  return best;
-}
-
 export function selectWorkspace(cwd, env = process.env) {
   const explicit = env.REPO_MEMORY_SWARM_WORKSPACE?.trim();
   if (explicit) {
@@ -202,8 +143,6 @@ export function selectWorkspace(cwd, env = process.env) {
     return { identity: explicit, worktree: worktree && existsSync(worktree) ? resolve(worktree) : null };
   }
   const resolvedCwd = resolve(cwd);
-  const local = matchingLocalWorkspace(resolvedCwd);
-  if (local) return local;
 
   const primary = resolve(env.SWARM_PRIMARY_WORKSPACE || DEFAULT_PRIMARY_WORKSPACE);
   if (resolvedCwd === primary || resolvedCwd.startsWith(`${primary}${sep}`)) {
@@ -306,15 +245,17 @@ export async function runHook({
   }
 
   const deliveries = [];
-  for (const bus of buses) {
-    try {
-      for (const item of await bus.poll(workspace, consumer)) {
-        deliveries.push({ ...item, origin: item.origin ?? bus.name, _bus: bus.name });
+  await Promise.all(
+    buses.map(async (bus) => {
+      try {
+        for (const item of await bus.poll(workspace, consumer)) {
+          deliveries.push({ ...item, origin: item.origin ?? bus.name, _bus: bus.name });
+        }
+      } catch (error) {
+        errors.push({ bus: bus.name, operation: "poll", error: String(error) });
       }
-    } catch (error) {
-      errors.push({ bus: bus.name, operation: "poll", error: String(error) });
-    }
-  }
+    }),
+  );
 
   if (eventName === "SessionStart" || eventName === "sessionStart") {
     const sessionID = payload.session_id ?? payload.sessionId ?? "unknown-session";
@@ -326,10 +267,15 @@ export async function runHook({
       body: `${client} session is available from ${cwd}. Send orders to ${consumer}.`,
       idempotency_key: `${client}:${sessionID}:available`,
     };
-    for (const bus of buses) {
-      try { await bus.post(workspace, message); }
-      catch (error) { errors.push({ bus: bus.name, operation: "post", error: String(error) }); }
-    }
+    await Promise.all(
+      buses.map(async (bus) => {
+        try {
+          await bus.post(workspace, message);
+        } catch (error) {
+          errors.push({ bus: bus.name, operation: "post", error: String(error) });
+        }
+      }),
+    );
   }
 
   const publicDeliveries = deliveries.map(({ _bus, ...item }) => item);
@@ -366,20 +312,12 @@ async function main() {
   const selected = selectWorkspace(cwd);
   if (!selected) return;
 
-  const buses = [];
-  if (process.env.REPO_MEMORY_SWARM_DISABLE_MCP !== "1") {
-    const timeout = Number.parseInt(process.env.REPO_MEMORY_MCP_TIMEOUT_MS || "4000", 10);
-    buses.push(new RepoMemoryBus(new McpGatewayClient(process.env.MCP_GATEWAY_URL || DEFAULT_GATEWAY_URL, timeout)));
-  }
-  if (
-    process.env.REPO_MEMORY_SWARM_DISABLE_LOCAL !== "1" &&
-    selected.worktree &&
-    existsSync(DEFAULT_LOCAL_SWARM) &&
-    existsSync(`/tmp/codex-swarms/${basename(selected.worktree)}/metadata.json`)
-  ) {
-    buses.push(new FilesystemBus(selected.worktree));
-  }
-  if (!buses.length) return;
+  if (process.env.REPO_MEMORY_SWARM_DISABLE_MCP === "1") return;
+
+  const timeout = Number.parseInt(process.env.REPO_MEMORY_MCP_TIMEOUT_MS || "4000", 10);
+  const buses = [
+    new RepoMemoryBus(new McpGatewayClient(process.env.MCP_GATEWAY_URL || DEFAULT_GATEWAY_URL, timeout)),
+  ];
 
   try {
     await runHook({

@@ -221,25 +221,30 @@ in {
               "timeout": 300,
           }
       }
-      if goose_path.exists():
-          try:
-              goose_config = yaml.safe_load(goose_path.read_text(encoding="utf-8"))
-          except yaml.YAMLError as exc:
-              print(f"WARNING: {goose_path} is not valid YAML: {exc}", flush=True)
-              goose_config = None
+      # Home Manager may own this as a store symlink (config/goose/config.yaml).
+      # Do not rewrite read-only store links; HM is then the source of truth.
+      if goose_path.is_symlink() and str(goose_path.resolve()).startswith("/nix/store/"):
+          print(f"INFO: {goose_path} is Home Manager-owned; skipping mutable MCP merge", flush=True)
       else:
-          goose_config = {}
-      if goose_config is None:
-          goose_config = {}
-      if not isinstance(goose_config, dict):
-          print(f"WARNING: {goose_path} does not contain a YAML object", flush=True)
-      else:
-          goose_config["extensions"] = goose_mcp
-          goose_path.parent.mkdir(parents=True, exist_ok=True)
-          goose_path.write_text(
-              yaml.safe_dump(goose_config, sort_keys=False),
-              encoding="utf-8",
-          )
+          if goose_path.exists():
+              try:
+                  goose_config = yaml.safe_load(goose_path.read_text(encoding="utf-8"))
+              except yaml.YAMLError as exc:
+                  print(f"WARNING: {goose_path} is not valid YAML: {exc}", flush=True)
+                  goose_config = None
+          else:
+              goose_config = {}
+          if goose_config is None:
+              goose_config = {}
+          if not isinstance(goose_config, dict):
+              print(f"WARNING: {goose_path} does not contain a YAML object", flush=True)
+          else:
+              goose_config["extensions"] = goose_mcp
+              goose_path.parent.mkdir(parents=True, exist_ok=True)
+              goose_path.write_text(
+                  yaml.safe_dump(goose_config, sort_keys=False),
+                  encoding="utf-8",
+              )
 
       nanobot_path = home / ".nanobot" / "config.json"
       nanobot_mcp = {

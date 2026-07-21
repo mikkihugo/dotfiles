@@ -7,10 +7,12 @@ import test from "node:test";
 
 const readJSON = async (path) => JSON.parse(await readFile(path, "utf8"));
 
-test("Codex defers to managed policy while Copilot and Cursor register supported hooks", async () => {
+test("Home Manager owns Codex hooks.json v1 with repo-memory swarm registration", async () => {
   const codex = await readJSON("config/codex/hooks.json");
-  assert.deepEqual(codex.hooks, {});
-  assert.doesNotMatch(JSON.stringify(codex), /swarm-messages/);
+  assert.equal(codex.version, 1);
+  assert.match(JSON.stringify(codex.hooks.SessionStart), /swarm-messages\.mjs codex SessionStart/);
+  assert.match(JSON.stringify(codex.hooks.UserPromptSubmit), /swarm-messages\.mjs codex UserPromptSubmit/);
+  assert.match(codex.description, /repo-memory/);
 
   const copilot = await readJSON("config/copilot/hooks/swarm-messages.json");
   assert.equal(copilot.version, 1);

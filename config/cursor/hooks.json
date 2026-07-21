@@ -3,6 +3,10 @@
   "hooks": {
     "sessionStart": [
       {
+        "command": "node /home/mhugo/.cursor/hooks/fix-stable-shell-chmod.cjs",
+        "timeout": 10
+      },
+      {
         "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs cursor sessionStart",
         "timeout": 10
       }

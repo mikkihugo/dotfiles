@@ -1,4 +1,31 @@
 {
-  "description": "User hook layer; managed Codex hooks are owned by /etc/codex/requirements.toml.",
-  "hooks": {}
+  "version": 1,
+  "description": "Home Manager owns Codex lifecycle hooks. Transport is repo-memory via CentralCloud MCP gateway (swarm_bus_*). Local filesystem bus is opt-in only.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs codex SessionStart",
+            "timeout": 12,
+            "statusMessage": "Joining durable repo-memory swarm"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs codex UserPromptSubmit",
+            "timeout": 12,
+            "statusMessage": "Checking durable repo-memory messages"
+          }
+        ]
+      }
+    ]
+  }
 }

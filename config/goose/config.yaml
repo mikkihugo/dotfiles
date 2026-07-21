@@ -1,0 +1,7 @@
+extensions:
+  centralcloud-mcp-gateway:
+    name: centralcloud-mcp-gateway
+    type: streamable_http
+    url: http://mcp-gateway.svc/mcp
+    enabled: true
+    timeout: 300

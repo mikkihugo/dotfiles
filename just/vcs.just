@@ -42,5 +42,8 @@ worktree-create NAME REVISION="main":
 worktree-drop NAME:
     @{{runner}} worktree-drop "$1"
 
+worktree-abandon NAME CONFIRMATION:
+    @{{runner}} worktree-abandon "$1" "$2"
+
 test:
     @{{runner}} contract-test

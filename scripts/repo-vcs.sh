@@ -155,13 +155,34 @@ worktree-drop)
 	# proven above, so delete the local task ref without re-checking stale main.
 	git -C "$root" branch -D "codex/$name"
 	;;
+worktree-abandon)
+	[[ $# -eq 2 ]] || die 'worktree-abandon requires name and discard-unintegrated'
+	name="$1"
+	confirmation="$2"
+	valid_name "$name"
+	[[ "$confirmation" == discard-unintegrated ]] || die 'worktree-abandon requires exact discard-unintegrated confirmation'
+	path="$HOME/.dotfiles-worktrees/$name"
+	[[ "$(realpath "$root")" != "$(realpath "$path")" ]] || die 'cannot abandon current worktree'
+	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'worktree is not registered'
+	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'worktree is dirty'
+	for process_cwd in /proc/[0-9]*/cwd; do
+		resolved_cwd="$(readlink "$process_cwd" 2>/dev/null || true)"
+		case "$resolved_cwd" in
+		"$path" | "$path"/*) die "worktree is owned by a live process: $process_cwd -> $resolved_cwd" ;;
+		esac
+	done
+	revision="$(git -C "$root" rev-parse "codex/$name")"
+	git -C "$root" worktree remove "$path"
+	git -C "$root" branch -D "codex/$name"
+	printf 'abandoned=%s revision=%s clean=true live_process=false\n' "$name" "$revision"
+	;;
 contract-test)
 	[[ $# -eq 0 ]] || die 'contract-test takes no arguments'
 	grep -q "mod vcs 'just/vcs.just'" "$root/justfile"
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
 	grep -Fq "branch -D \"codex/\$name\"" "$root/scripts/repo-vcs.sh"
 	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
-	for recipe in status diff log show worktree-list fetch rebase describe push push-github worktree-create worktree-drop test; do
+	for recipe in status diff log show worktree-list fetch rebase describe push push-github worktree-create worktree-drop worktree-abandon test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"
 	done
 	printf 'dotfiles VCS contract: ok\n'
@@ -170,5 +191,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|describe|push|push-github|land|worktree-create|worktree-drop|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|describe|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|contract-test|config}' ;;
 esac

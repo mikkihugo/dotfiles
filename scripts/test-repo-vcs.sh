@@ -22,8 +22,13 @@ fi
 "$root/scripts/repo-vcs.sh" contract-test
 "$root/bin/repo" help | grep -q 'repo vcs land'
 "$root/bin/repo" help | grep -q 'repo vcs rebase'
+"$root/bin/repo" help | grep -q 'repo vcs worktree-abandon'
 if "$root/scripts/repo-vcs.sh" rebase >/dev/null 2>&1; then
 	printf 'rebase unexpectedly accepted a missing revision\n' >&2
+	exit 1
+fi
+if "$root/scripts/repo-vcs.sh" worktree-abandon ast-grep-sg wrong-confirmation >/dev/null 2>&1; then
+	printf 'worktree-abandon unexpectedly accepted an invalid confirmation\n' >&2
 	exit 1
 fi
 [[ "$(env -u DOTFILES_GIT_PUSH_TIMEOUT "$root/scripts/repo-vcs.sh" config)" == "push_timeout=300" ]]

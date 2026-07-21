@@ -165,6 +165,17 @@
       }
     },
     {
+      "path": ["vcs", "worktree-abandon"],
+      "description": "Discard an explicitly abandoned clean inactive task worktree",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["worktree-abandon"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
       "path": ["vcs", "test"],
       "description": "Verify the repository VCS facade contract",
       "class": "vcs",

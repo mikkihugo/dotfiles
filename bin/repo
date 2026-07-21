@@ -122,6 +122,13 @@ Version control:
       1. Run `repo vcs worktree-drop`.
       2. Read back repository state through `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs worktree-abandon
+    What: Discard an explicitly abandoned clean inactive task worktree
+    When: After its useful changes are integrated elsewhere and the user explicitly authorizes discarding the remainder.
+    Steps:
+      1. Run `repo vcs worktree-abandon <name> discard-unintegrated`.
+      2. Verify the named worktree is absent from `repo vcs worktree-list`.
+    Falsifier: Dirty state, a live process, a missing exact confirmation, or a non-zero exit means the worktree must be preserved.
   repo vcs worktree-list
     What: List registered worktrees
     When: Before choosing a repository lifecycle transition.
@@ -160,6 +167,7 @@ elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'status' ]]; then shift 2; exec "
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'test' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'contract-test' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-create' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-create' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-drop' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-drop' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-abandon' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-abandon' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-list' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-list' "$@"
 elif [[ "${1:-}" == 'check' ]]; then shift 1; exec "$ROOT/scripts/repo-check.sh" "$@"
 else

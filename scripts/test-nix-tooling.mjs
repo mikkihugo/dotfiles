@@ -103,3 +103,10 @@ test("just check delegates to the single repository check implementation", async
     /nix-fast-build\s+--flake\s+"path:\$root#homeConfigurations\.\$\{profile\}\.activationPackage"\s+--no-link/,
   );
 });
+
+test("global Codex instructions keep publication owned until land completes", async () => {
+  const agents = await source("config/codex/AGENTS.md");
+  assert.match(agents, /Do not launch delegated commit, land, push, or publication work as a background process/);
+  assert.match(agents, /complete synchronously within the subagent turn/);
+  assert.match(agents, /coordinator must perform and verify it/);
+});

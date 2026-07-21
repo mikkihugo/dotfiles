@@ -105,6 +105,11 @@ result; never substitute another model silently.
 If behavior disagrees with the exposed v1 contract, inspect the current Codex
 source or manual before generalizing from one failed call.
 
+Do not launch delegated commit, land, push, or publication work as a background process.
+If a subagent owns publication, it must complete synchronously within the subagent turn
+and report readback evidence. Otherwise the coordinator must perform and verify it after
+the subagent returns the implemented, verified, and described change.
+
 ---
 
 ## Make decisions

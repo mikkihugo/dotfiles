@@ -1,15 +1,40 @@
+# Goose configuration — template tracked in dotfiles
+# API keys are NOT stored here. They go in secrets.yaml (gitignored)
+# or the system keyring (when GOOSE_DISABLE_KEYRING is not set).
+
+# Provider
 active_provider: openai
 OPENAI_HOST: http://llm-gateway.svc
-GOOSE_DISABLE_KEYRING: true
+
+# Model — MiniMax (unlimited, no monthly cap)
+# Swarm alternatives: kimi-code/k3 (1M ctx), ollama-deepseek-v4-pro (524K ctx)
+GOOSE_MODEL: minimax
+GOOSE_FAST_MODEL: auto-fast
+
+# Security
+GOOSE_DISABLE_KEYRING: true    # Headless/WSL — use secrets.yaml instead of keyring
+
+# Telemetry
+GOOSE_TELEMETRY_ENABLED: true   # Anonymous usage data
+
+# Context
 GOOSE_CONTEXT_LIMIT: 405504
-claude-acp_configured: false
-codex-acp_configured: false
-mistral_configured: false
+
+# CLI — Claude Code-like: clean, minimal noise
+GOOSE_CLI_THEME: dark
+GOOSE_CLI_MIN_PRIORITY: 0.3          # Medium+ importance only (hide shell noise)
+GOOSE_DISABLE_TOOL_CALL_SUMMARY: true # Skip per-tool AI summaries (saves tokens)
+GOOSE_DISABLE_SESSION_NAMING: true    # Skip AI session naming (faster startup)
+GOOSE_CLI_SHOW_COST: true             # Show token costs
+GOOSE_MAX_CODE_BLOCK_LINES: 100       # More code before truncation
+GOOSE_MODE: auto                      # YOLO — auto-approve all tools
+
+# Providers
 providers:
   openai:
     enabled: true
     configured: true
-    model: auto-glm
+    model: minimax
   claude-acp:
     enabled: false
     configured: false
@@ -22,7 +47,10 @@ providers:
     enabled: false
     configured: false
     model: mistral-medium-latest
+
+# Extensions
 extensions:
+  # External
   centralcloud-mcp-gateway:
     name: centralcloud-mcp-gateway
     type: streamable_http
@@ -30,3 +58,79 @@ extensions:
     uri: http://mcp-gateway.svc/mcp
     enabled: true
     timeout: 300
+
+  # Built-in platform extensions
+  developer:
+    type: platform
+    name: developer
+    enabled: true
+    bundled: true
+    display_name: Developer
+  tom:
+    type: platform
+    name: tom
+    enabled: true
+    bundled: true
+    display_name: Top Of Mind
+  skills:
+    type: platform
+    name: skills
+    enabled: true
+    bundled: true
+    display_name: Skills
+  summon:
+    type: platform
+    name: summon
+    enabled: true
+    bundled: true
+    display_name: Summon
+  analyze:
+    type: platform
+    name: analyze
+    enabled: true
+    bundled: true
+    display_name: Analyze
+  apps:
+    type: platform
+    name: apps
+    enabled: true
+    bundled: true
+    display_name: Apps
+  extensionmanager:
+    type: platform
+    name: Extension Manager
+    enabled: true
+    bundled: true
+    display_name: Extension Manager
+  todo:
+    type: platform
+    name: todo
+    enabled: true
+    bundled: true
+    display_name: Todo
+
+  # Disabled built-ins
+  summarize:
+    type: platform
+    name: summarize
+    enabled: false
+    bundled: true
+    display_name: Summarize
+  chatrecall:
+    type: platform
+    name: chatrecall
+    enabled: false
+    bundled: true
+    display_name: Chat Recall
+  orchestrator:
+    type: platform
+    name: orchestrator
+    enabled: false
+    bundled: true
+    display_name: Orchestrator
+  code_execution:
+    type: platform
+    name: code_execution
+    enabled: false
+    bundled: true
+    display_name: Code Mode

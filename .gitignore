@@ -56,6 +56,9 @@ Thumbs.db
 config/.env.gpg
 *_GIST_ID*
 
+# Goose secrets — API keys stored here when keyring is disabled
+config/goose/secrets.yaml
+
 # Aider AI assistant files
 .aider*
 *.aider.*

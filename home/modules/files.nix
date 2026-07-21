@@ -86,6 +86,11 @@
     # goose config.yaml is intentionally NOT HM-symlinked: goose writes
     # telemetry consent and other prefs into it. Seeded/merged in activation.nix.
 
+    ".config/goose/moim-guardrails.md" = {
+      source = ../../config/goose/moim-guardrails.md;
+      force = true;
+    };
+
     ".codex/agents/default.toml" = {
       source = ../../config/codex/agents/default.toml;
       force = true;

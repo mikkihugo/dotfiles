@@ -222,13 +222,13 @@ in {
           "timeout": 300,
       }
       # llm-gateway only — force openai; keep ACP/mistral disabled if doctor/configure re-adds them.
-      # auto-glm: → umans-glm-5.2 with tools+reasoning; context_length 405504 from /v1/models.
-      # (bare umans-glm is currently 503 cold; coding-plan id lacks tools in catalog)
+      # minimax: 1M ctx, tools+reasoning+vision, no monthly cap.
+      # Swarm alternatives: kimi-code/k3 (1M ctx), ollama-deepseek-v4-pro (524K ctx).
       goose_provider_defaults = {
           "openai": {
               "enabled": True,
               "configured": True,
-              "model": "auto-glm",
+              "model": "minimax",
           },
           "claude-acp": {"enabled": False, "configured": False, "model": "current"},
           "codex-acp": {"enabled": False, "configured": False, "model": "current"},
@@ -263,6 +263,16 @@ in {
           goose_config["GOOSE_DISABLE_KEYRING"] = True
           # From llm-gateway /v1/models context_length for umans-glm.
           goose_config["GOOSE_CONTEXT_LIMIT"] = 405504
+          # CLI — Claude Code-like: clean, minimal noise
+          goose_config["GOOSE_MODEL"] = "minimax"
+          goose_config["GOOSE_FAST_MODEL"] = "auto-fast"
+          goose_config["GOOSE_CLI_THEME"] = "dark"
+          goose_config["GOOSE_CLI_MIN_PRIORITY"] = 0.3
+          goose_config["GOOSE_DISABLE_TOOL_CALL_SUMMARY"] = True
+          goose_config["GOOSE_DISABLE_SESSION_NAMING"] = True
+          goose_config["GOOSE_CLI_SHOW_COST"] = True
+          goose_config["GOOSE_MAX_CODE_BLOCK_LINES"] = 100
+          goose_config["GOOSE_MODE"] = "auto"
           goose_config["claude-acp_configured"] = False
           goose_config["codex-acp_configured"] = False
           goose_config["mistral_configured"] = False

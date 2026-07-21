@@ -382,6 +382,12 @@
         # Goose OPENAI_HOST is the API root (no /v1); client calls ''${OPENAI_HOST}/v1/models.
         export GOOSE_MODEL="''${GOOSE_MODEL:-minimax-coding-plan/MiniMax-M3}"
         export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-1000000}"
+        # Planner: kimi-code/k3 for deep reasoning (1M ctx, tools+reasoning+vision)
+        export GOOSE_PLANNER_PROVIDER="''${GOOSE_PLANNER_PROVIDER:-openai}"
+        export GOOSE_PLANNER_MODEL="''${GOOSE_PLANNER_MODEL:-kimi-code/k3}"
+        export GOOSE_PLANNER_CONTEXT_LIMIT="''${GOOSE_PLANNER_CONTEXT_LIMIT:-1048576}"
+        # Fast model for auxiliary calls (tool selection, session titles)
+        export GOOSE_FAST_MODEL="''${GOOSE_FAST_MODEL:-auto-fast}"
         export OPENAI_API_KEY="$edge_token"
         export OPENAI_HOST="$gateway_url"
         export OPENAI_BASE_URL="$gateway_url/v1"

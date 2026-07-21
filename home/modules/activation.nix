@@ -266,6 +266,9 @@ in {
           # CLI — Claude Code-like: clean, minimal noise
           goose_config["GOOSE_MODEL"] = "minimax-coding-plan/MiniMax-M3"
           goose_config["GOOSE_FAST_MODEL"] = "auto-fast"
+          goose_config["GOOSE_PLANNER_PROVIDER"] = "openai"
+          goose_config["GOOSE_PLANNER_MODEL"] = "kimi-code/k3"
+          goose_config["GOOSE_PLANNER_CONTEXT_LIMIT"] = 1048576
           goose_config["GOOSE_CLI_THEME"] = "dark"
           goose_config["GOOSE_CLI_MIN_PRIORITY"] = 0.3
           goose_config["GOOSE_DISABLE_TOOL_CALL_SUMMARY"] = True

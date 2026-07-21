@@ -11,6 +11,12 @@ OPENAI_HOST: http://llm-gateway.svc
 GOOSE_MODEL: minimax-coding-plan/MiniMax-M3
 GOOSE_FAST_MODEL: auto-fast
 
+# Planner — uses kimi-code/k3 for deep reasoning on plan decomposition
+# (1M ctx, tools+reasoning+vision)
+GOOSE_PLANNER_PROVIDER: openai
+GOOSE_PLANNER_MODEL: kimi-code/k3
+GOOSE_PLANNER_CONTEXT_LIMIT: 1048576
+
 # Security
 GOOSE_DISABLE_KEYRING: true    # Headless/WSL — use secrets.yaml instead of keyring
 

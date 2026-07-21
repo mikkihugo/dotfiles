@@ -20,7 +20,12 @@
   targetSystem ? pkgs.stdenv.hostPlatform.system,
   hostname ? "",
   ...
-}: {
+}: let
+  localeEnvironment = {
+    LANG = "C.UTF-8";
+    LC_ALL = "C.UTF-8";
+  };
+in {
   dotfiles.machine.tailnetHostname =
     if lib.toLower hostname == "mikki-bunker"
     then "bunker"
@@ -82,35 +87,40 @@
     ];
 
     # Environment variables exported into every session before shell init runs.
-    sessionVariables = {
-      LANG = "C.UTF-8";
-      # Route all nix CLI through the daemon. Without this, nix tries direct
-      # /nix/store writes for flake-source coercion and fails on this
-      # daemon-owned multi-user install (drwxrwxr-t root:nixbld).
-      NIX_REMOTE = "daemon";
-      # vega is a k3s agent — local /etc/rancher/k3s/k3s.yaml points at
-      # 127.0.0.1:6443 which has no listener. The cluster API is fronted by
-      # cluster.infra.centralcloud.com (5 control-plane nodes via DNS-RR);
-      # ~/.kube/config already points at it.
-      KUBECONFIG = "$HOME/.kube/config";
-      NPM_CONFIG_PREFIX = "$HOME/.npm-global";
-      SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
-      MINIMAX_API_HOST = "https://api.minimax.io";
-      MISE_YES = "1";
-      COLORTERM = "truecolor";
-      RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
-      BAT_CONFIG_PATH = "$HOME/.config/bat/config";
-      CCACHE_DIR = "$HOME/.cache/ccache";
-      CMAKE_C_COMPILER_LAUNCHER = "ccache";
-      CMAKE_CXX_COMPILER_LAUNCHER = "ccache";
-      LETTA_BASE_URL = "http://127.0.0.1:8283";
-      # OpenBao CLI — served at kv.infra.centralcloud.com (public, Authentik
-      # forward-auth on /ui, token auth on API). `bao login -method=oidc`
-      # authenticates via Authentik (passkey/TOTP). bao appends /v1 so no
-      # trailing slash.
-      BAO_ADDR = "https://kv.infra.centralcloud.com";
-    };
+    sessionVariables =
+      localeEnvironment
+      // {
+        # Route all nix CLI through the daemon. Without this, nix tries direct
+        # /nix/store writes for flake-source coercion and fails on this
+        # daemon-owned multi-user install (drwxrwxr-t root:nixbld).
+        NIX_REMOTE = "daemon";
+        # vega is a k3s agent — local /etc/rancher/k3s/k3s.yaml points at
+        # 127.0.0.1:6443 which has no listener. The cluster API is fronted by
+        # cluster.infra.centralcloud.com (5 control-plane nodes via DNS-RR);
+        # ~/.kube/config already points at it.
+        KUBECONFIG = "$HOME/.kube/config";
+        NPM_CONFIG_PREFIX = "$HOME/.npm-global";
+        SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
+        MINIMAX_API_HOST = "https://api.minimax.io";
+        MISE_YES = "1";
+        COLORTERM = "truecolor";
+        RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
+        BAT_CONFIG_PATH = "$HOME/.config/bat/config";
+        CCACHE_DIR = "$HOME/.cache/ccache";
+        CMAKE_C_COMPILER_LAUNCHER = "ccache";
+        CMAKE_CXX_COMPILER_LAUNCHER = "ccache";
+        LETTA_BASE_URL = "http://127.0.0.1:8283";
+        # OpenBao CLI — served at kv.infra.centralcloud.com (public, Authentik
+        # forward-auth on /ui, token auth on API). `bao login -method=oidc`
+        # authenticates via Authentik (passkey/TOTP). bao appends /v1 so no
+        # trailing slash.
+        BAO_ADDR = "https://kv.infra.centralcloud.com";
+      };
   };
+
+  # GUI and background clients launched as user services do not inherit a
+  # login shell. Keep their locale identical to managed interactive clients.
+  systemd.user.sessionVariables = localeEnvironment;
 
   # home-manager manages its own config file (~/.config/home-manager/).
   programs.home-manager.enable = true;

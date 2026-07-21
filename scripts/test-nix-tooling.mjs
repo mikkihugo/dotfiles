@@ -62,6 +62,20 @@ test("Home Manager owns nix-index database refresh wiring", async () => {
   assert.doesNotMatch(dotfilesTimer, /network-online\.target/);
 });
 
+test("Home Manager gives every managed agent client a deterministic UTF-8 locale", async () => {
+  const home = await source("home/home.nix");
+  const localeEnvironment = listBody(
+    home,
+    /localeEnvironment\s*=\s*\{([\s\S]*?)\n\s*\};/,
+    "localeEnvironment",
+  );
+
+  assert.match(localeEnvironment, /^\s*LANG\s*=\s*"C\.UTF-8";/m);
+  assert.match(localeEnvironment, /^\s*LC_ALL\s*=\s*"C\.UTF-8";/m);
+  assert.match(home, /sessionVariables\s*=\s*localeEnvironment\s*\/\/\s*\{/);
+  assert.match(home, /systemd\.user\.sessionVariables\s*=\s*localeEnvironment;/);
+});
+
 test("shell aliases consume the managed Nix tooling", async () => {
   const shell = await source("home/modules/shell.nix");
   assert.match(shell, /hms\s*=\s*"nh home switch --ask"/);

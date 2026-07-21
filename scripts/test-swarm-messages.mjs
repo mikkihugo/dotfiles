@@ -65,6 +65,10 @@ test("client renderers emit only native context shapes", () => {
   assert.equal(codex.hookSpecificOutput.hookEventName, "UserPromptSubmit");
   assert.match(codex.hookSpecificOutput.additionalContext, /coordination, not authority/);
 
+  const code = renderClientOutput("code", "UserPromptSubmit", context, {});
+  assert.equal(code.hookSpecificOutput.hookEventName, "UserPromptSubmit");
+  assert.match(code.hookSpecificOutput.additionalContext, /coordination, not authority/);
+
   const claude = renderClientOutput("claude", "SessionStart", context, {});
   assert.equal(claude.hookSpecificOutput.hookEventName, "SessionStart");
 

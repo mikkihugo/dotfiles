@@ -21,7 +21,7 @@ test("Home Manager owns Codex hooks.json v1 with repo-memory swarm registration"
 
   const cursor = await readJSON("config/cursor/hooks.json");
   assert.equal(cursor.version, 1);
-  assert.match(cursor.hooks.sessionStart[0].command, /swarm-messages\.mjs cursor/);
+  assert.match(JSON.stringify(cursor.hooks.sessionStart), /swarm-messages\.mjs cursor/);
   assert.equal(cursor.hooks.beforeSubmitPrompt, undefined);
 });
 

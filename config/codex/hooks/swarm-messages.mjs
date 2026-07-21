@@ -185,7 +185,8 @@ export function renderClientOutput(client, eventName, context, payload) {
   }
   if (client === "copilot" && eventName === "sessionStart") return { additionalContext: context };
   if (client === "cursor" && eventName === "sessionStart") return { additional_context: context };
-  if (client === "codex" || client === "claude") {
+  // `code` (@just-every/code) shares Codex's hookSpecificOutput schema.
+  if (client === "codex" || client === "code" || client === "claude") {
     return { hookSpecificOutput: { hookEventName: eventName, additionalContext: context } };
   }
   return null;

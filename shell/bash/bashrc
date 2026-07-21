@@ -242,6 +242,10 @@ knsf() {
 # without requiring a manual `load-ai-keys` invocation.
 _load_sops_secrets 2>/dev/null || true
 
+# CentralCloud OTLP for coding CLIs (collector in-cluster, else otel-ingest + Bao).
+# shellcheck source=/dev/null
+[ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+
 # ── Non-interactive direnv export ────────────────────────────────────────────
 # programs.direnv sets up PROMPT_COMMAND hooks, which only fire in interactive
 # shells. Non-interactive shells (Claude Code, Cursor, CI) must call

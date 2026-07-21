@@ -1,17 +1,32 @@
-# Default provider stays OpenAI-compatible llm-gateway via ~/.local/bin/goose.
-# Claude Code ACP: GOOSE_PROVIDER=claude-acp GOOSE_MODEL=current goose …
-# ChatGPT/Codex ACP: GOOSE_PROVIDER=codex-acp GOOSE_MODEL=current goose …
-#   uses ~/.codex OAuth (auth.json tokens); no OPENAI_API_KEY required.
-# Requires: mise npm:@agentclientprotocol/{claude-agent-acp,codex-acp}.
-GOOSE_PROVIDER: openai
-GOOSE_MODEL: auto
-claude-acp_configured: true
-codex-acp_configured: true
-
+active_provider: openai
+OPENAI_HOST: http://llm-gateway.svc
+GOOSE_DISABLE_KEYRING: true
+GOOSE_CONTEXT_LIMIT: 405504
+claude-acp_configured: false
+codex-acp_configured: false
+mistral_configured: false
+providers:
+  openai:
+    enabled: true
+    configured: true
+    model: auto-glm
+  claude-acp:
+    enabled: false
+    configured: false
+    model: current
+  codex-acp:
+    enabled: false
+    configured: false
+    model: current
+  mistral:
+    enabled: false
+    configured: false
+    model: mistral-medium-latest
 extensions:
   centralcloud-mcp-gateway:
     name: centralcloud-mcp-gateway
     type: streamable_http
-    url: http://mcp-gateway.svc/mcp
+    description: CentralCloud MCP gateway
+    uri: http://mcp-gateway.svc/mcp
     enabled: true
     timeout: 300

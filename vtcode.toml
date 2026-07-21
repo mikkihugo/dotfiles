@@ -1,47 +1,25 @@
-# VT Code Configuration File
+# VT Code — llm-gateway.svc only (OpenAI-compat). MCP → mcp-gateway.svc.
+# Runtime wrappers inject OPENAI_API_KEY + OPENAI_BASE_URL=http://llm-gateway.svc/v1.
 [agent]
-provider = "minimax-io"
-default_model = "MiniMax-M3"
-api_key_env = "MINIMAX_API_KEY"
+provider = "openai"
+default_model = "auto-glm"
+api_key_env = "OPENAI_API_KEY"
 
 [agent.small_model]
 enabled = true
-model = "kimi-k2.6:cloud"
+model = "auto-glm"
 
 [permissions]
 default_mode = "auto"
 
-[[custom_providers]]
-name = "opencode-go"
-display_name = "OpenCode Go"
-base_url = "https://opencode.ai/zen/go/v1"
-api_key_env = "OPENCODE_GO_API_KEY"
-model = "minimax-m3"
+custom_providers = []
 
-[[custom_providers]]
-name = "kimi-code"
-display_name = "Kimi Code"
-base_url = "https://opencode.ai/zen/go/v1"
-api_key_env = "OPENCODE_GO_API_KEY"
-model = "kimi-k2.5"
+[mcp]
+enabled = true
 
-[[custom_providers]]
-name = "opencode-zai"
-display_name = "Z.AI GLM"
-base_url = "https://opencode.ai/zen/go/v1"
-api_key_env = "OPENCODE_GO_API_KEY"
-model = "glm-5.1"
-
-[[custom_providers]]
-name = "ollama-cloud"
-display_name = "Ollama Cloud"
-base_url = "https://ollama.com/v1"
-api_key_env = "OLLAMA_API_KEY"
-model = "gemma3:27b"
-
-[[custom_providers]]
-name = "minimax-io"
-display_name = "MiniMax (native, zen-independent)"
-base_url = "https://api.minimax.io/v1"
-api_key_env = "MINIMAX_API_KEY"
-model = "MiniMax-M3"
+[[mcp.providers]]
+name = "centralcloud-mcp-gateway"
+endpoint = "http://mcp-gateway.svc/mcp"
+protocol_version = "2024-11-05"
+enabled = true
+max_concurrent_requests = 3

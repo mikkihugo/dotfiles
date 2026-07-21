@@ -212,20 +212,27 @@ in {
           path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
       goose_path = home / ".config" / "goose" / "config.yaml"
-      goose_defaults = {
-          "GOOSE_PROVIDER": "openai",
-          "GOOSE_MODEL": "auto",
-          "claude-acp_configured": True,
-          "codex-acp_configured": True,
+      # Goose streamable_http requires `uri` (not `url`); `url` is skipped as malformed.
+      goose_mcp_entry = {
+          "name": "centralcloud-mcp-gateway",
+          "type": "streamable_http",
+          "description": "CentralCloud MCP gateway",
+          "uri": gateway_url,
+          "enabled": True,
+          "timeout": 300,
       }
-      goose_mcp = {
-          "centralcloud-mcp-gateway": {
-              "name": "centralcloud-mcp-gateway",
-              "type": "streamable_http",
-              "url": gateway_url,
+      # llm-gateway only — force openai; keep ACP/mistral disabled if doctor/configure re-adds them.
+      # auto-glm: → umans-glm-5.2 with tools+reasoning; context_length 405504 from /v1/models.
+      # (bare umans-glm is currently 503 cold; coding-plan id lacks tools in catalog)
+      goose_provider_defaults = {
+          "openai": {
               "enabled": True,
-              "timeout": 300,
-          }
+              "configured": True,
+              "model": "auto-glm",
+          },
+          "claude-acp": {"enabled": False, "configured": False, "model": "current"},
+          "codex-acp": {"enabled": False, "configured": False, "model": "current"},
+          "mistral": {"enabled": False, "configured": False, "model": "mistral-medium-latest"},
       }
       # Goose must be able to write telemetry consent into this file. Replace any
       # Home Manager store symlink with a mutable YAML merge of durable defaults.
@@ -251,15 +258,72 @@ in {
       if not isinstance(goose_config, dict):
           print(f"WARNING: {goose_path} does not contain a YAML object", flush=True)
       else:
-          for key, value in goose_defaults.items():
-              goose_config.setdefault(key, value)
-          goose_config["extensions"] = goose_mcp
+          goose_config["active_provider"] = "openai"
+          goose_config["OPENAI_HOST"] = "http://llm-gateway.svc"
+          goose_config["GOOSE_DISABLE_KEYRING"] = True
+          # From llm-gateway /v1/models context_length for umans-glm.
+          goose_config["GOOSE_CONTEXT_LIMIT"] = 405504
+          goose_config["claude-acp_configured"] = False
+          goose_config["codex-acp_configured"] = False
+          goose_config["mistral_configured"] = False
+          providers = goose_config.setdefault("providers", {})
+          if not isinstance(providers, dict):
+              providers = {}
+              goose_config["providers"] = providers
+          for name, defaults in goose_provider_defaults.items():
+              entry = providers.setdefault(name, {})
+              if not isinstance(entry, dict):
+                  entry = {}
+                  providers[name] = entry
+              for key, value in defaults.items():
+                  entry[key] = value
+          # Disable any other providers doctor/configure may have enabled.
+          for name, entry in list(providers.items()):
+              if name == "openai" or not isinstance(entry, dict):
+                  continue
+              entry["enabled"] = False
+              entry["configured"] = False
+          goose_config.pop("GOOSE_PROVIDER", None)
+          goose_config.pop("GOOSE_MODEL", None)
+          extensions = goose_config.setdefault("extensions", {})
+          if not isinstance(extensions, dict):
+              extensions = {}
+              goose_config["extensions"] = extensions
+          extensions["centralcloud-mcp-gateway"] = goose_mcp_entry
           goose_path.parent.mkdir(parents=True, exist_ok=True)
           goose_path.write_text(
               yaml.safe_dump(goose_config, sort_keys=False),
               encoding="utf-8",
           )
           goose_path.chmod(0o600)
+
+          # Seed OPENAI_API_KEY into goose secrets.yaml (keyring unavailable on
+          # this host). Source is sops-nix; never commit this file.
+          secrets_path = home / ".config" / "goose" / "secrets.yaml"
+          token_path = home / ".config" / "sops-nix" / "secrets" / "llm_gateway_api_key"
+          edge_token = ""
+          if token_path.is_file():
+              edge_token = token_path.read_text(encoding="utf-8").strip()
+          if edge_token:
+              secrets = {}
+              if secrets_path.exists() and not secrets_path.is_symlink():
+                  try:
+                      loaded = yaml.safe_load(secrets_path.read_text(encoding="utf-8"))
+                      if isinstance(loaded, dict):
+                          secrets = loaded
+                  except yaml.YAMLError as exc:
+                      print(f"WARNING: {secrets_path} is not valid YAML: {exc}", flush=True)
+              secrets["OPENAI_API_KEY"] = edge_token
+              secrets_path.write_text(
+                  yaml.safe_dump(secrets, sort_keys=False),
+                  encoding="utf-8",
+              )
+              secrets_path.chmod(0o600)
+          else:
+              print(
+                  "WARNING: missing sops llm_gateway_api_key; goose secrets.yaml not seeded",
+                  flush=True,
+              )
 
       nanobot_path = home / ".nanobot" / "config.json"
       nanobot_mcp = {
@@ -284,6 +348,80 @@ in {
                   )
               else:
                   print(f"WARNING: {nanobot_path} does not contain a JSON object", flush=True)
+
+      # vtcode — pin openai → llm-gateway.svc and MCP → mcp-gateway.svc
+      # via surgical edits (do not round-trip the large ~/.vtcode/vtcode.toml).
+      import re
+
+      def _normalize_vtcode_toml(path: Path) -> None:
+          if not path.exists():
+              return
+          try:
+              text = path.read_text(encoding="utf-8")
+          except OSError as exc:
+              print(f"WARNING: could not read {path}: {exc}", flush=True)
+              return
+
+          def set_agent_field(src: str, key: str, value: str) -> str:
+              pattern = rf"(?m)^(\[agent\](?:(?!\n\[).)*?^{key}\s*=\s*)([^\n]+)"
+              if re.search(pattern, src, flags=re.S):
+                  return re.sub(pattern, rf'\g<1>"{value}"', src, count=1, flags=re.S)
+              # Insert after [agent] if missing.
+              return re.sub(
+                  r"(?m)^(\[agent\]\s*\n)",
+                  rf'\g<1>{key} = "{value}"\n',
+                  src,
+                  count=1,
+              )
+
+          text = set_agent_field(text, "provider", "openai")
+          text = set_agent_field(text, "api_key_env", "OPENAI_API_KEY")
+          text = set_agent_field(text, "default_model", "auto-glm")
+          text = re.sub(
+              r"(?m)^custom_providers\s*=\s*\[[^\]]*\]",
+              "custom_providers = []",
+              text,
+              count=1,
+          )
+          # Enable MCP block.
+          if re.search(r"(?m)^\[mcp\]", text):
+              text = re.sub(
+                  r"(?m)^(\[mcp\](?:(?!\n\[).)*?^enabled\s*=\s*)(true|false)",
+                  r"\g<1>true",
+                  text,
+                  count=1,
+                  flags=re.S,
+              )
+          else:
+              text += "\n[mcp]\nenabled = true\n"
+
+          provider_block = (
+              "\n[[mcp.providers]]\n"
+              'name = "centralcloud-mcp-gateway"\n'
+              f'endpoint = "{gateway_url}"\n'
+              'protocol_version = "2024-11-05"\n'
+              "enabled = true\n"
+              "max_concurrent_requests = 3\n"
+          )
+          if 'name = "centralcloud-mcp-gateway"' in text:
+              # Rewrite endpoint on the centralcloud provider only.
+              text = re.sub(
+                  r'(?ms)(\[\[mcp\.providers\]\]\s*\nname\s*=\s*"centralcloud-mcp-gateway"\s*\n(?:(?!\[\[).)*?^endpoint\s*=\s*)"[^"]*"',
+                  rf'\g<1>"{gateway_url}"',
+                  text,
+                  count=1,
+              )
+          else:
+              text += provider_block
+
+          path.write_text(text, encoding="utf-8")
+          print(f"vtcode: normalized provider+mcp in {path}", flush=True)
+
+      for vtcode_cfg in (
+          home / ".vtcode" / "vtcode.toml",
+          home / ".config" / "vtcode" / "vtcode.toml",
+      ):
+          _normalize_vtcode_toml(vtcode_cfg)
       PY
     '';
 

@@ -47,74 +47,44 @@
   # ampWrapper disabled until `amp` section exists in secrets/api-keys.yaml.
   # When ready, re-enable + add the amp_token sops.secrets block below.
 
-  # vtcode — cargo-vtcode installed via mise. Custom wrapper because:
-  # 1. vtcode is not in PATH (only mise shim at ~/.local/share/mise/shims/vtcode)
-  # 2. opencode-go is OpenAI-compat; vtcode reads key via --api-key-env, not OPENAI_API_KEY
-  vtcodeWrapper = pkgs.writeShellScriptBin "vtcode" ''
-    export OLLAMA_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
-    exec ${config.home.homeDirectory}/.local/share/mise/shims/vtcode \
-      --provider ollama-cloud --model glm-5.1 --api-key-env OLLAMA_API_KEY \
-      "$@"
-  '';
-
-  # vtcode-cloud — same binary, defaults to Ollama Cloud instead of opencode-go
-  vtcodeCloudWrapper = pkgs.writeShellScriptBin "vtcode-cloud" ''
-    export OLLAMA_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
-    exec ${config.home.homeDirectory}/.local/share/mise/shims/vtcode \
-      --provider ollama-cloud --api-key-env OLLAMA_API_KEY \
-      "$@"
-  '';
-
-  # vtcode-devstral — Ollama Cloud devstral-2:123b for hard tasks
-  vtcodeDevstralWrapper = pkgs.writeShellScriptBin "vtcode-devstral" ''
-    export OLLAMA_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
-    exec ${config.home.homeDirectory}/.local/share/mise/shims/vtcode \
-      --provider ollama-cloud --model devstral-2:123b --api-key-env OLLAMA_API_KEY \
-      "$@"
-  '';
-
-  # vtcode-mistral — Ollama Cloud mistral-large-3:675b for speed
-  vtcodeMistralWrapper = pkgs.writeShellScriptBin "vtcode-mistral" ''
-    export OLLAMA_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
-    exec ${config.home.homeDirectory}/.local/share/mise/shims/vtcode \
-      --provider ollama-cloud --model mistral-large-3:675b --api-key-env OLLAMA_API_KEY \
-      "$@"
-  '';
-
-  # vtcode-kimi — Ollama Cloud kimi-k2.6
-  vtcodeKimiWrapper = pkgs.writeShellScriptBin "vtcode-kimi" ''
-    export OLLAMA_API_KEY="$(cat "${sopsSecrets.ollama_api_key.path}" 2>/dev/null || echo "")"
-    exec ${config.home.homeDirectory}/.local/share/mise/shims/vtcode \
-      --provider ollama-cloud --model kimi-k2.6 --api-key-env OLLAMA_API_KEY \
-      "$@"
-  '';
-
-  # vtcode-minimax — vtcode routed to MiniMax-M3 through the
-  # centralcloud-ai-proxy gateway via BYOK. vtcode has no first-class
-  # "custom OpenAI-compatible endpoint" provider name; `openai` + a
-  # base-url override is the documented escape hatch (matches the
-  # `[providers.openai]` block vtcode.toml already scaffolds).
-  vtcodeMinimaxGatewayWrapper = pkgs.writeShellScriptBin "vtcode-minimax" ''
-    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
-    if [ -z "$edge_token" ]; then
-      echo "vtcode-minimax: failed to read llm_gateway_api_key SOPS secret" >&2
+  # vtcode — mise binary, always openai → http://llm-gateway.svc/v1 only
+  # (no public edge fallback). MCP is pinned in ~/.vtcode/vtcode.toml to
+  # http://mcp-gateway.svc/mcp via activation.nix. ~/.local/bin/vtcode shadows
+  # the raw mise install so this wrapper wins after bashrc PATH re-prepend.
+  vtcodeGatewayEnv = binName: model: ''
+    set -euo pipefail
+    # shellcheck source=/dev/null
+    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-${binName}}"
+    vtcode_bin="$HOME/.local/share/mise/shims/vtcode"
+    if [ ! -x "$vtcode_bin" ]; then
+      echo "${binName}: expected mise vtcode at $vtcode_bin" >&2
+      exit 127
+    fi
+    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
+    if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
+      edge_token="$(
+        BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+          bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
+      )"
+    fi
+    if [ -z "''${edge_token:-}" ]; then
+      echo "${binName}: missing llm-gateway token (SOPS llm_gateway_api_key or bao kv/llm-gateway api_key)" >&2
       exit 1
     fi
-    ${gatewayUrlResolver "vtcode-minimax"}
+    gateway_url="http://llm-gateway.svc"
     export OPENAI_API_KEY="$edge_token"
     export OPENAI_BASE_URL="$gateway_url/v1"
-    exec ${config.home.homeDirectory}/.local/share/mise/shims/vtcode \
-      --provider openai --model minimax-m3 --api-key-env OPENAI_API_KEY \
+    exec "$vtcode_bin" \
+      --provider openai --model ${model} --api-key-env OPENAI_API_KEY \
       "$@"
   '';
 
-  # vtcode-opencode — opencode-go glm-5.1
-  vtcodeOpencodeWrapper = pkgs.writeShellScriptBin "vtcode-opencode" ''
-    export OPENCODE_GO_API_KEY="$(cat "${sopsSecrets.opencode_go_api_key.path}" 2>/dev/null || echo "")"
-    exec ${config.home.homeDirectory}/.local/share/mise/shims/vtcode \
-      --provider opencode-go --model glm-5.1 --api-key-env OPENCODE_GO_API_KEY \
-      "$@"
-  '';
+  vtcodeWrapper = pkgs.writeShellScriptBin "vtcode" (vtcodeGatewayEnv "vtcode" "auto-glm");
+  # Model aliases — still llm-gateway.svc only (no other providers).
+  vtcodeMinimaxGatewayWrapper = pkgs.writeShellScriptBin "vtcode-minimax" (vtcodeGatewayEnv "vtcode-minimax" "minimax-m3");
+  vtcodeKimiWrapper = pkgs.writeShellScriptBin "vtcode-kimi" (vtcodeGatewayEnv "vtcode-kimi" "auto-kimi");
+  vtcodeGlmWrapper = pkgs.writeShellScriptBin "vtcode-glm" (vtcodeGatewayEnv "vtcode-glm" "auto-glm");
 
   # copilot-kimi — GitHub Copilot CLI routed to the Kimi Code platform via BYOK.
   # Kimi /coding/v1 allowlists User-Agent (KimiCLI/*, Claude Code, etc.) and
@@ -124,6 +94,10 @@
   # through the centralcloud-ai-proxy gateway at llm-gateway.centralcloud.com
   # via BYOK. Kimi K2.7 has a 262K token context window and 32K max output.
   copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
+    set -euo pipefail
+    # shellcheck source=/dev/null
+    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-kimi}"
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
@@ -157,6 +131,10 @@
   # GLM-5.2 has a 405K token context window and 131K max output tokens.
   # Top open-weight coding model: 62.1% SWE-bench Pro, 81.0% Terminal-Bench 2.1.
   copilotGlmWrapper = pkgs.writeShellScriptBin "copilot-glm" ''
+    set -euo pipefail
+    # shellcheck source=/dev/null
+    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-glm}"
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
@@ -190,6 +168,10 @@
   # llm-gateway.centralcloud.com via BYOK. MiniMax-M3 has a 512K token context
   # window and 131K max output tokens.
   copilotMinimaxWrapper = pkgs.writeShellScriptBin "copilot-minimax" ''
+    set -euo pipefail
+    # shellcheck source=/dev/null
+    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-minimax}"
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
@@ -225,6 +207,10 @@
   # OpenAI-compatible /v1/chat/completions path) — minimax-m3 is confirmed
   # working, so it's pinned explicitly rather than left to alias resolution.
   claudeMinimaxWrapper = pkgs.writeShellScriptBin "claude-minimax" ''
+    set -euo pipefail
+    # shellcheck source=/dev/null
+    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-claude-minimax}"
     claude_bin="$HOME/.local/bin/claude"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$claude_bin" ]; then
@@ -246,6 +232,10 @@
   # at llm-gateway.centralcloud.com (the external DNS name for the
   # inference-fabric-edge service). No port-forward needed.
   copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
+    set -euo pipefail
+    # shellcheck source=/dev/null
+    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-all}"
     # Copilot's native hook processor launches the configured POSIX command
     # through the literal executable name `bash`.  Keep that runtime and the
     # shared Node hook deterministic even when the caller has a minimal PATH.
@@ -306,55 +296,133 @@
     exec "$copilot_bin" "$@"
   '';
   # goose — aaif-goose via mise.
-  # Default: OpenAI-compatible against llm-gateway /v1 (SOPS/bao token).
-  # ACP providers (e.g. GOOSE_PROVIDER=claude-acp|codex-acp) skip gateway inject
-  # and use local adapters (mise npm:@agentclientprotocol/{claude-agent-acp,codex-acp}).
-  # codex-acp reuses ~/.codex ChatGPT OAuth; do not inject OPENAI_API_KEY on that path.
+  # Default: openai → llm-gateway.svc /v1 (SOPS/bao token), model auto-glm (ctx 405504).
+  # ACP backends (claude-acp / codex-acp) stay available via wrappers but are disabled in config.
+  # Provider resolution: $GOOSE_PROVIDER > config active_provider > openai.
   gooseGatewayWrapper = pkgs.writeShellScriptBin "goose" ''
-    set -euo pipefail
-    goose_bin="$HOME/.local/share/mise/shims/goose"
-    if [ ! -x "$goose_bin" ]; then
-      goose_bin="$(ls -1d "$HOME"/.local/share/mise/installs/aqua-aaif-goose-goose/*/goose 2>/dev/null | sort -V | tail -n 1 || true)"
-    fi
-    if [ -z "''${goose_bin:-}" ] || [ ! -x "$goose_bin" ]; then
-      echo "goose: binary not found (mise use -g aqua:aaif-goose/goose)" >&2
-      exit 127
-    fi
-
-    # Prefer caller override; otherwise default openai + auto for gateway path.
-    provider="''${GOOSE_PROVIDER:-openai}"
-    export GOOSE_PROVIDER="$provider"
-    case "$provider" in
-      *-acp)
-        export GOOSE_MODEL="''${GOOSE_MODEL:-current}"
-        # Keep Codex ChatGPT OAuth authoritative for codex-acp.
-        if [ "$provider" = "codex-acp" ]; then
-          export CODEX_HOME="''${CODEX_HOME:-$HOME/.codex}"
-          unset OPENAI_API_KEY CODEX_API_KEY || true
+        set -euo pipefail
+        # shellcheck source=/dev/null
+        [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+        export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-goose}"
+        goose_bin="$HOME/.local/share/mise/shims/goose"
+        if [ ! -x "$goose_bin" ]; then
+          goose_bin="$(ls -1d "$HOME"/.local/share/mise/installs/aqua-aaif-goose-goose/*/goose 2>/dev/null | sort -V | tail -n 1 || true)"
         fi
+        if [ -z "''${goose_bin:-}" ] || [ ! -x "$goose_bin" ]; then
+          echo "goose: binary not found (mise use -g aqua:aaif-goose/goose)" >&2
+          exit 127
+        fi
+
+        cfg="$HOME/.config/goose/config.yaml"
+        if [ -n "''${GOOSE_PROVIDER:-}" ]; then
+          provider="$GOOSE_PROVIDER"
+        elif [ -f "$cfg" ]; then
+          provider="$(
+            ${pkgs.python3}/bin/python3 - "$cfg" <<'PY'
+    import sys
+    from pathlib import Path
+    try:
+        import yaml
+    except ImportError:
+        print("openai")
+        raise SystemExit(0)
+    cfg = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8")) or {}
+    provider = cfg.get("GOOSE_PROVIDER") or cfg.get("active_provider") or "openai"
+    print(provider)
+    PY
+          )"
+        else
+          provider="openai"
+        fi
+        export GOOSE_PROVIDER="$provider"
+
+        case "$provider" in
+          claude-acp|codex-acp)
+            export GOOSE_MODEL="''${GOOSE_MODEL:-current}"
+            if [ "$provider" = "codex-acp" ]; then
+              export CODEX_HOME="''${CODEX_HOME:-$HOME/.codex}"
+              unset OPENAI_API_KEY CODEX_API_KEY || true
+            fi
+            exec "$goose_bin" "$@"
+            ;;
+        esac
+
+        edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
+        if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
+          edge_token="$(
+            BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+              bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
+          )"
+        fi
+        if [ -z "''${edge_token:-}" ]; then
+          echo "goose: missing llm-gateway token (SOPS llm_gateway_api_key or bao kv/llm-gateway api_key)" >&2
+          exit 1
+        fi
+
+        ${gatewayUrlResolver "goose"}
+        # Goose OPENAI_HOST is the API root (no /v1); client calls ''${OPENAI_HOST}/v1/models.
+        export GOOSE_MODEL="''${GOOSE_MODEL:-auto-glm}"
+        export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-405504}"
+        export OPENAI_API_KEY="$edge_token"
+        export OPENAI_HOST="$gateway_url"
+        export OPENAI_BASE_URL="$gateway_url/v1"
         exec "$goose_bin" "$@"
-        ;;
-    esac
+  '';
 
-    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
-    if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
-      edge_token="$(
-        BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
-          bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
-      )"
-    fi
-    if [ -z "''${edge_token:-}" ]; then
-      echo "goose: missing llm-gateway token (SOPS llm_gateway_api_key or bao kv/llm-gateway api_key)" >&2
-      exit 1
-    fi
+  gooseModels = pkgs.writeShellScriptBin "goose-models" ''
+        set -euo pipefail
+        edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
+        if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
+          edge_token="$(
+            BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+              bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
+          )"
+        fi
+        if [ -z "''${edge_token:-}" ]; then
+          echo "goose-models: missing llm-gateway token" >&2
+          exit 1
+        fi
+        ${gatewayUrlResolver "goose-models"}
+        echo "# backend: openai → llm-gateway (default: auto-glm, ctx 405504)"
+        echo "# gateway: $gateway_url/v1/models"
+        curl -sS --max-time 15 -H "authorization: Bearer $edge_token" \
+          "$gateway_url/v1/models" \
+          | ${pkgs.python3}/bin/python3 -c '
+    import json,sys
+    data=json.load(sys.stdin).get("data") or []
+    for item in data:
+        mid=item.get("id")
+        if not mid:
+            continue
+        ctx=item.get("context_length") or ""
+        caps=",".join(item.get("capabilities") or [])
+        print(f"{mid}\tctx={ctx}\tcaps={caps}")
+    print(f"# {len(data)} models — goose run --provider openai --model <id> -t \"…\"", file=sys.stderr)
+    '
+  '';
 
-    ${gatewayUrlResolver "goose"}
-    # Goose OPENAI_HOST is the API root (no /v1); client calls ''${OPENAI_HOST}/v1/models.
-    export GOOSE_MODEL="''${GOOSE_MODEL:-auto}"
-    export OPENAI_API_KEY="$edge_token"
-    export OPENAI_HOST="$gateway_url"
-    export OPENAI_BASE_URL="$gateway_url/v1"
-    exec "$goose_bin" "$@"
+  gooseClaude = pkgs.writeShellScriptBin "goose-claude" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=claude-acp
+    export GOOSE_MODEL="''${GOOSE_MODEL:-current}"
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  gooseChatgpt = pkgs.writeShellScriptBin "goose-chatgpt" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=codex-acp
+    export GOOSE_MODEL="''${GOOSE_MODEL:-current}"
+    export CODEX_HOME="''${CODEX_HOME:-$HOME/.codex}"
+    unset OPENAI_API_KEY CODEX_API_KEY || true
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  gooseGateway = pkgs.writeShellScriptBin "goose-gateway" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=openai
+    export GOOSE_MODEL="''${GOOSE_MODEL:-auto-glm}"
+    export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-405504}"
+    exec "$HOME/.local/bin/goose" "$@"
   '';
 
   # code / coder — @just-every/code (Codex fork). Config (~/.code/config.toml)
@@ -362,6 +430,9 @@
   # Wrapper injects LLM_MUX_API_KEY (and prefers in-cluster gateway).
   codeGatewayWrapper = pkgs.writeShellScriptBin "coder" ''
     set -euo pipefail
+    # shellcheck source=/dev/null
+    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-coder}"
     code_bin=""
     for candidate in \
       "$HOME/.local/share/mise/shims/coder" \
@@ -452,28 +523,29 @@ in {
       # API-key-injecting wrappers (shadow the raw Nix binaries for these tools).
       # kimi is managed by mise (npm:@moonshot-ai/kimi-code) and wrapped in
       # ~/.local/bin/kimi to route through the CentralCloud llm-gateway.
+      # vtcode: llm-gateway.svc only (see wrappers + ~/.local/bin/vtcode).
       vtcodeWrapper
-      vtcodeCloudWrapper
-      vtcodeDevstralWrapper
-      vtcodeMistralWrapper
-      vtcodeKimiWrapper
-      vtcodeMinimaxGatewayWrapper # binary: vtcode-minimax -> routes vtcode to MiniMax-M3 via llm-gateway
-      vtcodeOpencodeWrapper
-      # Raw llm-agents packages — no key injection needed.
-      # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
+      vtcodeGlmWrapper # binary: vtcode-glm -> auto-glm via llm-gateway.svc
+      vtcodeKimiWrapper # binary: vtcode-kimi -> auto-kimi via llm-gateway.svc
+      vtcodeMinimaxGatewayWrapper # binary: vtcode-minimax -> minimax-m3 via llm-gateway.svc
+      # Raw llm-agents packages — no key injection needed.      # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
       # these packages compile from source — disable per-host as needed.
       pkgs.claude-code # sadjow/claude-code-nix overlay — official native binary, hourly-fresh, Cachix-cached. (Was mise; native installer's runtime self-updater is disabled in Nix.)
       # llm-pkgs.codex # disabled — Rust rebuild on aarch64
       # opencode is managed globally by mise.
       # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
-      llm-pkgs.cursor-agent # binary: cursor-agent
-      # droid is managed globally by mise.
+      llm-pkgs.cursor-agent # binary: cursor-agent (wrapped below for OTEL)
+      # droid is managed globally by mise (wrapped below for OTEL).
       copilotKimiWrapper # binary: copilot-kimi -> routes mise GitHub Copilot CLI to Kimi K2.7 (umans-kimi-k2.7) via llm-gateway
       copilotGlmWrapper # binary: copilot-glm -> routes mise GitHub Copilot CLI to GLM-5.2 (umans-glm-5.2) via llm-gateway
       copilotMinimaxWrapper # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 (auto-minimax) via llm-gateway
       copilotAllWrapper # binary: copilot-all -> routes mise GitHub Copilot CLI through local centralcloud-ai-proxy (GLM-5.2 + Kimi K2.7 + umans-flash via umans.ai, MiniMax-M3 via minimax.io)
       claudeMinimaxWrapper # binary: claude-minimax -> routes Claude Code CLI to MiniMax-M3 via llm-gateway's Anthropic-Messages endpoint
-      gooseGatewayWrapper # binary: goose -> llm-gateway /v1 with SOPS/bao token inject
+      gooseGatewayWrapper # binary: goose -> resolves provider; openai uses llm-gateway
+      gooseModels # binary: goose-models -> list llm-gateway /v1/models
+      gooseClaude # binary: goose-claude -> claude-acp
+      gooseChatgpt # binary: goose-chatgpt -> codex-acp (~/.codex OAuth)
+      gooseGateway # binary: goose-gateway -> openai via llm-gateway
       codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
       llm-pkgs.mistral-vibe # binary: vibe
       # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
@@ -490,6 +562,10 @@ in {
         text = ''
           #!/usr/bin/env bash
           set -euo pipefail
+
+          # shellcheck source=/dev/null
+          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-kimi-code}"
 
           if [ -n "''${LLM_MUX_API_KEY:-}" ] && [ -n "''${LLM_MUX_BASE_URL:-}" ]; then
             export KIMI_API_KEY="$LLM_MUX_API_KEY"
@@ -508,6 +584,9 @@ in {
         text = ''
           #!/usr/bin/env bash
           set -euo pipefail
+          # shellcheck source=/dev/null
+          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-qoder}"
           root="$HOME/.qoder/bin/qodercli"
           bin=""
           if [[ -f "$root/version.txt" ]]; then
@@ -525,6 +604,78 @@ in {
         '';
       };
 
+      # Bare GitHub Copilot CLI (mise) — inject OTEL; model routing stays on
+      # copilot-kimi / copilot-glm / copilot-minimax / copilot-all.
+      ".local/bin/copilot" = {
+        executable = true;
+        force = true;
+        text = ''
+          #!/usr/bin/env bash
+          set -euo pipefail
+          # shellcheck source=/dev/null
+          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot}"
+          exec "$HOME/.local/share/mise/shims/copilot" "$@"
+        '';
+      };
+
+      # Claude Code — call the Nix package directly (avoid ~/.local/bin recursion).
+      ".local/bin/claude" = {
+        executable = true;
+        force = true;
+        text = ''
+          #!/usr/bin/env bash
+          set -euo pipefail
+          # shellcheck source=/dev/null
+          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-claude-code}"
+          exec "${pkgs.claude-code}/bin/claude" "$@"
+        '';
+      };
+
+      # Codex CLI — mise-managed; inject OTEL.
+      ".local/bin/codex" = {
+        executable = true;
+        force = true;
+        text = ''
+          #!/usr/bin/env bash
+          set -euo pipefail
+          # shellcheck source=/dev/null
+          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-codex}"
+          exec "$HOME/.local/share/mise/shims/codex" "$@"
+        '';
+      };
+
+      # OpenCode — mise-managed; inject OTEL (native OTLP when
+      # OTEL_EXPORTER_OTLP_ENDPOINT is set; AI SDK spans via
+      # experimental.openTelemetry in ~/.config/opencode/opencode.json).
+      ".local/bin/opencode" = {
+        executable = true;
+        force = true;
+        text = ''
+          #!/usr/bin/env bash
+          set -euo pipefail
+          # shellcheck source=/dev/null
+          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-opencode}"
+          exec "$HOME/.local/share/mise/shims/opencode" "$@"
+        '';
+      };
+
+      # VT Code — shadow mise install so llm-gateway.svc wrapper wins.
+      # Delegates to the HM package (same name in nix-profile) which injects
+      # OPENAI_BASE_URL=http://llm-gateway.svc/v1 + OTEL.
+      ".local/bin/vtcode" = {
+        executable = true;
+        force = true;
+        text = ''
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec "$HOME/.nix-profile/bin/vtcode" "$@"
+        '';
+      };
+
       ".local/bin/qoder" = {
         executable = true;
         force = true;
@@ -535,12 +686,73 @@ in {
         '';
       };
 
+      # Cursor Agent CLI — OTEL env + prefer HM package if present.
+      ".local/bin/cursor-agent" = {
+        executable = true;
+        force = true;
+        text = ''
+          #!/usr/bin/env bash
+          set -euo pipefail
+          # shellcheck source=/dev/null
+          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-cursor-agent}"
+          for candidate in \
+            "${llm-pkgs.cursor-agent}/bin/cursor-agent" \
+            "$HOME/.local/share/mise/shims/cursor-agent" \
+            "$HOME/.nix-profile/bin/cursor-agent"; do
+            if [ -x "$candidate" ]; then
+              exec "$candidate" "$@"
+            fi
+          done
+          echo "cursor-agent: binary not found" >&2
+          exit 127
+        '';
+      };
+
+      # Factory Droid — mise-managed; inject OTEL.
+      ".local/bin/droid" = {
+        executable = true;
+        force = true;
+        text = ''
+          #!/usr/bin/env bash
+          set -euo pipefail
+          # shellcheck source=/dev/null
+          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-factory-droid}"
+          exec "$HOME/.local/share/mise/shims/droid" "$@"
+        '';
+      };
+
       # Shadow mise `goose` so the llm-gateway + SOPS/bao inject wrapper wins
       # (~/.local/bin before mise shims).
       ".local/bin/goose" = {
         executable = true;
         force = true;
         source = "${gooseGatewayWrapper}/bin/goose";
+      };
+
+      ".local/bin/goose-models" = {
+        executable = true;
+        force = true;
+        source = "${gooseModels}/bin/goose-models";
+      };
+
+      ".local/bin/goose-claude" = {
+        executable = true;
+        force = true;
+        source = "${gooseClaude}/bin/goose-claude";
+      };
+
+      ".local/bin/goose-chatgpt" = {
+        executable = true;
+        force = true;
+        source = "${gooseChatgpt}/bin/goose-chatgpt";
+      };
+
+      ".local/bin/goose-gateway" = {
+        executable = true;
+        force = true;
+        source = "${gooseGateway}/bin/goose-gateway";
       };
     };
   };

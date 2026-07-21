@@ -307,8 +307,9 @@
   '';
   # goose — aaif-goose via mise.
   # Default: OpenAI-compatible against llm-gateway /v1 (SOPS/bao token).
-  # ACP providers (e.g. GOOSE_PROVIDER=claude-acp) skip gateway inject and use
-  # the local adapter binary (mise npm:@agentclientprotocol/claude-agent-acp).
+  # ACP providers (e.g. GOOSE_PROVIDER=claude-acp|codex-acp) skip gateway inject
+  # and use local adapters (mise npm:@agentclientprotocol/{claude-agent-acp,codex-acp}).
+  # codex-acp reuses ~/.codex ChatGPT OAuth; do not inject OPENAI_API_KEY on that path.
   gooseGatewayWrapper = pkgs.writeShellScriptBin "goose" ''
     set -euo pipefail
     goose_bin="$HOME/.local/share/mise/shims/goose"
@@ -326,6 +327,11 @@
     case "$provider" in
       *-acp)
         export GOOSE_MODEL="''${GOOSE_MODEL:-current}"
+        # Keep Codex ChatGPT OAuth authoritative for codex-acp.
+        if [ "$provider" = "codex-acp" ]; then
+          export CODEX_HOME="''${CODEX_HOME:-$HOME/.codex}"
+          unset OPENAI_API_KEY CODEX_API_KEY || true
+        fi
         exec "$goose_bin" "$@"
         ;;
     esac

@@ -4,6 +4,8 @@
 "aqua:aaif-goose/goose" = "latest"
 # ACP adapter so goose can use Claude Code as provider `claude-acp`.
 "npm:@agentclientprotocol/claude-agent-acp" = "latest"
+# ACP adapter so goose can use ChatGPT/Codex OAuth (~/.codex) as `codex-acp`.
+"npm:@agentclientprotocol/codex-acp" = "latest"
 # Qoder CLI is not in the mise registry; pin the OSS release tarball (http backend).
 "http:qodercli" = { version = "1.1.1", url = "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/1.1.1/qodercli-linux-x64.tar.gz", checksum = "sha256:21b60e3d0d9db9c35e5385c6d9523628e18735b7be5bbbc1a91996e4ed6a2b2a" }
 "github:vinhnx/vtcode" = "latest"

@@ -52,6 +52,16 @@ test("Copilot wrapper exposes the Nix bash runtime required by native hooks", as
   assert.match(wrapper, /export PATH="\$\{pkgs\.bash\}\/bin:/);
 });
 
+test("Goose and Copilot wrappers export one inherited session identity", async () => {
+  const tools = await readFile("home/modules/ai-tools.nix", "utf8");
+
+  assert.match(tools, /clientSessionIdentity = client:/);
+  assert.match(tools, /export SE_WORKSPACE_OWNER="\$\{client\}:\$client_session_id"/);
+  assert.match(tools, /agent\.client=\$\{client\},agent\.session\.id=\$client_session_id/);
+  assert.match(tools, /clientSessionIdentity "goose"/);
+  assert.match(tools, /clientSessionIdentity "copilot"/);
+});
+
 test("activation merge preserves unrelated Claude settings and Kimi provider content", async () => {
   const home = await mkdtemp(join(tmpdir(), "repo-memory-hook-home-"));
   try {

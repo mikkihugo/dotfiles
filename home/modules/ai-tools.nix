@@ -44,6 +44,19 @@
     fi
   '';
 
+  # One client process gets one inherited repository-workspace owner. Tool
+  # subprocesses keep this identity; hostnames and transient child PIDs never
+  # become lease owners. The same ID is attached to OTLP resource attributes.
+  clientSessionIdentity = client: ''
+    if [ -z "''${SE_WORKSPACE_OWNER:-}" ]; then
+      client_session_id="$(${pkgs.coreutils}/bin/tr -d '\n' < /proc/sys/kernel/random/uuid)"
+      export SE_WORKSPACE_OWNER="${client}:$client_session_id"
+    else
+      client_session_id="''${SE_WORKSPACE_OWNER#*:}"
+    fi
+    export OTEL_RESOURCE_ATTRIBUTES="''${OTEL_RESOURCE_ATTRIBUTES:+$OTEL_RESOURCE_ATTRIBUTES,}agent.client=${client},agent.session.id=$client_session_id"
+  '';
+
   # ampWrapper disabled until `amp` section exists in secrets/api-keys.yaml.
   # When ready, re-enable + add the amp_token sops.secrets block below.
 
@@ -95,6 +108,7 @@
   # via BYOK. Kimi K2.7 has a 262K token context window and 32K max output.
   copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
     set -euo pipefail
+    ${clientSessionIdentity "copilot"}
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
     export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-kimi}"
@@ -132,6 +146,7 @@
   # Top open-weight coding model: 62.1% SWE-bench Pro, 81.0% Terminal-Bench 2.1.
   copilotGlmWrapper = pkgs.writeShellScriptBin "copilot-glm" ''
     set -euo pipefail
+    ${clientSessionIdentity "copilot"}
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
     export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-glm}"
@@ -169,6 +184,7 @@
   # window and 131K max output tokens.
   copilotMinimaxWrapper = pkgs.writeShellScriptBin "copilot-minimax" ''
     set -euo pipefail
+    ${clientSessionIdentity "copilot"}
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
     export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-minimax}"
@@ -233,6 +249,7 @@
   # inference-fabric-edge service). No port-forward needed.
   copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
     set -euo pipefail
+    ${clientSessionIdentity "copilot"}
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
     export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-all}"
@@ -300,7 +317,8 @@
   # ACP backends (claude-acp / codex-acp) stay available via wrappers but are disabled in config.
   # Provider resolution: $GOOSE_PROVIDER > config active_provider > openai.
   gooseGatewayWrapper = pkgs.writeShellScriptBin "goose" ''
-        set -euo pipefail
+    set -euo pipefail
+    ${clientSessionIdentity "goose"}
         # shellcheck source=/dev/null
         [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
         export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-goose}"
@@ -612,6 +630,7 @@ in {
         text = ''
           #!/usr/bin/env bash
           set -euo pipefail
+          ${clientSessionIdentity "copilot"}
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
           export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot}"

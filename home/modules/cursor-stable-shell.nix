@@ -2,15 +2,16 @@
 #
 # Cursor Agent Shell on NixOS fails when the sandbox tmpfs-hides /run, because
 # login SHELL is /run/current-system/sw/bin/bash (passwd). /nix/store stays
-# visible. Point SHELL at a user wrapper whose shebang is a store bash path.
+# visible. Point SHELL directly at an immutable store wrapper.
 #
 # Agent shells are non-interactive and do not source ~/.bashrc, so interactive
 # direnv hooks never fire. The wrapper runs `direnv export` for $PWD before
 # exec so agent commands inherit the same flake env as a direnv-aware terminal.
 #
 # Permanent guarantees:
-# - home.file installs an *executable* wrapper every `home-manager switch`
-#   (fixes EACCES from accidental non-executable overwrites).
+# - SHELL itself is an immutable store path, so deleting or chmodding the
+#   compatibility copy under ~/.local cannot prevent the next shell spawn.
+# - home.file still installs executable compatibility and recovery wrappers.
 # - pkgs.bashInteractive is in home.packages (gcroot; shebang survives GC).
 # - login oneshot re-runs refresh after nixos-rebuild / profile churn.
 # - Prefer enter-once: if IN_NIX_SHELL is already set, do not re-run direnv
@@ -27,7 +28,6 @@
   bash = pkgs.bashInteractive;
   bashBin = "${bash}/bin/bash";
   stableBashRel = ".local/share/stable-shell/bash";
-  stableBash = "${config.home.homeDirectory}/${stableBashRel}";
 
   # Shared body used by declarative wrapper, refresh script, and Node recovery hook.
   # Enter Nix once: skip direnv when already in a flake/Nix shell so nested bash
@@ -75,6 +75,14 @@
     ${direnvInheritLines}
     exec ${bashBin} "$@"
   '';
+
+  # This path is the bootstrap authority. Cursor can spawn it without /run and
+  # no mutable file under HOME must exist before the shell starts.
+  storeBash = pkgs.writeTextFile {
+    name = "cursor-agent-shell";
+    executable = true;
+    text = wrapperText;
+  };
 
   refreshScript = ''
     #!${bashBin}
@@ -215,7 +223,7 @@ in {
   home = {
     packages = [bash];
 
-    sessionVariables.SHELL = stableBash;
+    sessionVariables.SHELL = storeBash;
 
     # Declarative executable wrapper — every `home-manager switch` resets +x.
     # Agents must never Write this path: a mode-644 overwrite makes Cursor Agent
@@ -314,8 +322,8 @@ in {
 
   xdg.configFile."environment.d/90-stable-shell.conf" = {
     text = ''
-      # Cursor sandbox hides /run on NixOS; keep SHELL on a store-backed wrapper.
-      SHELL=${stableBash}
+      # Cursor sandbox hides /run on NixOS; use the immutable store wrapper.
+      SHELL=${storeBash}
     '';
     force = true;
   };

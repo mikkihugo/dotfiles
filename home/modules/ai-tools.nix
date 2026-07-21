@@ -305,8 +305,10 @@
     fi
     exec "$copilot_bin" "$@"
   '';
-  # goose — aaif-goose via mise, OpenAI-compatible against llm-gateway /v1.
-  # Token: SOPS llm_gateway_api_key, else OpenBao `kv/llm-gateway` field api_key.
+  # goose — aaif-goose via mise.
+  # Default: OpenAI-compatible against llm-gateway /v1 (SOPS/bao token).
+  # ACP providers (e.g. GOOSE_PROVIDER=claude-acp) skip gateway inject and use
+  # the local adapter binary (mise npm:@agentclientprotocol/claude-agent-acp).
   gooseGatewayWrapper = pkgs.writeShellScriptBin "goose" ''
     set -euo pipefail
     goose_bin="$HOME/.local/share/mise/shims/goose"
@@ -317,6 +319,16 @@
       echo "goose: binary not found (mise use -g aqua:aaif-goose/goose)" >&2
       exit 127
     fi
+
+    # Prefer caller override; otherwise default openai + auto for gateway path.
+    provider="''${GOOSE_PROVIDER:-openai}"
+    export GOOSE_PROVIDER="$provider"
+    case "$provider" in
+      *-acp)
+        export GOOSE_MODEL="''${GOOSE_MODEL:-current}"
+        exec "$goose_bin" "$@"
+        ;;
+    esac
 
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
     if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
@@ -332,7 +344,6 @@
 
     ${gatewayUrlResolver "goose"}
     # Goose OPENAI_HOST is the API root (no /v1); client calls ''${OPENAI_HOST}/v1/models.
-    export GOOSE_PROVIDER="''${GOOSE_PROVIDER:-openai}"
     export GOOSE_MODEL="''${GOOSE_MODEL:-auto}"
     export OPENAI_API_KEY="$edge_token"
     export OPENAI_HOST="$gateway_url"

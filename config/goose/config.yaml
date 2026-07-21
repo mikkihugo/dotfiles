@@ -1,3 +1,10 @@
+# Default provider stays OpenAI-compatible llm-gateway via ~/.local/bin/goose.
+# Claude Code ACP: GOOSE_PROVIDER=claude-acp GOOSE_MODEL=current goose …
+# Requires: mise npm:@agentclientprotocol/claude-agent-acp + authenticated `claude`.
+GOOSE_PROVIDER: openai
+GOOSE_MODEL: auto
+claude-acp_configured: true
+
 extensions:
   centralcloud-mcp-gateway:
     name: centralcloud-mcp-gateway

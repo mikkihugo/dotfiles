@@ -12,4 +12,8 @@ python3 "$root/scripts/test-codex-preferences.py"
 		scripts/test-swarm-hook-config.mjs \
 		scripts/test-nix-tooling.mjs
 )
-nix-fast-build --flake "path:$root#homeConfigurations.${profile}.activationPackage" --no-link
+# This gate evaluates exactly one activation package. Using nix-fast-build here
+# adds no parallelism, while its nix-eval-jobs workers reread daemon-only Nix
+# settings and contend on the shared evaluation cache. Keep nix-fast-build
+# installed for multi-attribute builds; use Nix directly for this single target.
+nix build --no-link "path:$root#homeConfigurations.${profile}.activationPackage"

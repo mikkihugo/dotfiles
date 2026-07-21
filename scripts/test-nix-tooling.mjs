@@ -100,8 +100,9 @@ test("just check delegates to the single repository check implementation", async
   assert.doesNotMatch(check, /homeConfigurations\.cc-se-sto-devbox-01/);
   assert.match(
     check,
-    /nix-fast-build\s+--flake\s+"path:\$root#homeConfigurations\.\$\{profile\}\.activationPackage"\s+--no-link/,
+    /nix\s+build\s+--no-link\s+"path:\$root#homeConfigurations\.\$\{profile\}\.activationPackage"/,
   );
+  assert.doesNotMatch(check, /nix-fast-build\s+--flake/);
 });
 
 test("global Codex instructions keep publication owned until land completes", async () => {

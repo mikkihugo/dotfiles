@@ -8,9 +8,10 @@ test("stable shell preserves the caller PATH ahead of Home Manager defaults", as
   const source = await readFile("home/modules/cursor-stable-shell.nix", "utf8");
 
   assert.equal(
-    source.match(/_stable_shell_caller_path/g)?.length,
-    9,
-    "all three generated wrapper forms must capture, restore, and clear caller PATH",
+    source.match(/_stable_shell_seen/g)?.length,
+    15,
+    "all three generated wrapper forms must deduplicate caller and Home Manager PATH entries",
   );
   assert.doesNotMatch(source, /export PATH="\$HOME\/\.local\/bin:\$PATH"/);
+  assert.doesNotMatch(source, /export PATH="\$_stable_shell_caller_path:\$PATH"/);
 });

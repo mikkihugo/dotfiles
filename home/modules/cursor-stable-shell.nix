@@ -57,8 +57,21 @@
       # shellcheck disable=SC1091
       . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
     fi
-    export PATH="$_stable_shell_caller_path:$PATH"
-    unset _stable_shell_caller_path
+    IFS=: read -r -a _stable_shell_path_entries <<< "$_stable_shell_caller_path:$PATH"
+    PATH=""
+    _stable_shell_seen=":"
+    for _stable_shell_entry in "''${_stable_shell_path_entries[@]}"; do
+      [[ -n "$_stable_shell_entry" ]] || continue
+      case "$_stable_shell_seen" in
+        *":$_stable_shell_entry:"*) ;;
+        *)
+          PATH="''${PATH:+$PATH:}$_stable_shell_entry"
+          _stable_shell_seen="$_stable_shell_seen$_stable_shell_entry:"
+          ;;
+      esac
+    done
+    export PATH
+    unset _stable_shell_caller_path _stable_shell_path_entries _stable_shell_seen _stable_shell_entry
     ${direnvInheritLines}
     exec ${bashBin} "$@"
   '';
@@ -102,8 +115,18 @@
       printf '%s\n' '  # shellcheck disable=SC1091'
       printf '%s\n' '  . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"'
       printf '%s\n' 'fi'
-      printf '%s\n' 'export PATH="$_stable_shell_caller_path:$PATH"'
-      printf '%s\n' 'unset _stable_shell_caller_path'
+      printf '%s\n' 'IFS=: read -r -a _stable_shell_path_entries <<< "$_stable_shell_caller_path:$PATH"'
+      printf '%s\n' 'PATH=""'
+      printf '%s\n' '_stable_shell_seen=":"'
+      printf '%s\n' 'for _stable_shell_entry in "''${_stable_shell_path_entries[@]}"; do'
+      printf '%s\n' '  [[ -n "$_stable_shell_entry" ]] || continue'
+      printf '%s\n' '  case "$_stable_shell_seen" in'
+      printf '%s\n' '    *":$_stable_shell_entry:"*) ;;'
+      printf '%s\n' '    *) PATH="''${PATH:+$PATH:}$_stable_shell_entry"; _stable_shell_seen="$_stable_shell_seen$_stable_shell_entry:" ;;'
+      printf '%s\n' '  esac'
+      printf '%s\n' 'done'
+      printf '%s\n' 'export PATH'
+      printf '%s\n' 'unset _stable_shell_caller_path _stable_shell_path_entries _stable_shell_seen _stable_shell_entry'
       printf '%s\n' 'if [ -z "''${DIRENV_DISABLE:-}" ] && [ -z "''${IN_NIX_SHELL:-}" ] && command -v direnv >/dev/null 2>&1; then'
       printf '%s\n' '  unset DIRENV_DIFF DIRENV_WATCHES'
       printf '%s\n' '  if command -v timeout >/dev/null 2>&1; then'
@@ -145,8 +168,18 @@
       "  unset __HM_SESS_VARS_SOURCED",
       '  . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"',
       "fi",
-      'export PATH="$_stable_shell_caller_path:$PATH"',
-      "unset _stable_shell_caller_path",
+      'IFS=: read -r -a _stable_shell_path_entries <<< "$_stable_shell_caller_path:$PATH"',
+      'PATH=""',
+      '_stable_shell_seen=":"',
+      'for _stable_shell_entry in "''${_stable_shell_path_entries[@]}"; do',
+      '  [[ -n "$_stable_shell_entry" ]] || continue',
+      '  case "$_stable_shell_seen" in',
+      '    *":$_stable_shell_entry:"*) ;;',
+      '    *) PATH="''${PATH:+$PATH:}$_stable_shell_entry"; _stable_shell_seen="$_stable_shell_seen$_stable_shell_entry:" ;;',
+      "  esac",
+      "done",
+      "export PATH",
+      "unset _stable_shell_caller_path _stable_shell_path_entries _stable_shell_seen _stable_shell_entry",
       'if [ -z "''${DIRENV_DISABLE:-}" ] && [ -z "''${IN_NIX_SHELL:-}" ] && command -v direnv >/dev/null 2>&1; then',
       "  unset DIRENV_DIFF DIRENV_WATCHES",
       "  if command -v timeout >/dev/null 2>&1; then",

@@ -83,10 +83,8 @@
       force = true;
     };
 
-    ".config/goose/config.yaml" = {
-      source = ../../config/goose/config.yaml;
-      force = true;
-    };
+    # goose config.yaml is intentionally NOT HM-symlinked: goose writes
+    # telemetry consent and other prefs into it. Seeded/merged in activation.nix.
 
     ".codex/agents/default.toml" = {
       source = ../../config/codex/agents/default.toml;

@@ -212,39 +212,54 @@ in {
           path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
       goose_path = home / ".config" / "goose" / "config.yaml"
+      goose_defaults = {
+          "GOOSE_PROVIDER": "openai",
+          "GOOSE_MODEL": "auto",
+          "claude-acp_configured": True,
+          "codex-acp_configured": True,
+      }
       goose_mcp = {
           "centralcloud-mcp-gateway": {
               "name": "centralcloud-mcp-gateway",
-              "type": "http",
+              "type": "streamable_http",
               "url": gateway_url,
               "enabled": True,
               "timeout": 300,
           }
       }
-      # Home Manager may own this as a store symlink (config/goose/config.yaml).
-      # Do not rewrite read-only store links; HM is then the source of truth.
-      if goose_path.is_symlink() and str(goose_path.resolve()).startswith("/nix/store/"):
-          print(f"INFO: {goose_path} is Home Manager-owned; skipping mutable MCP merge", flush=True)
+      # Goose must be able to write telemetry consent into this file. Replace any
+      # Home Manager store symlink with a mutable YAML merge of durable defaults.
+      if goose_path.is_symlink():
+          try:
+              resolved = goose_path.resolve()
+              seeded = yaml.safe_load(resolved.read_text(encoding="utf-8")) if resolved.is_file() else {}
+          except Exception as exc:
+              print(f"WARNING: could not read goose symlink target: {exc}", flush=True)
+              seeded = {}
+          goose_path.unlink()
+          goose_config = seeded if isinstance(seeded, dict) else {}
+      elif goose_path.exists():
+          try:
+              goose_config = yaml.safe_load(goose_path.read_text(encoding="utf-8"))
+          except yaml.YAMLError as exc:
+              print(f"WARNING: {goose_path} is not valid YAML: {exc}", flush=True)
+              goose_config = None
       else:
-          if goose_path.exists():
-              try:
-                  goose_config = yaml.safe_load(goose_path.read_text(encoding="utf-8"))
-              except yaml.YAMLError as exc:
-                  print(f"WARNING: {goose_path} is not valid YAML: {exc}", flush=True)
-                  goose_config = None
-          else:
-              goose_config = {}
-          if goose_config is None:
-              goose_config = {}
-          if not isinstance(goose_config, dict):
-              print(f"WARNING: {goose_path} does not contain a YAML object", flush=True)
-          else:
-              goose_config["extensions"] = goose_mcp
-              goose_path.parent.mkdir(parents=True, exist_ok=True)
-              goose_path.write_text(
-                  yaml.safe_dump(goose_config, sort_keys=False),
-                  encoding="utf-8",
-              )
+          goose_config = {}
+      if goose_config is None:
+          goose_config = {}
+      if not isinstance(goose_config, dict):
+          print(f"WARNING: {goose_path} does not contain a YAML object", flush=True)
+      else:
+          for key, value in goose_defaults.items():
+              goose_config.setdefault(key, value)
+          goose_config["extensions"] = goose_mcp
+          goose_path.parent.mkdir(parents=True, exist_ok=True)
+          goose_path.write_text(
+              yaml.safe_dump(goose_config, sort_keys=False),
+              encoding="utf-8",
+          )
+          goose_path.chmod(0o600)
 
       nanobot_path = home / ".nanobot" / "config.json"
       nanobot_mcp = {

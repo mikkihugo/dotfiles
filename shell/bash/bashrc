@@ -37,6 +37,10 @@ if [ -n "$mise_bin" ]; then
 		export PATH="$(dirname "$_mise_node_bin"):$PATH"
 	fi
 	unset _mise_node_bin
+
+	# mise activate prepends tool install dirs ahead of home.sessionPath, which
+	# shadows HM wrappers in ~/.local/bin (goose → llm-gateway, kimi, …).
+	export PATH="$HOME/.local/bin:$PATH"
 fi
 unset mise_bin
 

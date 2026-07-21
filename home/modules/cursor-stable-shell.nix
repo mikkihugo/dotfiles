@@ -57,6 +57,8 @@
       . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
     fi
     ${direnvInheritLines}
+    # Keep HM wrappers (goose/kimi/…) ahead of mise install PATH entries.
+    export PATH="$HOME/.local/bin:$PATH"
     exec ${bashBin} "$@"
   '';
 
@@ -106,6 +108,7 @@
       printf '%s\n' '    eval "$(direnv export bash 2>/dev/null)" || true'
       printf '%s\n' '  fi'
       printf '%s\n' 'fi'
+      printf '%s\n' 'export PATH="$HOME/.local/bin:$PATH"'
       printf '%s\n' "exec \"$target\" \"\$@\""
     } > "$STABLE.tmp"
     ${pkgs.coreutils}/bin/chmod 0755 "$STABLE.tmp"
@@ -146,6 +149,7 @@
       '    eval "$(direnv export bash 2>/dev/null)" || true',
       "  fi",
       "fi",
+      'export PATH="$HOME/.local/bin:$PATH"',
       'exec ' + bashStore + ' "$@"',
       "",
     ].join("\n");

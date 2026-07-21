@@ -20,6 +20,7 @@
     jq # JSON query and transform
     yq-go # Mike Farah yq v4; repo validators rely on eval/ea and -o=json
     btop # process/resource monitor (replaces htop)
+    psmisc # process-tree diagnostics (`pstree`) for agent/session ownership audits
     tokei # count lines of code by language
     difftastic # structural diff (understands syntax, not just lines)
 

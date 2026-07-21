@@ -34,6 +34,7 @@ test("Home Manager preserves the requested Forgejo and fast-Nix toolchain withou
     "nix-du",
     "nurl",
     "nix-index",
+    "psmisc",
   ]) {
     assert.match(entries, packageEntry(name), `missing home package ${name}`);
   }

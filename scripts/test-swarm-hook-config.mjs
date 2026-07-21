@@ -7,9 +7,9 @@ import test from "node:test";
 
 const readJSON = async (path) => JSON.parse(await readFile(path, "utf8"));
 
-test("Home Manager owns Codex hooks.json v1 with repo-memory swarm registration", async () => {
+test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm registration", async () => {
   const codex = await readJSON("config/codex/hooks.json");
-  assert.equal(codex.version, 1);
+  assert.equal(codex.version, undefined);
   assert.match(JSON.stringify(codex.hooks.SessionStart), /swarm-messages\.mjs codex SessionStart/);
   assert.match(JSON.stringify(codex.hooks.UserPromptSubmit), /swarm-messages\.mjs codex UserPromptSubmit/);
   assert.match(codex.description, /repo-memory/);

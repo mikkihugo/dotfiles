@@ -1,5 +1,4 @@
 {
-  "version": 1,
   "description": "Home Manager owns Codex lifecycle hooks. Transport is repo-memory via CentralCloud MCP gateway (swarm_bus_*). Local filesystem bus is opt-in only.",
   "hooks": {
     "SessionStart": [

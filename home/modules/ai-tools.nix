@@ -485,30 +485,57 @@
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
-  # goose-umans — umans-glm (405K ctx, tools+reasoning+structured_output)
-  gooseUmans = pkgs.writeShellScriptBin "goose-umans" ''
+  # goose-umans-glm — umans-ai-coding-plan/umans-glm-5.2 (405K ctx, chat only — no tools)
+  gooseUmansGlm = pkgs.writeShellScriptBin "goose-umans-glm" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-glm"
+    export GOOSE_MODEL="umans-ai-coding-plan/umans-glm-5.2"
     export GOOSE_CONTEXT_LIMIT="405504"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
-  # goose-umans-flash — umans-flash (262K ctx, tools+reasoning+vision)
-  gooseUmansFlash = pkgs.writeShellScriptBin "goose-umans-flash" ''
+  # goose-umans-kimi — umans-ai-coding-plan/umans-kimi-k2.7 (262K ctx, chat only — no tools)
+  gooseUmansKimi = pkgs.writeShellScriptBin "goose-umans-kimi" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-flash"
+    export GOOSE_MODEL="umans-ai-coding-plan/umans-kimi-k2.7"
     export GOOSE_CONTEXT_LIMIT="262144"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
-  # goose-umans-fast — umans-fast (262K ctx, tools+reasoning+vision)
-  gooseUmansFast = pkgs.writeShellScriptBin "goose-umans-fast" ''
+  # goose-umans-flash — umans-ai-coding-plan/umans-flash (262K ctx, chat only — no tools)
+  gooseUmansFlash = pkgs.writeShellScriptBin "goose-umans-flash" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-fast"
+    export GOOSE_MODEL="umans-ai-coding-plan/umans-flash"
     export GOOSE_CONTEXT_LIMIT="262144"
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  # goose-umans-coder — umans-ai-coding-plan/umans-coder (262K ctx, chat only — no tools)
+  gooseUmansCoder = pkgs.writeShellScriptBin "goose-umans-coder" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=openai
+    export GOOSE_MODEL="umans-ai-coding-plan/umans-coder"
+    export GOOSE_CONTEXT_LIMIT="262144"
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  # goose-umans-qwen — umans-ai-coding-plan/umans-qwen3.6-35b-a3b (262K ctx, chat only — no tools)
+  gooseUmansQwen = pkgs.writeShellScriptBin "goose-umans-qwen" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=openai
+    export GOOSE_MODEL="umans-ai-coding-plan/umans-qwen3.6-35b-a3b"
+    export GOOSE_CONTEXT_LIMIT="262144"
+    exec "$HOME/.local/bin/goose" "$@"
+  '';
+
+  # goose-deepseek-cloud — ollama-cloud/deepseek-v4-pro (128K ctx, tools, via ollama cloud)
+  gooseDeepseekCloud = pkgs.writeShellScriptBin "goose-deepseek-cloud" ''
+    set -euo pipefail
+    export GOOSE_PROVIDER=openai
+    export GOOSE_MODEL="ollama-cloud/deepseek-v4-pro"
+    export GOOSE_CONTEXT_LIMIT="128000"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
@@ -635,10 +662,13 @@ in {
       gooseGateway # binary: goose-gateway -> openai via llm-gateway
       gooseKimi # binary: goose-kimi -> kimi-code/k3 (1M ctx)
       gooseDeepseek # binary: goose-deepseek -> ollama-deepseek-v4-pro (524K ctx)
+      gooseDeepseekCloud # binary: goose-deepseek-cloud -> ollama-cloud/deepseek-v4-pro (128K)
       gooseMinimax # binary: goose-minimax -> minimax-ai/MiniMax-M3 (128K, direct)
-      gooseUmans # binary: goose-umans -> umans-glm (405K ctx)
+      gooseUmansGlm # binary: goose-umans-glm -> umans-glm-5.2 (405K ctx)
+      gooseUmansKimi # binary: goose-umans-kimi -> umans-kimi-k2.7 (262K ctx)
       gooseUmansFlash # binary: goose-umans-flash -> umans-flash (262K ctx)
-      gooseUmansFast # binary: goose-umans-fast -> umans-fast (262K ctx)
+      gooseUmansCoder # binary: goose-umans-coder -> umans-coder (262K ctx)
+      gooseUmansQwen # binary: goose-umans-qwen -> umans-qwen3.6-35b-a3b (262K ctx)
       codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
       llm-pkgs.mistral-vibe # binary: vibe
       # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
@@ -861,16 +891,28 @@ in {
         source = "${gooseDeepseek}/bin/goose-deepseek";
       };
 
+      ".local/bin/goose-deepseek-cloud" = {
+        executable = true;
+        force = true;
+        source = "${gooseDeepseekCloud}/bin/goose-deepseek-cloud";
+      };
+
       ".local/bin/goose-minimax" = {
         executable = true;
         force = true;
         source = "${gooseMinimax}/bin/goose-minimax";
       };
 
-      ".local/bin/goose-umans" = {
+      ".local/bin/goose-umans-glm" = {
         executable = true;
         force = true;
-        source = "${gooseUmans}/bin/goose-umans";
+        source = "${gooseUmansGlm}/bin/goose-umans-glm";
+      };
+
+      ".local/bin/goose-umans-kimi" = {
+        executable = true;
+        force = true;
+        source = "${gooseUmansKimi}/bin/goose-umans-kimi";
       };
 
       ".local/bin/goose-umans-flash" = {
@@ -879,10 +921,16 @@ in {
         source = "${gooseUmansFlash}/bin/goose-umans-flash";
       };
 
-      ".local/bin/goose-umans-fast" = {
+      ".local/bin/goose-umans-coder" = {
         executable = true;
         force = true;
-        source = "${gooseUmansFast}/bin/goose-umans-fast";
+        source = "${gooseUmansCoder}/bin/goose-umans-coder";
+      };
+
+      ".local/bin/goose-umans-qwen" = {
+        executable = true;
+        force = true;
+        source = "${gooseUmansQwen}/bin/goose-umans-qwen";
       };
     };
   };

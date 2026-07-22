@@ -312,9 +312,9 @@
     fi
     exec "$copilot_bin" "$@"
   '';
-  # goose — aaif-goose via mise.
-  # Default: openai → llm-gateway.svc /v1 (SOPS/bao token), model minimax-coding-plan/MiniMax-M3 (1M ctx, tools+reasoning).
-  # Swarm alternatives: kimi-code/k3 (1M ctx), ollama-deepseek-v4-pro (524K ctx).
+  # goose — upstream GitHub releases via mise.
+  # Default: openai → llm-gateway.svc /v1 (SOPS/bao token), model kimi-code/k3 (1M ctx, tools+reasoning+vision).
+  # Planner: minimax-coding-plan/MiniMax-M3; swarm alternative: ollama-deepseek-v4-pro.
   # ACP backends (claude-acp / codex-acp) stay available via wrappers but are disabled in config.
   # Provider resolution: $GOOSE_PROVIDER > config active_provider > openai.
   gooseGatewayWrapper = pkgs.writeShellScriptBin "goose" ''
@@ -323,12 +323,14 @@
         # shellcheck source=/dev/null
         [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
         export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-goose}"
-        goose_bin="$HOME/.local/share/mise/shims/goose"
-        if [ ! -x "$goose_bin" ]; then
-          goose_bin="$(ls -1d "$HOME"/.local/share/mise/installs/aqua-aaif-goose-goose/*/goose 2>/dev/null | sort -V | tail -n 1 || true)"
+        # Prefer the installed binary: an executable mise shim can still fail
+        # when the Aqua registry is temporarily unavailable.
+        goose_bin="$(ls -1d "$HOME"/.local/share/mise/installs/github-aaif-goose-goose/*/goose 2>/dev/null | sort -V | tail -n 1 || true)"
+        if [ -z "''${goose_bin:-}" ] || [ ! -x "$goose_bin" ]; then
+          goose_bin="$HOME/.local/share/mise/shims/goose"
         fi
         if [ -z "''${goose_bin:-}" ] || [ ! -x "$goose_bin" ]; then
-          echo "goose: binary not found (mise use -g aqua:aaif-goose/goose)" >&2
+          echo "goose: binary not found (mise use -g github:aaif-goose/goose)" >&2
           exit 127
         fi
 
@@ -380,14 +382,14 @@
 
         ${gatewayUrlResolver "goose"}
         # Goose OPENAI_HOST is the API root (no /v1); client calls ''${OPENAI_HOST}/v1/models.
-        export GOOSE_MODEL="''${GOOSE_MODEL:-minimax-coding-plan/MiniMax-M3}"
-        export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-1000000}"
-        # Planner: kimi-code/k3 for deep reasoning (1M ctx, tools+reasoning+vision)
+        export GOOSE_MODEL="''${GOOSE_MODEL:-kimi-code/k3}"
+        export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-1048576}"
+        # Planner: MiniMax-M3 (1M ctx, tools+reasoning)
         export GOOSE_PLANNER_PROVIDER="''${GOOSE_PLANNER_PROVIDER:-openai}"
-        export GOOSE_PLANNER_MODEL="''${GOOSE_PLANNER_MODEL:-kimi-code/k3}"
-        export GOOSE_PLANNER_CONTEXT_LIMIT="''${GOOSE_PLANNER_CONTEXT_LIMIT:-1048576}"
+        export GOOSE_PLANNER_MODEL="''${GOOSE_PLANNER_MODEL:-minimax-coding-plan/MiniMax-M3}"
+        export GOOSE_PLANNER_CONTEXT_LIMIT="''${GOOSE_PLANNER_CONTEXT_LIMIT:-1000000}"
         # Fast model for auxiliary calls (tool selection, session titles)
-        export GOOSE_FAST_MODEL="''${GOOSE_FAST_MODEL:-auto-fast}"
+        export GOOSE_FAST_MODEL="''${GOOSE_FAST_MODEL:-auto-flash}"
         export OPENAI_API_KEY="$edge_token"
         export OPENAI_HOST="$gateway_url"
         export OPENAI_BASE_URL="$gateway_url/v1"
@@ -416,7 +418,7 @@
           exit 1
         fi
         ${gatewayUrlResolver "goose-models"}
-        echo "# backend: openai → llm-gateway (default: minimax-coding-plan/MiniMax-M3, ctx 1M)"
+        echo "# backend: openai → llm-gateway (default: kimi-code/k3, ctx 1M)"
         echo "# gateway: $gateway_url/v1/models"
         curl -sS --max-time 15 -H "authorization: Bearer $edge_token" \
           "$gateway_url/v1/models" \
@@ -453,8 +455,8 @@
   gooseGateway = pkgs.writeShellScriptBin "goose-gateway" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="''${GOOSE_MODEL:-minimax-coding-plan/MiniMax-M3}"
-    export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-1000000}"
+    export GOOSE_MODEL="''${GOOSE_MODEL:-kimi-code/k3}"
+    export GOOSE_CONTEXT_LIMIT="''${GOOSE_CONTEXT_LIMIT:-1048576}"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 

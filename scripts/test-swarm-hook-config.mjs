@@ -70,6 +70,31 @@ test("Home Manager enables the bundled Goose orchestrator", async () => {
   assert.match(activation, /extensions\["orchestrator"\]\s*=\s*\{[\s\S]*?"enabled": True/);
 });
 
+test("Goose uses Kimi K3 as main and MiniMax M3 as planner", async () => {
+  const template = await readFile("config/goose/config.yaml", "utf8");
+  assert.match(template, /^GOOSE_MODEL: kimi-code\/k3$/m);
+  assert.match(template, /^GOOSE_PLANNER_MODEL: minimax-coding-plan\/MiniMax-M3$/m);
+  assert.match(template, /^GOOSE_FAST_MODEL: auto-flash$/m);
+
+  const activation = await readFile("home/modules/activation.nix", "utf8");
+  assert.match(activation, /goose_config\["GOOSE_MODEL"\] = "kimi-code\/k3"/);
+  assert.match(activation, /goose_config\["GOOSE_PLANNER_MODEL"\] = "minimax-coding-plan\/MiniMax-M3"/);
+  assert.match(activation, /goose_config\["GOOSE_FAST_MODEL"\] = "auto-flash"/);
+
+  const wrapper = await readFile("home/modules/ai-tools.nix", "utf8");
+  assert.match(wrapper, /GOOSE_MODEL:-kimi-code\/k3/);
+  assert.match(wrapper, /GOOSE_PLANNER_MODEL:-minimax-coding-plan\/MiniMax-M3/);
+  assert.match(wrapper, /GOOSE_FAST_MODEL:-auto-flash/);
+  assert.ok(
+    wrapper.indexOf("mise/installs/github-aaif-goose-goose") < wrapper.indexOf("mise/shims/goose"),
+    "Goose wrapper must prefer the installed binary over the registry-dependent mise shim",
+  );
+
+  const mise = await readFile("config/mise/config.toml", "utf8");
+  assert.match(mise, /^"github:aaif-goose\/goose" = "latest"$/m);
+  assert.doesNotMatch(mise, /aqua:aaif-goose\/goose/);
+});
+
 test("activation merge preserves unrelated Claude settings and Kimi provider content", async () => {
   const home = await mkdtemp(join(tmpdir(), "repo-memory-hook-home-"));
   try {

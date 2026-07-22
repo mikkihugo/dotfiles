@@ -1,7 +1,7 @@
 [tools]
 "aqua:openai/codex" = "latest"
 "npm:@moonshot-ai/kimi-code" = "latest"
-"aqua:aaif-goose/goose" = "latest"
+"github:aaif-goose/goose" = "latest"
 # ACP adapter so goose can use Claude Code as provider `claude-acp`.
 "npm:@agentclientprotocol/claude-agent-acp" = "latest"
 # ACP adapter so goose can use ChatGPT/Codex OAuth (~/.codex) as `codex-acp`.

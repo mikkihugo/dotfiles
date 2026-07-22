@@ -6,16 +6,15 @@
 active_provider: openai
 OPENAI_HOST: http://llm-gateway.svc
 
-# Model — MiniMax-M3 via minimax.io coding-plan (1M ctx, tools+reasoning)
-# Swarm alternatives: kimi-code/k3 (1M ctx), ollama-deepseek-v4-pro (524K ctx)
-GOOSE_MODEL: minimax-coding-plan/MiniMax-M3
-GOOSE_FAST_MODEL: auto-fast
+# Model — Kimi K3 (1,048,576 ctx, tools+reasoning+vision)
+# Swarm alternatives: MiniMax-M3 (1M ctx), ollama-deepseek-v4-pro (524K ctx)
+GOOSE_MODEL: kimi-code/k3
+GOOSE_FAST_MODEL: auto-flash
 
-# Planner — uses kimi-code/k3 for deep reasoning on plan decomposition
-# (1M ctx, tools+reasoning+vision)
+# Planner — MiniMax-M3 via minimax.io coding-plan (1M ctx, tools+reasoning)
 GOOSE_PLANNER_PROVIDER: openai
-GOOSE_PLANNER_MODEL: kimi-code/k3
-GOOSE_PLANNER_CONTEXT_LIMIT: 1048576
+GOOSE_PLANNER_MODEL: minimax-coding-plan/MiniMax-M3
+GOOSE_PLANNER_CONTEXT_LIMIT: 1000000
 
 # Security
 GOOSE_DISABLE_KEYRING: true    # Headless/WSL — use secrets.yaml instead of keyring
@@ -24,7 +23,7 @@ GOOSE_DISABLE_KEYRING: true    # Headless/WSL — use secrets.yaml instead of ke
 GOOSE_TELEMETRY_ENABLED: true   # Anonymous usage data
 
 # Context
-GOOSE_CONTEXT_LIMIT: 1000000
+GOOSE_CONTEXT_LIMIT: 1048576
 
 # CLI — Claude Code-like: clean, minimal noise
 GOOSE_CLI_THEME: dark
@@ -43,14 +42,14 @@ providers:
   openai:
     enabled: true
     configured: true
-    model: minimax-coding-plan/MiniMax-M3    # 1,000,000 ctx — default
+    model: kimi-code/k3    # 1,048,576 ctx — default
 
   # MiniMax-M3 via minimax.io coding-plan (1M ctx, tools+reasoning)
-  # CLI: goose (default)
+  # Planner: minimax-coding-plan/MiniMax-M3
   # Swarm: delegate(model: "minimax-coding-plan/MiniMax-M3", ...)
 
-  # kimi-code/k3 (1,048,576 ctx, tools+reasoning+vision) — planner
-  # CLI: goose-kimi
+  # kimi-code/k3 (1,048,576 ctx, tools+reasoning+vision) — default
+  # CLI: goose, goose-kimi
   # Swarm: delegate(model: "kimi-code/k3", ...)
 
   # ollama-deepseek-v4-pro (524,288 ctx, tools+reasoning)

@@ -161,6 +161,9 @@ in {
         Description = "Back up /home/mhugo to Hetzner Storage Box sub5 ${target.description}";
         After = ["network-online.target"];
         Wants = ["network-online.target"];
+        # A Home Manager generation switch must not launch or wait for a
+        # full-home backup. The timer remains the sole start authority.
+        X-SwitchMethod = "keep-old";
       };
       Service = {
         Type = "oneshot";

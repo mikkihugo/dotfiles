@@ -68,6 +68,11 @@ test("Home Manager owns nix-index database refresh wiring", async () => {
   assert.doesNotMatch(dotfilesTimer, /network-online\.target/);
 });
 
+test("Home Manager activation does not launch emergency backup jobs", async () => {
+  const backup = await source("home/modules/home-emergency-backup.nix");
+  assert.match(backup, /X-SwitchMethod\s*=\s*"keep-old"/);
+});
+
 test("Home Manager gives every managed agent client a deterministic UTF-8 locale", async () => {
   const home = await source("home/home.nix");
   const localeEnvironment = listBody(

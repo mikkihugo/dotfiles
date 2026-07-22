@@ -476,29 +476,29 @@
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
-  # goose-umans-glm — umans-glm (405K ctx, tools+reasoning+structured_output)
+  # goose-umans-glm — umans-ai-coding-plan/umans-glm-5.2 (405K ctx)
   gooseUmansGlm = pkgs.writeShellScriptBin "goose-umans-glm" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-glm"
+    export GOOSE_MODEL="umans-ai-coding-plan/umans-glm-5.2"
     export GOOSE_CONTEXT_LIMIT="405504"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
-  # goose-umans-kimi — umans-kimi (262K ctx, tools+reasoning+vision)
+  # goose-umans-kimi — umans-ai-coding-plan/umans-kimi-k2.7 (262K ctx)
   gooseUmansKimi = pkgs.writeShellScriptBin "goose-umans-kimi" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-kimi"
+    export GOOSE_MODEL="umans-ai-coding-plan/umans-kimi-k2.7"
     export GOOSE_CONTEXT_LIMIT="262144"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
-  # goose-umans-flash — umans-flash (262K ctx, tools+reasoning+vision)
+  # goose-umans-flash — umans-ai-coding-plan/umans-flash (262K ctx)
   gooseUmansFlash = pkgs.writeShellScriptBin "goose-umans-flash" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-flash"
+    export GOOSE_MODEL="umans-ai-coding-plan/umans-flash"
     export GOOSE_CONTEXT_LIMIT="262144"
     exec "$HOME/.local/bin/goose" "$@"
   '';

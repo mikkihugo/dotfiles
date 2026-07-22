@@ -71,6 +71,9 @@ test("Home Manager owns nix-index database refresh wiring", async () => {
 test("Home Manager activation does not launch emergency backup jobs", async () => {
   const backup = await source("home/modules/home-emergency-backup.nix");
   assert.match(backup, /X-SwitchMethod\s*=\s*"keep-old"/);
+
+  const gitBackup = await source("home/modules/git-auto-backup.nix");
+  assert.match(gitBackup, /X-SwitchMethod\s*=\s*"keep-old"/);
 });
 
 test("Home Manager gives every managed agent client a deterministic UTF-8 locale", async () => {

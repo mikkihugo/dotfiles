@@ -234,6 +234,9 @@ in {
       Description = "Back up local Git repositories to their configured remotes";
       After = ["network-online.target"];
       Wants = ["network-online.target"];
+      # Repository sweeps are timer-owned and can take minutes. Do not start or
+      # wait for one merely because Home Manager switched generations.
+      X-SwitchMethod = "keep-old";
     };
     Service = {
       Type = "oneshot";

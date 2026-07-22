@@ -273,6 +273,7 @@ in {
           goose_config["GOOSE_CLI_MIN_PRIORITY"] = 0.3
           goose_config["GOOSE_DISABLE_TOOL_CALL_SUMMARY"] = True
           goose_config["GOOSE_DISABLE_SESSION_NAMING"] = True
+          goose_config["GOOSE_MAX_BACKGROUND_TASKS"] = 10
           goose_config["GOOSE_CLI_SHOW_COST"] = True
           goose_config["GOOSE_MAX_CODE_BLOCK_LINES"] = 100
           goose_config["GOOSE_MODE"] = "auto"
@@ -303,14 +304,15 @@ in {
               extensions = {}
               goose_config["extensions"] = extensions
           extensions["centralcloud-mcp-gateway"] = goose_mcp_entry
-          extensions["orchestrator"] = {
-              "name": "orchestrator",
+          extensions["summon"] = {
+              "name": "summon",
               "type": "platform",
-              "description": "Manage agent sessions: list, view, start, send messages, interrupt, and stop agents",
+              "description": "Load knowledge and delegate tasks to subagents",
               "enabled": True,
               "bundled": True,
-              "display_name": "Orchestrator",
+              "display_name": "Summon",
           }
+          extensions.pop("orchestrator", None)
           goose_path.parent.mkdir(parents=True, exist_ok=True)
           goose_path.write_text(
               yaml.safe_dump(goose_config, sort_keys=False),

@@ -32,6 +32,7 @@ GOOSE_DISABLE_TOOL_CALL_SUMMARY: true # Skip per-tool AI summaries (saves tokens
 GOOSE_DISABLE_SESSION_NAMING: true    # Skip AI session naming (faster startup)
 GOOSE_CLI_SHOW_COST: true             # Show token costs
 GOOSE_MAX_CODE_BLOCK_LINES: 100       # More code before truncation
+GOOSE_MAX_BACKGROUND_TASKS: 10        # Summon async delegate concurrency
 GOOSE_MODE: auto                      # YOLO — auto-approve all tools
 
 # Providers — all route through llm-gateway.svc (OpenAI-compatible)
@@ -119,12 +120,6 @@ extensions:
     enabled: true
     bundled: true
     display_name: Summon
-  orchestrator:
-    type: platform
-    name: orchestrator
-    enabled: true
-    bundled: true
-    display_name: Orchestrator
   analyze:
     type: platform
     name: analyze

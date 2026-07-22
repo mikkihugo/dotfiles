@@ -62,12 +62,19 @@ test("Goose and Copilot wrappers export one inherited session identity", async (
   assert.match(tools, /clientSessionIdentity "copilot"/);
 });
 
-test("Home Manager enables the bundled Goose orchestrator", async () => {
+test("Home Manager enables only Summon delegation with ten background tasks", async () => {
   const template = await readFile("config/goose/config.yaml", "utf8");
-  assert.match(template, /orchestrator:\n(?:.*\n){0,6}?\s+enabled: true/);
+  assert.match(template, /summon:\n(?:.*\n){0,6}?\s+enabled: true/);
+  assert.doesNotMatch(template, /^\s+orchestrator:$/m);
+  assert.match(template, /^GOOSE_MAX_BACKGROUND_TASKS: 10(?:\s+#.*)?$/m);
 
   const activation = await readFile("home/modules/activation.nix", "utf8");
-  assert.match(activation, /extensions\["orchestrator"\]\s*=\s*\{[\s\S]*?"enabled": True/);
+  assert.match(activation, /extensions\["summon"\]\s*=\s*\{[\s\S]*?"enabled": True/);
+  assert.match(activation, /extensions\.pop\("orchestrator", None\)/);
+  assert.match(activation, /goose_config\["GOOSE_MAX_BACKGROUND_TASKS"\] = 10/);
+
+  const wrapper = await readFile("home/modules/ai-tools.nix", "utf8");
+  assert.match(wrapper, /GOOSE_MAX_BACKGROUND_TASKS:-10/);
 });
 
 test("Goose uses Kimi K3 as main and MiniMax M3 as planner", async () => {

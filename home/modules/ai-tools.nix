@@ -390,6 +390,7 @@
         export GOOSE_PLANNER_CONTEXT_LIMIT="''${GOOSE_PLANNER_CONTEXT_LIMIT:-1000000}"
         # Fast model for auxiliary calls (tool selection, session titles)
         export GOOSE_FAST_MODEL="''${GOOSE_FAST_MODEL:-auto-flash}"
+        export GOOSE_MAX_BACKGROUND_TASKS="''${GOOSE_MAX_BACKGROUND_TASKS:-10}"
         export OPENAI_API_KEY="$edge_token"
         export OPENAI_HOST="$gateway_url"
         export OPENAI_BASE_URL="$gateway_url/v1"

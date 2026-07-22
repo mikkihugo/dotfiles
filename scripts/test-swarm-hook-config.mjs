@@ -62,6 +62,14 @@ test("Goose and Copilot wrappers export one inherited session identity", async (
   assert.match(tools, /clientSessionIdentity "copilot"/);
 });
 
+test("Home Manager enables the bundled Goose orchestrator", async () => {
+  const template = await readFile("config/goose/config.yaml", "utf8");
+  assert.match(template, /orchestrator:\n(?:.*\n){0,6}?\s+enabled: true/);
+
+  const activation = await readFile("home/modules/activation.nix", "utf8");
+  assert.match(activation, /extensions\["orchestrator"\]\s*=\s*\{[\s\S]*?"enabled": True/);
+});
+
 test("activation merge preserves unrelated Claude settings and Kimi provider content", async () => {
   const home = await mkdtemp(join(tmpdir(), "repo-memory-hook-home-"));
   try {

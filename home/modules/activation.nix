@@ -303,6 +303,14 @@ in {
               extensions = {}
               goose_config["extensions"] = extensions
           extensions["centralcloud-mcp-gateway"] = goose_mcp_entry
+          extensions["orchestrator"] = {
+              "name": "orchestrator",
+              "type": "platform",
+              "description": "Manage agent sessions: list, view, start, send messages, interrupt, and stop agents",
+              "enabled": True,
+              "bundled": True,
+              "display_name": "Orchestrator",
+          }
           goose_path.parent.mkdir(parents=True, exist_ok=True)
           goose_path.write_text(
               yaml.safe_dump(goose_config, sort_keys=False),

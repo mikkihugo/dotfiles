@@ -120,6 +120,12 @@ extensions:
     enabled: true
     bundled: true
     display_name: Summon
+  orchestrator:
+    type: platform
+    name: orchestrator
+    enabled: true
+    bundled: true
+    display_name: Orchestrator
   analyze:
     type: platform
     name: analyze
@@ -158,12 +164,6 @@ extensions:
     enabled: false
     bundled: true
     display_name: Chat Recall
-  orchestrator:
-    type: platform
-    name: orchestrator
-    enabled: false
-    bundled: true
-    display_name: Orchestrator
   code_execution:
     type: platform
     name: code_execution

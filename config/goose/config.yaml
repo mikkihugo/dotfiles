@@ -58,17 +58,17 @@ providers:
   # Swarm: delegate(model: "ollama-deepseek-v4-pro", ...)
 
   # === Chat-only (no tools — use for research/review) ===
-  # umans-ai-coding-plan/umans-glm-5.2 (405,504 ctx, chat only)
+  # umans-glm (405,504 ctx, tools+reasoning+structured_output)
   # CLI: goose-umans-glm
-  # Swarm: delegate(model: "umans-ai-coding-plan/umans-glm-5.2", ...)
+  # Swarm: delegate(model: "umans-glm", ...)
 
-  # umans-ai-coding-plan/umans-kimi-k2.7 (262,144 ctx, chat only)
+  # umans-kimi (262,144 ctx, tools+reasoning+vision)
   # CLI: goose-umans-kimi
-  # Swarm: delegate(model: "umans-ai-coding-plan/umans-kimi-k2.7", ...)
+  # Swarm: delegate(model: "umans-kimi", ...)
 
-  # umans-ai-coding-plan/umans-flash (262,144 ctx, chat only)
+  # umans-flash (262,144 ctx, tools+reasoning+vision)
   # CLI: goose-umans-flash
-  # Swarm: delegate(model: "umans-ai-coding-plan/umans-flash", ...)
+  # Swarm: delegate(model: "umans-flash", ...)
 
   # === Other providers (disabled) ===
   claude-acp:

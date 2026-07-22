@@ -27,6 +27,12 @@ test("Home Manager preserves the requested Forgejo and fast-Nix toolchain withou
 
   for (const name of [
     "forgejo-cli",
+    "nixd",
+    "alejandra",
+    "statix",
+    "deadnix",
+    "nix-tree",
+    "nix-output-monitor",
     "nix-fast-build",
     "nh",
     "comma",
@@ -94,6 +100,39 @@ test("the maintenance shell supplies every executable used by the canonical chec
   for (const name of ["nodejs", "python3", "nix-fast-build"]) {
     assert.match(entries, packageEntry(name), `maintenance shell is missing ${name}`);
   }
+
+  assert.doesNotMatch(
+    entries,
+    packageEntry("mise"),
+    "mise is Home Manager-owned and must not trigger a maintenance-shell build",
+  );
+});
+
+test("Home Manager does not include the retired Hermes agent", async () => {
+  const flake = await source("flake.nix");
+  const home = await source("home/home.nix");
+
+  assert.doesNotMatch(flake, /\bhermes-agent\b/);
+  assert.doesNotMatch(home, /hermes-(?:proxy|tui)\.nix/);
+});
+
+test("Home Manager uses the nixpkgs mise package without a private overlay", async () => {
+  const flake = await source("flake.nix");
+  const home = await source("home/home.nix");
+  const packages = await source("home/modules/packages.nix");
+  const bootstrap = await source("bootstrap/steps/20-home-manager.sh");
+  const updater = await source("home/modules/mise-auto-update.nix");
+
+  assert.doesNotMatch(flake, /overlays\/mise\.nix/);
+  assert.match(home, /programs\.mise\s*=\s*\{/);
+  assert.match(home, /package\s*=\s*pkgs\.mise;/);
+  assert.doesNotMatch(packages, /^\s*mise(?:\s|#|$)/m);
+  assert.match(flake, /packages\.home-manager\s*=\s*home-manager\.packages\.\$\{sys\}\.home-manager;/);
+  assert.match(bootstrap, /"path:\$ROOT_DIR#home-manager" -- switch/);
+  assert.doesNotMatch(bootstrap, /home-manager\/master|nix profile install/);
+  assert.match(updater, /"\$mise_bin" install --yes/);
+  assert.match(updater, /"\$mise_bin" upgrade --yes/);
+  assert.doesNotMatch(updater, /nix develop|just mise-upgrade/);
 });
 
 test("just check delegates to the single repository check implementation", async () => {

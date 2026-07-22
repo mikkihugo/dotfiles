@@ -80,13 +80,6 @@
     # a first-boot seed — pinning an older rev does not affect runtime.
     ace-coder.url = "git+file:///home/mhugo/code/ace-coder?rev=58b7a904030dfd06e139aafc2222c1ea1331746c";
 
-    # hermes-agent: self-improving agent.
-    # Flake exposes packages.<system>.default wrapping the `hermes` binary.
-    hermes-agent = {
-      url = "github:NousResearch/hermes-agent";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     inference-fabric = {
       url = "git+ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -99,13 +92,12 @@
     sops-nix,
     flake-utils,
     ace-coder,
-    hermes-agent,
     llm-agents,
     claude-code,
     inference-fabric,
     ...
   }: let
-    specialArgs = {inherit sops-nix ace-coder hermes-agent llm-agents inference-fabric;};
+    specialArgs = {inherit sops-nix ace-coder llm-agents inference-fabric;};
 
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.
     # targetSystem is passed as specialArgs so imports can branch without
@@ -115,10 +107,8 @@
         pkgs = import nixpkgs {
           system = sys;
           config.allowUnfree = true;
-          # mise pinned ahead of nixos-26.05; drop once the channel catches up.
           # claude-code overlay: pkgs.claude-code = sadjow's hourly-fresh native binary.
           overlays = [
-            (import ./overlays/mise.nix)
             claude-code.overlays.default
           ];
         };
@@ -149,9 +139,13 @@
       maintenance-pkgs = import nixpkgs {
         system = sys;
         config.allowUnfree = true;
-        overlays = [(import ./overlays/mise.nix)];
       };
     in {
+      # Bootstrap runner from the same locked Home Manager input used to build
+      # the profiles. `nix run path:.#home-manager -- switch ...` therefore
+      # cannot drift to a mutable Home Manager branch.
+      packages.home-manager = home-manager.packages.${sys}.home-manager;
+
       # `nix develop` — for editing secrets and running dotfiles linters.
       # Not the daily shell (home-manager provides that); this shell is
       # only needed when working on the dotfiles repo itself.
@@ -163,8 +157,7 @@
           python3 # run Python preference/configuration contract tests
           just # operator entrypoints for dotfiles maintenance tasks
           nix-fast-build # parallel activation evaluation/build for `just check`
-          mise # run/update mise-managed tools from the maintenance shell
-          gnumake # required by mise/python-build when tracking python@latest
+          gnumake # required by the managed mise/python-build when tracking python@latest
           pkg-config # native dependency discovery for rust crates when needed
           openssl # CPython ssl/hashlib modules for mise/python-build
           zlib # CPython zlib module; ensurepip needs this to unpack pip wheels

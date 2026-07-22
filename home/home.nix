@@ -45,8 +45,6 @@ in {
       ./modules/home-emergency-backup.nix
       ./modules/files.nix
       ./modules/build-cache-maintenance.nix
-      ./modules/hermes-proxy.nix
-      ./modules/hermes-tui.nix
       ./modules/ai-tools.nix
       ./modules/ops-tools.nix
       ./modules/nix-index.nix
@@ -62,8 +60,7 @@ in {
       ../services/remote-gpu-worker
     ];
 
-  # Top-level SOPS key source so every host (including dev1) can decrypt,
-  # not just hosts that trigger Hermes proxy modules.
+  # Top-level SOPS key source so every managed host can decrypt its secrets.
   sops.age.keyFile = "/home/mhugo/.config/sops/age/keys.txt";
   sops.defaultSopsFile = ../secrets/api-keys.yaml;
 
@@ -125,4 +122,18 @@ in {
 
   # home-manager manages its own config file (~/.config/home-manager/).
   programs.home-manager.enable = true;
+
+  # Use Home Manager's standard mise module and the nixpkgs package. The shared
+  # runtime hook in shell/bash/bashrc remains the single activation authority
+  # for bash and zsh because it also restores wrapper precedence after mise
+  # prepends its tool directories. The mutable global tool list remains linked
+  # from config/mise/config.toml by activation.nix.
+  programs.mise = {
+    enable = true;
+    package = pkgs.mise;
+    enableBashIntegration = false;
+    enableZshIntegration = false;
+    enableFishIntegration = false;
+    enableNushellIntegration = false;
+  };
 }

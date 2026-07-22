@@ -27,9 +27,7 @@ All secrets follow this hierarchy:
 
 | Path | Fields | Used by |
 |------|--------|---------|
-| `kv/hermes` | `api_server_key` | Hermes agent |
-| `kv/openrouter` | `api_key` | Hermes, Toad |
-| `kv/mistral` | `api_key` | Hermes |
+| `kv/openrouter` | `api_key` | Toad |
 | `kv/gemini` | `api_key` | Gemini CLI |
 | `kv/amp` | `token` | Amp CLI |
 | `kv/cloudflare` | `api_token` | Traefik DNS-01 |

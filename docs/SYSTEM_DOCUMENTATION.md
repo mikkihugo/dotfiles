@@ -35,7 +35,6 @@ The role metadata is stored in:
 Supported role-related options:
 
 - `dotfiles.machine.role` — machine purpose string (`laptop`, `workstation`, `worker`, `server`, `general`).
-- `dotfiles.machine.enableHermesProxy` — enable Hermes proxy gateway.
 - `dotfiles.machine.validateSudoAccess` — whether bootstrap validates sudo.
 
 Default semantics:

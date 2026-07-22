@@ -16,12 +16,6 @@ in {
       description = "Local machine role selected during bootstrap.";
     };
 
-    enableHermesProxy = lib.mkOption {
-      type = lib.types.bool;
-      default = machineConfig.enableHermesProxy or false;
-      description = "Whether this machine should run the Hermes proxy gateway.";
-    };
-
     enableTailscale = lib.mkOption {
       type = lib.types.bool;
       default = machineConfig.enableTailscale or false;

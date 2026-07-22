@@ -8,7 +8,7 @@
 # decrypted SOPS secret at invocation time — never hardcoded.
 #
 # Keys expected in secrets/api-keys.yaml (SOPS):
-#   openrouter/api_key → kv/openrouter:api_key (shared with hermes)
+#   openrouter/api_key → kv/openrouter:api_key
 #   amp/token          → kv/amp:token
 #
 # Tools managed by mise (see config/mise/config.toml) rely on the SOPS secret

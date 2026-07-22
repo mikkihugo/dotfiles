@@ -33,7 +33,6 @@
     # (project-level runtimes live in per-repo flake devShells via direnv)
     bun # JavaScript runtime/package manager for local tool builds
     ccache # C/C++ compiler cache; CMake launcher env is set in home.nix
-    mise # polyglot runtime/tool manager; installs live under ~/.local/share/mise
     # Forgejo-native CLI (binary: `fj`). Packaged upstream avoids maintaining
     # a hand-vendored CLI derivation and per-architecture hashes here.
     # NOTE: fj has no raw `api` passthrough. For endpoints without an fj

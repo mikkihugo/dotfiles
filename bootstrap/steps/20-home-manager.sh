@@ -22,16 +22,7 @@ if [ -e "$HOME/.config/home-manager" ] && [ ! -L "$HOME/.config/home-manager" ];
 fi
 ln -sfn "$ROOT_DIR" "$HOME/.config/home-manager"
 
-# ── 1. Install home-manager if missing ───────────────────────────────────────
-if ! command -v home-manager >/dev/null 2>&1; then
-	echo "==> Installing home-manager..."
-	nix run home-manager/master -- init --switch || {
-		# Fallback: install via nix profile
-		nix profile install "github:nix-community/home-manager"
-	}
-fi
-
-# ── 2. Detect profile by hostname ────────────────────────────────────────────
+# ── 1. Detect profile by hostname ────────────────────────────────────────────
 HOSTNAME="$(hostname -s 2>/dev/null || cat /etc/hostname 2>/dev/null | tr -d '[:space:]')"
 case "$HOSTNAME" in
 mikki-bunker) PROFILE="mikki-bunker" ;;
@@ -42,14 +33,15 @@ esac
 
 echo "==> Applying home-manager profile: $PROFILE (hostname: $HOSTNAME)"
 
-home-manager switch \
-	--flake "${ROOT_DIR}#${PROFILE}" \
+nix run \
 	--extra-experimental-features 'nix-command flakes' \
+	"path:$ROOT_DIR#home-manager" -- switch \
+	--flake "${ROOT_DIR}#${PROFILE}" \
 	-b backup
 
 echo "   ✅ home-manager applied"
 
-# ── 3. Enable systemd linger so user services survive logout ─────────────────
+# ── 2. Enable systemd linger so user services survive logout ─────────────────
 if command -v loginctl >/dev/null 2>&1; then
 	loginctl enable-linger "$(whoami)" 2>/dev/null &&
 		echo "   ✅ systemd linger enabled" ||

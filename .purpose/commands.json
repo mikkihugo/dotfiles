@@ -143,6 +143,17 @@
       }
     },
     {
+      "path": ["vcs", "sync-main"],
+      "description": "Converge a clean patch-equivalent canonical main to origin/main",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["sync-main"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
       "path": ["vcs", "worktree-create"],
       "description": "Create an isolated task worktree",
       "class": "vcs",

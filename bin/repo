@@ -115,6 +115,13 @@ Version control:
       1. Run `repo vcs worktree-create`.
       2. Read back repository state through `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs sync-main
+    What: Converge a clean patch-equivalent canonical main to origin/main
+    When: Canonical main diverged only because equivalent commits were already applied upstream.
+    Steps:
+      1. Run `repo vcs sync-main`.
+      2. Verify canonical main equals origin/main and remains clean.
+    Falsifier: Any local-only commit lacks an upstream patch equivalent.
   repo vcs worktree-drop
     What: Remove an integrated clean task worktree
     When: Before choosing a repository lifecycle transition.
@@ -164,6 +171,7 @@ elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push-github' ]]; then shift 2; e
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'rebase' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'rebase' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'show' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'show' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'status' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'status' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'sync-main' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'sync-main' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'test' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'contract-test' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-create' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-create' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-drop' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-drop' "$@"

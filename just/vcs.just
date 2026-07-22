@@ -27,6 +27,9 @@ fetch:
 rebase REVISION:
     @{{runner}} rebase "$1"
 
+sync-main:
+    @{{runner}} sync-main
+
 describe MESSAGE:
     @{{runner}} describe "$1"
 

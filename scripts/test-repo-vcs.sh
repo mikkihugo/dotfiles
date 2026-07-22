@@ -22,6 +22,7 @@ fi
 "$root/scripts/repo-vcs.sh" contract-test
 "$root/bin/repo" help | grep -q 'repo vcs land'
 "$root/bin/repo" help | grep -q 'repo vcs rebase'
+"$root/bin/repo" help | grep -q 'repo vcs sync-main'
 "$root/bin/repo" help | grep -q 'repo vcs worktree-abandon'
 if "$root/scripts/repo-vcs.sh" rebase >/dev/null 2>&1; then
 	printf 'rebase unexpectedly accepted a missing revision\n' >&2

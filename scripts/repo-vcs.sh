@@ -74,6 +74,21 @@ rebase)
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
 	git -C "$root" rebase "$1"
 	;;
+sync-main)
+	[[ $# -eq 0 ]] || die 'sync-main takes no arguments'
+	primary="$HOME/.dotfiles"
+	[[ -d "$primary" ]] || die "primary checkout is missing: $primary"
+	branch="$(git -C "$primary" symbolic-ref --quiet --short HEAD)" || die 'primary checkout is detached'
+	[[ "$branch" == main ]] || die 'primary checkout is not on main'
+	[[ -z "$(git -C "$primary" status --porcelain)" ]] || die 'primary checkout is not clean'
+	run_remote git -C "$primary" fetch origin main
+	if git -C "$primary" cherry origin/main main | grep -q '^+'; then
+		die 'primary main has local commits that are not patch-equivalent upstream'
+	fi
+	git -C "$primary" reset --hard origin/main
+	[[ "$(git -C "$primary" rev-parse main)" == "$(git -C "$primary" rev-parse origin/main)" ]] || die 'primary main did not converge'
+	printf 'synced=main revision=%s patch_equivalent=true\n' "$(git -C "$primary" rev-parse main)"
+	;;
 describe)
 	[[ $# -eq 1 ]] || die 'describe requires one message'
 	git -C "$root" add --all
@@ -182,7 +197,7 @@ contract-test)
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
 	grep -Fq "branch -D \"codex/\$name\"" "$root/scripts/repo-vcs.sh"
 	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
-	for recipe in status diff log show worktree-list fetch rebase describe push push-github worktree-create worktree-drop worktree-abandon test; do
+	for recipe in status diff log show worktree-list fetch rebase sync-main describe push push-github worktree-create worktree-drop worktree-abandon test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"
 	done
 	printf 'dotfiles VCS contract: ok\n'
@@ -191,5 +206,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|describe|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main|describe|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|contract-test|config}' ;;
 esac

@@ -476,15 +476,6 @@
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
-  # goose-minimax — minimax-ai/MiniMax-M3 direct (128K ctx, tools, minimax.io)
-  gooseMinimax = pkgs.writeShellScriptBin "goose-minimax" ''
-    set -euo pipefail
-    export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="minimax-ai/MiniMax-M3"
-    export GOOSE_CONTEXT_LIMIT="128000"
-    exec "$HOME/.local/bin/goose" "$@"
-  '';
-
   # goose-umans-glm — umans-ai-coding-plan/umans-glm-5.2 (405K ctx, chat only — no tools)
   gooseUmansGlm = pkgs.writeShellScriptBin "goose-umans-glm" ''
     set -euo pipefail
@@ -509,33 +500,6 @@
     export GOOSE_PROVIDER=openai
     export GOOSE_MODEL="umans-ai-coding-plan/umans-flash"
     export GOOSE_CONTEXT_LIMIT="262144"
-    exec "$HOME/.local/bin/goose" "$@"
-  '';
-
-  # goose-umans-coder — umans-ai-coding-plan/umans-coder (262K ctx, chat only — no tools)
-  gooseUmansCoder = pkgs.writeShellScriptBin "goose-umans-coder" ''
-    set -euo pipefail
-    export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-ai-coding-plan/umans-coder"
-    export GOOSE_CONTEXT_LIMIT="262144"
-    exec "$HOME/.local/bin/goose" "$@"
-  '';
-
-  # goose-umans-qwen — umans-ai-coding-plan/umans-qwen3.6-35b-a3b (262K ctx, chat only — no tools)
-  gooseUmansQwen = pkgs.writeShellScriptBin "goose-umans-qwen" ''
-    set -euo pipefail
-    export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-ai-coding-plan/umans-qwen3.6-35b-a3b"
-    export GOOSE_CONTEXT_LIMIT="262144"
-    exec "$HOME/.local/bin/goose" "$@"
-  '';
-
-  # goose-deepseek-cloud — ollama-cloud/deepseek-v4-pro (128K ctx, tools, via ollama cloud)
-  gooseDeepseekCloud = pkgs.writeShellScriptBin "goose-deepseek-cloud" ''
-    set -euo pipefail
-    export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="ollama-cloud/deepseek-v4-pro"
-    export GOOSE_CONTEXT_LIMIT="128000"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
@@ -662,13 +626,9 @@ in {
       gooseGateway # binary: goose-gateway -> openai via llm-gateway
       gooseKimi # binary: goose-kimi -> kimi-code/k3 (1M ctx)
       gooseDeepseek # binary: goose-deepseek -> ollama-deepseek-v4-pro (524K ctx)
-      gooseDeepseekCloud # binary: goose-deepseek-cloud -> ollama-cloud/deepseek-v4-pro (128K)
-      gooseMinimax # binary: goose-minimax -> minimax-ai/MiniMax-M3 (128K, direct)
       gooseUmansGlm # binary: goose-umans-glm -> umans-glm-5.2 (405K ctx)
       gooseUmansKimi # binary: goose-umans-kimi -> umans-kimi-k2.7 (262K ctx)
       gooseUmansFlash # binary: goose-umans-flash -> umans-flash (262K ctx)
-      gooseUmansCoder # binary: goose-umans-coder -> umans-coder (262K ctx)
-      gooseUmansQwen # binary: goose-umans-qwen -> umans-qwen3.6-35b-a3b (262K ctx)
       codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
       llm-pkgs.mistral-vibe # binary: vibe
       # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
@@ -891,18 +851,6 @@ in {
         source = "${gooseDeepseek}/bin/goose-deepseek";
       };
 
-      ".local/bin/goose-deepseek-cloud" = {
-        executable = true;
-        force = true;
-        source = "${gooseDeepseekCloud}/bin/goose-deepseek-cloud";
-      };
-
-      ".local/bin/goose-minimax" = {
-        executable = true;
-        force = true;
-        source = "${gooseMinimax}/bin/goose-minimax";
-      };
-
       ".local/bin/goose-umans-glm" = {
         executable = true;
         force = true;
@@ -919,12 +867,6 @@ in {
         executable = true;
         force = true;
         source = "${gooseUmansFlash}/bin/goose-umans-flash";
-      };
-
-      ".local/bin/goose-umans-coder" = {
-        executable = true;
-        force = true;
-        source = "${gooseUmansCoder}/bin/goose-umans-coder";
       };
 
       ".local/bin/goose-umans-qwen" = {

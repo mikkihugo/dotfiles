@@ -1,3 +1,5 @@
+name = "worker"
+description = "Standard implementer (GLM 5.2 via Umans): normal feature work and fixes with an established contract or root cause."
 model = "auto-glm"
 model_provider = "llm-gateway"
 model_reasoning_effort = "medium"

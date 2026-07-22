@@ -1,3 +1,5 @@
+name = "explorer"
+description = "Fast read-only explorer (Qwen 3.6 35B-A3B): file, symbol, reference, and candidate discovery in a tightly bounded scope."
 model = "auto-fast"
 model_provider = "llm-gateway"
 model_reasoning_effort = "low"

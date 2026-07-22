@@ -1,3 +1,5 @@
+name = "singularity-engine-harvester"
+description = "Singularity Engine harvester (GPT-5.6 Terra): source-grounded architecture and capability harvesting from donor systems."
 model = "gpt-5.6-terra"
 model_provider = "openai"
 model_reasoning_effort = "high"

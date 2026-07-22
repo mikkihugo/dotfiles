@@ -1,3 +1,5 @@
+name = "coder-smart"
+description = "Deep implementer (Kimi K2.7): hard algorithms and subtle correctness work that needs sustained reasoning."
 model = "auto-kimi"
 model_provider = "llm-gateway"
 model_reasoning_effort = "high"

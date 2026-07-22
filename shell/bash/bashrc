@@ -44,6 +44,15 @@ if [ -n "$mise_bin" ]; then
 fi
 unset mise_bin
 
+# Non-interactive/agent shells skip ~/.bashrc (HM's `[[ $- == *i* ]] || return`),
+# so they miss the wrapper-precedence restore above and run raw mise binaries
+# instead of the llm-gateway wrappers. Export BASH_ENV so every non-interactive
+# child bash sources the minimal PATH twin. Child shells inherit this, fixing
+# vtcode/goose/kimi for agents spawned from any interactive session.
+if [ -f "$HOME/.dotfiles/shell/bash/noninteractive-path.sh" ]; then
+	export BASH_ENV="$HOME/.dotfiles/shell/bash/noninteractive-path.sh"
+fi
+
 # ── SOPS on-demand secret loader ─────────────────────────────────────────────
 # Decrypts ~/.dotfiles/secrets/api-keys.yaml and exports LLM API credentials.
 # Called eagerly below (silent, non-fatal) so keys are available to child

@@ -1,3 +1,5 @@
+name = "test-writer"
+description = "Independent red-test writer (MiniMax M3): turns a precise purpose contract into the smallest failing test before implementation."
 model = "auto-minimax"
 model_provider = "llm-gateway"
 model_reasoning_effort = "low"

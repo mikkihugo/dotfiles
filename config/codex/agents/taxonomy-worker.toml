@@ -1,3 +1,5 @@
+name = "taxonomy-worker"
+description = "Taxonomy discovery worker (GPT-5.6 Terra): source extraction, clustering, normalization, and boundary proposals."
 model = "gpt-5.6-terra"
 model_provider = "openai"
 model_reasoning_effort = "medium"

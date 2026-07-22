@@ -1,3 +1,5 @@
+name = "debugger"
+description = "Systematic debugger (DeepSeek V4 Pro): reproduce, falsify hypotheses, identify root cause, apply a minimal fix, and prove it."
 model = "auto-deepseek"
 model_provider = "llm-gateway"
 model_reasoning_effort = "high"

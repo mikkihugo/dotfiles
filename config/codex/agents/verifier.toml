@@ -1,3 +1,5 @@
+name = "verifier"
+description = "Adversarial read-only verifier (Nemotron 3 Ultra): independent falsification for high-stakes claims and contested decisions."
 model = "ollama-cloud/nemotron-3-ultra"
 model_provider = "llm-gateway"
 model_reasoning_effort = "high"

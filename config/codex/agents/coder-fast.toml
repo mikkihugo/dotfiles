@@ -1,3 +1,5 @@
+name = "coder-fast"
+description = "Fast mechanical implementer (MiniMax M3, thinking off): boilerplate, rote refactors, and precisely specified repetitive edits."
 model = "auto-minimax"
 model_provider = "llm-gateway"
 model_reasoning_effort = "low"

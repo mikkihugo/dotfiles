@@ -1,3 +1,5 @@
+name = "default"
+description = "Balanced general-purpose subagent (GPT-5.6 Terra): bounded mixed work that does not match a narrower specialist."
 model = "gpt-5.6-terra"
 model_provider = "openai"
 model_reasoning_effort = "medium"

@@ -245,7 +245,7 @@ in {
   home.shellAliases = {
     # Build first and show the generation diff before activation. nh owns
     # profile discovery, so this does not parse generation symlinks by hand.
-    hms = "nh home switch --ask";
+    hms = "nh home switch";
     # Explain why the current and previous Home Manager generations differ.
     nixwhy = "nix-diff $(command ls -1dv \"$HOME\"/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | tail -n 2 | head -n 1) $(readlink -f \"$HOME\"/.local/state/nix/profiles/home-manager)";
     # Show store roots over 500 MB as text.

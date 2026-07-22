@@ -35,12 +35,58 @@ GOOSE_CLI_SHOW_COST: true             # Show token costs
 GOOSE_MAX_CODE_BLOCK_LINES: 100       # More code before truncation
 GOOSE_MODE: auto                      # YOLO — auto-approve all tools
 
-# Providers
+# Providers — all route through llm-gateway.svc (OpenAI-compatible)
+# Active model is set by GOOSE_MODEL above. These entries document the
+# available models and their context limits for reference.
 providers:
+  # === Active (tools-capable) ===
   openai:
     enabled: true
     configured: true
-    model: minimax-coding-plan/MiniMax-M3
+    model: minimax-coding-plan/MiniMax-M3    # 1,000,000 ctx — default
+
+  # MiniMax-M3 via minimax.io coding-plan (1M ctx, tools+reasoning)
+  # CLI: goose (default)
+  # Swarm: delegate(model: "minimax-coding-plan/MiniMax-M3", ...)
+
+  # kimi-code/k3 (1,048,576 ctx, tools+reasoning+vision) — planner
+  # CLI: goose-kimi
+  # Swarm: delegate(model: "kimi-code/k3", ...)
+
+  # ollama-deepseek-v4-pro (524,288 ctx, tools+reasoning)
+  # CLI: goose-deepseek
+  # Swarm: delegate(model: "ollama-deepseek-v4-pro", ...)
+
+  # ollama-cloud/deepseek-v4-pro (128,000 ctx, tools)
+  # CLI: goose-deepseek-cloud
+  # Swarm: delegate(model: "ollama-cloud/deepseek-v4-pro", ...)
+
+  # minimax-ai/MiniMax-M3 (128,000 ctx, tools — direct minimax.io)
+  # CLI: goose-minimax
+  # Swarm: delegate(model: "minimax-ai/MiniMax-M3", ...)
+
+  # === Chat-only (no tools — use for research/review) ===
+  # umans-ai-coding-plan/umans-glm-5.2 (405,504 ctx, chat only)
+  # CLI: goose-umans-glm
+  # Swarm: delegate(model: "umans-ai-coding-plan/umans-glm-5.2", ...)
+
+  # umans-ai-coding-plan/umans-kimi-k2.7 (262,144 ctx, chat only)
+  # CLI: goose-umans-kimi
+  # Swarm: delegate(model: "umans-ai-coding-plan/umans-kimi-k2.7", ...)
+
+  # umans-ai-coding-plan/umans-flash (262,144 ctx, chat only)
+  # CLI: goose-umans-flash
+  # Swarm: delegate(model: "umans-ai-coding-plan/umans-flash", ...)
+
+  # umans-ai-coding-plan/umans-coder (262,144 ctx, chat only)
+  # CLI: goose-umans-coder
+  # Swarm: delegate(model: "umans-ai-coding-plan/umans-coder", ...)
+
+  # umans-ai-coding-plan/umans-qwen3.6-35b-a3b (262,144 ctx, chat only)
+  # CLI: goose-umans-qwen
+  # Swarm: delegate(model: "umans-ai-coding-plan/umans-qwen3.6-35b-a3b", ...)
+
+  # === Other providers (disabled) ===
   claude-acp:
     enabled: false
     configured: false

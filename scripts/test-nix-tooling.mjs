@@ -92,7 +92,20 @@ test("Home Manager gives every managed agent client a deterministic UTF-8 locale
 
 test("shell aliases consume the managed Nix tooling", async () => {
   const shell = await source("home/modules/shell.nix");
-  assert.match(shell, /hms\s*=\s*"nh home switch --ask"/);
+  // Anchored to the full Nix assignment: `hms = "nh home switch";` with only
+  // whitespace allowed around `=` and before the `;`. A prefix match would
+  // silently pass again if the alias regained a flag such as `--ask`.
+  const hmsAlias = /^\s*hms\s*=\s*"nh home switch"\s*;/m;
+  assert.match(shell, hmsAlias);
+  assert.doesNotMatch(
+    shell,
+    /hms\s*=\s*"nh home switch --ask/,
+    "hms must not regain --ask",
+  );
+  // Regression witness: the pattern tolerates Nix whitespace but rejects
+  // any extra flag appended to the command.
+  assert.match('hms  =  "nh home switch" ;', hmsAlias);
+  assert.doesNotMatch('hms = "nh home switch --ask";', hmsAlias);
   assert.match(shell, /nixwhy\s*=\s*"nix-diff /);
   assert.match(shell, /nixdu\s*=\s*"nix-du /);
 });

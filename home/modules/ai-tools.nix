@@ -554,6 +554,242 @@
     export OPENAI_WIRE_API="''${OPENAI_WIRE_API:-responses}"
     exec "$code_bin" "$@"
   '';
+
+  # jcode — shadow the self-updater/mise binary with an exact provider allowlist:
+  # llm-gateway named profile, Claude Max OAuth, and ChatGPT OAuth.
+  jcodeGatewayWrapper = pkgs.writeShellScriptBin "jcode" ''
+    set -euo pipefail
+    ${clientSessionIdentity "jcode"}
+    # shellcheck source=/dev/null
+    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+    export OTEL_SERVICE_NAME="jcode"
+
+    edge_token="''${LLM_GATEWAY_API_KEY:-}"
+    if [ -z "''${edge_token:-}" ]; then
+      edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
+    fi
+    if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
+      edge_token="$(
+        BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+          bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
+      )"
+    fi
+    if [ -z "''${edge_token:-}" ]; then
+      echo "jcode: missing llm-gateway token (SOPS llm_gateway_api_key or bao kv/llm-gateway api_key)" >&2
+      exit 1
+    fi
+    ${gatewayUrlResolver "jcode"}
+    export LLM_GATEWAY_API_KEY="$edge_token"
+
+    # Isolate jcode-owned per-provider env files from ~/.config/jcode, where
+    # previously configured MiniMax/Cursor/etc. credentials may remain.
+    export XDG_CONFIG_HOME="$HOME/.config/jcode-allowlisted"
+    # Do not attach to a daemon started by the former unrestricted entrypoint.
+    export JCODE_RUNTIME_DIR="$HOME/.jcode/runtime-allowlisted"
+
+    # Strip ambient credentials before jcode's provider auto-detection runs.
+    unset \
+      ALIBABA_API_KEY \
+      ALIBABA_CODING_PLAN_API_KEY \
+      ALIBABA_TOKEN_PLAN_API_KEY \
+      ANTHROPIC_API_KEY \
+      AZURE_OPENAI_API_KEY \
+      AZURE_OPENAI_ENDPOINT \
+      CEREBRAS_API_KEY \
+      CHUTES_API_KEY \
+      COMTEGRA_API_KEY \
+      COPILOT_GITHUB_TOKEN \
+      CORTECS_API_KEY \
+      CURSOR_ACCESS_TOKEN \
+      CURSOR_API_KEY \
+      CURSOR_REFRESH_TOKEN \
+      DEEPINFRA_API_KEY \
+      DEEPSEEK_API_KEY \
+      FIREWORKS_API_KEY \
+      FIRMWARE_API_KEY \
+      F${"PT"}_API_KEY \
+      GEMINI_API_KEY \
+      GOOGLE_API_KEY \
+      GOOGLE_GENERATIVE_AI_API_KEY \
+      GROQ_API_KEY \
+      HUGGINGFACE_API_KEY \
+      HF_TOKEN \
+      JCODE_NAMED_PROVIDER_PROFILE \
+      JCODE_OPENAI_COMPAT_API_BASE \
+      JCODE_OPENAI_COMPAT_API_KEY_NAME \
+      JCODE_OPENAI_COMPAT_DEFAULT_MODEL \
+      JCODE_OPENAI_COMPAT_ENV_FILE \
+      JCODE_OPENROUTER_API_BASE \
+      JCODE_OPENROUTER_API_KEY_NAME \
+      JCODE_OPENROUTER_ENV_FILE \
+      JCODE_OPENROUTER_PROVIDER \
+      JCODE_PROVIDER \
+      JCODE_PROVIDER_PROFILE_ACTIVE \
+      JCODE_PROVIDER_PROFILE_NAME \
+      KIMI_API_KEY \
+      KIMI_CODE_API_KEY \
+      LONGCAT_API_KEY \
+      MINIMAX_API_KEY \
+      MISTRAL_API_KEY \
+      MOONSHOT_API_KEY \
+      NEBIUS_API_KEY \
+      NVIDIA_API_KEY \
+      OLLAMA_API_KEY \
+      OLLAMA_CLOUD_API_KEY \
+      OPENAI_API_KEY \
+      OPENAI_API_BASE \
+      OPENAI_BASE_URL \
+      OPENCODE_API_KEY \
+      OPENCODE_GO_API_KEY \
+      OPENROUTER_API_KEY \
+      PERPLEXITY_API_KEY \
+      SCALEWAY_API_KEY \
+      STACKIT_API_KEY \
+      TOGETHERAI_API_KEY \
+      TOGETHER_API_KEY \
+      XAI_API_KEY \
+      XIAOMI_API_KEY \
+      ZAI_API_KEY \
+      GH_TOKEN \
+      GITHUB_TOKEN \
+      || true
+
+    # Disable the remaining Cursor Agent CLI credential probe. File imports are
+    # separately denied by [auth] in ~/.jcode/config.toml.
+    export JCODE_CURSOR_CLI_PATH="/nonexistent/jcode-disabled-cursor-agent"
+
+    jcode_bin="$HOME/.jcode/builds/current/jcode"
+    if [ ! -x "$jcode_bin" ]; then
+      jcode_bin="$HOME/.local/share/mise/installs/github-1jehuang-jcode/latest/jcode-linux-x86_64"
+    fi
+    if [ ! -x "$jcode_bin" ]; then
+      echo "jcode: binary not found in ~/.jcode/builds/current or the mise install" >&2
+      exit 127
+    fi
+
+    allowed_provider() {
+      case "$1" in
+        claude|openai) return 0 ;;
+        *) return 1 ;;
+      esac
+    }
+
+    # Fail closed for explicit provider/profile requests, even if credentials
+    # for another compiled-in integration later appear on disk.
+    args=("$@")
+    provider_arg_seen=0
+    for ((i = 0; i < ''${#args[@]}; i++)); do
+      case "''${args[$i]}" in
+        -p|--provider)
+          provider_arg_seen=1
+          i=$((i + 1))
+          if [ "$i" -ge "''${#args[@]}" ] || ! allowed_provider "''${args[$i]}"; then
+            echo "jcode: provider is not allowed (use llm-gateway, claude, or openai)" >&2
+            exit 64
+          fi
+          ;;
+        --provider=*)
+          provider_arg_seen=1
+          provider="''${args[$i]#--provider=}"
+          if ! allowed_provider "$provider"; then
+            echo "jcode: provider '$provider' is not allowed (use llm-gateway, claude, or openai)" >&2
+            exit 64
+          fi
+          ;;
+        -p?*)
+          provider_arg_seen=1
+          provider="''${args[$i]#-p}"
+          if ! allowed_provider "$provider"; then
+            echo "jcode: provider '$provider' is not allowed (use llm-gateway, claude, or openai)" >&2
+            exit 64
+          fi
+          ;;
+        --provider-profile)
+          i=$((i + 1))
+          if [ "$i" -ge "''${#args[@]}" ] || [ "''${args[$i]}" != "llm-gateway" ]; then
+            echo "jcode: only provider profile 'llm-gateway' is allowed" >&2
+            exit 64
+          fi
+          ;;
+        --provider-profile=*)
+          profile="''${args[$i]#--provider-profile=}"
+          if [ "$profile" != "llm-gateway" ]; then
+            echo "jcode: provider profile '$profile' is not allowed" >&2
+            exit 64
+          fi
+          ;;
+      esac
+    done
+
+    # Locate the command after global flags so `--quiet provider add ...` and
+    # equivalent reorderings cannot bypass command policy.
+    command_name=""
+    command_arg1=""
+    for ((i = 0; i < ''${#args[@]}; i++)); do
+      case "''${args[$i]}" in
+        --no-update|--auto-update|--trace|--quiet|--no-selfdev|--onboarding-sim|--debug-socket|--disable-base-tools)
+          ;;
+        -p|--provider|-C|--cwd|--remote-working-dir|--socket|-m|--model|--provider-profile|--tool-profile|--tools|--disabled-tools)
+          i=$((i + 1))
+          ;;
+        --provider=*|--cwd=*|--remote-working-dir=*|--socket=*|--model=*|--provider-profile=*|--tool-profile=*|--tools=*|--disabled-tools=*|-p?*|-C?*|-m?*)
+          ;;
+        -*)
+          ;;
+        *)
+          command_name="''${args[$i]}"
+          command_arg1="''${args[$((i + 1))]:-}"
+          break
+          ;;
+      esac
+    done
+
+    if [ "$command_name" = "provider" ] && [ "$command_arg1" = "add" ]; then
+      echo "jcode: provider profiles are managed by Home Manager; only llm-gateway is allowed" >&2
+      exit 64
+    fi
+    if [ "$command_name" = "login" ]; then
+      case "$command_arg1" in
+        claude|openai) ;;
+        "")
+          echo "jcode: specify the allowed OAuth provider: jcode login --provider claude|openai" >&2
+          exit 64
+          ;;
+        -*)
+          if [ "$provider_arg_seen" -ne 1 ]; then
+            echo "jcode: login requires --provider claude or --provider openai" >&2
+            exit 64
+          fi
+          ;;
+        *)
+          echo "jcode: provider $command_arg1 is not allowed for login" >&2
+          exit 64
+          ;;
+      esac
+    fi
+
+    # These built-in inventory commands enumerate compiled integrations rather
+    # than the effective allowlist, so expose the wrapper contract instead.
+    if [ "$command_name" = "provider" ] && [ "$command_arg1" = "list" ]; then
+      printf '%s\n' \
+        "llm-gateway	OpenAI-compatible	internal CentralCloud LLM gateway" \
+        "claude	Anthropic/Claude	Claude Pro or Max OAuth subscription" \
+        "openai	OpenAI	ChatGPT Plus or Pro OAuth subscription"
+      exit 0
+    fi
+    if [ "$command_name" = "auth" ] && [ "$command_arg1" = "status" ]; then
+      if [[ " $* " = *" --json "* ]]; then
+        echo "jcode: auth status --json is unavailable through the managed allowlist wrapper" >&2
+        exit 64
+      fi
+      printf '%s\n' \
+        "llm-gateway	available	API key	SOPS/bao bearer via LLM_GATEWAY_API_KEY	readiness: credential present	not validated"
+      "$jcode_bin" "$@" | ${pkgs.gawk}/bin/awk '$1 == "claude" || $1 == "openai"'
+      exit "''${PIPESTATUS[0]}"
+    fi
+
+    exec "$jcode_bin" "$@"
+  '';
 in {
   sops.secrets = {
     openrouter_api_key = {
@@ -633,11 +869,52 @@ in {
       gooseUmansKimi # binary: goose-umans-kimi -> umans-kimi-k2.7 (262K ctx)
       gooseUmansFlash # binary: goose-umans-flash -> umans-flash (262K ctx)
       codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
+      jcodeGatewayWrapper # binary: jcode -> llm-gateway.svc /v1 (+ strip ambient provider keys)
       llm-pkgs.mistral-vibe # binary: vibe
       # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
     ];
 
     file = {
+      # jcode: shadow update/mise install so llm-gateway SOPS wrapper wins.
+      ".local/bin/jcode" = {
+        executable = true;
+        force = true;
+        source = "${jcodeGatewayWrapper}/bin/jcode";
+      };
+
+      # Managed OpenAI-compatible profile for the same fabric exposed internally
+      # as http://llm-gateway.svc/v1. jcode rejects plain HTTP hostnames other
+      # than localhost/private IPs, so the profile uses the public HTTPS edge.
+      ".jcode/config.toml" = {
+        force = true;
+        text = ''
+          # Managed by Home Manager (ai-tools.nix). Default traffic → llm-gateway.
+          # Only Claude/ChatGPT subscription OAuth + this fabric profile are intended.
+          [provider]
+          default_provider = "llm-gateway"
+          default_model = "auto-glm"
+          model_picker_providers = ["llm-gateway", "claude", "openai"]
+          cross_provider_failover = "manual"
+
+          # Refuse external auth imports (Cursor IDE, Gemini CLI, etc.).
+          [auth]
+          trusted_external_sources = []
+          trusted_external_source_paths = []
+
+          [providers.llm-gateway]
+          type = "openai-compatible"
+          base_url = "https://llm-gateway.centralcloud.com/v1"
+          auth = "bearer"
+          api_key_env = "LLM_GATEWAY_API_KEY"
+          default_model = "auto-glm"
+          model_catalog = true
+          requires_api_key = true
+
+          [[providers.llm-gateway.models]]
+          id = "auto-glm"
+        '';
+      };
+
       # Shadow the mise `kimi` shim so `kimi` routes through the CentralCloud
       # llm-gateway by default. ~/.local/bin is before ~/.local/share/mise/shims in
       # PATH, so this wrapper wins. Falls back to native Moonshot endpoints when

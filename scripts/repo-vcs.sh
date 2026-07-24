@@ -7,7 +7,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 remote_ssh="${DOTFILES_GIT_SSH_COMMAND:-ssh -o ControlMaster=no -o ControlPath=none -o ControlPersist=no}"
-forgejo_https_url="https://git.infra.centralcloud.com/mhugo/dotfiles.git"
+forgejo_ssh_url="ssh://git@git.infra.centralcloud.com:2222/mhugo/dotfiles.git"
 github_url="git@github.com:mikkihugo/dotfiles.git"
 push_timeout="${DOTFILES_GIT_PUSH_TIMEOUT:-300}"
 git_bin="${SE_GIT_BIN:-}"
@@ -35,21 +35,6 @@ die() {
 	exit 1
 }
 run_remote() { GIT_SSH_COMMAND="$remote_ssh" "$@"; }
-run_forgejo_https() {
-	local askpass
-	askpass="$(mktemp)"
-	trap 'rm -f -- "$askpass"' RETURN
-	cat >"$askpass" <<'ASKPASS'
-#!/usr/bin/env bash
-case "$1" in
-*Username*) printf '%s\n' mhugo ;;
-*Password*) awk '/^[[:space:]]+token:/ { print $2; exit }' "$HOME/.config/tea/config.yml" ;;
-*) exit 1 ;;
-esac
-ASKPASS
-	chmod 700 "$askpass"
-	GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 "$@"
-}
 valid_name() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid worktree name: $1"; }
 
 command_name="${1:-}"
@@ -106,9 +91,9 @@ push)
 	# first so Forgejo's post-receive mirror is already converged and cannot
 	# hold the client until the publication timeout.
 	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" main
-	run_forgejo_https timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_https_url" main
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_ssh_url" main
 	local_revision="$(git -C "$root" rev-parse main)"
-	forgejo_revision="$(run_forgejo_https timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_https_url" refs/heads/main | cut -f1)"
+	forgejo_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_ssh_url" refs/heads/main | cut -f1)"
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
 	[[ "$local_revision" == "$forgejo_revision" ]] || die "Forgejo remote readback mismatch"
 	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"
@@ -135,9 +120,9 @@ land)
 	"$root/scripts/repo-check.sh"
 	# Keep the server-side Forgejo mirror a no-op during its post-receive hook.
 	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" HEAD:main
-	run_forgejo_https timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_https_url" HEAD:main
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_ssh_url" HEAD:main
 	local_revision="$(git -C "$root" rev-parse HEAD)"
-	forgejo_revision="$(run_forgejo_https timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_https_url" refs/heads/main | cut -f1)"
+	forgejo_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_ssh_url" refs/heads/main | cut -f1)"
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
 	[[ "$local_revision" == "$forgejo_revision" ]] || die 'Forgejo remote readback mismatch'
 	[[ "$local_revision" == "$github_revision" ]] || die 'GitHub remote readback mismatch'

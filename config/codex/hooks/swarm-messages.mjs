@@ -43,6 +43,7 @@ export class McpGatewayClient {
     this.sessionId = null;
     this.nextID = 1;
     this.initialized = false;
+    this.initializePromise = null;
   }
 
   async request(payload, method = "POST") {
@@ -71,18 +72,29 @@ export class McpGatewayClient {
 
   async initialize() {
     if (this.initialized) return;
-    await this.request({
-      jsonrpc: "2.0",
-      id: this.nextID++,
-      method: "initialize",
-      params: {
-        protocolVersion: SUPPORTED_PROTOCOL,
-        capabilities: {},
-        clientInfo: { name: "repo-memory-swarm-hook", version: "1.0.0" },
-      },
-    });
-    await this.request({ jsonrpc: "2.0", method: "notifications/initialized", params: {} });
-    this.initialized = true;
+    if (!this.initializePromise) {
+      this.initializePromise = (async () => {
+        await this.request({
+          jsonrpc: "2.0",
+          id: this.nextID++,
+          method: "initialize",
+          params: {
+            protocolVersion: SUPPORTED_PROTOCOL,
+            capabilities: {},
+            clientInfo: { name: "repo-memory-swarm-hook", version: "1.0.0" },
+          },
+        });
+        await this.request({ jsonrpc: "2.0", method: "notifications/initialized", params: {} });
+        this.initialized = true;
+      })();
+    }
+    const initialization = this.initializePromise;
+    try {
+      await initialization;
+    } catch (error) {
+      if (this.initializePromise === initialization) this.initializePromise = null;
+      throw error;
+    }
   }
 
   async callRepoMemory(tool, args) {
@@ -121,6 +133,10 @@ export class RepoMemoryBus {
   async poll(workspace, consumer) {
     const result = await this.client.callRepoMemory("swarm_bus_poll", { workspace, consumer, limit: 100 });
     return (result.messages ?? []).map((item) => ({ ...item, origin: this.name }));
+  }
+
+  async subscribe(workspace, consumer) {
+    return this.client.callRepoMemory("swarm_bus_subscribe", { workspace, consumer });
   }
 
   async ack(workspace, consumer, delivery) {
@@ -240,25 +256,94 @@ function statePath(stateDir, consumer, workspace) {
 }
 
 function readState(stateDir, consumer, workspace) {
+  const path = statePath(stateDir, consumer, workspace);
+  if (!existsSync(path)) {
+    return {
+      schema: "repo-memory-hook-state/v1",
+      initialized: false,
+      availability_pending: false,
+      pending: [],
+    };
+  }
   try {
-    return JSON.parse(readFileSync(statePath(stateDir, consumer, workspace), "utf8"));
+    const parsed = JSON.parse(readFileSync(path, "utf8"));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("invalid state");
+    if (parsed.schema !== "repo-memory-hook-state/v1" || !Array.isArray(parsed.pending)) {
+      throw new Error("invalid state schema");
+    }
+    if (Object.hasOwn(parsed, "initialized") && typeof parsed.initialized !== "boolean") {
+      throw new Error("invalid initialized state");
+    }
+    if (
+      Object.hasOwn(parsed, "availability_pending") &&
+      typeof parsed.availability_pending !== "boolean"
+    ) {
+      throw new Error("invalid availability state");
+    }
+    for (const pending of parsed.pending) {
+      if (
+        !pending ||
+        typeof pending !== "object" ||
+        Array.isArray(pending) ||
+        typeof pending.bus !== "string" ||
+        pending.bus.length === 0 ||
+        typeof pending.message_id !== "string" ||
+        pending.message_id.length === 0 ||
+        (
+          pending.workspace !== undefined &&
+          (typeof pending.workspace !== "string" || pending.workspace.length === 0)
+        )
+      ) {
+        throw new Error("invalid pending acknowledgement");
+      }
+    }
+    // State written before `initialized` existed already represented a live
+    // consumer. Treat it as initialized so upgrades preserve deferred acks
+    // instead of replaying that consumer's history.
+    return {
+      ...parsed,
+      initialized: parsed.initialized ?? true,
+      availability_pending: parsed.availability_pending === true,
+    };
   } catch {
-    return { schema: "repo-memory-hook-state/v1", pending: [] };
+    return {
+      schema: "repo-memory-hook-state/v1",
+      initialized: false,
+      // A corrupt state cannot prove whether the availability post completed.
+      // Retrying is safe because the post uses a session-stable idempotency key.
+      availability_pending: true,
+      pending: [],
+    };
   }
 }
 
-function writeState(stateDir, consumer, workspace, pending) {
+function writeState(
+  stateDir,
+  consumer,
+  workspace,
+  pending,
+  initialized = true,
+  availabilityPending = false,
+) {
   mkdirSync(stateDir, { recursive: true, mode: 0o700 });
   const path = statePath(stateDir, consumer, workspace);
   const temporary = `${path}.tmp.${process.pid}`;
-  writeFileSync(temporary, `${JSON.stringify({ schema: "repo-memory-hook-state/v1", pending }, null, 2)}\n`, { mode: 0o600 });
+  writeFileSync(
+    temporary,
+    `${JSON.stringify({
+      schema: "repo-memory-hook-state/v1",
+      initialized,
+      availability_pending: availabilityPending,
+      pending,
+    }, null, 2)}\n`,
+    { mode: 0o600 },
+  );
   chmodSync(temporary, 0o600);
   renameSync(temporary, path);
 }
 
 function consumerFor(client, payload, env) {
-  const explicit = env.REPO_MEMORY_SWARM_CONSUMER?.trim();
-  if (explicit) return explicit;
+  const explicitPrefix = env.REPO_MEMORY_SWARM_CONSUMER?.trim();
   const inheritedOwner = env.SE_WORKSPACE_OWNER?.trim();
   const sessionID =
     payload.session_id ??
@@ -268,13 +353,13 @@ function consumerFor(client, payload, env) {
     payload.conversation_id ??
     payload.conversationId ??
     (client === "codex" || client === "code" ? env.CODEX_THREAD_ID : undefined) ??
-    (inheritedOwner?.includes(":") ? inheritedOwner.slice(inheritedOwner.indexOf(":") + 1) : inheritedOwner);
+    (inheritedOwner?.includes(":") ? inheritedOwner.slice(inheritedOwner.indexOf(":") + 1) : undefined);
   const normalized = String(sessionID ?? "").replace(/[^A-Za-z0-9]+/g, "");
   if (!normalized) {
     throw new Error(`missing session-unique repo-memory consumer identity for ${client}`);
   }
   const digest = createHash("sha256").update(normalized).digest("hex").slice(0, 16);
-  return `${safePart(client)}-${digest}`;
+  return `${safePart(explicitPrefix || client)}-${digest}`;
 }
 
 export async function runHook({
@@ -291,26 +376,110 @@ export async function runHook({
 }) {
   const consumer = consumerFor(client, payload, env);
   const byName = new Map(buses.map((bus) => [bus.name, bus]));
-  const prior = readState(stateDir, consumer, workspace).pending ?? [];
+  const state = readState(stateDir, consumer, workspace);
+  const prior = state.pending ?? [];
   const stillPending = [];
   const errors = [];
+  const blockedAckScopes = new Set();
+  const sessionStart = eventName === "SessionStart" || eventName === "sessionStart";
 
   for (const pending of prior) {
     const bus = byName.get(pending.bus);
+    const pendingWorkspace = pending.workspace ?? workspace;
+    const ackScope = `${pending.bus}\u0000${pendingWorkspace}`;
+    if (blockedAckScopes.has(ackScope)) {
+      stillPending.push(pending);
+      continue;
+    }
     if (!bus) {
       stillPending.push(pending);
       continue;
     }
     try {
-      await bus.ack(pending.workspace ?? workspace, consumer, { id: pending.message_id });
+      await bus.ack(pendingWorkspace, consumer, { id: pending.message_id });
     } catch (error) {
       stillPending.push(pending);
+      blockedAckScopes.add(ackScope);
       errors.push({ bus: bus.name, operation: "ack", error: String(error) });
     }
   }
 
-  const deliveries = [];
   const pollWorkspaces = [...new Set([workspace, ...additionalWorkspaces])];
+
+  const postAvailability = async (required) => {
+    if (!required) return true;
+    const cwd = payload.cwd ?? process.cwd();
+    const activeWorktree = worktree ?? cwd;
+    const message = {
+      sender: consumer,
+      recipient: "all",
+      type: "available",
+      body: `${client} session is available from ${cwd}. Send orders to ${consumer}.`,
+      idempotency_key: `${consumer}:available`,
+      metadata: {
+        worktree: activeWorktree,
+        lane: basename(activeWorktree),
+      },
+    };
+    const posted = await Promise.all(
+      buses.map(async (bus) => {
+        try {
+          await bus.post(workspace, message);
+          return true;
+        } catch (error) {
+          errors.push({ bus: bus.name, operation: "post", error: String(error) });
+          return false;
+        }
+      }),
+    );
+    return posted.every(Boolean);
+  };
+
+  if (state.initialized !== true) {
+    const scopesComplete = await Promise.all(
+      pollWorkspaces.flatMap((pollWorkspace) => buses.map(async (bus) => {
+        try {
+          await bus.subscribe(pollWorkspace, consumer);
+          return true;
+        } catch (error) {
+          errors.push({
+            bus: bus.name,
+            workspace: pollWorkspace,
+            operation: "subscribe",
+            error: String(error),
+          });
+          return false;
+        }
+      })),
+    );
+
+    const availabilityRequired = sessionStart || state.availability_pending === true;
+    const subscriptionsComplete = stillPending.length === 0 && scopesComplete.every(Boolean);
+    if (!subscriptionsComplete) {
+      writeState(
+        stateDir,
+        consumer,
+        workspace,
+        stillPending,
+        false,
+        availabilityRequired,
+      );
+      return { output: null, errors, deliveries: [] };
+    }
+
+    const availabilityPosted = await postAvailability(availabilityRequired);
+    writeState(
+      stateDir,
+      consumer,
+      workspace,
+      stillPending,
+      availabilityPosted,
+      availabilityRequired && !availabilityPosted,
+    );
+    return { output: null, errors, deliveries: [] };
+  }
+
+  const deliveries = [];
   await Promise.all(
     pollWorkspaces.flatMap((pollWorkspace) => buses.map(async (bus) => {
       try {
@@ -333,30 +502,8 @@ export async function runHook({
     })),
   );
 
-  if (eventName === "SessionStart" || eventName === "sessionStart") {
-    const cwd = payload.cwd ?? process.cwd();
-    const activeWorktree = worktree ?? cwd;
-    const message = {
-      sender: consumer,
-      recipient: "all",
-      type: "available",
-      body: `${client} session is available from ${cwd}. Send orders to ${consumer}.`,
-      idempotency_key: `${consumer}:available`,
-      metadata: {
-        worktree: activeWorktree,
-        lane: basename(activeWorktree),
-      },
-    };
-    await Promise.all(
-      buses.map(async (bus) => {
-        try {
-          await bus.post(workspace, message);
-        } catch (error) {
-          errors.push({ bus: bus.name, operation: "post", error: String(error) });
-        }
-      }),
-    );
-  }
+  const availabilityRequired = sessionStart || state.availability_pending === true;
+  const availabilityPosted = await postAvailability(availabilityRequired);
 
   const publicDeliveries = deliveries.map(({ _bus, _workspace, ...item }) => item);
   const context = publicDeliveries.length ? createContext(publicDeliveries) : "";
@@ -370,7 +517,14 @@ export async function runHook({
         workspace: item._workspace,
         message_id: item.id,
       }));
-  writeState(stateDir, consumer, workspace, [...stillPending, ...newlyPending]);
+  writeState(
+    stateDir,
+    consumer,
+    workspace,
+    [...stillPending, ...newlyPending],
+    true,
+    availabilityRequired && !availabilityPosted,
+  );
   return { output, errors, deliveries: publicDeliveries };
 }
 

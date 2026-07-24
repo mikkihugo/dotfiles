@@ -1,0 +1,4 @@
+interface:
+  display_name: "External Harness Orchestration"
+  short_description: "Coordinate external Kimi/Cursor workers"
+  default_prompt: "Use $external-harness-orchestration to delegate bounded external workers while Codex remains sole publisher."

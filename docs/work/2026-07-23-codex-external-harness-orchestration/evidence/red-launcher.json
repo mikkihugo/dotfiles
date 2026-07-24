@@ -1,0 +1,8 @@
+{
+  "result_id": "external-run-red-result",
+  "status": "failed",
+  "observed_at": "2026-07-23T23:40:00Z",
+  "command": "node --test scripts/test-codex-external-run.mjs",
+  "exit_code": 1,
+  "summary": "All 14 launcher contracts failed before implementation: the launcher module config/codex/bin/codex-external-run.mjs did not exist (MODULE_NOT_FOUND). Raw log: evidence/red-launcher.log."
+}

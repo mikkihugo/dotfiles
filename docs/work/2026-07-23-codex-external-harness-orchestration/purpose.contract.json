@@ -1,0 +1,167 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-07-23-codex-external-harness-orchestration-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-07-23-codex-external-harness-orchestration"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-07-23-codex-external-harness-orchestration",
+      "revision": "run-provenance-launcher-and-hard-ceilings"
+    },
+    "objective": {
+      "id": "2026-07-23-codex-external-harness-orchestration-objective",
+      "statement": "Keep Codex root as coordinator, verifier, and sole publisher for delegated multi-agent work via a Codex-only user skill until cross-provider child-thread history transfer of Responses encrypted_content is verified safe.",
+      "measure": "Codex skill external-harness-orchestration under config/codex/skills plus minimal AGENTS load trigger, Home Manager exact mapping to .codex/skills/external-harness-orchestration and .codex/bin/codex-external-run, the codex-external-run provenance launcher with fail-closed run records and mechanically enforced Kimi hard ceilings (at most 10 per coordinator/swarm including the lead, at most 30 globally), and Node contract tests wired into scripts/repo-check.sh prove frontmatter, SUBAGENT-STOP, trigger/near-miss/alternate wording, Kimi/Cursor policy, launcher provenance, and no singularity-engine-forward mapping."
+    },
+    "need": {
+      "id": "2026-07-23-codex-external-harness-orchestration-need",
+      "statement": "Codex Responses always requests reasoning.encrypted_content and chat wire_api is removed, so inherited Codex child threads are not portable across providers; operators need a fail-closed Codex-only skill for external harness delegation until transfer is proven safe.",
+      "stakeholders": [
+        "Codex root coordinator sessions",
+        "Bounded Kimi CLI and Cursor worker sessions",
+        "Operators coordinating multi-agent work from this dotfiles tree"
+      ],
+      "baseline": "Prior packet placed a Codex-scoped runbook under config/codex/runbooks with a broad AGENTS section; correction replaces that with a Codex user skill, minimal AGENTS trigger, and Home Manager install of only that skill.",
+      "consequence_of_no_action": "Broad AGENTS policy and runbook placement can be treated as general instruction; Codex root may spawn Codex subagents or translate encrypted_content across providers.",
+      "assumptions": [
+        "Operator acceptance of this bounded Codex-only skill correction authorizes the PurposeContract and WorkSpec for this exact scope."
+      ],
+      "alternatives_considered": [
+        "Keep the orchestration runbook under config/codex/runbooks",
+        "Mirror .agents/skills or .system skill trees via Home Manager",
+        "Map singularity-engine-forward through Home Manager",
+        "Continue using Codex spawn_agent for delegated implementation",
+        "Encode a permanent fixed worker concurrency ceiling"
+      ]
+    }
+  },
+  "purpose": "Keep Codex root as coordinator, verifier, and sole publisher for delegated multi-agent work via a Codex-only user skill until cross-provider child-thread history transfer of Responses encrypted_content is verified safe.",
+  "consumer": "Codex root coordinator sessions, bounded Kimi CLI and Cursor workers, and operators coordinating external harness work from this dotfiles tree.",
+  "contract": "Until a fresh regression proves Codex can disable encrypted reasoning state for the worker path or llm-gateway supports exact history transfer without loss (inherited child turns and tool calls), Codex root MUST NOT use Codex subagents for delegated work; it loads the external-harness-orchestration skill and delegates bounded fresh sessions to Kimi CLI or Cursor with ownership packets, no worker VCS/publication authority, coordinator independent verification, and repo-memory continuation. Skill MUST include main-agent-only <SUBAGENT-STOP> telling a bounded subagent to stop and return to Codex root. Concurrency MUST be resource-budgeted and provider-aware (verify host RAM/headroom and provider capacity; fan out only with at least two independent ownership lanes and resources; cap each batch to the smaller of independent lanes, verified provider capacity, conservative host-memory budget, and the operator hard ceilings) inside Mikael's hard ceilings: at most 10 total Kimi agents per Kimi coordinator/swarm including the lead and at most 30 Kimi agents globally. Every external worker launch MUST go through the Codex-only launcher config/codex/bin/codex-external-run.mjs installed only under ~/.codex/bin, which writes a crash-recoverable per-run provenance record under $XDG_STATE_HOME/codex/external-runs (fallback ~/.local/state/codex/external-runs) with 0700/0600 modes, requires explicit root/parent/task identity, reserves the declared Kimi agent budget including the lead, rejects per-coordinator budgets above 10 and global reservations above 30, reconciles stale dead-PID records, rejects duplicate run records and second writers on one workspace, serializes check-and-reserve under an advisory lock, injects ancestry/budget via environment without logging the prompt, and never persists prompt content, command arguments, environment, credentials, or tool output. Canonical skill MUST live at config/codex/skills/external-harness-orchestration with agents/openai.yaml. Home Manager MUST install only that skill at .codex/skills/external-harness-orchestration. AGENTS handwritten section MUST be a minimal load trigger only. General orchestration runbook MUST be absent. scripts/repo-check.sh MUST invoke scripts/test-codex-external-harness-skill.mjs. JCode remains evaluation-only.",
+  "failure_boundary": "Do not edit the managed Purpose block in config/codex/AGENTS.md, do not touch the dirty canonical ~/.dotfiles checkout, do not commit/land/push/publish/activate Home Manager, do not edit secrets, do not touch live ~/.codex/skills/singularity-engine-forward, and do not grant workers VCS or publication authority. If encrypted_content would be translated, stripped, or sent to an incompatible upstream, fail closed or start an explicitly fresh portable session containing only transferable instructions/transcript. Do not treat docs/runbooks or config/codex/runbooks as the canonical location. The operator hard ceilings (at most 10 Kimi agents per coordinator/swarm including the lead; at most 30 Kimi agents globally) are hard ceilings, not targets; resource, provider, and independent-lane checks must select a lower live count. Do not install the launcher under ~/.agents or global PATH, and do not persist worker prompts, arguments, environment, credentials, or tool output in run records. Do not add JCode as a worker path.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "scripts/test-codex-external-harness-skill.mjs asserts skill frontmatter, SUBAGENT-STOP, AGENTS trigger, Home Manager exact mappings, trigger/near-miss/alternate phrasing, Kimi/Cursor policy, operator hard ceilings with resource-based lower limits, launcher provenance contract, and absent runbook; scripts/test-codex-external-run.mjs proves launcher behavior with fake child executables and temp XDG state; scripts/repo-check.sh invokes both tests.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "The durable Codex-only skill and minimal AGENTS trigger enforce external-harness orchestration without Codex subagent delegation or unsafe encrypted_content transfer.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Run both contract tests; missing skill, missing SUBAGENT-STOP, weak near-miss frontmatter, wrong Kimi/Cursor/concurrency policy, missing or weakened hard ceilings, missing launcher provenance fields, prompt/argv persistence in run records, Home Manager over-mapping, or residual runbook falsifies the claim.",
+      "command": "node --test scripts/test-codex-external-harness-skill.mjs scripts/test-codex-external-run.mjs"
+    }
+  },
+  "non_goals": [
+    "Implement llm-gateway history transfer",
+    "Disable encrypted reasoning inside Codex vendor code",
+    "Activate Home Manager or publish this worktree",
+    "Grant workers VCS/publication authority",
+    "Edit secrets or the dirty canonical ~/.dotfiles checkout",
+    "Edit the managed Purpose block in config/codex/AGENTS.md",
+    "Touch live ~/.codex/skills/singularity-engine-forward or judge its retirement",
+    "Mirror .agents/skills or .system skill trees",
+    "Add JCode as a worker path",
+    "Install the launcher under ~/.agents or on global PATH",
+    "Use repo-memory as the transient PID/run registry"
+  ],
+  "invariants": [
+    "Codex root remains sole publisher for this orchestration path",
+    "Workers own only declared file packets and have no VCS or publication authority",
+    "Provider-bound Responses encrypted_content is not assumed portable; opaque same-upstream replay is the only conditional passthrough",
+    "Canonical guidance is the Codex user skill under config/codex/skills/external-harness-orchestration",
+    "Home Manager installs only that specific user skill",
+    "No credentials are exposed in instructions, skills, or tests",
+    "Concurrency stays resource-budgeted and provider-aware inside the operator hard ceilings (at most 10 Kimi agents per coordinator/swarm including the lead, at most 30 Kimi agents globally)",
+    "Main-agent-only SUBAGENT-STOP returns bounded subagents to Codex root",
+    "Every external launch anchors to a fail-closed provenance record; prompt content, arguments, environment, credentials, and tool output are never persisted",
+    "repo-memory stores durable outcomes/decisions only; it is not the transient run registry"
+  ],
+  "assumptions": [
+    {
+      "statement": "Local Codex vendor source at vendors/agents/coding-clients/codex/codex-rs removes wire_api=chat and always requests reasoning.encrypted_content.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "model-provider-info/src/lib.rs no longer rejects chat wire_api, or core/src/client.rs no longer always includes reasoning.encrypted_content."
+    },
+    {
+      "statement": "Cross-provider Codex child-thread history transfer is not yet verified safe for this worker path.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "A fresh regression proves Codex can disable encrypted reasoning for the worker path, or llm-gateway supports exact history transfer without loss including inherited child turns and tool calls."
+    },
+    {
+      "statement": "This operator-directed correction is accepting authority for PurposeContract admission and WorkSpec handover for the declared ownership scope.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "The operator retracts acceptance or narrows scope before implementation authorization."
+    },
+    {
+      "statement": "JCode audit found no native sandbox/path/publish boundary, so JCode remains evaluation-only for this path.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "A fresh JCode audit proves native sandbox, path, and publish boundaries sufficient for owned worker packets."
+    },
+    {
+      "statement": "PID-liveness reconciliation (kill(pid, 0)) is safe enough for this Linux host; PID reuse could theoretically misclassify a stale record, so coordinators still verify live state before fan-out.",
+      "status": "verified",
+      "doubt": 1,
+      "falsifier": "A demonstrated PID-reuse misclassification on this host that lets a dead run keep reserving budget; then reconciliation must also compare /proc start times."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "medium",
+    "blast_radius": "local",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "client",
+    "tool"
+  ],
+  "plane_constraints": [
+    "Home Manager / dotfiles own durable Codex AGENTS and the Codex-only user skill; llm-gateway and Codex vendor remain unchanged in this slice."
+  ],
+  "admission": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-external-worker"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-07-23T23:51:27.691Z",
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "a02b1336860d2f76f8d9bc5184b81d26e31fd624d94229ea902a3b7bbd1f8c13"
+    },
+    "policy": {
+      "id": "operator-directed-purpose-admission/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "aa662f62e9221952449e07fb77788c178bed958f92f4526805b9ae062d52b6ab"
+      }
+    },
+    "validators": [
+      "purpose-contract-v2.schema.json",
+      "subject-digest",
+      "operator-authority"
+    ],
+    "evidence_refs": [
+      "user-request:codex-external-harness-orchestration-review-correction",
+      "vendor-source:codex-rs/model-provider-info/wire_api-chat-removed",
+      "vendor-source:codex-rs/core/client-encrypted_content"
+    ]
+  }
+}

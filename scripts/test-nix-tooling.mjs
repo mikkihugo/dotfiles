@@ -180,6 +180,8 @@ test("just check delegates to the single repository check implementation", async
     "scripts/test-codex-hosted-search.mjs",
     "scripts/test-detect-secrets-work-packet-filter.mjs",
     "scripts/test-jcode-lane-settle-retirement.mjs",
+    "scripts/test-codex-external-harness-skill.mjs",
+    "scripts/test-codex-external-run.mjs",
     "scripts/test-swarm-messages.mjs",
     "scripts/test-swarm-hook-config.mjs",
     "scripts/test-nix-tooling.mjs",

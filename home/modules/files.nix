@@ -153,6 +153,24 @@
     # Agent skills are installed from the Engine-owned Purpose Tool MCP/plugin via
     # install_skills. Dotfiles keeps only archived legacy copies; Home Manager
     # must not republish them as live ~/.agents, ~/.claude, or ~/.copilot skills.
+    # One Codex-only user skill is managed here; do not mirror .agents/skills,
+    # .system, or unrelated skill trees.
+    # Codex-only external-harness launcher with run provenance; installed only
+    # under ~/.codex/bin (never ~/.agents or global PATH). See
+    # config/codex/skills/external-harness-orchestration.
+    ".codex/bin/codex-external-run" = {
+      source = pkgs.replaceVars ../../config/codex/bin/codex-external-run.mjs {
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
+    ".codex/skills/external-harness-orchestration" = {
+      source = ../../config/codex/skills/external-harness-orchestration;
+      recursive = true;
+      force = true;
+    };
 
     # SSH client config: host aliases for all servers (mail.hugo.dk, aidev, llm-gateway).
     # hetzner_id_ed25519 is rendered from SOPS by the renderHetznerSshKey activation hook.

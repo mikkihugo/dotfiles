@@ -1,0 +1,455 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-07-23-codex-external-harness-orchestration-evidence",
+  "workspec_id": "2026-07-23-codex-external-harness-orchestration-work",
+  "purpose_contract_id": "2026-07-23-codex-external-harness-orchestration-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "a02b1336860d2f76f8d9bc5184b81d26e31fd624d94229ea902a3b7bbd1f8c13"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+  },
+  "workflow_run_id": "kimi-2026-07-23-external-run-provenance-01",
+  "execution": {
+    "execution_id": "2026-07-23-external-run-provenance-execution",
+    "tool": {
+      "id": "kimi-code-cli-plus-dotfiles-repo-check",
+      "version": "2026-07-23"
+    },
+    "result": {
+      "result_id": "external-run-provenance-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "3226f44aaf8a1059b31549984784770ece1e26e03f5316398e12cf27f8015ce5"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "external-run-red-proof",
+        "uri": "evidence/red-launcher.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "93a64bcf06e4d74c7989937b6c82e40ce7395521088d30230decd0dd3ae0faa3"
+        }
+      },
+      {
+        "artifact_id": "external-run-red-log",
+        "uri": "evidence/red-launcher.log",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f834801534a7fb5eac3155848e6d6e38ce7de2cd91e090f27ca2742b00b4edd9"
+        }
+      },
+      {
+        "artifact_id": "external-harness-skill-red-proof",
+        "uri": "evidence/red-skill.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f904050c414b50a25cc9cc252d9cc2442bb19f94e1f9f2539e0140f0272be851"
+        }
+      },
+      {
+        "artifact_id": "external-harness-skill-red-log",
+        "uri": "evidence/red-skill.log",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "685b5314a15579c31fc3cd0c355c6872755cac061d42695bf2a5924a3ef4d135"
+        }
+      },
+      {
+        "artifact_id": "external-run-green-proof",
+        "uri": "evidence/green-launcher.log",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "3226f44aaf8a1059b31549984784770ece1e26e03f5316398e12cf27f8015ce5"
+        }
+      },
+      {
+        "artifact_id": "external-harness-skill-green-proof",
+        "uri": "evidence/green-skill.log",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "789bd917288cd63c32b566a88bc6165d1b91c6612f2073afd7f697337a4f2495"
+        }
+      },
+      {
+        "artifact_id": "repo-check-final",
+        "uri": "evidence/repo-check.log",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "786c8cb78de0ae86c6ce222a61f9838544cf68385e1348d9b8bfc1b0570ae4bd"
+        }
+      },
+      {
+        "artifact_id": "repo-check-baseline",
+        "uri": "evidence/repo-check-baseline.log",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f6105fd4ec028c380a80c7d884ece7a1bc5468ea6707feecdcf236361528e7f2"
+        }
+      },
+      {
+        "artifact_id": "nix-build-activation",
+        "uri": "evidence/nix-build.log",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      {
+        "artifact_id": "external-run-changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "0f6cbe08e656dd5185de16c3e5fb60b0b9a1a9898f06f24ff280a7cf219b149b"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-07-23-external-run-provenance-trace",
+    "started_at": "2026-07-23T23:31:32Z",
+    "completed_at": "2026-07-23T23:57:56.652Z"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Skill trigger, SUBAGENT-STOP, near-miss frontmatter halves, and alternate phrasing remain green after the provenance update (retained contracts; RED was captured in the prior session).",
+      "result_id": "external-run-provenance-result",
+      "artifact_ids": [
+        "external-harness-skill-green-proof"
+      ],
+      "output_uri": "evidence/green-skill.log",
+      "green_observed_at": "2026-07-23T23:57:56.652Z"
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "description": "Exact Kimi prompt-mode model/flags and the --prompt without --auto/--yolo rule remain asserted and are now also launcher-enforced (retained contract).",
+      "result_id": "external-run-provenance-result",
+      "artifact_ids": [
+        "external-harness-skill-green-proof",
+        "external-run-green-proof"
+      ],
+      "output_uri": "evidence/green-skill.log",
+      "green_observed_at": "2026-07-23T23:57:56.652Z"
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R3",
+      "status": "passed",
+      "description": "Cursor preferred non-fast models remain asserted (retained contract).",
+      "result_id": "external-run-provenance-result",
+      "artifact_ids": [
+        "external-harness-skill-green-proof"
+      ],
+      "output_uri": "evidence/green-skill.log",
+      "green_observed_at": "2026-07-23T23:57:56.652Z"
+    },
+    {
+      "id": "T4",
+      "requirement_id": "R4",
+      "status": "passed",
+      "description": "encrypted_content fail-closed/fresh-session policy remains asserted (retained contract).",
+      "result_id": "external-run-provenance-result",
+      "artifact_ids": [
+        "external-harness-skill-green-proof"
+      ],
+      "output_uri": "evidence/green-skill.log",
+      "green_observed_at": "2026-07-23T23:57:56.652Z"
+    },
+    {
+      "id": "T5",
+      "requirement_id": "R5",
+      "status": "passed",
+      "description": "Operator hard ceilings (at most 10 Kimi agents per coordinator/swarm including the lead, at most 30 globally) replace the obsolete no-numeric-ceiling rule, with resource-based lower limits retained.",
+      "result_id": "external-run-provenance-result",
+      "artifact_ids": [
+        "external-harness-skill-red-proof",
+        "external-harness-skill-red-log",
+        "external-harness-skill-green-proof"
+      ],
+      "output_uri": "evidence/green-skill.log",
+      "green_observed_at": "2026-07-23T23:57:56.652Z",
+      "red_proof": {
+        "result_id": "external-harness-skill-red-result",
+        "artifact_id": "external-harness-skill-red-proof",
+        "output_uri": "evidence/red-skill.json",
+        "observed_at": "2026-07-23T23:40:00Z"
+      }
+    },
+    {
+      "id": "T6",
+      "requirement_id": "R6",
+      "status": "passed",
+      "description": "Skill placement, Home Manager mappings (skill plus launcher), absent runbook, and repo-check wiring for both contract tests are green; nix build of the activation package exits 0.",
+      "result_id": "external-run-provenance-result",
+      "artifact_ids": [
+        "external-harness-skill-red-proof",
+        "external-harness-skill-green-proof",
+        "nix-build-activation"
+      ],
+      "output_uri": "evidence/nix-build.log",
+      "green_observed_at": "2026-07-23T23:57:56.652Z",
+      "red_proof": {
+        "result_id": "external-harness-skill-red-result",
+        "artifact_id": "external-harness-skill-red-proof",
+        "output_uri": "evidence/red-skill.json",
+        "observed_at": "2026-07-23T23:40:00Z"
+      }
+    },
+    {
+      "id": "T7",
+      "requirement_id": "R7",
+      "status": "passed",
+      "description": "14 launcher behavior contracts prove provenance fields, no prompt/argv leakage, modes 0700/0600, exit/signal recording, budget >10 and global >30 rejection, stale reconciliation, duplicate run-id rejection, workspace exclusivity, nested ancestry, and concurrent reservation serialization with fake child executables and temp XDG state.",
+      "result_id": "external-run-provenance-result",
+      "artifact_ids": [
+        "external-run-red-proof",
+        "external-run-red-log",
+        "external-run-green-proof"
+      ],
+      "output_uri": "evidence/green-launcher.log",
+      "green_observed_at": "2026-07-23T23:57:56.652Z",
+      "red_proof": {
+        "result_id": "external-run-red-result",
+        "artifact_id": "external-run-red-proof",
+        "output_uri": "evidence/red-launcher.json",
+        "observed_at": "2026-07-23T23:40:00Z"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality-focused-tests",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+      },
+      "artifact_ids": [
+        "external-run-green-proof",
+        "external-harness-skill-green-proof"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "kimi-code-external-worker"
+      },
+      "observed_at": "2026-07-23T23:57:56.652Z",
+      "rationale": "node --test scripts/test-codex-external-run.mjs exits 0 (14/14) and node --test scripts/test-codex-external-harness-skill.mjs exits 0; both failed first (RED) for the missing launcher and missing ceiling/provenance assertions."
+    },
+    {
+      "gate_id": "quality-nix-build",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+      },
+      "artifact_ids": [
+        "nix-build-activation"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "kimi-code-external-worker"
+      },
+      "observed_at": "2026-07-23T23:57:56.652Z",
+      "rationale": "nix build --no-link path:.#homeConfigurations.$(scripts/current-home-profile).activationPackage exits 0 with the new .codex/bin/codex-external-run mapping."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "external-run-changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "0f6cbe08e656dd5185de16c3e5fb60b0b9a1a9898f06f24ff280a7cf219b149b"
+      },
+      "files": [
+        "config/codex/AGENTS.md",
+        "config/codex/bin/codex-external-run.mjs",
+        "config/codex/skills/external-harness-orchestration/SKILL.md",
+        "config/codex/skills/external-harness-orchestration/agents/openai.yaml",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/README.md",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/current-spec.snapshot.json",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/green-launcher.log",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/green-skill.log",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/nix-build.log",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/red-launcher.json",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/red-launcher.log",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/red-skill.json",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/red-skill.log",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/repo-check-baseline.log",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/repo-check.log",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/purpose.contract.json",
+        "docs/work/2026-07-23-codex-external-harness-orchestration/work.spec.json",
+        "home/modules/files.nix",
+        "scripts/repo-check.sh",
+        "scripts/test-codex-external-harness-skill.mjs",
+        "scripts/test-codex-external-run.mjs",
+        "scripts/test-nix-tooling.mjs"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "RED: launcher tests failed with MODULE_NOT_FOUND and the four new/updated skill contracts failed before implementation. GREEN: both contract suites exit 0; the activation package builds; run records never persist prompt content or arguments.",
+    "output_uri": "evidence/green-launcher.log"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "be2fd9ebff8fc6e9e39a8c6cf5ae55d966d67b5c51208e2a5ebf589d7d1e813f"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "d001ceff3b47433cc3bd3a8779ee829376f785a311fae0cd71fe92dde515f04b"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "52262a46b9dc203efffedca9c8c38f645f4184cf4f3ca192f61696e09c84554d"
+    },
+    "witness_artifact_id": "external-run-green-proof"
+  },
+  "reviews": [],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B-R1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "external-harness-skill-green-proof",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+      },
+      "observed_at": "2026-07-23T23:57:56.652Z",
+      "rationale": "The contract test rejects Codex-subagent delegation wording and requires SUBAGENT-STOP plus the minimal AGENTS trigger; the suite is green."
+    },
+    {
+      "breaker_id": "B-R2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "external-run-green-proof",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+      },
+      "observed_at": "2026-07-23T23:57:56.652Z",
+      "rationale": "The launcher contract suite rejects `kimi --prompt` combined with `--auto`/`--yolo` before spawn; the skill contract test pins the exact proven command."
+    },
+    {
+      "breaker_id": "B-R3",
+      "requirement_id": "R3",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "external-harness-skill-green-proof",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+      },
+      "observed_at": "2026-07-23T23:57:56.652Z",
+      "rationale": "The contract test rejects *-fast Cursor model preferences; the suite is green."
+    },
+    {
+      "breaker_id": "B-R4",
+      "requirement_id": "R4",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "external-harness-skill-green-proof",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+      },
+      "observed_at": "2026-07-23T23:57:56.652Z",
+      "rationale": "The contract test requires fail-closed/fresh-session encrypted_content policy and rejects UI-modes-as-protocol-fix wording; the suite is green."
+    },
+    {
+      "breaker_id": "B-R5",
+      "requirement_id": "R5",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "external-harness-skill-red-proof",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+      },
+      "observed_at": "2026-07-23T23:57:56.652Z",
+      "rationale": "The updated ceiling contract test failed while the skill still carried the obsolete no-numeric-ceiling rule; it passed after the hard-ceiling wording landed."
+    },
+    {
+      "breaker_id": "B-R6",
+      "requirement_id": "R6",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "external-harness-skill-red-proof",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+      },
+      "observed_at": "2026-07-23T23:57:56.652Z",
+      "rationale": "The Home Manager launcher mapping and dual contract-test citation tests failed before the wiring landed; both are green and the activation package builds."
+    },
+    {
+      "breaker_id": "B-R7",
+      "requirement_id": "R7",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "external-run-red-proof",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+      },
+      "observed_at": "2026-07-23T23:57:56.652Z",
+      "rationale": "All 14 launcher contracts failed with MODULE_NOT_FOUND before the launcher existed; budget, global-ceiling, duplicate-run-id, workspace, and prompt-leak rejections are now proven green."
+    }
+  ]
+}

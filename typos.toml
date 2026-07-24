@@ -22,3 +22,6 @@ nd = "nd"
 # "ue" is an EZA_COLORS key (user-execute), not a misspelling of "use"/"due".
 # See config/rust-tools.sh.
 ue = "ue"
+# "ba" is a hex hash fragment appearing in Purpose Tool instruction block
+# hashes in config/codex/AGENTS.md, not a misspelling of "by"/"be".
+ba = "ba"

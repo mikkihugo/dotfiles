@@ -6,8 +6,10 @@ import {
   realpathSync,
   readFileSync,
   renameSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -136,6 +138,38 @@ export class RepoMemoryBus {
   async close() { await this.client.close(); }
 }
 
+function canonicalJjRoot(worktree) {
+  const repoMarker = join(worktree, ".jj", "repo");
+  if (!existsSync(repoMarker)) return null;
+  try {
+    const marker = statSync(repoMarker);
+    const repo = marker.isDirectory()
+      ? realpathSync(repoMarker)
+      : realpathSync(resolve(dirname(repoMarker), readFileSync(repoMarker, "utf8").trim()));
+    if (basename(repo) !== "repo" || basename(dirname(repo)) !== ".jj") return null;
+    return dirname(dirname(repo));
+  } catch {
+    return null;
+  }
+}
+
+function canonicalGitRoot(worktree) {
+  const gitMarker = join(worktree, ".git");
+  if (!existsSync(gitMarker)) return null;
+  try {
+    if (statSync(gitMarker).isDirectory()) return realpathSync(worktree);
+    const match = readFileSync(gitMarker, "utf8").trim().match(/^gitdir:\s*(.+)$/i);
+    if (!match) return null;
+    const gitDir = realpathSync(resolve(worktree, match[1]));
+    const commonDirMarker = join(gitDir, "commondir");
+    if (!existsSync(commonDirMarker)) return null;
+    const commonDir = realpathSync(resolve(gitDir, readFileSync(commonDirMarker, "utf8").trim()));
+    return basename(commonDir) === ".git" ? dirname(commonDir) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function selectWorkspace(cwd, env = process.env) {
   const explicit = env.REPO_MEMORY_SWARM_WORKSPACE?.trim();
   if (explicit) {
@@ -150,8 +184,17 @@ export function selectWorkspace(cwd, env = process.env) {
   }
 
   for (let candidate = resolvedCwd; ; candidate = dirname(candidate)) {
-    if (existsSync(join(candidate, ".jj")) || existsSync(join(candidate, ".git"))) {
-      return { identity: basename(candidate), worktree: candidate };
+    if (existsSync(join(candidate, ".jj"))) {
+      return {
+        identity: basename(canonicalJjRoot(candidate) ?? candidate),
+        worktree: candidate,
+      };
+    }
+    if (existsSync(join(candidate, ".git"))) {
+      return {
+        identity: basename(canonicalGitRoot(candidate) ?? candidate),
+        worktree: candidate,
+      };
     }
     const parent = dirname(candidate);
     if (parent === candidate) return null;
@@ -192,42 +235,63 @@ export function renderClientOutput(client, eventName, context, payload) {
   return null;
 }
 
-function statePath(stateDir, client, workspace) {
-  return join(stateDir, `${safePart(client)}--${safePart(workspace)}.json`);
+function statePath(stateDir, consumer, workspace) {
+  return join(stateDir, `${safePart(consumer)}--${safePart(workspace)}.json`);
 }
 
-function readState(stateDir, client, workspace) {
+function readState(stateDir, consumer, workspace) {
   try {
-    return JSON.parse(readFileSync(statePath(stateDir, client, workspace), "utf8"));
+    return JSON.parse(readFileSync(statePath(stateDir, consumer, workspace), "utf8"));
   } catch {
     return { schema: "repo-memory-hook-state/v1", pending: [] };
   }
 }
 
-function writeState(stateDir, client, workspace, pending) {
+function writeState(stateDir, consumer, workspace, pending) {
   mkdirSync(stateDir, { recursive: true, mode: 0o700 });
-  const path = statePath(stateDir, client, workspace);
+  const path = statePath(stateDir, consumer, workspace);
   const temporary = `${path}.tmp.${process.pid}`;
   writeFileSync(temporary, `${JSON.stringify({ schema: "repo-memory-hook-state/v1", pending }, null, 2)}\n`, { mode: 0o600 });
   chmodSync(temporary, 0o600);
   renameSync(temporary, path);
 }
 
-const consumerFor = (client, env) => env.REPO_MEMORY_SWARM_CONSUMER || (client === "codex" ? "root" : client);
+function consumerFor(client, payload, env) {
+  const explicit = env.REPO_MEMORY_SWARM_CONSUMER?.trim();
+  if (explicit) return explicit;
+  const inheritedOwner = env.SE_WORKSPACE_OWNER?.trim();
+  const sessionID =
+    payload.session_id ??
+    payload.sessionId ??
+    payload.thread_id ??
+    payload.threadId ??
+    payload.conversation_id ??
+    payload.conversationId ??
+    (client === "codex" || client === "code" ? env.CODEX_THREAD_ID : undefined) ??
+    (inheritedOwner?.includes(":") ? inheritedOwner.slice(inheritedOwner.indexOf(":") + 1) : inheritedOwner);
+  const normalized = String(sessionID ?? "").replace(/[^A-Za-z0-9]+/g, "");
+  if (!normalized) {
+    throw new Error(`missing session-unique repo-memory consumer identity for ${client}`);
+  }
+  const digest = createHash("sha256").update(normalized).digest("hex").slice(0, 16);
+  return `${safePart(client)}-${digest}`;
+}
 
 export async function runHook({
   client,
   eventName,
   payload = {},
   workspace,
+  additionalWorkspaces = [],
+  worktree = null,
   stateDir = DEFAULT_STATE_DIR,
   buses,
   env = process.env,
   emitOutput = async () => {},
 }) {
-  const consumer = consumerFor(client, env);
+  const consumer = consumerFor(client, payload, env);
   const byName = new Map(buses.map((bus) => [bus.name, bus]));
-  const prior = readState(stateDir, client, workspace).pending ?? [];
+  const prior = readState(stateDir, consumer, workspace).pending ?? [];
   const stillPending = [];
   const errors = [];
 
@@ -238,7 +302,7 @@ export async function runHook({
       continue;
     }
     try {
-      await bus.ack(workspace, consumer, { id: pending.message_id });
+      await bus.ack(pending.workspace ?? workspace, consumer, { id: pending.message_id });
     } catch (error) {
       stillPending.push(pending);
       errors.push({ bus: bus.name, operation: "ack", error: String(error) });
@@ -246,27 +310,42 @@ export async function runHook({
   }
 
   const deliveries = [];
+  const pollWorkspaces = [...new Set([workspace, ...additionalWorkspaces])];
   await Promise.all(
-    buses.map(async (bus) => {
+    pollWorkspaces.flatMap((pollWorkspace) => buses.map(async (bus) => {
       try {
-        for (const item of await bus.poll(workspace, consumer)) {
-          deliveries.push({ ...item, origin: item.origin ?? bus.name, _bus: bus.name });
+        for (const item of await bus.poll(pollWorkspace, consumer)) {
+          deliveries.push({
+            ...item,
+            origin: item.origin ?? bus.name,
+            _bus: bus.name,
+            _workspace: pollWorkspace,
+          });
         }
       } catch (error) {
-        errors.push({ bus: bus.name, operation: "poll", error: String(error) });
+        errors.push({
+          bus: bus.name,
+          workspace: pollWorkspace,
+          operation: "poll",
+          error: String(error),
+        });
       }
-    }),
+    })),
   );
 
   if (eventName === "SessionStart" || eventName === "sessionStart") {
-    const sessionID = payload.session_id ?? payload.sessionId ?? "unknown-session";
     const cwd = payload.cwd ?? process.cwd();
+    const activeWorktree = worktree ?? cwd;
     const message = {
       sender: consumer,
       recipient: "all",
       type: "available",
       body: `${client} session is available from ${cwd}. Send orders to ${consumer}.`,
-      idempotency_key: `${client}:${sessionID}:available`,
+      idempotency_key: `${consumer}:available`,
+      metadata: {
+        worktree: activeWorktree,
+        lane: basename(activeWorktree),
+      },
     };
     await Promise.all(
       buses.map(async (bus) => {
@@ -279,15 +358,19 @@ export async function runHook({
     );
   }
 
-  const publicDeliveries = deliveries.map(({ _bus, ...item }) => item);
+  const publicDeliveries = deliveries.map(({ _bus, _workspace, ...item }) => item);
   const context = publicDeliveries.length ? createContext(publicDeliveries) : "";
   const output = renderClientOutput(client, eventName, context, payload);
   if (output !== null) await emitOutput(output);
 
   const newlyPending = output === null
     ? []
-    : deliveries.map((item) => ({ bus: item._bus, message_id: item.id }));
-  writeState(stateDir, client, workspace, [...stillPending, ...newlyPending]);
+    : deliveries.map((item) => ({
+        bus: item._bus,
+        workspace: item._workspace,
+        message_id: item.id,
+      }));
+  writeState(stateDir, consumer, workspace, [...stillPending, ...newlyPending]);
   return { output, errors, deliveries: publicDeliveries };
 }
 
@@ -321,11 +404,14 @@ async function main() {
   ];
 
   try {
+    const lane = selected.worktree ? basename(selected.worktree) : null;
     await runHook({
       client,
       eventName,
       payload,
       workspace: selected.identity,
+      additionalWorkspaces: lane && lane !== selected.identity ? [lane] : [],
+      worktree: selected.worktree,
       stateDir: process.env.REPO_MEMORY_SWARM_STATE_DIR || DEFAULT_STATE_DIR,
       buses,
       emitOutput: writeOutput,

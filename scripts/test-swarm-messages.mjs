@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
+import { createHash } from "node:crypto";
 import { chmod, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import test from "node:test";
 
 import {
@@ -25,6 +26,12 @@ const message = {
   origin: "repo-memory",
 };
 
+const consumerForSession = (client, sessionID) => {
+  const normalized = sessionID.replace(/[^A-Za-z0-9]+/g, "");
+  const digest = createHash("sha256").update(normalized).digest("hex").slice(0, 16);
+  return `${client}-${digest}`;
+};
+
 function execFileWithClosedInput(file, args, options) {
   return new Promise((resolve, reject) => {
     const child = execFileCallback(file, args, options, (error, stdout, stderr) => {
@@ -38,23 +45,121 @@ function execFileWithClosedInput(file, args, options) {
 test("workspace selection is durable and scoped to the active repository", async () => {
   const base = await mkdtemp(join(tmpdir(), "repo-memory-workspaces-"));
   const primary = join(base, "singularity-engine");
+  const primaryLane = join(base, "worktrees", "singularity-engine", "executor-kernel");
   const other = join(base, "dotfiles");
+  const otherLane = join(base, "worktrees", "dotfiles", "swarm-hook");
   try {
     await mkdir(join(primary, "fabrics", "inference"), { recursive: true });
-    await mkdir(join(primary, ".jj"));
+    await mkdir(join(primary, ".jj", "repo"), { recursive: true });
+    await mkdir(join(primaryLane, ".jj"), { recursive: true });
+    await mkdir(join(primaryLane, "engine", "workflow"), { recursive: true });
+    await writeFile(
+      join(primaryLane, ".jj", "repo"),
+      `${relative(join(primaryLane, ".jj"), join(primary, ".jj", "repo"))}\n`,
+    );
     await mkdir(join(other, "home", "modules"), { recursive: true });
-    await mkdir(join(other, ".git"));
+    await mkdir(join(other, ".git", "worktrees", "swarm-hook"), { recursive: true });
+    await mkdir(join(otherLane, "config", "codex"), { recursive: true });
+    await writeFile(
+      join(otherLane, ".git"),
+      `gitdir: ${join(other, ".git", "worktrees", "swarm-hook")}\n`,
+    );
+    await writeFile(join(other, ".git", "worktrees", "swarm-hook", "commondir"), "../..\n");
 
     assert.deepEqual(
       selectWorkspace(join(primary, "fabrics", "inference"), { SWARM_PRIMARY_WORKSPACE: primary }),
       { identity: "singularity-engine", worktree: primary },
     );
     assert.deepEqual(
+      selectWorkspace(join(primaryLane, "engine", "workflow"), { SWARM_PRIMARY_WORKSPACE: primary }),
+      { identity: "singularity-engine", worktree: primaryLane },
+    );
+    assert.deepEqual(
       selectWorkspace(join(other, "home", "modules"), { SWARM_PRIMARY_WORKSPACE: primary }),
       { identity: "dotfiles", worktree: other },
     );
+    assert.deepEqual(
+      selectWorkspace(join(otherLane, "config", "codex"), { SWARM_PRIMARY_WORKSPACE: primary }),
+      { identity: "dotfiles", worktree: otherLane },
+    );
   } finally {
     await rm(base, { recursive: true, force: true });
+  }
+});
+
+test("session start uses a unique consumer and records the active worktree", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-session-"));
+  const calls = [];
+  const durable = {
+    name: "repo-memory",
+    async poll(workspace, consumer) {
+      calls.push({ operation: "poll", workspace, consumer });
+      return [];
+    },
+    async ack() {},
+    async post(workspace, posted) {
+      calls.push({ operation: "post", workspace, posted });
+    },
+    async close() {},
+  };
+
+  try {
+    await runHook({
+      client: "codex",
+      eventName: "SessionStart",
+      payload: {
+        cwd: "/home/mhugo/code/worktrees/jj/singularity-engine/executor-kernel",
+        session_id: "019f91dd-3c90-7be0-ab98-63ef80c9a803",
+      },
+      workspace: "singularity-engine",
+      additionalWorkspaces: ["executor-kernel"],
+      worktree: "/home/mhugo/code/worktrees/jj/singularity-engine/executor-kernel",
+      stateDir,
+      buses: [durable],
+      env: {},
+    });
+    await runHook({
+      client: "codex",
+      eventName: "SessionStart",
+      payload: {
+        cwd: "/home/mhugo/code/worktrees/jj/singularity-engine/c21-review",
+        thread_id: "019f91dd-a12b-4470-b433-17ea04a6b211",
+      },
+      workspace: "singularity-engine",
+      additionalWorkspaces: ["c21-review"],
+      worktree: "/home/mhugo/code/worktrees/jj/singularity-engine/c21-review",
+      stateDir,
+      buses: [durable],
+      env: {},
+    });
+
+    const firstConsumer = consumerForSession("codex", "019f91dd-3c90-7be0-ab98-63ef80c9a803");
+    const secondConsumer = consumerForSession("codex", "019f91dd-a12b-4470-b433-17ea04a6b211");
+    const polls = calls.filter(({ operation }) => operation === "poll");
+    assert.deepEqual(polls.map(({ workspace }) => workspace), [
+      "singularity-engine",
+      "executor-kernel",
+      "singularity-engine",
+      "c21-review",
+    ]);
+    assert.deepEqual(polls.map(({ consumer }) => consumer), [
+      firstConsumer,
+      firstConsumer,
+      secondConsumer,
+      secondConsumer,
+    ]);
+    assert.equal(new Set(polls.map(({ consumer }) => consumer)).size, 2);
+    const posts = calls.filter(({ operation }) => operation === "post");
+    assert.deepEqual(posts.map(({ workspace }) => workspace), ["singularity-engine", "singularity-engine"]);
+    assert.equal(posts[0].posted.sender, firstConsumer);
+    assert.equal(posts[0].posted.idempotency_key, `${firstConsumer}:available`);
+    assert.equal(posts[1].posted.idempotency_key, `${secondConsumer}:available`);
+    assert.deepEqual(posts[0].posted.metadata, {
+      worktree: "/home/mhugo/code/worktrees/jj/singularity-engine/executor-kernel",
+      lane: "executor-kernel",
+    });
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
   }
 });
 
@@ -162,6 +267,7 @@ test("Home Manager symlink execution enters the hook main routine", async (t) =>
       ...process.env,
       MCP_GATEWAY_URL: `http://127.0.0.1:${address.port}/mcp`,
       REPO_MEMORY_SWARM_WORKSPACE: "symlink-live-proof",
+      REPO_MEMORY_SWARM_CONSUMER: "codex-symlink1",
       REPO_MEMORY_SWARM_STATE_DIR: stateDir,
     },
     timeout: 5_000,
@@ -174,8 +280,13 @@ test("delivery is acknowledged only at the next observed hook boundary", async (
   const calls = [];
   const durable = {
     name: "repo-memory",
-    async poll() { calls.push("poll"); return [message]; },
-    async ack(_workspace, _consumer, delivery) { calls.push(`ack:${delivery.id}`); },
+    async poll(workspace) {
+      calls.push(`poll:${workspace}`);
+      return workspace === "executor-kernel" ? [message] : [];
+    },
+    async ack(workspace, _consumer, delivery) {
+      calls.push(`ack:${workspace}:${delivery.id}`);
+    },
     async post() { calls.push("post"); },
     async close() {},
   };
@@ -184,26 +295,38 @@ test("delivery is acknowledged only at the next observed hook boundary", async (
     const first = await runHook({
       client: "codex",
       eventName: "UserPromptSubmit",
-      payload: { cwd: "/workspace" },
-      workspace: "engine",
+      payload: { cwd: "/workspace", session_id: "019f91dd-3c90-7be0-ab98-63ef80c9a803" },
+      workspace: "singularity-engine",
+      additionalWorkspaces: ["executor-kernel"],
       stateDir,
       buses: [durable],
     });
     assert.match(JSON.stringify(first.output), /Review revision abc123/);
-    assert.deepEqual(calls, ["poll"]);
+    assert.deepEqual(calls, ["poll:singularity-engine", "poll:executor-kernel"]);
 
-    durable.poll = async () => [];
+    durable.poll = async (workspace) => { calls.push(`poll:${workspace}`); return []; };
     const second = await runHook({
       client: "codex",
       eventName: "UserPromptSubmit",
-      payload: { cwd: "/workspace" },
-      workspace: "engine",
+      payload: { cwd: "/workspace", session_id: "019f91dd-3c90-7be0-ab98-63ef80c9a803" },
+      workspace: "singularity-engine",
+      additionalWorkspaces: ["executor-kernel"],
       stateDir,
       buses: [durable],
     });
     assert.equal(second.output, null);
-    assert.deepEqual(calls, ["poll", `ack:${message.id}`]);
-    assert.equal(JSON.parse(await readFile(join(stateDir, "codex--engine.json"), "utf8")).pending.length, 0);
+    assert.deepEqual(calls, [
+      "poll:singularity-engine",
+      "poll:executor-kernel",
+      `ack:executor-kernel:${message.id}`,
+      "poll:singularity-engine",
+      "poll:executor-kernel",
+    ]);
+    const consumer = consumerForSession("codex", "019f91dd-3c90-7be0-ab98-63ef80c9a803");
+    assert.equal(
+      JSON.parse(await readFile(join(stateDir, `${consumer}--singularity-engine.json`), "utf8")).pending.length,
+      0,
+    );
   } finally {
     await rm(stateDir, { recursive: true, force: true });
   }
@@ -223,7 +346,7 @@ test("MCP poll failure does not invent a filesystem bus", async () => {
     const result = await runHook({
       client: "kimi-code",
       eventName: "UserPromptSubmit",
-      payload: { cwd: "/workspace" },
+      payload: { cwd: "/workspace", session_id: "d3904cf4-f31a-47cd-b60b-0dbc2b5a8a77" },
       workspace: "engine",
       stateDir,
       buses: [durable],

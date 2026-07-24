@@ -1,4 +1,28 @@
 {
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs factory SessionStart",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs factory UserPromptSubmit",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "core@factory-plugins": true,
     "typescript@factory-plugins": true,

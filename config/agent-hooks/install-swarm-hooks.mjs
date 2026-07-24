@@ -10,6 +10,7 @@ const option = (name, fallback) => {
 const home = process.env.HOME;
 const claudePath = option("--claude-settings", join(home, ".claude", "settings.json"));
 const kimiPath = option("--kimi-config", join(home, ".kimi-code", "config.toml"));
+const jcodePath = option("--jcode-config", join(home, ".jcode", "config.toml"));
 
 async function existingMode(path) {
   try { return (await stat(path)).mode & 0o777; }
@@ -105,5 +106,28 @@ async function installKimi() {
   await atomicWrite(kimiPath, `${base}${base ? "\n\n" : ""}${managed}`);
 }
 
+async function installJcode() {
+  let content = "";
+  try { content = await readFile(jcodePath, "utf8"); }
+  catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  const command = 'session_start = "/home/mhugo/.codex/hooks/swarm-messages.mjs jcode SessionStart"';
+  const lines = content.split("\n");
+  const hooksIndex = lines.findIndex((line) => line.trim() === "[hooks]");
+  if (hooksIndex < 0) {
+    const base = content.trimEnd();
+    await atomicWrite(jcodePath, `${base}${base ? "\n\n" : ""}[hooks]\n${command}\n`);
+    return;
+  }
+  let end = hooksIndex + 1;
+  while (end < lines.length && !/^\s*\[[^]]+\]\s*$/.test(lines[end])) end += 1;
+  const hookLines = lines.slice(hooksIndex + 1, end)
+    .filter((line) => !/^\s*session_start\s*=/.test(line));
+  lines.splice(hooksIndex + 1, end - hooksIndex - 1, command, ...hookLines);
+  await atomicWrite(jcodePath, lines.join("\n"));
+}
+
 await installClaude();
 await installKimi();
+await installJcode();

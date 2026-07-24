@@ -197,8 +197,42 @@ test("client renderers emit only native context shapes", () => {
   const cursor = renderClientOutput("cursor", "sessionStart", context, {});
   assert.equal(cursor.additional_context, context);
 
+  const factory = renderClientOutput("factory", "UserPromptSubmit", context, {});
+  assert.equal(factory.hookSpecificOutput.hookEventName, "UserPromptSubmit");
+  assert.equal(factory.hookSpecificOutput.additionalContext, context);
+
   const durableContext = createContext([{ ...message, timestamp: undefined, created_at: "2026-07-19T16:00:01Z" }]);
   assert.match(durableContext, /2026-07-19T16:00:01Z claude -> codex/);
+});
+
+test("JCode session hook derives a unique consumer from its native environment", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-jcode-session-"));
+  const calls = [];
+  const durable = {
+    name: "repo-memory",
+    async subscribe(workspace, consumer) { calls.push({ workspace, consumer }); },
+    async poll() { return []; },
+    async ack() {},
+    async post() {},
+    async close() {},
+  };
+  try {
+    await runHook({
+      client: "jcode",
+      eventName: "SessionStart",
+      payload: {},
+      workspace: "singularity-engine",
+      stateDir,
+      buses: [durable],
+      env: { JCODE_HOOK_SESSION_ID: "session-rooster-1234" },
+    });
+    assert.deepEqual(calls, [{
+      workspace: "singularity-engine",
+      consumer: consumerForSession("jcode", "session-rooster-1234"),
+    }]);
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
 });
 
 test("MCP transport initializes and calls the lazy repo-memory subscription route", async (t) => {

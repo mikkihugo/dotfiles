@@ -23,6 +23,10 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
   assert.equal(cursor.version, 1);
   assert.match(JSON.stringify(cursor.hooks.sessionStart), /swarm-messages\.mjs cursor/);
   assert.equal(cursor.hooks.beforeSubmitPrompt, undefined);
+
+  const factory = await readJSON("config/factory/settings.json");
+  assert.match(JSON.stringify(factory.hooks.SessionStart), /swarm-messages\.mjs factory SessionStart/);
+  assert.match(JSON.stringify(factory.hooks.UserPromptSubmit), /swarm-messages\.mjs factory UserPromptSubmit/);
 });
 
 test("Home Manager installs every managed hook surface", async () => {
@@ -126,6 +130,29 @@ test("activation merge preserves unrelated Claude settings and Kimi provider con
     assert.match(updatedKimi, /event = \"Notification\"/);
     assert.equal((updatedKimi.match(/command = ".*swarm-messages\.sh"/g) ?? []).length, 1);
     assert.equal((updatedKimi.match(/command = ".*swarm-messages\.sh SessionStart"/g) ?? []).length, 1);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test("activation merge installs JCode session bootstrap without replacing unrelated hooks", async () => {
+  const home = await mkdtemp(join(tmpdir(), "repo-memory-jcode-hook-home-"));
+  try {
+    const jcodePath = join(home, "jcode.toml");
+    await writeFile(jcodePath, '[hooks]\nturn_end = "notify-finished"\npre_tool_timeout_ms = 1500\n');
+    const result = spawnSync(process.execPath, [
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "--claude-settings", join(home, "claude.json"),
+      "--kimi-config", join(home, "kimi.toml"),
+      "--jcode-config", jcodePath,
+    ], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+
+    const updated = await readFile(jcodePath, "utf8");
+    assert.match(updated, /turn_end = "notify-finished"/);
+    assert.match(updated, /pre_tool_timeout_ms = 1500/);
+    assert.match(updated, /session_start = ".*swarm-messages\.mjs jcode SessionStart"/);
+    assert.equal((updated.match(/^session_start = /gm) ?? []).length, 1);
   } finally {
     await rm(home, { recursive: true, force: true });
   }

@@ -244,6 +244,9 @@ export function renderClientOutput(client, eventName, context, payload) {
   }
   if (client === "copilot" && eventName === "sessionStart") return { additionalContext: context };
   if (client === "cursor" && eventName === "sessionStart") return { additional_context: context };
+  if (client === "factory") {
+    return { hookSpecificOutput: { hookEventName: eventName, additionalContext: context } };
+  }
   // `code` (@just-every/code) shares Codex's hookSpecificOutput schema.
   if (client === "codex" || client === "code" || client === "claude") {
     return { hookSpecificOutput: { hookEventName: eventName, additionalContext: context } };
@@ -352,6 +355,7 @@ function consumerFor(client, payload, env) {
     payload.threadId ??
     payload.conversation_id ??
     payload.conversationId ??
+    (client === "jcode" ? env.JCODE_HOOK_SESSION_ID : undefined) ??
     (client === "codex" || client === "code" ? env.CODEX_THREAD_ID : undefined) ??
     (inheritedOwner?.includes(":") ? inheritedOwner.slice(inheritedOwner.indexOf(":") + 1) : undefined);
   const normalized = String(sessionID ?? "").replace(/[^A-Za-z0-9]+/g, "");

@@ -1,0 +1,26 @@
+{
+  "source": "repository-vcs-facade",
+  "note": "Derived from `repo vcs status` (2 modified files plus the untracked work packet, expanded to files); the fix lane performs no VCS mutations.",
+  "files": [
+    "config/codex/hooks/swarm-messages.mjs",
+    "scripts/test-swarm-messages.mjs",
+    "docs/work/2026-07-23-swarm-session-consumers/README.md",
+    "docs/work/2026-07-23-swarm-session-consumers/current-spec.snapshot.json",
+    "docs/work/2026-07-23-swarm-session-consumers/evidence.bundle.json",
+    "docs/work/2026-07-23-swarm-session-consumers/evidence/changed-files.json",
+    "docs/work/2026-07-23-swarm-session-consumers/evidence/green-result.txt",
+    "docs/work/2026-07-23-swarm-session-consumers/evidence/independent-review.md",
+    "docs/work/2026-07-23-swarm-session-consumers/evidence/red-proof.txt",
+    "docs/work/2026-07-23-swarm-session-consumers/evidence/red-result-t1.json",
+    "docs/work/2026-07-23-swarm-session-consumers/evidence/red-result-t2.json",
+    "docs/work/2026-07-23-swarm-session-consumers/evidence/red-result-t3.json",
+    "docs/work/2026-07-23-swarm-session-consumers/evidence/result.json",
+    "docs/work/2026-07-23-swarm-session-consumers/purpose.contract.json",
+    "docs/work/2026-07-23-swarm-session-consumers/validation.report.json",
+    "docs/work/2026-07-23-swarm-session-consumers/work.spec.json"
+  ],
+  "implementation_digests": {
+    "config/codex/hooks/swarm-messages.mjs": "sha256:c7982d7bac291ea9598fa80f0e68a88ea031e3ce918eaca4116576dfbd9773a7",
+    "scripts/test-swarm-messages.mjs": "sha256:0eb5ef5007b9ef7375db0fb944cf430742d9a4be672f9b11041d55a0f9523355"
+  }
+}

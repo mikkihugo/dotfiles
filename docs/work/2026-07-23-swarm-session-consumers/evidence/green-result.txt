@@ -1,0 +1,30 @@
+✔ workspace selection is durable and scoped to the active repository (24.672061ms)
+✔ client renderers emit only native context shapes (0.919771ms)
+✔ MCP transport initializes and calls the lazy repo-memory route (58.578231ms)
+✔ Home Manager symlink execution enters the hook main routine (208.901753ms)
+✔ delivery is acknowledged only at the next observed hook boundary (4.342362ms)
+✔ consumer identity honors override, owner, session, then persisted fallback precedence (1.056562ms)
+✔ consumer identity is stable per session and distinct across sessions (1.376256ms)
+✔ codex no longer consumes as the bare root identity (2.051144ms)
+✔ consumer fallback persists one generated session id per client and workspace (1.698041ms)
+✔ poll and ack share one session consumer across sequential hook boundaries (4.062998ms)
+✔ distinct same-client sessions use separate state files and never cross-acknowledge (8.41429ms)
+✔ derived consumer identity is collision-resistant for sessions sharing a normalized prefix (1.365206ms)
+✔ blank payload session ids are absent and use the persisted fallback (2.149446ms)
+✔ SessionStart availability idempotency key is bound to the resolved consumer (3.363459ms)
+✔ MCP poll failure does not invent a filesystem bus (2.158765ms)
+✔ session alias selection uses the first non-blank trimmed alias (1.442857ms)
+✔ derived session digest is a 128-bit collision-resistant suffix with a pinned known answer (0.914411ms)
+✔ non-string session ids are treated as absent instead of collapsing to one digest (1.397476ms)
+✔ explicit identity normalizes surrounding whitespace and keeps the internal value opaque (0.82305ms)
+✔ explicit consumers with equal readable prefixes keep distinct state files and independent ack state (4.19494ms)
+✔ legacy client-keyed state file is left unchanged and not used for ack state (2.649261ms)
+✔ an empty persisted fallback file is healed once instead of replaying fresh identities (2.416179ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 478.893027

@@ -1,4 +1,5 @@
 #!@node@
+import { createHash, randomUUID } from "node:crypto";
 import {
   chmodSync,
   existsSync,
@@ -6,6 +7,7 @@ import {
   realpathSync,
   readFileSync,
   renameSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
@@ -192,8 +194,19 @@ export function renderClientOutput(client, eventName, context, payload) {
   return null;
 }
 
-function statePath(stateDir, client, workspace) {
-  return join(stateDir, `${safePart(client)}--${safePart(workspace)}.json`);
+// Deferred-ack state files are keyed by a readable sanitized prefix plus
+// a 128-bit digest of the full opaque consumer+workspace pair. The
+// readable prefix alone cannot be the key: safePart maps distinct
+// consumers such as `a:b` and `a-b` to the same filename, which would
+// merge their pending lists and cross-contaminate deferred acks.
+const stateDigest = (consumer, workspace) =>
+  createHash("sha256")
+    .update(JSON.stringify([String(consumer), String(workspace)]), "utf8")
+    .digest("hex")
+    .slice(0, 32);
+
+function statePath(stateDir, consumer, workspace) {
+  return join(stateDir, `${safePart(consumer)}-${stateDigest(consumer, workspace)}--${safePart(workspace)}.json`);
 }
 
 function readState(stateDir, client, workspace) {
@@ -213,7 +226,95 @@ function writeState(stateDir, client, workspace, pending) {
   renameSync(temporary, path);
 }
 
-const consumerFor = (client, env) => env.REPO_MEMORY_SWARM_CONSUMER || (client === "codex" ? "root" : client);
+// Deterministic, collision-resistant suffix for derived consumer
+// identities: SHA-256 over the whole non-blank session id, truncated to
+// 32 hex characters (128 bits). The previous "first 8 normalized
+// characters" scheme collided for any two session ids sharing a
+// normalized prefix, and with durable consumer cursors such a collision
+// is a correctness failure (cross-session ack/cursor theft), not a
+// cosmetic one. 128 bits is collision-resistant, not mathematically
+// unique: the accidental-collision probability is ~1.5e-27 for one
+// million sessions by the birthday bound (n^2 / 2^129).
+const sessionDigest = (value) =>
+  createHash("sha256").update(String(value), "utf8").digest("hex").slice(0, 32);
+
+function fallbackSessionPath(stateDir, client, workspace) {
+  return join(stateDir, `${safePart(client)}--${safePart(workspace)}.consumer`);
+}
+
+function persistedFallbackSession(stateDir, client, workspace) {
+  const path = fallbackSessionPath(stateDir, client, workspace);
+  try {
+    const existing = readFileSync(path, "utf8").trim();
+    if (existing) return existing;
+  } catch {
+    // First use in this client+workspace; generate one id below.
+  }
+  const generated = randomUUID();
+  try {
+    mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+    writeFileSync(path, `${generated}\n`, { mode: 0o600, flag: "wx" });
+    return generated;
+  } catch (error) {
+    if (error?.code === "EEXIST") {
+      try {
+        const concurrent = readFileSync(path, "utf8").trim();
+        if (concurrent) return concurrent;
+        // An empty/partial file left by a crashed writer would otherwise
+        // regenerate (and fail to persist) a fresh id on every hook fire;
+        // remove it and retry the exclusive write once.
+        unlinkSync(path);
+        writeFileSync(path, `${generated}\n`, { mode: 0o600, flag: "wx" });
+        return generated;
+      } catch {
+        // Fall through to the unpersisted id.
+      }
+    }
+    // Fail open: an unpersisted id still keeps this invocation session-unique.
+    return generated;
+  }
+}
+
+// The first non-blank trimmed alias among the three supported session id
+// keys wins; a blank or non-string earlier alias never masks a valid
+// later one. Non-string values (objects, arrays, booleans) count as
+// absent so structured ids cannot collapse distinct sessions onto one
+// "[object Object]" digest. A null/undefined payload means no session
+// signal.
+const SESSION_ID_KEYS = ["session_id", "sessionId", "conversation_id"];
+
+function sessionIdFromPayload(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  for (const key of SESSION_ID_KEYS) {
+    const value = payload[key];
+    if (typeof value !== "string" && !(typeof value === "number" && Number.isFinite(value))) continue;
+    const trimmed = String(value).trim();
+    if (trimmed) return trimmed;
+  }
+  return "";
+}
+
+// One stable session-unique `<client>-<digest>` identity per client
+// session. Explicit REPO_MEMORY_SWARM_CONSUMER and SE_WORKSPACE_OWNER are
+// authoritative full consumer identities: surrounding whitespace is
+// normalized (trimmed) and the remaining internal value and punctuation
+// stay opaque (including forms such as `kimi:<uuid>`); only
+// payload/fallback-derived identities are normalized to
+// `<client>-<digest>`. Blank payload session ids count as absent;
+// without any session signal a generated UUID is persisted once per
+// client+workspace in stateDir (stable, but unable to distinguish
+// concurrent sessions of one client). Bare client names and the legacy
+// codex "root" identity are never produced.
+export function consumerFor(client, env = process.env, { payload = {}, stateDir = DEFAULT_STATE_DIR, workspace = "default" } = {}) {
+  const explicit = env.REPO_MEMORY_SWARM_CONSUMER?.trim();
+  if (explicit) return explicit;
+  const owner = env.SE_WORKSPACE_OWNER?.trim();
+  if (owner) return owner;
+  const base = String(client).toLowerCase();
+  const session = sessionIdFromPayload(payload);
+  if (session) return `${base}-${sessionDigest(session)}`;
+  return `${base}-${sessionDigest(persistedFallbackSession(stateDir, client, workspace))}`;
+}
 
 export async function runHook({
   client,
@@ -225,9 +326,9 @@ export async function runHook({
   env = process.env,
   emitOutput = async () => {},
 }) {
-  const consumer = consumerFor(client, env);
+  const consumer = consumerFor(client, env, { payload, stateDir, workspace });
   const byName = new Map(buses.map((bus) => [bus.name, bus]));
-  const prior = readState(stateDir, client, workspace).pending ?? [];
+  const prior = readState(stateDir, consumer, workspace).pending ?? [];
   const stillPending = [];
   const errors = [];
 
@@ -259,14 +360,16 @@ export async function runHook({
   );
 
   if (eventName === "SessionStart" || eventName === "sessionStart") {
-    const sessionID = payload.session_id ?? payload.sessionId ?? "unknown-session";
     const cwd = payload.cwd ?? process.cwd();
     const message = {
       sender: consumer,
       recipient: "all",
       type: "available",
       body: `${client} session is available from ${cwd}. Send orders to ${consumer}.`,
-      idempotency_key: `${client}:${sessionID}:available`,
+      // Bound to the resolved consumer: distinct resolved sessions can
+      // never collide on this key, and repeated SessionStart boundaries
+      // for one consumer keep one stable key.
+      idempotency_key: `${consumer}:available`,
     };
     await Promise.all(
       buses.map(async (bus) => {
@@ -287,7 +390,7 @@ export async function runHook({
   const newlyPending = output === null
     ? []
     : deliveries.map((item) => ({ bus: item._bus, message_id: item.id }));
-  writeState(stateDir, client, workspace, [...stillPending, ...newlyPending]);
+  writeState(stateDir, consumer, workspace, [...stillPending, ...newlyPending]);
   return { output, errors, deliveries: publicDeliveries };
 }
 

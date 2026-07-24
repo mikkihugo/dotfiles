@@ -1,0 +1,136 @@
+{
+	"schema_version": "purpose-contract/v2",
+	"contract_id": "2026-07-23-swarm-session-consumers-purpose",
+	"source": {
+		"system": "tool",
+		"repository": ".",
+		"request_id": "2026-07-23-swarm-session-consumers"
+	},
+	"lineage": {
+		"origin": {
+			"kind": "request",
+			"id": "2026-07-23-swarm-session-consumers",
+			"revision": "initial"
+		},
+		"objective": {
+			"id": "2026-07-23-swarm-session-consumers-objective",
+			"statement": "Give every agent client session one stable session-unique swarm consumer identity instead of bare client or root names.",
+			"measure": "The shared hook resolves consumer identity by explicit override, SE_WORKSPACE_OWNER, hook payload session id, then a persisted per-client+workspace UUID; poll, ack, and sender share that identity; deferred-ack state is keyed by consumer so concurrent same-client sessions never cross-acknowledge."
+		},
+		"need": {
+			"id": "2026-07-23-swarm-session-consumers-need",
+			"statement": "Give every agent client session one stable session-unique swarm consumer identity instead of bare client or root names.",
+			"stakeholders": [
+				"Concurrent agent sessions on the devbox that share the repo-memory swarm bus and the deferred-ack hook state directory."
+			],
+			"baseline": "consumerFor maps Codex to the bare identity \"root\" and every other client to its bare client name, so concurrent sessions of one client share a consumer cursor and one deferred-ack state file, letting one session acknowledge another session's deliveries.",
+			"consequence_of_no_action": "Cross-session acknowledgement loses durable messages, same-client sessions steal each other's cursor position, and the Codex root identity collides with the bus-era root consumer.",
+			"assumptions": [
+				"Hook payloads carry session_id, sessionId, or conversation_id for session-scoped events on supported clients."
+			],
+			"alternatives_considered": [
+				"Keep bare client identities and lock the shared state file",
+				"Derive identity from process id per invocation",
+				"Migrate legacy state files onto the new consumer"
+			]
+		}
+	},
+	"admission": {
+		"state": "accepted",
+		"producer": {
+			"kind": "agent",
+			"id": "kimi-code"
+		},
+		"accepting_authority": {
+			"kind": "human",
+			"id": "mhugo"
+		},
+		"decided_at": "2026-07-23T22:25:00Z",
+		"subject_digest": {
+			"algorithm": "sha256",
+			"canonicalization": "engine-json-v1",
+			"value": "36428057265ce4c9ebe30ec2954828bec648db31977996eafcef9e67ece8dc0f"
+		},
+		"policy": {
+			"id": "operator-directed-purpose-admission/v1",
+			"digest": {
+				"algorithm": "sha256",
+				"canonicalization": "raw-bytes",
+				"value": "60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e"
+			}
+		},
+		"validators": [
+			"purpose-contract-v2.schema.json",
+			"operator-authority"
+		],
+		"evidence_refs": [
+			"user-request:swarm-session-consumers",
+			"root-cause:consumerFor-bare-identities"
+		]
+	},
+	"purpose": "Give every agent client session one stable session-unique swarm consumer identity instead of bare client or root names.",
+	"consumer": "Concurrent agent sessions on the devbox that share the repo-memory swarm bus and the deferred-ack hook state directory.",
+	"contract": "The shared hook resolves consumer identity by explicit REPO_MEMORY_SWARM_CONSUMER override, then SE_WORKSPACE_OWNER, then the hook payload session id, then a generated UUID persisted once per client+workspace; the payload session id is the first non-blank trimmed value among payload.session_id, payload.sessionId, and payload.conversation_id, so a blank earlier alias never masks a valid later alias and non-string values (objects, arrays, booleans) count as absent; explicit override and owner values are authoritative full consumer identities with surrounding whitespace normalized (trimmed) and the remaining internal value and punctuation opaque (including forms such as kimi:<uuid>); only payload/fallback-derived identities normalize to client-lowercase plus a 32-hex-character SHA-256 digest (128 bits, collision-resistant, not mathematically unique) of the whole non-blank session id, so distinct session ids that share a normalized prefix still derive distinct consumers; poll, ack, and sender share the resolved identity; deferred-ack state files are keyed by a readable sanitized prefix plus a 128-bit digest of the full opaque consumer+workspace pair, so punctuation-equal consumers never merge ack state; legacy client-keyed state files stay untouched and are not used for ack state; an empty persisted fallback file self-heals once; SessionStart idempotency is bound to the resolved consumer; hook behavior stays fail-open.",
+	"failure_boundary": "State-directory write failures fall back to an unpersisted per-invocation id for that invocation only; an empty or partial persisted fallback file left by a crashed writer is removed and rewritten once, and if healing fails the unpersisted per-invocation id still applies; gateway failures still fail open without acknowledging; the persisted per-client+workspace fallback is stable but NOT session-unique: without a payload session id, SE_WORKSPACE_OWNER, or REPO_MEMORY_SWARM_CONSUMER signal, concurrent sessions of one client in one workspace cannot be distinguished and share one consumer, cursor, and deferred-ack state file - this limitation is stated honestly and the stable fail-open fallback is preserved rather than patched with guessed client-specific environment variable names; the Engine repo-memory server contract is unchanged, so a brand-new consumer replays eligible broadcast/addressed history once. Breaking migration boundary: messages addressed server-side to legacy recipients (root or bare client names) are NOT delivered to the new digest-suffixed consumer because server polling is recipient-scoped (Engine repo-memory internal/store/swarm_messages.go:148 poll filter recipient=$3 OR 'all', :176 ack recipient boundary) - such messages are stranded, not redelivered; no dual-consumer or dual-ack migration is added in this slice, and operators must repost any still-needed legacy-addressed message.",
+	"evidence": [
+		{
+			"kind": "test",
+			"description": "Node contract tests prove precedence, first-non-blank alias selection, the 128-bit digest with a pinned known-answer vector, truthful explicit-identity whitespace semantics, non-string session ids treated as absent, per-session stability, prefix-collision resistance, blank session ids falling back, codex-is-not-root, sequential poll-to-ack continuity, distinct-consumer state-file isolation including equal sanitized prefixes without cross-ack, legacy client-keyed state byte-unchanged and unused for ack state, persisted fallback stability, single-heal of an empty fallback file, and consumer-bound SessionStart idempotency.",
+			"status": "expected"
+		}
+	],
+	"falsifier": {
+		"claim": "The change delivers the promised contract.",
+		"executable_check": {
+			"kind": "test",
+			"description": "Run the contract test; any failure falsifies the claim.",
+			"command": "node --test scripts/test-swarm-messages.mjs"
+		}
+	},
+	"non_goals": [
+		"Changing the Engine repo-memory PollSwarmMessages cursor-0 replay contract",
+		"Migrating or deleting legacy client-keyed state files",
+		"Acknowledging root-era deliveries as the new consumer",
+		"VCS operations, commits, landing, or Home Manager activation in this slice",
+		"Random per-invocation identities"
+	],
+	"invariants": [
+		"One stable session-unique consumer per client session whenever a session signal (override, owner, or non-blank payload session id) is present",
+		"Derived identities use a 128-bit SHA-256 digest of the whole session id; explicit identities keep their internal value and punctuation opaque with only surrounding whitespace normalized",
+		"The payload session alias is the first non-blank trimmed value among session_id, sessionId, and conversation_id",
+		"Poll, ack, and sender use the same consumer across hook boundaries",
+		"Deferred-ack state is keyed by a readable prefix plus a 128-bit digest of the full opaque consumer+workspace pair, never by client or by the sanitized prefix alone",
+		"Legacy client-keyed state files are never written and are not used for ack state",
+		"An empty persisted fallback file is healed once rather than replaying fresh identities",
+		"Hook behavior fails open",
+		"SessionStart idempotency is bound to the resolved consumer"
+	],
+	"assumptions": [
+		{
+			"statement": "Engine repo-memory poll returns only messages addressed to the polling consumer or 'all' and starts a new consumer at cursor 0 (fabrics/tools/services/repo-memory/internal/store/swarm_messages.go:148), and ack enforces the same recipient boundary (swarm_messages.go:176), so each new session-unique consumer replays eligible broadcast/addressed history once while messages addressed to legacy recipients stay stranded.",
+			"status": "verified",
+			"doubt": 1,
+			"falsifier": "Engine repo-memory source shows new consumers resuming from a persisted non-zero cursor, filtering already-seen history, or polling/acking across recipient boundaries."
+		},
+		{
+			"statement": "Hook payloads carry session_id, sessionId, or conversation_id for session-scoped events on supported clients.",
+			"status": "unverified",
+			"doubt": 2,
+			"falsifier": "A supported client's hook payload lacks all three session id fields, in which case the persisted per-client+workspace fallback applies."
+		}
+	],
+	"run_control": {
+		"autonomous_allowed": true,
+		"risk": "medium",
+		"blast_radius": "local",
+		"reversibility": "easy",
+		"max_active_doubt": 2
+	},
+	"target_planes": [
+		"tool",
+		"client"
+	],
+	"plane_constraints": [
+		"Repo-memory owns durable messages and consumer cursors; the hook adapter owns identity resolution and deferred-ack state; no VCS or Home Manager activation in this slice."
+	]
+}

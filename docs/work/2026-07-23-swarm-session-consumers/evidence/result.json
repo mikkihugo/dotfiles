@@ -1,0 +1,37 @@
+{
+	"result_id": "swarm-session-consumers-result",
+	"status": "passed",
+	"command": "node --test scripts/test-swarm-messages.mjs",
+	"exit_code": 0,
+	"observed_at": "2026-07-23T23:57:31Z",
+	"summary": {
+		"tests": 22,
+		"pass": 22,
+		"fail": 0
+	},
+	"tests": [
+		"workspace selection is durable and scoped to the active repository",
+		"client renderers emit only native context shapes",
+		"MCP transport initializes and calls the lazy repo-memory route",
+		"Home Manager symlink execution enters the hook main routine",
+		"delivery is acknowledged only at the next observed hook boundary",
+		"consumer identity honors override, owner, session, then persisted fallback precedence",
+		"consumer identity is stable per session and distinct across sessions",
+		"codex no longer consumes as the bare root identity",
+		"consumer fallback persists one generated session id per client and workspace",
+		"poll and ack share one session consumer across sequential hook boundaries",
+		"distinct same-client sessions use separate state files and never cross-acknowledge",
+		"derived consumer identity is collision-resistant for sessions sharing a normalized prefix",
+		"blank payload session ids are absent and use the persisted fallback",
+		"SessionStart availability idempotency key is bound to the resolved consumer",
+		"MCP poll failure does not invent a filesystem bus",
+		"session alias selection uses the first non-blank trimmed alias",
+		"derived session digest is a 128-bit collision-resistant suffix with a pinned known answer",
+		"non-string session ids are treated as absent instead of collapsing to one digest",
+		"explicit identity normalizes surrounding whitespace and keeps the internal value opaque",
+		"explicit consumers with equal readable prefixes keep distinct state files and independent ack state",
+		"legacy client-keyed state file is left unchanged and not used for ack state",
+		"an empty persisted fallback file is healed once instead of replaying fresh identities"
+	],
+	"raw_output_uri": "evidence/green-result.txt"
+}

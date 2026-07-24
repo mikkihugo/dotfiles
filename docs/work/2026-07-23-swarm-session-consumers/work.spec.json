@@ -1,0 +1,301 @@
+{
+	"schema_version": "workspec/v4",
+	"workspec_id": "2026-07-23-swarm-session-consumers-work",
+	"purpose_contract_id": "2026-07-23-swarm-session-consumers-purpose",
+	"handover": {
+		"state": "accepted",
+		"producer": {
+			"kind": "agent",
+			"id": "kimi-code"
+		},
+		"accepting_authority": {
+			"kind": "policy",
+			"id": "purpose-first-tdd-handover"
+		},
+		"decided_at": "2026-07-23T22:25:00Z",
+		"purpose_digest": {
+			"algorithm": "sha256",
+			"canonicalization": "engine-json-v1",
+			"value": "36428057265ce4c9ebe30ec2954828bec648db31977996eafcef9e67ece8dc0f"
+		},
+		"subject_digest": {
+			"algorithm": "sha256",
+			"canonicalization": "engine-json-v1",
+			"value": "1991dd544bee18239fe2f78e10f9b99a0012242f1b9042ee24ac3e48ec39972e"
+		},
+		"policy": {
+			"id": "workspec-content-handover/v1",
+			"digest": {
+				"algorithm": "sha256",
+				"canonicalization": "raw-bytes",
+				"value": "21f4dad52f9e5f5a53ee16625c7bf75e01251002911d667e879f3e06147e7192"
+			}
+		},
+		"validators": [
+			"workspec-v4.schema.json",
+			"purpose-first-tdd-handover"
+		],
+		"evidence_refs": [
+			"purpose.contract.json#admission",
+			"root-cause:consumerFor-bare-identities",
+			"engine-contract:pollswarmmessages-cursor-0-replay"
+		]
+	},
+	"feature_tree_target": {
+		"kind": "unknown",
+		"name": "2026-07-23-swarm-session-consumers",
+		"status": "planned"
+	},
+	"current_spec": {
+		"snapshot_id": "2026-07-23-swarm-session-consumers-current-spec",
+		"uri": "current-spec.snapshot.json",
+		"digest": {
+			"algorithm": "sha256",
+			"canonicalization": "raw-bytes",
+			"value": "700f27544bed28bdfa91f15eecc61433b91084dcce4a76e95b7f183b70d36e20"
+		}
+	},
+	"requirement_delta": {
+		"added": [
+			{
+				"id": "R1",
+				"statement": "The shared hook adapter shall resolve one stable session-unique consumer identity per client session and use it for poll, ack, and sender across hook boundaries.",
+				"acceptance_criteria": [
+					"Explicit REPO_MEMORY_SWARM_CONSUMER override wins, then SE_WORKSPACE_OWNER, then the hook payload session id, then a generated UUID persisted once per client+workspace in stateDir",
+					"The payload session id is the first non-blank trimmed value among payload.session_id, payload.sessionId, and payload.conversation_id; a blank or non-string earlier alias never masks a valid later alias, non-string values count as absent, and a null payload counts as no session signal",
+					"Derived identities normalize to client-lowercase plus a 32-hex-character SHA-256 digest (128 bits, collision-resistant, not mathematically unique) of the whole non-blank session id and are never a bare client name or root; the digest algorithm is pinned by a known-answer vector",
+					"Explicit REPO_MEMORY_SWARM_CONSUMER and SE_WORKSPACE_OWNER values are authoritative full identities: surrounding whitespace is normalized (trimmed) and the remaining internal value and punctuation stay opaque",
+					"Distinct session ids that share a normalized prefix still derive distinct consumers",
+					"The same consumer is used for poll, ack, and sender across sequential hook boundaries",
+					"No random identity is generated per invocation"
+				],
+				"requirement_form": {
+					"ears": {
+						"pattern": "ubiquitous",
+						"system": "Shared swarm hook adapter",
+						"response": "resolve and reuse one stable session-unique consumer identity per client session"
+					}
+				},
+				"breaker": {
+					"breaker_id": "B1",
+					"condition": "validation accepts an implementation without the promised behavior",
+					"witness_kind": "contract-test",
+					"expected": "rejected"
+				},
+				"risk": "low",
+				"source": "purpose_contract"
+			},
+			{
+				"id": "R2",
+				"statement": "Deferred-ack state files shall be keyed by consumer so distinct consumers cannot merge or acknowledge each other's pending deliveries.",
+				"acceptance_criteria": [
+					"State files are named with a readable sanitized prefix plus a 32-hex-character SHA-256 digest (128 bits) of the full opaque consumer+workspace pair",
+					"Explicit consumers whose sanitized prefixes are equal (for example a:b and a-b) write distinct state files and keep independent ack state",
+					"Two same-client sessions with distinct session ids write separate state files and neither acknowledges the other's pending deliveries",
+					"A legacy client-keyed state file is left byte-for-byte unchanged and is not used for ack state",
+					"SessionStart idempotency is bound to the resolved consumer so distinct resolved sessions cannot collide and sequential boundaries keep one stable key"
+				],
+				"requirement_form": {
+					"ears": {
+						"pattern": "ubiquitous",
+						"system": "Shared swarm hook adapter",
+						"response": "isolate deferred-ack state per consumer identity"
+					}
+				},
+				"breaker": {
+					"breaker_id": "B2",
+					"condition": "validation accepts cross-session acknowledgement, merged consumer state, or legacy-state mutation",
+					"witness_kind": "contract-test",
+					"expected": "rejected"
+				},
+				"risk": "low",
+				"source": "purpose_contract"
+			},
+			{
+				"id": "R3",
+				"statement": "The persisted per-client+workspace fallback session id shall remain stable across hook invocations and recover from a partial write.",
+				"acceptance_criteria": [
+					"The same generated UUID is returned across invocations once persisted",
+					"An empty or partial fallback file left by a crashed writer is removed and rewritten once, so subsequent invocations keep one stable identity instead of replaying fresh unpersisted identities",
+					"If healing is impossible the hook fails open with an unpersisted per-invocation id"
+				],
+				"requirement_form": {
+					"ears": {
+						"pattern": "ubiquitous",
+						"system": "Shared swarm hook adapter",
+						"response": "keep the persisted fallback session id stable and self-healing"
+					}
+				},
+				"breaker": {
+					"breaker_id": "B3",
+					"condition": "validation accepts an implementation that replays fresh unpersisted identities on every invocation after a partial write",
+					"witness_kind": "contract-test",
+					"expected": "rejected"
+				},
+				"risk": "low",
+				"source": "purpose_contract"
+			}
+		],
+		"modified": [],
+		"removed": [],
+		"renamed": []
+	},
+	"requirements": [
+		{
+			"id": "R1",
+			"statement": "The shared hook adapter shall resolve one stable session-unique consumer identity per client session and use it for poll, ack, and sender across hook boundaries.",
+			"acceptance_criteria": [
+				"Explicit REPO_MEMORY_SWARM_CONSUMER override wins, then SE_WORKSPACE_OWNER, then the hook payload session id, then a generated UUID persisted once per client+workspace in stateDir",
+				"The payload session id is the first non-blank trimmed value among payload.session_id, payload.sessionId, and payload.conversation_id; a blank or non-string earlier alias never masks a valid later alias, non-string values count as absent, and a null payload counts as no session signal",
+				"Derived identities normalize to client-lowercase plus a 32-hex-character SHA-256 digest (128 bits, collision-resistant, not mathematically unique) of the whole non-blank session id and are never a bare client name or root; the digest algorithm is pinned by a known-answer vector",
+				"Explicit REPO_MEMORY_SWARM_CONSUMER and SE_WORKSPACE_OWNER values are authoritative full identities: surrounding whitespace is normalized (trimmed) and the remaining internal value and punctuation stay opaque",
+				"Distinct session ids that share a normalized prefix still derive distinct consumers",
+				"The same consumer is used for poll, ack, and sender across sequential hook boundaries",
+				"No random identity is generated per invocation"
+			],
+			"requirement_form": {
+				"ears": {
+					"pattern": "ubiquitous",
+					"system": "Shared swarm hook adapter",
+					"response": "resolve and reuse one stable session-unique consumer identity per client session"
+				}
+			},
+			"breaker": {
+				"breaker_id": "B1",
+				"condition": "validation accepts an implementation without the promised behavior",
+				"witness_kind": "contract-test",
+				"expected": "rejected"
+			},
+			"risk": "low",
+			"source": "purpose_contract"
+		},
+		{
+			"id": "R2",
+			"statement": "Deferred-ack state files shall be keyed by consumer so distinct consumers cannot merge or acknowledge each other's pending deliveries.",
+			"acceptance_criteria": [
+				"State files are named with a readable sanitized prefix plus a 32-hex-character SHA-256 digest (128 bits) of the full opaque consumer+workspace pair",
+				"Explicit consumers whose sanitized prefixes are equal (for example a:b and a-b) write distinct state files and keep independent ack state",
+				"Two same-client sessions with distinct session ids write separate state files and neither acknowledges the other's pending deliveries",
+				"A legacy client-keyed state file is left byte-for-byte unchanged and is not used for ack state",
+				"SessionStart idempotency is bound to the resolved consumer so distinct resolved sessions cannot collide and sequential boundaries keep one stable key"
+			],
+			"requirement_form": {
+				"ears": {
+					"pattern": "ubiquitous",
+					"system": "Shared swarm hook adapter",
+					"response": "isolate deferred-ack state per consumer identity"
+				}
+			},
+			"breaker": {
+				"breaker_id": "B2",
+				"condition": "validation accepts cross-session acknowledgement, merged consumer state, or legacy-state mutation",
+				"witness_kind": "contract-test",
+				"expected": "rejected"
+			},
+			"risk": "low",
+			"source": "purpose_contract"
+		},
+		{
+			"id": "R3",
+			"statement": "The persisted per-client+workspace fallback session id shall remain stable across hook invocations and recover from a partial write.",
+			"acceptance_criteria": [
+				"The same generated UUID is returned across invocations once persisted",
+				"An empty or partial fallback file left by a crashed writer is removed and rewritten once, so subsequent invocations keep one stable identity instead of replaying fresh unpersisted identities",
+				"If healing is impossible the hook fails open with an unpersisted per-invocation id"
+			],
+			"requirement_form": {
+				"ears": {
+					"pattern": "ubiquitous",
+					"system": "Shared swarm hook adapter",
+					"response": "keep the persisted fallback session id stable and self-healing"
+				}
+			},
+			"breaker": {
+				"breaker_id": "B3",
+				"condition": "validation accepts an implementation that replays fresh unpersisted identities on every invocation after a partial write",
+				"witness_kind": "contract-test",
+				"expected": "rejected"
+			},
+			"risk": "low",
+			"source": "purpose_contract"
+		}
+	],
+	"scope": {
+		"allowed": [
+			"config/codex/hooks/swarm-messages.mjs",
+			"scripts/test-swarm-messages.mjs",
+			"docs/work/2026-07-23-swarm-session-consumers/**"
+		],
+		"blocked": [],
+		"expected_files": []
+	},
+	"test_plan": [
+		{
+			"id": "T1",
+			"requirement_id": "R1",
+			"kind": "contract",
+			"description": "Node contract tests for identity precedence, first-non-blank alias selection with null-payload safety, the 128-bit digest format with a pinned known-answer vector, truthful explicit-identity whitespace semantics, non-string session ids treated as absent, per-session stability, prefix-collision resistance, blank-session fallback, codex-not-root, and sequential poll-to-ack continuity.",
+			"must_fail_first": true
+		},
+		{
+			"id": "T2",
+			"requirement_id": "R2",
+			"kind": "contract",
+			"description": "Node contract tests proving distinct consumers (including explicit consumers with equal sanitized prefixes) write separate digest-keyed state files with independent ack state and no cross-acknowledgement, that a pre-seeded legacy client-keyed state file stays byte-unchanged and is not used for ack state, and that the SessionStart availability idempotency key is bound to the resolved consumer.",
+			"must_fail_first": true
+		},
+		{
+			"id": "T3",
+			"requirement_id": "R3",
+			"kind": "contract",
+			"description": "Node contract tests proving the persisted per-client+workspace fallback stays stable across invocations and that an empty fallback file left by a crashed writer is healed once instead of replaying fresh unpersisted identities.",
+			"must_fail_first": true
+		}
+	],
+	"verification_plan": {
+		"commands": [
+			"node --test scripts/test-swarm-messages.mjs"
+		],
+		"evidence_required": [
+			"test",
+			"falsifier"
+		]
+	},
+	"model_requirements": {
+		"coding": 0.6,
+		"debugging": 0.4
+	},
+	"run_control": {
+		"autonomous_allowed": true,
+		"approval_required": false,
+		"max_doubt_to_proceed": 2
+	},
+	"traceability": {
+		"owner": {
+			"kind": "agent",
+			"id": "kimi-code"
+		},
+		"agent_role": "implementer",
+		"source_node_id": "2026-07-23-swarm-session-consumers",
+		"target_planes": [
+			"tool",
+			"client"
+		],
+		"dependencies": [],
+		"retry_policy": {
+			"max_attempts": 1,
+			"backoff": "none",
+			"retryable_terminal_reasons": []
+		},
+		"dispatch_scope": {
+			"kind": "local"
+		}
+	},
+	"execution_constraints": {
+		"required_capabilities": [],
+		"requested_isolation": "process",
+		"side_effect_policy": "fenced",
+		"expected_artifact_schemas": [],
+		"deterministic_replay_required": true
+	}
+}

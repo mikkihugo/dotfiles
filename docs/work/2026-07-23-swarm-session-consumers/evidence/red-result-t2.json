@@ -1,0 +1,20 @@
+{
+  "result_id": "swarm-session-consumers-red-t2",
+  "status": "failed",
+  "observed_at": "2026-07-23T23:53:39Z",
+  "command": "node --test scripts/test-swarm-messages.mjs",
+  "exit_code": 1,
+  "summary": {
+    "tests": 22,
+    "pass": 7,
+    "fail": 15
+  },
+  "failing_tests": [
+    "delivery is acknowledged only at the next observed hook boundary",
+    "poll and ack share one session consumer across sequential hook boundaries",
+    "distinct same-client sessions use separate state files and never cross-acknowledge",
+    "explicit consumers with equal readable prefixes keep distinct state files and independent ack state",
+    "legacy client-keyed state file is left unchanged and not used for ack state"
+  ],
+  "raw_output_uri": "evidence/red-proof.txt"
+}

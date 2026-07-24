@@ -1,0 +1,23 @@
+{
+  "result_id": "swarm-session-consumers-red-t1",
+  "status": "failed",
+  "observed_at": "2026-07-23T23:53:39Z",
+  "command": "node --test scripts/test-swarm-messages.mjs",
+  "exit_code": 1,
+  "summary": {
+    "tests": 22,
+    "pass": 7,
+    "fail": 15
+  },
+  "failing_tests": [
+    "consumer identity honors override, owner, session, then persisted fallback precedence",
+    "consumer identity is stable per session and distinct across sessions",
+    "codex no longer consumes as the bare root identity",
+    "derived consumer identity is collision-resistant for sessions sharing a normalized prefix",
+    "blank payload session ids are absent and use the persisted fallback",
+    "session alias selection uses the first non-blank trimmed alias",
+    "derived session digest is a 128-bit collision-resistant suffix with a pinned known answer",
+    "non-string session ids are treated as absent instead of collapsing to one digest"
+  ],
+  "raw_output_uri": "evidence/red-proof.txt"
+}

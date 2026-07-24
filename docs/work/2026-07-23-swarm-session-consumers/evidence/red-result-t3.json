@@ -1,0 +1,17 @@
+{
+  "result_id": "swarm-session-consumers-red-t3",
+  "status": "failed",
+  "observed_at": "2026-07-23T23:53:39Z",
+  "command": "node --test scripts/test-swarm-messages.mjs",
+  "exit_code": 1,
+  "summary": {
+    "tests": 22,
+    "pass": 7,
+    "fail": 15
+  },
+  "failing_tests": [
+    "consumer fallback persists one generated session id per client and workspace",
+    "an empty persisted fallback file is healed once instead of replaying fresh identities"
+  ],
+  "raw_output_uri": "evidence/red-proof.txt"
+}

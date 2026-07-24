@@ -1,0 +1,317 @@
+✔ workspace selection is durable and scoped to the active repository (11.465973ms)
+✔ client renderers emit only native context shapes (0.699089ms)
+✔ MCP transport initializes and calls the lazy repo-memory route (49.338787ms)
+✔ Home Manager symlink execution enters the hook main routine (174.634882ms)
+✖ delivery is acknowledged only at the next observed hook boundary (5.15053ms)
+✖ consumer identity honors override, owner, session, then persisted fallback precedence (3.003906ms)
+✖ consumer identity is stable per session and distinct across sessions (1.697389ms)
+✖ codex no longer consumes as the bare root identity (1.303724ms)
+✖ consumer fallback persists one generated session id per client and workspace (3.960167ms)
+✖ poll and ack share one session consumer across sequential hook boundaries (6.513005ms)
+✖ distinct same-client sessions use separate state files and never cross-acknowledge (2.374028ms)
+✖ derived consumer identity is collision-resistant for sessions sharing a normalized prefix (1.166234ms)
+✖ blank payload session ids are absent and use the persisted fallback (1.948484ms)
+✔ SessionStart availability idempotency key is bound to the resolved consumer (3.142067ms)
+✔ MCP poll failure does not invent a filesystem bus (1.69304ms)
+✖ session alias selection uses the first non-blank trimmed alias (1.597268ms)
+✖ derived session digest is a 128-bit collision-resistant suffix with a pinned known answer (1.205884ms)
+✖ non-string session ids are treated as absent instead of collapsing to one digest (1.679659ms)
+✔ explicit identity normalizes surrounding whitespace and keeps the internal value opaque (0.965891ms)
+✖ explicit consumers with equal readable prefixes keep distinct state files and independent ack state (2.934784ms)
+✖ legacy client-keyed state file is left unchanged and not used for ack state (3.33119ms)
+✖ an empty persisted fallback file is healed once instead of replaying fresh identities (2.47704ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 7
+ℹ fail 15
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 395.889989
+
+✖ failing tests:
+
+test at scripts/test-swarm-messages.mjs:177:1
+✖ delivery is acknowledged only at the next observed hook boundary (5.15053ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^codex-[0-9a-f]{32}-[0-9a-f]{32}--engine\.json$/. Input:
+  
+  'codex-e447b7dd3c4eaf1e--engine.json'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:215:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-e447b7dd3c4eaf1e--engine.json',
+    expected: /^codex-[0-9a-f]{32}-[0-9a-f]{32}--engine\.json$/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:222:1
+✖ consumer identity honors override, owner, session, then persisted fallback precedence (3.003906ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'codex-5f7a79b01dbda3db'
+  - 'codex-5f7a79b01dbda3db429bc427d381f077'
+                           ^
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:235:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-5f7a79b01dbda3db',
+    expected: 'codex-5f7a79b01dbda3db429bc427d381f077',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:252:1
+✖ consumer identity is stable per session and distinct across sessions (1.697389ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^kimi-code-[0-9a-f]{32}$/. Input:
+  
+  'kimi-code-46a043c4b2dd2074'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:261:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'kimi-code-46a043c4b2dd2074',
+    expected: /^kimi-code-[0-9a-f]{32}$/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:268:1
+✖ codex no longer consumes as the bare root identity (1.303724ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^codex-[0-9a-f]{32}$/. Input:
+  
+  'codex-749394c7f05cc74f'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:274:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-749394c7f05cc74f',
+    expected: /^codex-[0-9a-f]{32}$/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:283:1
+✖ consumer fallback persists one generated session id per client and workspace (3.960167ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^claude-[0-9a-f]{32}$/. Input:
+  
+  'claude-d09300bd1be30d2f'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:289:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'claude-d09300bd1be30d2f',
+    expected: /^claude-[0-9a-f]{32}$/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:302:1
+✖ poll and ack share one session consumer across sequential hook boundaries (6.513005ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'poll:codex-edd2c8083f1dbddd',
+  +   'ack:codex-edd2c8083f1dbddd:4fdce8cc-b9d2-42df-bfd6-d54e97183f64',
+  +   'poll:codex-edd2c8083f1dbddd'
+  -   'poll:codex-edd2c8083f1dbddd16854e61d3e79e69',
+  -   'ack:codex-edd2c8083f1dbddd16854e61d3e79e69:4fdce8cc-b9d2-42df-bfd6-d54e97183f64',
+  -   'poll:codex-edd2c8083f1dbddd16854e61d3e79e69'
+    ]
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:335:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'poll:codex-edd2c8083f1dbddd', 'ack:codex-edd2c8083f1dbddd:4fdce8cc-b9d2-42df-bfd6-d54e97183f64', 'poll:codex-edd2c8083f1dbddd' ],
+    expected: [ 'poll:codex-edd2c8083f1dbddd16854e61d3e79e69', 'ack:codex-edd2c8083f1dbddd16854e61d3e79e69:4fdce8cc-b9d2-42df-bfd6-d54e97183f64', 'poll:codex-edd2c8083f1dbddd16854e61d3e79e69' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:345:1
+✖ distinct same-client sessions use separate state files and never cross-acknowledge (2.374028ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^codex-[0-9a-f]{32}-[0-9a-f]{32}--engine\.json$/. Input:
+  
+  'codex-46a043c4b2dd2074--engine.json'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:376:14)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-46a043c4b2dd2074--engine.json',
+    expected: /^codex-[0-9a-f]{32}-[0-9a-f]{32}--engine\.json$/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:395:1
+✖ derived consumer identity is collision-resistant for sessions sharing a normalized prefix (1.166234ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'codex-c7bded9cd6ad82c4'
+  - 'codex-c7bded9cd6ad82c4f86f2b6997ec2547'
+                           ^
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:403:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-c7bded9cd6ad82c4',
+    expected: 'codex-c7bded9cd6ad82c4f86f2b6997ec2547',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:423:1
+✖ blank payload session ids are absent and use the persisted fallback (1.948484ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^codex-[0-9a-f]{32}$/. Input:
+  
+  'codex-1e37e1174b8b5fb2'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:427:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-1e37e1174b8b5fb2',
+    expected: /^codex-[0-9a-f]{32}$/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:509:1
+✖ session alias selection uses the first non-blank trimmed alias (1.597268ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'codex-a3de234e710d73a8'
+  - 'codex-b8adbbb7c9aa611234f7fad8d5a86057'
+           ^
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:514:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-a3de234e710d73a8',
+    expected: 'codex-b8adbbb7c9aa611234f7fad8d5a86057',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:535:1
+✖ derived session digest is a 128-bit collision-resistant suffix with a pinned known answer (1.205884ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'codex-b9711e8065e5f583'
+  - 'codex-b9711e8065e5f58368de3234734eda20'
+                           ^
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:541:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-b9711e8065e5f583',
+    expected: 'codex-b9711e8065e5f58368de3234734eda20',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:548:1
+✖ non-string session ids are treated as absent instead of collapsing to one digest (1.679659ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'codex-b28c94b2195c8ed2'
+  - 'codex-68c32d79fc050176'
+           ^
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:554:14)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-b28c94b2195c8ed2',
+    expected: 'codex-68c32d79fc050176',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:581:1
+✖ explicit consumers with equal readable prefixes keep distinct state files and independent ack state (2.934784ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'a-b:aaaa0000-0000-4000-8000-0000000000a1'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:610:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'a-b:aaaa0000-0000-4000-8000-0000000000a1' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:632:1
+✖ legacy client-keyed state file is left unchanged and not used for ack state (3.33119ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^codex-[0-9a-f]{32}-[0-9a-f]{32}--engine\.json$/. Input:
+  
+  'codex-bfa86b5a63692fc9--engine.json'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:667:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-bfa86b5a63692fc9--engine.json',
+    expected: /^codex-[0-9a-f]{32}-[0-9a-f]{32}--engine\.json$/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-swarm-messages.mjs:674:1
+✖ an empty persisted fallback file is healed once instead of replaying fresh identities (2.47704ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'codex-6dc2e80eb37a3995'
+  - 'codex-72b730eaae0b1113'
+           ^
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/swarm-session-consumers/scripts/test-swarm-messages.mjs:682:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'codex-6dc2e80eb37a3995',
+    expected: 'codex-72b730eaae0b1113',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,321 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-07-23-swarm-session-consumers-evidence",
+  "workspec_id": "2026-07-23-swarm-session-consumers-work",
+  "purpose_contract_id": "2026-07-23-swarm-session-consumers-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "36428057265ce4c9ebe30ec2954828bec648db31977996eafcef9e67ece8dc0f"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "1991dd544bee18239fe2f78e10f9b99a0012242f1b9042ee24ac3e48ec39972e"
+  },
+  "workflow_run_id": "kimi-2026-07-23-swarm-session-consumers-fix-01",
+  "execution": {
+    "execution_id": "2026-07-23-swarm-session-consumers-fix-execution",
+    "tool": {
+      "id": "kimi-code-fixer",
+      "version": "2026-07-23"
+    },
+    "result": {
+      "result_id": "swarm-session-consumers-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "0078583e975eb90206cb2252e5787630417677e9b9030541cb733e9ccad7d598"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "swarm-session-consumers-result",
+        "uri": "evidence/result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "0078583e975eb90206cb2252e5787630417677e9b9030541cb733e9ccad7d598"
+        }
+      },
+      {
+        "artifact_id": "swarm-session-consumers-green-output",
+        "uri": "evidence/green-result.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "ed5aaeee2303e2dbab24f42d490748cf0f2de4e705a50a4a32145a09f0f6f4eb"
+        }
+      },
+      {
+        "artifact_id": "swarm-session-consumers-red-proof",
+        "uri": "evidence/red-proof.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "693dbbf4d9c2628886412e38111553d0751efbe4b497b843e56964876e01defe"
+        }
+      },
+      {
+        "artifact_id": "swarm-session-consumers-red-t1",
+        "uri": "evidence/red-result-t1.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "a00dbed5936bf08c3cf3b18656dac600433529ff41483119fff75eb188f88733"
+        }
+      },
+      {
+        "artifact_id": "swarm-session-consumers-red-t2",
+        "uri": "evidence/red-result-t2.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "74dd1caf7b8db012889630fb1682ebb5cba062de68f25fee54862acc98877ea3"
+        }
+      },
+      {
+        "artifact_id": "swarm-session-consumers-red-t3",
+        "uri": "evidence/red-result-t3.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f27e571c1176f1f9c61b705658bb4554fedbcc008a789463b76a14bc984f9783"
+        }
+      },
+      {
+        "artifact_id": "swarm-session-consumers-changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f653836a234c5458a760be0c3bd9d54f588062a93530d3809da9fe0b03d46489"
+        }
+      },
+      {
+        "artifact_id": "swarm-session-consumers-independent-review",
+        "uri": "evidence/independent-review.md",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "7b4806b4b7448070c2efec3c1639b2f076b5a532e6f29af7b7e405038a17152e"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-07-23-swarm-session-consumers-fix-trace",
+    "started_at": "2026-07-23T23:41:52Z",
+    "completed_at": "2026-07-23T23:57:31Z"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Contract tests prove identity precedence, first-non-blank alias selection (a blank earlier alias never masks a valid later one; payload:null is safe), the 128-bit SHA-256 digest format with the pinned known-answer vector, truthful explicit-identity whitespace semantics (surrounding whitespace trimmed, internal value opaque), non-string session ids treated as absent, per-session stability, prefix-collision resistance, blank-session fallback, codex-is-not-root, and sequential poll-to-ack continuity.",
+      "result_id": "swarm-session-consumers-result",
+      "artifact_ids": [
+        "swarm-session-consumers-result",
+        "swarm-session-consumers-green-output"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-07-23T23:57:31Z",
+      "red_proof": {
+        "result_id": "swarm-session-consumers-red-t1",
+        "artifact_id": "swarm-session-consumers-red-t1",
+        "output_uri": "evidence/red-result-t1.json",
+        "observed_at": "2026-07-23T23:53:39Z"
+      },
+      "command": "node --test scripts/test-swarm-messages.mjs"
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "description": "Contract tests prove distinct consumers write separate digest-keyed state files with no cross-acknowledgement, including explicit consumers a:b and a-b whose sanitized prefixes are equal; a pre-seeded legacy codex--engine.json stays byte-for-byte unchanged and is not used for ack state; the SessionStart availability idempotency key is bound to the resolved consumer.",
+      "result_id": "swarm-session-consumers-result",
+      "artifact_ids": [
+        "swarm-session-consumers-result",
+        "swarm-session-consumers-green-output"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-07-23T23:57:31Z",
+      "red_proof": {
+        "result_id": "swarm-session-consumers-red-t2",
+        "artifact_id": "swarm-session-consumers-red-t2",
+        "output_uri": "evidence/red-result-t2.json",
+        "observed_at": "2026-07-23T23:53:39Z"
+      },
+      "command": "node --test scripts/test-swarm-messages.mjs"
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R3",
+      "status": "passed",
+      "description": "Contract tests prove the persisted per-client+workspace fallback stays stable across invocations and that an empty fallback file left by a crashed writer is removed and rewritten once instead of replaying fresh unpersisted identities on every hook fire.",
+      "result_id": "swarm-session-consumers-result",
+      "artifact_ids": [
+        "swarm-session-consumers-result",
+        "swarm-session-consumers-green-output"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-07-23T23:57:31Z",
+      "red_proof": {
+        "result_id": "swarm-session-consumers-red-t3",
+        "artifact_id": "swarm-session-consumers-red-t3",
+        "output_uri": "evidence/red-result-t3.json",
+        "observed_at": "2026-07-23T23:53:39Z"
+      },
+      "command": "node --test scripts/test-swarm-messages.mjs"
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "contract-tests",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "1991dd544bee18239fe2f78e10f9b99a0012242f1b9042ee24ac3e48ec39972e"
+      },
+      "artifact_ids": [
+        "swarm-session-consumers-result",
+        "swarm-session-consumers-green-output"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "kimi-code"
+      },
+      "observed_at": "2026-07-23T23:57:31Z",
+      "rationale": "node --test scripts/test-swarm-messages.mjs passed 22/22: the nine pre-existing hook tests plus thirteen consumer-identity tests covering precedence, alias selection, 128-bit digest known answer, whitespace semantics, non-string ids, stability, collision resistance, fallback persistence and heal, continuity, distinct-consumer isolation with equal sanitized prefixes, legacy-file immutability, codex-not-root, SessionStart idempotency, and fail-open poll failure."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "swarm-session-consumers-changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "f653836a234c5458a760be0c3bd9d54f588062a93530d3809da9fe0b03d46489"
+      },
+      "files": [
+        "config/codex/hooks/swarm-messages.mjs",
+        "scripts/test-swarm-messages.mjs",
+        "docs/work/2026-07-23-swarm-session-consumers/README.md",
+        "docs/work/2026-07-23-swarm-session-consumers/current-spec.snapshot.json",
+        "docs/work/2026-07-23-swarm-session-consumers/evidence.bundle.json",
+        "docs/work/2026-07-23-swarm-session-consumers/evidence/changed-files.json",
+        "docs/work/2026-07-23-swarm-session-consumers/evidence/green-result.txt",
+        "docs/work/2026-07-23-swarm-session-consumers/evidence/independent-review.md",
+        "docs/work/2026-07-23-swarm-session-consumers/evidence/red-proof.txt",
+        "docs/work/2026-07-23-swarm-session-consumers/evidence/red-result-t1.json",
+        "docs/work/2026-07-23-swarm-session-consumers/evidence/red-result-t2.json",
+        "docs/work/2026-07-23-swarm-session-consumers/evidence/red-result-t3.json",
+        "docs/work/2026-07-23-swarm-session-consumers/evidence/result.json",
+        "docs/work/2026-07-23-swarm-session-consumers/purpose.contract.json",
+        "docs/work/2026-07-23-swarm-session-consumers/validation.report.json",
+        "docs/work/2026-07-23-swarm-session-consumers/work.spec.json"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "node --test scripts/test-swarm-messages.mjs passed 22/22; precedence, first-non-blank alias selection, 128-bit digest known answer, whitespace semantics, non-string session id handling, stability, prefix-collision resistance, blank-session fallback, codex-not-root, poll-to-ack continuity, distinct-consumer state isolation (including equal sanitized prefixes), legacy-file immutability, fallback persistence and single-heal, and consumer-bound SessionStart idempotency did not falsify the contract.",
+    "output_uri": "evidence/result.json"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "700f27544bed28bdfa91f15eecc61433b91084dcce4a76e95b7f183b70d36e20"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "fbb01afb43964017fa333877817c1abd2f086bc68eabf490f9374d1dc0095fae"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "682219b92ef0b0b944c87d85e0d64058a09bd07a792731fb21caff8d412ff5d5"
+    },
+    "witness_artifact_id": "swarm-session-consumers-result"
+  },
+  "reviews": [
+    {
+      "review_id": "2026-07-23-swarm-session-consumers-review",
+      "reviewer": {
+        "kind": "agent",
+        "id": "kimi-code-independent-review-swarm"
+      },
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "16cd5e384a8c4a007f7e0fdc8220afb4224c65c57ee3bab29621a234d0336b8c"
+      },
+      "verdict": "changes-required",
+      "artifact_id": "swarm-session-consumers-independent-review",
+      "observed_at": "2026-07-23T23:35:24Z",
+      "independent": true,
+      "rationale": "Independent read-only review (parent task 2026-07-23-swarm-session-consumers-review, 3 Kimi agents under codex-root coordination) of the pre-fix packet and implementation: verdict 'With fixes' — C1 packet failed the real validator (manifest source, red-proof shape, reviews schema), I1 blank-alias masking, I2 legacy-state proof gap, I3 migration stranding understated, plus minors M1-M9. The fix lane (task 2026-07-23-swarm-session-consumers-fix) addresses C1, I1-I3, and the adjacent minors; the reviewed subject digest is the pre-fix WorkSpec. Final review, VCS, land, publication, and activation remain with the Codex coordinator."
+    }
+  ],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "swarm-session-consumers-red-t1",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "1991dd544bee18239fe2f78e10f9b99a0012242f1b9042ee24ac3e48ec39972e"
+      },
+      "observed_at": "2026-07-23T23:53:39Z",
+      "rationale": "The red run rejected the pre-fix implementation: a blank session_id masked a valid sessionId alias, the derived digest was 16 hex (64 bits) instead of 32 hex (128 bits) and failed the pinned known-answer vector, and a structured session id collapsed onto the '[object Object]' digest instead of counting as absent."
+    },
+    {
+      "breaker_id": "B2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "swarm-session-consumers-red-t2",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "1991dd544bee18239fe2f78e10f9b99a0012242f1b9042ee24ac3e48ec39972e"
+      },
+      "observed_at": "2026-07-23T23:53:39Z",
+      "rationale": "The red run rejected the pre-fix implementation: explicit consumers a:b and a-b shared one state file because the readable sanitized prefix alone was the key, merging their deferred-ack state."
+    },
+    {
+      "breaker_id": "B3",
+      "requirement_id": "R3",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "swarm-session-consumers-red-t3",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "1991dd544bee18239fe2f78e10f9b99a0012242f1b9042ee24ac3e48ec39972e"
+      },
+      "observed_at": "2026-07-23T23:53:39Z",
+      "rationale": "The red run rejected the pre-fix implementation: an empty persisted fallback file left by a crashed writer made every invocation return a fresh unpersisted identity instead of healing once."
+    }
+  ]
+}

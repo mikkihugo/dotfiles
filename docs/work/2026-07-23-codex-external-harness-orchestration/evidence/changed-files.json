@@ -1,0 +1,28 @@
+{
+  "source": "repository-vcs-facade",
+  "observed_with": "repo vcs status",
+  "files": [
+    "config/codex/AGENTS.md",
+    "config/codex/bin/codex-external-run.mjs",
+    "config/codex/skills/external-harness-orchestration/SKILL.md",
+    "config/codex/skills/external-harness-orchestration/agents/openai.yaml",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/README.md",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/current-spec.snapshot.json",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/green-launcher.log",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/green-skill.log",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/nix-build.log",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/red-launcher.json",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/red-launcher.log",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/red-skill.json",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/red-skill.log",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/repo-check-baseline.log",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/evidence/repo-check.log",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/purpose.contract.json",
+    "docs/work/2026-07-23-codex-external-harness-orchestration/work.spec.json",
+    "home/modules/files.nix",
+    "scripts/repo-check.sh",
+    "scripts/test-codex-external-harness-skill.mjs",
+    "scripts/test-codex-external-run.mjs",
+    "scripts/test-nix-tooling.mjs"
+  ]
+}

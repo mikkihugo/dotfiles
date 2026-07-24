@@ -1,0 +1,8 @@
+{
+  "result_id": "external-harness-skill-red-result",
+  "status": "failed",
+  "observed_at": "2026-07-23T23:40:00Z",
+  "command": "node --test scripts/test-codex-external-harness-skill.mjs",
+  "exit_code": 1,
+  "summary": "4 contracts failed before implementation: operator hard ceilings, run provenance launcher documentation, Home Manager launcher mapping, and dual contract-test citation. Raw log: evidence/red-skill.log."
+}

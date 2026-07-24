@@ -1,0 +1,544 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-07-23-codex-external-harness-orchestration-work",
+  "purpose_contract_id": "2026-07-23-codex-external-harness-orchestration-purpose",
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-07-23-codex-external-harness-orchestration",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-07-23-codex-external-harness-orchestration-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "be2fd9ebff8fc6e9e39a8c6cf5ae55d966d67b5c51208e2a5ebf589d7d1e813f"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "WHEN Codex root needs delegated implementation work AND cross-provider child-thread history transfer is not verified safe, THE Codex root SHALL act as coordinator, verifier, and sole publisher and MUST NOT use Codex subagents for that delegated work; INSTEAD it SHALL load the external-harness-orchestration skill and delegate bounded fresh sessions to Kimi CLI or Cursor. THE skill SHALL include a main-agent-only <SUBAGENT-STOP> guard telling a bounded subagent to stop and return to Codex root.",
+        "acceptance_criteria": [
+          "config/codex/skills/external-harness-orchestration/SKILL.md forbids Codex subagent delegation and names Codex root as coordinator/verifier/sole publisher",
+          "SKILL.md contains <SUBAGENT-STOP> telling a bounded subagent to stop and return to Codex root",
+          "config/codex/AGENTS.md handwritten section is a minimal load-skill trigger only",
+          "contract test trigger and alternate phrasing assert the forbid text; near-miss proves Default/Plan or v1/v2 wording alone cannot satisfy the frontmatter Use-when trigger because those terms appear only in Not for"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Codex root",
+            "trigger": "delegated implementation work is required while cross-provider history transfer remains unverified",
+            "response": "load external-harness-orchestration and delegate only to fresh Kimi CLI or Cursor sessions, never Codex subagents; bounded subagents stop via SUBAGENT-STOP"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B-R1",
+          "condition": "instruction surface allows Codex spawn_agent/subagent delegation for this path, omits SUBAGENT-STOP, or keeps a broad inline AGENTS policy instead of a skill trigger",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "WHEN launching a Kimi CLI worker in prompt mode, THE coordinator SHALL use `kimi --model kimi-code/k3 --output-format stream-json --prompt <task>` and MUST NOT combine `--prompt` with `--auto` or `--yolo`.",
+        "acceptance_criteria": [
+          "skill contains the exact Kimi command shape",
+          "contract test asserts model, output-format, --prompt, and forbids --auto/--yolo combination"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Codex coordinator",
+            "trigger": "a Kimi CLI worker is launched in prompt mode",
+            "response": "use exact model kimi-code/k3 with stream-json output and --prompt without --auto or --yolo"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B-R2",
+          "condition": "Kimi launch guidance omits model/flags or permits --prompt with --auto/--yolo",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R3",
+        "statement": "WHEN selecting a Cursor subscription worker model, THE coordinator SHALL prefer `cursor-grok-4.5-high` or non-fast `composer-2.5` and MUST NOT select `*-fast` variants.",
+        "acceptance_criteria": [
+          "skill names preferred Cursor models and forbids *-fast",
+          "contract test asserts both preferred models and non-fast policy"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Codex coordinator",
+            "trigger": "a Cursor subscription worker model is selected",
+            "response": "prefer cursor-grok-4.5-high or non-fast composer-2.5 and reject *-fast variants"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B-R3",
+          "condition": "Cursor guidance selects or allows *-fast models",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R4",
+        "statement": "IF Responses encrypted_content is present, THE system SHALL NOT assume it is portable; THE system SHALL pass it unchanged only to a compatible same-upstream opaque replay; THE system MUST NOT translate it to chat/Anthropic/external models or silently strip it from an inherited thread; a cross-provider task MUST fail closed OR start an explicitly fresh portable session containing only transferable instructions/transcript.",
+        "acceptance_criteria": [
+          "skill encodes not-assumed-portable same-upstream-only passthrough and fail-closed/fresh-session alternatives",
+          "Default/Plan and multi-agent v1/v2 are clarified as lifecycle/UI modes, not protocol fixes"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "unwanted-behavior",
+            "system": "External harness orchestration",
+            "trigger": "Responses encrypted_content would be translated, stripped, or sent across incompatible providers",
+            "response": "fail closed or start an explicitly fresh portable session with only transferable content"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B-R4",
+          "condition": "instruction surface permits silent strip/translate of encrypted_content or treats UI modes as protocol fixes",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R5",
+        "statement": "THE coordinator SHALL issue worker ownership packets with no VCS/publication authority, independently verify machine-readable worker evidence, and continue durable coordination through repo-memory; concurrency SHALL be resource-budgeted and provider-aware inside the operator hard ceilings: verify host RAM/headroom and provider capacity before fan-out, use multiple external workers only when at least two independent ownership lanes exist and resources allow, and cap each batch to the smaller of independent lanes, verified provider capacity, a conservative host-memory budget, and the remaining budget under the hard ceilings of at most 10 total Kimi agents per Kimi coordinator/swarm including the lead and at most 30 Kimi agents globally, which the launcher enforces mechanically.",
+        "acceptance_criteria": [
+          "skill states ownership packets and no worker VCS/publication authority",
+          "skill states machine-readable evidence and independent coordinator verification",
+          "skill states repo-memory continuation and resource-budgeted provider-aware concurrency",
+          "skill and launcher enforce the operator hard ceilings (at most 10 per coordinator/swarm including the lead, at most 30 globally) as ceilings, not targets, with resource-based lower limits"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Codex coordinator",
+            "response": "issue ownership packets without VCS/publication authority, independently verify evidence, continue via repo-memory, and fan out only under resource-budgeted provider-aware caps inside the operator hard ceilings (at most 10 Kimi agents per coordinator/swarm including the lead, at most 30 globally)"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B-R5",
+          "condition": "workers are granted VCS/publication authority, coordinator skips independent verification/repo-memory continuation, fan-out ignores independence, or a launch exceeds the operator hard ceilings without mechanical rejection",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R6",
+        "statement": "THE canonical orchestration guidance SHALL live at config/codex/skills/external-harness-orchestration with agents/openai.yaml; Home Manager SHALL map only that skill to .codex/skills/external-harness-orchestration; general runbooks under config/codex/runbooks and docs/runbooks MUST be absent for this topic; singularity-engine-forward MUST NOT be mapped; JCode MUST remain evaluation-only; and scripts/repo-check.sh SHALL invoke scripts/test-codex-external-harness-skill.mjs.",
+        "acceptance_criteria": [
+          "canonical path is config/codex/skills/external-harness-orchestration",
+          "AGENTS trigger names the skill and does not inline full launch policy",
+          "runbook copies are removed",
+          "files.nix maps only the named skill recursively",
+          "scripts/repo-check.sh and test-nix-tooling list scripts/test-codex-external-harness-skill.mjs and scripts/test-codex-external-run.mjs",
+          "JCode is not added as a worker path"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "dotfiles Codex instruction surfaces",
+            "response": "keep orchestration guidance in a Codex-only user skill with exact Home Manager mapping and contract-test coverage"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B-R6",
+          "condition": "runbook remains, Home Manager over-maps skills, JCode is added as a worker, or repo-check omits the renamed contract test",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R7",
+        "statement": "WHEN Codex root launches an external Kimi CLI or Cursor worker, THE launch SHALL go through the Codex-only launcher config/codex/bin/codex-external-run.mjs installed only under ~/.codex/bin; THE launcher SHALL write a crash-recoverable per-run machine-readable record under $XDG_STATE_HOME/codex/external-runs (fallback ~/.local/state/codex/external-runs) with a 0700 directory and 0600 record where the platform permits; THE record SHALL contain schema version, root_task_id, parent_task_id, task_id, run_id, coordinator, harness, model, absolute workspace, declared Kimi agent budget, launcher PID, child PID, start/end timestamps, lifecycle status, and exit/signal result; THE launcher MUST NOT persist prompt content, command arguments, environment, credentials, or tool output; THE launcher SHALL require explicit root/parent/task identity with no silent anonymous default, reject duplicate run records, reject Kimi agent budgets above 10, reconcile stale dead-PID records, reject global Kimi reservations above 30, enforce one writer per workspace lane, serialize check-and-reserve under an advisory lock, and fail closed when provenance cannot be written or the global reservation cannot be proven.",
+        "acceptance_criteria": [
+          "node --test scripts/test-codex-external-run.mjs proves required record fields, no prompt/argv leakage, exit/signal recording, and restrictive 0700/0600 modes with fake child executables and temp XDG state",
+          "per-run budget >10 rejection, global reserved >30 rejection, stale/dead-run reconciliation, duplicate run-id rejection, nested root/parent preservation, and concurrent reservation serialization are proven by focused tests",
+          "Home Manager installs the launcher only at .codex/bin/codex-external-run; scripts/repo-check.sh and test-nix-tooling list scripts/test-codex-external-run.mjs",
+          "the launcher injects ancestry/budget via CODEX_EXTERNAL_RUN_* environment without logging the task prompt; Kimi internal swarm ancestry stays on Kimi's parentAgentId graph with the launcher record anchoring the lead session"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "codex-external-run launcher",
+            "trigger": "Codex root launches an external Kimi CLI or Cursor worker",
+            "response": "reserve the declared agent budget under an advisory lock, write the fail-closed provenance record with no prompt persistence, inject ancestry via environment, and record the exit/signal result"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B-R7",
+          "condition": "a launch succeeds without a provenance record, persists prompt content or arguments, exceeds the 10/30 ceilings, loses a concurrent reservation race, or overwrites an existing run record",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "WHEN Codex root needs delegated implementation work AND cross-provider child-thread history transfer is not verified safe, THE Codex root SHALL act as coordinator, verifier, and sole publisher and MUST NOT use Codex subagents for that delegated work; INSTEAD it SHALL load the external-harness-orchestration skill and delegate bounded fresh sessions to Kimi CLI or Cursor. THE skill SHALL include a main-agent-only <SUBAGENT-STOP> guard telling a bounded subagent to stop and return to Codex root.",
+      "acceptance_criteria": [
+        "config/codex/skills/external-harness-orchestration/SKILL.md forbids Codex subagent delegation and names Codex root as coordinator/verifier/sole publisher",
+        "SKILL.md contains <SUBAGENT-STOP> telling a bounded subagent to stop and return to Codex root",
+        "config/codex/AGENTS.md handwritten section is a minimal load-skill trigger only",
+        "contract test trigger and alternate phrasing assert the forbid text; near-miss proves Default/Plan or v1/v2 wording alone cannot satisfy the frontmatter Use-when trigger because those terms appear only in Not for"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Codex root",
+          "trigger": "delegated implementation work is required while cross-provider history transfer remains unverified",
+          "response": "load external-harness-orchestration and delegate only to fresh Kimi CLI or Cursor sessions, never Codex subagents; bounded subagents stop via SUBAGENT-STOP"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B-R1",
+        "condition": "instruction surface allows Codex spawn_agent/subagent delegation for this path, omits SUBAGENT-STOP, or keeps a broad inline AGENTS policy instead of a skill trigger",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "WHEN launching a Kimi CLI worker in prompt mode, THE coordinator SHALL use `kimi --model kimi-code/k3 --output-format stream-json --prompt <task>` and MUST NOT combine `--prompt` with `--auto` or `--yolo`.",
+      "acceptance_criteria": [
+        "skill contains the exact Kimi command shape",
+        "contract test asserts model, output-format, --prompt, and forbids --auto/--yolo combination"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Codex coordinator",
+          "trigger": "a Kimi CLI worker is launched in prompt mode",
+          "response": "use exact model kimi-code/k3 with stream-json output and --prompt without --auto or --yolo"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B-R2",
+        "condition": "Kimi launch guidance omits model/flags or permits --prompt with --auto/--yolo",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R3",
+      "statement": "WHEN selecting a Cursor subscription worker model, THE coordinator SHALL prefer `cursor-grok-4.5-high` or non-fast `composer-2.5` and MUST NOT select `*-fast` variants.",
+      "acceptance_criteria": [
+        "skill names preferred Cursor models and forbids *-fast",
+        "contract test asserts both preferred models and non-fast policy"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Codex coordinator",
+          "trigger": "a Cursor subscription worker model is selected",
+          "response": "prefer cursor-grok-4.5-high or non-fast composer-2.5 and reject *-fast variants"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B-R3",
+        "condition": "Cursor guidance selects or allows *-fast models",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R4",
+      "statement": "IF Responses encrypted_content is present, THE system SHALL NOT assume it is portable; THE system SHALL pass it unchanged only to a compatible same-upstream opaque replay; THE system MUST NOT translate it to chat/Anthropic/external models or silently strip it from an inherited thread; a cross-provider task MUST fail closed OR start an explicitly fresh portable session containing only transferable instructions/transcript.",
+      "acceptance_criteria": [
+        "skill encodes not-assumed-portable same-upstream-only passthrough and fail-closed/fresh-session alternatives",
+        "Default/Plan and multi-agent v1/v2 are clarified as lifecycle/UI modes, not protocol fixes"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "unwanted-behavior",
+          "system": "External harness orchestration",
+          "trigger": "Responses encrypted_content would be translated, stripped, or sent across incompatible providers",
+          "response": "fail closed or start an explicitly fresh portable session with only transferable content"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B-R4",
+        "condition": "instruction surface permits silent strip/translate of encrypted_content or treats UI modes as protocol fixes",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R5",
+      "statement": "THE coordinator SHALL issue worker ownership packets with no VCS/publication authority, independently verify machine-readable worker evidence, and continue durable coordination through repo-memory; concurrency SHALL be resource-budgeted and provider-aware inside the operator hard ceilings: verify host RAM/headroom and provider capacity before fan-out, use multiple external workers only when at least two independent ownership lanes exist and resources allow, and cap each batch to the smaller of independent lanes, verified provider capacity, a conservative host-memory budget, and the remaining budget under the hard ceilings of at most 10 total Kimi agents per Kimi coordinator/swarm including the lead and at most 30 Kimi agents globally, which the launcher enforces mechanically.",
+      "acceptance_criteria": [
+        "skill states ownership packets and no worker VCS/publication authority",
+        "skill states machine-readable evidence and independent coordinator verification",
+        "skill states repo-memory continuation and resource-budgeted provider-aware concurrency",
+        "skill and launcher enforce the operator hard ceilings (at most 10 per coordinator/swarm including the lead, at most 30 globally) as ceilings, not targets, with resource-based lower limits"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Codex coordinator",
+          "response": "issue ownership packets without VCS/publication authority, independently verify evidence, continue via repo-memory, and fan out only under resource-budgeted provider-aware caps inside the operator hard ceilings (at most 10 Kimi agents per coordinator/swarm including the lead, at most 30 globally)"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B-R5",
+        "condition": "workers are granted VCS/publication authority, coordinator skips independent verification/repo-memory continuation, fan-out ignores independence, or a launch exceeds the operator hard ceilings without mechanical rejection",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R6",
+      "statement": "THE canonical orchestration guidance SHALL live at config/codex/skills/external-harness-orchestration with agents/openai.yaml; Home Manager SHALL map only that skill to .codex/skills/external-harness-orchestration; general runbooks under config/codex/runbooks and docs/runbooks MUST be absent for this topic; singularity-engine-forward MUST NOT be mapped; JCode MUST remain evaluation-only; and scripts/repo-check.sh SHALL invoke scripts/test-codex-external-harness-skill.mjs.",
+      "acceptance_criteria": [
+        "canonical path is config/codex/skills/external-harness-orchestration",
+        "AGENTS trigger names the skill and does not inline full launch policy",
+        "runbook copies are removed",
+        "files.nix maps only the named skill recursively",
+        "scripts/repo-check.sh and test-nix-tooling list scripts/test-codex-external-harness-skill.mjs and scripts/test-codex-external-run.mjs",
+        "JCode is not added as a worker path"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "dotfiles Codex instruction surfaces",
+          "response": "keep orchestration guidance in a Codex-only user skill with exact Home Manager mapping and contract-test coverage"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B-R6",
+        "condition": "runbook remains, Home Manager over-maps skills, JCode is added as a worker, or repo-check omits the renamed contract test",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R7",
+      "statement": "WHEN Codex root launches an external Kimi CLI or Cursor worker, THE launch SHALL go through the Codex-only launcher config/codex/bin/codex-external-run.mjs installed only under ~/.codex/bin; THE launcher SHALL write a crash-recoverable per-run machine-readable record under $XDG_STATE_HOME/codex/external-runs (fallback ~/.local/state/codex/external-runs) with a 0700 directory and 0600 record where the platform permits; THE record SHALL contain schema version, root_task_id, parent_task_id, task_id, run_id, coordinator, harness, model, absolute workspace, declared Kimi agent budget, launcher PID, child PID, start/end timestamps, lifecycle status, and exit/signal result; THE launcher MUST NOT persist prompt content, command arguments, environment, credentials, or tool output; THE launcher SHALL require explicit root/parent/task identity with no silent anonymous default, reject duplicate run records, reject Kimi agent budgets above 10, reconcile stale dead-PID records, reject global Kimi reservations above 30, enforce one writer per workspace lane, serialize check-and-reserve under an advisory lock, and fail closed when provenance cannot be written or the global reservation cannot be proven.",
+      "acceptance_criteria": [
+        "node --test scripts/test-codex-external-run.mjs proves required record fields, no prompt/argv leakage, exit/signal recording, and restrictive 0700/0600 modes with fake child executables and temp XDG state",
+        "per-run budget >10 rejection, global reserved >30 rejection, stale/dead-run reconciliation, duplicate run-id rejection, nested root/parent preservation, and concurrent reservation serialization are proven by focused tests",
+        "Home Manager installs the launcher only at .codex/bin/codex-external-run; scripts/repo-check.sh and test-nix-tooling list scripts/test-codex-external-run.mjs",
+        "the launcher injects ancestry/budget via CODEX_EXTERNAL_RUN_* environment without logging the task prompt; Kimi internal swarm ancestry stays on Kimi's parentAgentId graph with the launcher record anchoring the lead session"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "codex-external-run launcher",
+          "trigger": "Codex root launches an external Kimi CLI or Cursor worker",
+          "response": "reserve the declared agent budget under an advisory lock, write the fail-closed provenance record with no prompt persistence, inject ancestry via environment, and record the exit/signal result"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B-R7",
+        "condition": "a launch succeeds without a provenance record, persists prompt content or arguments, exceeds the 10/30 ceilings, loses a concurrent reservation race, or overwrites an existing run record",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "docs/work/2026-07-23-codex-external-harness-orchestration/**",
+      "config/codex/skills/external-harness-orchestration/**",
+      "config/codex/runbooks/codex-external-harness-orchestration.md",
+      "docs/runbooks/codex-external-harness-orchestration.md",
+      "config/codex/AGENTS.md",
+      "home/modules/files.nix",
+      "scripts/test-codex-orchestration-runbook.mjs",
+      "scripts/test-codex-external-harness-skill.mjs",
+      "scripts/test-nix-tooling.mjs",
+      "scripts/repo-check.sh",
+      "config/codex/bin/**",
+      "scripts/test-codex-external-run.mjs"
+    ],
+    "blocked": [
+      "secrets/**",
+      "/home/mhugo/.dotfiles/**",
+      "/home/mhugo/.codex/skills/singularity-engine-forward/**"
+    ],
+    "expected_files": []
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Node contract test proves skill trigger, SUBAGENT-STOP, near-miss frontmatter halves, and alternate phrasing for external-harness orchestration.",
+      "must_fail_first": false
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "Contract test asserts exact Kimi prompt-mode model and flags.",
+      "must_fail_first": false
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R3",
+      "kind": "contract",
+      "description": "Contract test asserts Cursor preferred non-fast models.",
+      "must_fail_first": false
+    },
+    {
+      "id": "T4",
+      "requirement_id": "R4",
+      "kind": "contract",
+      "description": "Contract test asserts encrypted_content fail-closed/fresh-session and mode clarification text.",
+      "must_fail_first": false
+    },
+    {
+      "id": "T5",
+      "requirement_id": "R5",
+      "kind": "contract",
+      "description": "Contract test asserts ownership packets, no worker VCS/publication authority, independent verification, repo-memory, resource-budgeted provider-aware concurrency, and the operator hard ceilings with resource-based lower limits.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T6",
+      "requirement_id": "R6",
+      "kind": "contract",
+      "description": "Contract test and repo-check prove skill placement, Home Manager mappings (skill and launcher), absent runbook, and invocation wiring for both contract tests.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T7",
+      "requirement_id": "R7",
+      "kind": "contract",
+      "description": "node --test scripts/test-codex-external-run.mjs proves launcher provenance, budget/ceiling rejection, reconciliation, duplicate and workspace rejection, modes, exit/signal recording, and concurrent reservation with fake child executables and temp XDG state.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "node --test scripts/test-codex-external-harness-skill.mjs",
+      "node --test scripts/test-codex-external-run.mjs",
+      "uv run --with pyyaml python /home/mhugo/.codex/skills/.system/skill-creator/scripts/quick_validate.py config/codex/skills/external-harness-orchestration",
+      "purpose-validate-work docs/work/2026-07-23-codex-external-harness-orchestration --repo-root .",
+      "repo check"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex-external-worker"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-07-23-codex-external-harness-orchestration",
+    "target_planes": [
+      "client",
+      "tool"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "process",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  },
+  "handover": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-external-worker"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-07-23T23:57:56.652Z",
+    "purpose_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "a02b1336860d2f76f8d9bc5184b81d26e31fd624d94229ea902a3b7bbd1f8c13"
+    },
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "dbcf1b5a6621a99efcc62b849e1bb7b3c6b780c3eb0117e19876cfa6d5d8b9a2"
+    },
+    "policy": {
+      "id": "workspec-content-handover/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "cf6fd6e212ead144e9e8644bb4caabb9849506e8faaf8a0770cf6cb582d18172"
+      }
+    },
+    "validators": [
+      "workspec-v4.schema.json",
+      "subject-digest",
+      "operator-authority"
+    ],
+    "evidence_refs": [
+      "purpose.contract.json#admission",
+      "user-request:codex-external-harness-orchestration-review-correction",
+      "operator-acceptance:bounded-external-worker-scope"
+    ]
+  }
+}

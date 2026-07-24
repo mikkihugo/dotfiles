@@ -9,6 +9,8 @@ python3 "$root/scripts/test-codex-preferences.py"
 	cd "$root"
 	node --test \
 		scripts/test-codex-hosted-search.mjs \
+		scripts/test-codex-external-harness-skill.mjs \
+		scripts/test-codex-external-run.mjs \
 		scripts/test-swarm-messages.mjs \
 		scripts/test-swarm-hook-config.mjs \
 		scripts/test-nix-tooling.mjs

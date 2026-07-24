@@ -1,0 +1,135 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-07-23-opencode-plugin-reset-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-07-23-opencode-plugin-reset"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-07-23-opencode-plugin-reset",
+      "revision": "initial"
+    },
+    "objective": {
+      "id": "2026-07-23-opencode-plugin-reset-objective",
+      "statement": "Remove every third-party OpenCode plugin activation (envsitter-guard, opencode-mem, oh-my-openagent/legacy oh-my-opencode) and every recognized overlay config/link from the Home Manager-managed OpenCode configuration while preserving the source provider subtree exactly, preserving live auth state, retaining CentralCloud MCP, and keeping kimi-for-coding/k3 usable.",
+      "measure": "The managed config/opencode/opencode.json activates no third-party plugin, the oh-my-opencode.json and opencode-mem.jsonc overlay files and their profiles/default/links.json links are gone, and the provider subtree hashes to the observed baseline 7badedb7f071f9e1440901fbe5cfb6b3af06f46182edd27904967d999a8549e3."
+    },
+    "need": {
+      "id": "2026-07-23-opencode-plugin-reset-need",
+      "statement": "Remove every third-party OpenCode plugin activation and recognized overlay config/link from Home Manager while preserving the provider subtree, live auth state, CentralCloud MCP, and kimi-for-coding/k3 usability.",
+      "stakeholders": [
+        "Mikael and the managed OpenCode client on cc-se-sto-devbox-01."
+      ],
+      "baseline": "config/opencode/opencode.json activates envsitter-guard@latest, opencode-mem@latest, and oh-my-opencode@latest, and profiles/default/links.json links config/opencode/oh-my-opencode.json and config/opencode/opencode-mem.jsonc into ~/.config/opencode. The operator approved a reset contract limited to removing those plugin activations and overlays.",
+      "consequence_of_no_action": "Third-party plugins keep executing inside every managed OpenCode session with access to the operator's environment and files, outside the approved minimal configuration.",
+      "assumptions": [
+        "The provider subtree baseline SHA-256 7badedb7f071f9e1440901fbe5cfb6b3af06f46182edd27904967d999a8549e3 observed by the operator matches the canonical stable-sorted two-space JSON encoding of config/opencode/opencode.json's provider object plus a trailing newline."
+      ],
+      "alternatives_considered": [
+        "Keep the plugins and only document the risk",
+        "Reset all of OpenCode configuration including providers and MCP",
+        "Remove the plugins imperatively on the live machine outside Home Manager"
+      ]
+    }
+  },
+  "admission": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "kimi-code"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-07-23T20:22:14Z",
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "385f177b381114b9acd52a30d90a0d882056d2d2fc2bb0e525abe541875c9bc3"
+    },
+    "policy": {
+      "id": "operator-directed-purpose-admission/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e"
+      }
+    },
+    "validators": [
+      "purpose-contract-v2.schema.json",
+      "subject-digest",
+      "operator-authority"
+    ],
+    "evidence_refs": [
+      "user-request:opencode-plugin-reset-phase-1",
+      "baseline:provider-subtree-sha256-7badedb7",
+      "observed:plugin-array-and-overlay-links-present"
+    ]
+  },
+  "purpose": "Remove every third-party OpenCode plugin activation (envsitter-guard, opencode-mem, oh-my-openagent/legacy oh-my-opencode) and every recognized overlay config/link from the Home Manager-managed OpenCode configuration while preserving the source provider subtree exactly, preserving live auth state, retaining CentralCloud MCP, and keeping kimi-for-coding/k3 usable.",
+  "consumer": "Mikael and the managed OpenCode client on cc-se-sto-devbox-01.",
+  "contract": "The managed config/opencode/opencode.json contains no third-party plugin activation, config/opencode/oh-my-opencode.json and config/opencode/opencode-mem.jsonc and their profiles/default/links.json links no longer exist, and the opencode.json provider subtree still hashes to the observed baseline 7badedb7f071f9e1440901fbe5cfb6b3af06f46182edd27904967d999a8549e3.",
+  "failure_boundary": "Do not publish or activate if the provider subtree hash drifts from the observed baseline, if any provider, model, MCP, or authentication content changes, or if the focused contract test fails. Phase 1 stops at the RED contract test; the production fix and any Home Manager activation are separate later phases.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "A focused Node contract test proves third-party plugin activation is absent from config/opencode/opencode.json, both managed overlay config files and their links are absent, and the provider subtree SHA-256 equals the observed baseline; it must fail RED first against the current tree.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "The change delivers the promised contract.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Run the focused OpenCode plugin reset contract test; any remaining plugin activation, any remaining overlay file or link, or any provider subtree hash drift falsifies the claim.",
+      "command": "node --test scripts/test-opencode-plugin-reset.mjs"
+    }
+  },
+  "non_goals": [
+    "Changing any provider, model, or authentication content",
+    "Removing or altering any MCP configuration, including CentralCloud MCP",
+    "A general OpenCode configuration reset",
+    "Deleting packages, plugin caches, or other on-disk state outside the two managed overlay files",
+    "Committing, pushing, publishing, or activating Home Manager in phase 1"
+  ],
+  "invariants": [
+    "The config/opencode/opencode.json provider subtree hashes to 7badedb7f071f9e1440901fbe5cfb6b3af06f46182edd27904967d999a8549e3 before and after the change",
+    "Live auth state under the operator's home directory is never read, modified, or deleted",
+    "CentralCloud MCP configuration remains intact",
+    "kimi-for-coding/k3 remains usable",
+    "No live files under /home/mhugo/.config are edited",
+    "All VCS operations use the repository facade"
+  ],
+  "assumptions": [
+    {
+      "statement": "The provider subtree baseline SHA-256 7badedb7f071f9e1440901fbe5cfb6b3af06f46182edd27904967d999a8549e3 equals the hash of the stable-sorted two-space JSON encoding of the provider object plus a trailing newline.",
+      "status": "verified",
+      "doubt": 1,
+      "falsifier": "Recomputing that encoding over the current config/opencode/opencode.json provider object yields a different digest."
+    },
+    {
+      "statement": "The only Home Manager-recognized overlays for the removed plugins are config/opencode/oh-my-opencode.json, config/opencode/opencode-mem.jsonc, and their two links in profiles/default/links.json.",
+      "status": "verified",
+      "doubt": 1,
+      "falsifier": "A repository search finds another managed path referencing envsitter-guard, opencode-mem, oh-my-opencode, or oh-my-openagent."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "medium",
+    "blast_radius": "local",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "tool",
+    "client"
+  ],
+  "plane_constraints": [
+    "Home Manager owns the managed OpenCode configuration and profile links; this worktree is isolated and phase 1 touches no live file under /home/mhugo/.config."
+  ]
+}

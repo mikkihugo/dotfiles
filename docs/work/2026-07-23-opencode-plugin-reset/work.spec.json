@@ -1,0 +1,292 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-07-23-opencode-plugin-reset-work",
+  "purpose_contract_id": "2026-07-23-opencode-plugin-reset-purpose",
+  "handover": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "kimi-code"
+    },
+    "accepting_authority": {
+      "kind": "policy",
+      "id": "purpose-first-tdd-handover"
+    },
+    "decided_at": "2026-07-23T20:22:14Z",
+    "purpose_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "385f177b381114b9acd52a30d90a0d882056d2d2fc2bb0e525abe541875c9bc3"
+    },
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "1cd1ad4576132c955d26127ad64690f15f89c1df5d25a7355336164958503504"
+    },
+    "policy": {
+      "id": "workspec-content-handover/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "21f4dad52f9e5f5a53ee16625c7bf75e01251002911d667e879f3e06147e7192"
+      }
+    },
+    "validators": [
+      "workspec-v4.schema.json",
+      "subject-digest",
+      "purpose-first-tdd-handover"
+    ],
+    "evidence_refs": [
+      "purpose.contract.json#admission",
+      "baseline:provider-subtree-sha256-7badedb7",
+      "observed:plugin-array-and-overlay-links-present"
+    ]
+  },
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-07-23-opencode-plugin-reset",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-07-23-opencode-plugin-reset-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "1f19297cd05c6674a9247d9651a15b9e2a7eac45a085df126a27b052e8c87c7e"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "The managed OpenCode configuration shall activate no third-party plugin: config/opencode/opencode.json shall contain no plugin entry for envsitter-guard, opencode-mem, oh-my-opencode, or oh-my-openagent.",
+        "acceptance_criteria": [
+          "config/opencode/opencode.json parses as JSON and contains no plugin activation referencing envsitter-guard, opencode-mem, oh-my-opencode, or oh-my-openagent",
+          "no other repository file under config/ or profiles/ activates those plugins for the managed OpenCode client"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Home Manager-managed OpenCode configuration",
+            "response": "activate no third-party OpenCode plugin"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "a managed configuration still activates envsitter-guard, opencode-mem, oh-my-opencode, or oh-my-openagent",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "The recognized plugin overlay configs and links shall be absent: config/opencode/oh-my-opencode.json and config/opencode/opencode-mem.jsonc shall be deleted and profiles/default/links.json shall link neither.",
+        "acceptance_criteria": [
+          "config/opencode/oh-my-opencode.json does not exist",
+          "config/opencode/opencode-mem.jsonc does not exist",
+          "profiles/default/links.json contains no link targeting oh-my-opencode.json or opencode-mem.jsonc under ~/.config/opencode"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Home Manager profile link set",
+            "response": "manage no oh-my-opencode or opencode-mem overlay file or link for OpenCode"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "an overlay config file or its managed link survives the reset",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R3",
+        "statement": "The source provider subtree shall be preserved exactly: the provider object of config/opencode/opencode.json shall hash to the observed baseline 7badedb7f071f9e1440901fbe5cfb6b3af06f46182edd27904967d999a8549e3 under the stable-sorted two-space JSON encoding with a trailing newline.",
+        "acceptance_criteria": [
+          "the SHA-256 of the canonical provider subtree encoding equals 7badedb7f071f9e1440901fbe5cfb6b3af06f46182edd27904967d999a8549e3",
+          "no provider, model, MCP, or authentication content is added, removed, or reordered in effect"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Home Manager-managed OpenCode configuration",
+            "response": "keep the provider subtree byte-identical to the observed baseline"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B3",
+          "condition": "the provider subtree hash drifts from the observed baseline",
+          "witness_kind": "contract-test",
+          "expected": "detected"
+        },
+        "risk": "high",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "The managed OpenCode configuration shall activate no third-party plugin: config/opencode/opencode.json shall contain no plugin entry for envsitter-guard, opencode-mem, oh-my-opencode, or oh-my-openagent.",
+      "acceptance_criteria": [
+        "config/opencode/opencode.json parses as JSON and contains no plugin activation referencing envsitter-guard, opencode-mem, oh-my-opencode, or oh-my-openagent",
+        "no other repository file under config/ or profiles/ activates those plugins for the managed OpenCode client"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Home Manager-managed OpenCode configuration",
+          "response": "activate no third-party OpenCode plugin"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "a managed configuration still activates envsitter-guard, opencode-mem, oh-my-opencode, or oh-my-openagent",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "The recognized plugin overlay configs and links shall be absent: config/opencode/oh-my-opencode.json and config/opencode/opencode-mem.jsonc shall be deleted and profiles/default/links.json shall link neither.",
+      "acceptance_criteria": [
+        "config/opencode/oh-my-opencode.json does not exist",
+        "config/opencode/opencode-mem.jsonc does not exist",
+        "profiles/default/links.json contains no link targeting oh-my-opencode.json or opencode-mem.jsonc under ~/.config/opencode"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Home Manager profile link set",
+          "response": "manage no oh-my-opencode or opencode-mem overlay file or link for OpenCode"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "an overlay config file or its managed link survives the reset",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R3",
+      "statement": "The source provider subtree shall be preserved exactly: the provider object of config/opencode/opencode.json shall hash to the observed baseline 7badedb7f071f9e1440901fbe5cfb6b3af06f46182edd27904967d999a8549e3 under the stable-sorted two-space JSON encoding with a trailing newline.",
+      "acceptance_criteria": [
+        "the SHA-256 of the canonical provider subtree encoding equals 7badedb7f071f9e1440901fbe5cfb6b3af06f46182edd27904967d999a8549e3",
+        "no provider, model, MCP, or authentication content is added, removed, or reordered in effect"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Home Manager-managed OpenCode configuration",
+          "response": "keep the provider subtree byte-identical to the observed baseline"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B3",
+        "condition": "the provider subtree hash drifts from the observed baseline",
+        "witness_kind": "contract-test",
+        "expected": "detected"
+      },
+      "risk": "high",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "docs/work/2026-07-23-opencode-plugin-reset/**",
+      "scripts/test-opencode-plugin-reset.mjs",
+      "config/opencode/opencode.json",
+      "profiles/default/links.json",
+      "config/opencode/oh-my-opencode.json",
+      "config/opencode/opencode-mem.jsonc"
+    ],
+    "blocked": [
+      "home/**",
+      "flake.nix",
+      "flake.lock",
+      "config/codex/**",
+      "config/claude/**",
+      "config/kimi-code/**",
+      "config/opencode/opencode.json#provider",
+      "result",
+      "result-"
+    ],
+    "expected_files": [
+      "scripts/test-opencode-plugin-reset.mjs"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Focused Node contract test: no third-party plugin activation remains in config/opencode/opencode.json, both managed overlay config files and their profile links are absent, and the provider subtree SHA-256 equals the observed baseline.",
+      "path": "scripts/test-opencode-plugin-reset.mjs",
+      "command": "node --test scripts/test-opencode-plugin-reset.mjs",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "node --test scripts/test-opencode-plugin-reset.mjs",
+      "nix develop path:. --command just check"
+    ],
+    "evidence_required": [
+      "test",
+      "falsifier"
+    ],
+    "deploy_required": false,
+    "rollback_required": false
+  },
+  "model_requirements": {
+    "coding": 0.4,
+    "debugging": 0.6
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "kimi-code"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-07-23-opencode-plugin-reset",
+    "target_planes": [
+      "tool",
+      "client"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "worktree",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

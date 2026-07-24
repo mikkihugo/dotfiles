@@ -1,0 +1,16 @@
+{
+  "result_id": "opencode-plugin-reset-red",
+  "status": "failed",
+  "observed_at": "2026-07-23T20:26:04Z",
+  "command": "node --test scripts/test-opencode-plugin-reset.mjs",
+  "exit_code": 1,
+  "failures": [
+    "managed opencode.json still activates third-party plugins: envsitter-guard@latest, opencode-mem@latest, oh-my-opencode@latest",
+    "config/opencode/oh-my-opencode.json still exists (overlay config files and profile links not yet removed)"
+  ],
+  "passing": [
+    "provider subtree remains the observed baseline 7badedb7f071f9e1440901fbe5cfb6b3af06f46182edd27904967d999a8549e3"
+  ],
+  "expected": true,
+  "note": "Phase 1 RED: the two removal requirements fail against the current tree for the right reason while the provider-preservation requirement already holds. The production fix is a later phase."
+}

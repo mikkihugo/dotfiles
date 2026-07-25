@@ -64,6 +64,18 @@
       force = true;
     };
 
+    # Claude Code status line for Jujutsu-backed repos. Those repos replace `jj`
+    # on PATH with a refuse shim and expose reads only through their own `repo
+    # vcs` facade, so the usual git-branch status line has nothing to read.
+    ".claude/statusline-jj.sh" = {
+      source = pkgs.replaceVars ../../config/claude/statusline-jj.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        jq = "${pkgs.jq}/bin/jq";
+      };
+      executable = true;
+      force = true;
+    };
+
     ".kimi-code/hooks/swarm-messages.sh" = {
       source = pkgs.replaceVars ../../config/kimi-code/hooks/swarm-messages.sh {
         bash = "${pkgs.bash}/bin/bash";

@@ -264,7 +264,13 @@
 
       wsname="$(${pkgs.coreutils}/bin/basename "$ws")"
       slug="$(slugify "$repo")"
-      if git_net -C "$repo" push --quiet --force "$remote" \
+      # --no-verify: a refs/backup snapshot is not a publication. Without it
+      # every workspace push drags in the repo's pre-push gate -- for /srv/infra
+      # that is infra-pre-push running kubeconform, digest contracts and tests,
+      # which pushed a run that used to take 15-19 minutes past its 20-minute
+      # TimeoutStartSec and got it killed mid-sweep. Those gates guard what
+      # lands on a branch; they have no bearing on whether a snapshot is durable.
+      if git_net -C "$repo" push --quiet --force --no-verify "$remote" \
         "$commit:refs/backup/$host/$slug/workspace-$wsname/wip"; then
         echo "jj-ws-backup $ws $remote $commit"
         n_jj_ws+=1
@@ -287,20 +293,22 @@
         # so the old -type d filter silently skipped every worktree it found.
         # maxdepth 6, not 4: ~/code/worktrees/jj/<repo>/<workspace> sits at
         # depth 5, one level past where the old sweep stopped looking.
+        # -prune, not -not -path: a -not -path clause only filters the RESULT,
+        # find still descends the whole tree. Measured over ~/code, pruning cuts
+        # the walk from 2300ms to 104ms -- it matters because maxdepth 6 now
+        # reaches into build trees the old maxdepth 4 never touched.
         while IFS= read -r gitdir; do
           handle_repo "$(${pkgs.coreutils}/bin/dirname "$gitdir")"
-        done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 6 -name .git \
-          -not -path '*/node_modules/*' \
-          -not -path '*/.sf-test-*/*' \
-          -not -path '*/.cache/*' \
-          -not -path '*/target/*' 2>/dev/null)
+        done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 6 \
+          \( -name node_modules -o -name target -o -name .direnv -o -name .cache \
+             -o -name '.sf-test-*' \) -prune -o \
+          -name .git -print 2>/dev/null)
 
         while IFS= read -r jjdir; do
           handle_jj_workspace "$(${pkgs.coreutils}/bin/dirname "$jjdir")"
-        done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 6 -type d -name .jj \
-          -not -path '*/node_modules/*' \
-          -not -path '*/.cache/*' \
-          -not -path '*/target/*' 2>/dev/null)
+        done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 6 \
+          \( -name node_modules -o -name target -o -name .direnv -o -name .cache \) \
+          -prune -o -type d -name .jj -print 2>/dev/null)
       done
 
       # The summary exists because the per-repo lines above scroll past unread.
@@ -397,7 +405,13 @@ in {
       # Backstop for anything the SSH keepalives cannot bound (a wedged local
       # git process, a stalled HTTPS remote). A run that cannot finish inside
       # this window is failing, not working; kill it so the next tick is clean.
-      TimeoutStartSec = "20min";
+      #
+      # Raised from 20min on 2026-07-25: coverage grew from 79 to 110 git repos
+      # plus ~28 jj workspaces, and a killed run is strictly worse than a slow
+      # one -- it leaves the tail of the sweep unbacked while reporting nothing.
+      # The per-call `timeout 180s` in git_net still bounds any single hang, so
+      # this only widens the total, it does not weaken the stall protection.
+      TimeoutStartSec = "45min";
     };
   };
 

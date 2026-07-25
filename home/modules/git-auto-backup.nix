@@ -24,11 +24,17 @@
 
     roots=(
       "$HOME/.dotfiles"
+      # Git worktrees of .dotfiles live outside the repo root, so the sweep
+      # below never reached them: on 2026-07-25 all 7 codex/* branches there
+      # were unmerged and one carried 10 uncommitted files, none backed up.
+      "$HOME/.dotfiles-worktrees"
       "$HOME/code"
+      "$HOME/workspaces"
       "/srv/infra"
     )
 
     declare -A seen
+    declare -i n_skip_no_remote=0 n_failed=0 n_jj_ws=0
 
     git_net() {
       # Hard bound on any network git call. SSH keepalives are not enough:
@@ -178,7 +184,14 @@
 
       remote="$(repo_remote "$repo" || true)"
       if [ -z "$remote" ]; then
+        # A repository with no remote is not "nothing to do" — it is the only
+        # unrecoverable state this sweep can encounter. ~/code/jcode-custom sat
+        # here for weeks: 210 MB, one local commit, 118 uncommitted files, and a
+        # silent skip-no-remote line every 15 minutes that nobody read. Counted
+        # and re-listed in the run summary so it cannot hide again.
         echo "skip-no-remote $repo"
+        n_skip_no_remote+=1
+        printf '%s\n' "$repo" >> "$state_dir/no-remote.current"
         return 0
       fi
 
@@ -210,21 +223,85 @@
       done < <(${pkgs.git}/bin/git -C "$repo" remote)
     }
 
+    handle_jj_workspace() {
+      # jj workspaces carry only .jj — no .git — so the git sweep below cannot
+      # see them at all. On 2026-07-25 that hid 27 workspaces across infra,
+      # singularity-engine and centralcloud, each holding a commit that existed
+      # nowhere but this disk. All of these repos are colocated, so jj has
+      # already exported the working-copy commit into the git object store;
+      # pushing that object id by hash is enough to make it durable.
+      #
+      # Best-effort by design: this backs work up, it does not publish it.
+      # Branch publication stays with jj and the repo's own vcs facade.
+      local ws="$1" repo remote slug wsname commit
+      repo="$(${pkgs.jujutsu}/bin/jj -R "$ws" workspace root --name default 2>/dev/null || true)"
+      [ -n "$repo" ] || repo="$ws"
+      [ -d "$repo/.git" ] || return 0
+
+      remote="$(repo_remote "$repo" || true)"
+      [ -n "$remote" ] || { echo "jj-ws-skip-no-remote $ws"; return 0; }
+
+      # Any jj command snapshots the working copy first, so this both captures
+      # uncommitted edits and yields the git commit id to push.
+      commit="$(${pkgs.jujutsu}/bin/jj -R "$ws" log --no-graph -r @ -T 'commit_id' 2>/dev/null || true)"
+      [ -n "$commit" ] || { echo "jj-ws-no-commit $ws"; n_failed+=1; return 0; }
+
+      ${pkgs.git}/bin/git -C "$repo" cat-file -e "$commit" 2>/dev/null || {
+        echo "jj-ws-not-exported $ws $commit"
+        n_failed+=1
+        return 0
+      }
+
+      wsname="$(${pkgs.coreutils}/bin/basename "$ws")"
+      slug="$(slugify "$repo")"
+      if git_net -C "$repo" push --quiet --force "$remote" \
+        "$commit:refs/backup/$host/$slug/workspace-$wsname/wip"; then
+        echo "jj-ws-backup $ws $remote $commit"
+        n_jj_ws+=1
+      else
+        echo "jj-ws-backup-failed $ws $remote $commit"
+        n_failed+=1
+      fi
+    }
+
     {
       echo "git-auto-backup start $stamp host=$host"
+      : > "$state_dir/no-remote.current"
       for root in "''${roots[@]}"; do
         [ -e "$root" ] || continue
         if [ -d "$root/.git" ]; then
           handle_repo "$root"
           continue
         fi
+        # -name .git without -type d: a git worktree's .git is a regular FILE,
+        # so the old -type d filter silently skipped every worktree it found.
+        # maxdepth 6, not 4: ~/code/worktrees/jj/<repo>/<workspace> sits at
+        # depth 5, one level past where the old sweep stopped looking.
         while IFS= read -r gitdir; do
           handle_repo "$(${pkgs.coreutils}/bin/dirname "$gitdir")"
-        done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 4 -type d -name .git \
+        done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 6 -name .git \
           -not -path '*/node_modules/*' \
           -not -path '*/.sf-test-*/*' \
-          -not -path '*/.cache/*' 2>/dev/null)
+          -not -path '*/.cache/*' \
+          -not -path '*/target/*' 2>/dev/null)
+
+        while IFS= read -r jjdir; do
+          handle_jj_workspace "$(${pkgs.coreutils}/bin/dirname "$jjdir")"
+        done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 6 -type d -name .jj \
+          -not -path '*/node_modules/*' \
+          -not -path '*/.cache/*' \
+          -not -path '*/target/*' 2>/dev/null)
       done
+
+      # The summary exists because the per-repo lines above scroll past unread.
+      # A repository with no remote is a standing data-loss risk, not an event;
+      # it must be visible in the last line of every run, not only the first
+      # run that introduced it.
+      echo "git-auto-backup summary no-remote=$n_skip_no_remote failures=$n_failed jj-workspaces=$n_jj_ws"
+      if [ "$n_skip_no_remote" -gt 0 ]; then
+        echo "git-auto-backup UNPROTECTED (no remote configured):"
+        ${pkgs.gnused}/bin/sed 's|^|  |' "$state_dir/no-remote.current"
+      fi
       echo "git-auto-backup done $(${pkgs.coreutils}/bin/date -u +%Y%m%dT%H%M%SZ)"
     } | tee "$log_file"
   '';

@@ -341,6 +341,36 @@
           [ $(( (now_epoch - st) / 3600 )) -gt "$mh" ] && n_ws_overage=$((n_ws_overage + 1))
         done
         echo "workspace-debt total=$n_ws_total leased=$n_ws_leased overage-no-lease=$n_ws_overage"
+
+        # Preserve the ledger. It is the ONLY record of which agent owns which
+        # workspace (task_owner_ref: cursor:/claude:/kimi:/goose:/jcode:) and it
+        # lives under /tmp, where systemd-tmpfiles-clean.timer runs daily. On
+        # 2026-07-25 the oldest surviving record was 3 days old although the
+        # workspaces themselves go back weeks -- attribution was already being
+        # deleted on a timer, silently.
+        #
+        # Deliberately NOT fixed by setting SE_LOCK_ROOT here: the engine's own
+        # contract test (scripts/tests/se_vcs_contract_test.sh) requires that
+        # root to be "one shared, env-independent path across all agents", and a
+        # home-manager session variable reaches only shell-launched clients. A
+        # partially-inherited value would split the ledger across two roots,
+        # which is worse than one volatile root. The real fix is the default in
+        # se_task.sh, which needs a leased engine workspace to change.
+        #
+        # This copy is a snapshot, never a source: nothing reads it back.
+        #
+        # ACCUMULATING, not mirroring. No --delete: the whole point is to keep
+        # records that tmpfiles has already removed from the live root. A
+        # mirroring sync would faithfully reproduce the deletion it exists to
+        # survive.
+        ledger_dir="$HOME/.local/state/workspace-ledger/records"
+        ${pkgs.coreutils}/bin/mkdir -p "$ledger_dir"
+        if ${pkgs.rsync}/bin/rsync -a "$lease_root/" "$ledger_dir/" 2>/dev/null; then
+          kept=$(${pkgs.findutils}/bin/find "$ledger_dir" -name '*.task' 2>/dev/null | ${pkgs.coreutils}/bin/wc -l)
+          echo "workspace-ledger-snapshot $ledger_dir live=$n_ws_total preserved=$kept"
+        else
+          echo "workspace-ledger-snapshot-failed $lease_root"
+        fi
       fi
 
       echo "git-auto-backup summary no-remote=$n_skip_no_remote failures=$n_failed jj-workspaces=$n_jj_ws"

@@ -234,16 +234,26 @@
       # Best-effort by design: this backs work up, it does not publish it.
       # Branch publication stays with jj and the repo's own vcs facade.
       local ws="$1" repo remote slug wsname commit
-      repo="$(${pkgs.jujutsu}/bin/jj -R "$ws" workspace root --name default 2>/dev/null || true)"
+      repo="$(${pkgs.jujutsu}/bin/jj --ignore-working-copy -R "$ws" workspace root --name default 2>/dev/null || true)"
       [ -n "$repo" ] || repo="$ws"
       [ -d "$repo/.git" ] || return 0
+
+      # The default checkout is already covered by push_branch_or_backup's
+      # colocated-jj branch. Without this guard the sweep re-pushes every repo
+      # root a second time: 87 workspaces instead of the ~28 that are actually
+      # additional, on a run that already overruns its 15-minute interval.
+      [ "$ws" != "$repo" ] || return 0
 
       remote="$(repo_remote "$repo" || true)"
       [ -n "$remote" ] || { echo "jj-ws-skip-no-remote $ws"; return 0; }
 
-      # Any jj command snapshots the working copy first, so this both captures
-      # uncommitted edits and yields the git commit id to push.
-      commit="$(${pkgs.jujutsu}/bin/jj -R "$ws" log --no-graph -r @ -T 'commit_id' 2>/dev/null || true)"
+      # --ignore-working-copy is required, not an optimisation. A plain jj read
+      # snapshots the working copy first, which writes a commit and an op-log
+      # entry into a repo someone may be actively using -- on a timer, every 15
+      # minutes, including /srv/infra where only one workspace per owner may be
+      # active. Reading the last-known @ is accurate whenever anyone is working
+      # and costs nothing when nobody is.
+      commit="$(${pkgs.jujutsu}/bin/jj --ignore-working-copy -R "$ws" log --no-graph -r @ -T 'commit_id' 2>/dev/null || true)"
       [ -n "$commit" ] || { echo "jj-ws-no-commit $ws"; n_failed+=1; return 0; }
 
       ${pkgs.git}/bin/git -C "$repo" cat-file -e "$commit" 2>/dev/null || {
@@ -297,6 +307,42 @@
       # A repository with no remote is a standing data-loss risk, not an event;
       # it must be visible in the last line of every run, not only the first
       # run that introduced it.
+      # Workspace debt. The SessionEnd hook reports what a session leaves
+      # behind, but it cannot fire on a crash or kill -9 -- and on 2026-07-25
+      # singularity-engine held 219 task records against 12 live leases, so the
+      # ungraceful exit is the common case, not the edge case. This sweep is
+      # already running every 15 minutes; counting the leaseless over-age
+      # workspaces here costs a directory read and closes that gap.
+      #
+      # Report only. Nothing here closes or deletes a workspace: deciding one is
+      # finished needs to know whether its work landed, which this cannot tell.
+      lease_root="''${SE_LOCK_ROOT:-/tmp/singularity-engine}/workspace-leases"
+      if [ -d "$lease_root" ]; then
+        now_epoch=$(${pkgs.coreutils}/bin/date +%s)
+        n_ws_total=0; n_ws_leased=0; n_ws_overage=0
+        for task in "$lease_root"/*.task; do
+          [ -e "$task" ] || continue
+          n_ws_total=$((n_ws_total + 1))
+          name="$(${pkgs.coreutils}/bin/basename "$task" .task)"
+          if [ -e "$lease_root/$name.lease" ]; then
+            n_ws_leased=$((n_ws_leased + 1))
+            continue
+          fi
+          # Field order fixed by scripts/se_task.sh; 6=max_hours, 7=started_epoch.
+          mh=$(${pkgs.gawk}/bin/awk -F'\t' '{print $6}' "$task" 2>/dev/null)
+          st=$(${pkgs.gawk}/bin/awk -F'\t' '{print $7}' "$task" 2>/dev/null)
+          # Both fields must be present and purely numeric. Written as two
+          # checks rather than one case with an empty-string branch, because a
+          # doubled single-quote inside a Nix indented string opens an escape
+          # sequence instead of matching the empty string.
+          [ -n "$mh" ] && [ -n "$st" ] || continue
+          case "$mh$st" in *[!0-9]*) continue;; esac
+          [ "$mh" -gt 0 ] || continue
+          [ $(( (now_epoch - st) / 3600 )) -gt "$mh" ] && n_ws_overage=$((n_ws_overage + 1))
+        done
+        echo "workspace-debt total=$n_ws_total leased=$n_ws_leased overage-no-lease=$n_ws_overage"
+      fi
+
       echo "git-auto-backup summary no-remote=$n_skip_no_remote failures=$n_failed jj-workspaces=$n_jj_ws"
       if [ "$n_skip_no_remote" -gt 0 ]; then
         echo "git-auto-backup UNPROTECTED (no remote configured):"

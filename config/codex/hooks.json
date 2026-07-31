@@ -1,5 +1,5 @@
 {
-  "description": "Home Manager owns Codex lifecycle hooks. Transport is repo-memory via CentralCloud MCP gateway (swarm_bus_*). Local filesystem bus is opt-in only.",
+  "description": "Home Manager owns Codex lifecycle hooks. Transport is repo-memory via CentralCloud MCP gateway (swarm_bus_*). Local filesystem bus is opt-in only. Purpose SessionStart refreshes host skills on bundleHash drift.",
   "hooks": {
     "SessionStart": [
       {
@@ -10,6 +10,12 @@
             "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs codex SessionStart",
             "timeout": 12,
             "statusMessage": "Joining durable repo-memory swarm"
+          },
+          {
+            "type": "command",
+            "command": "test ! -f /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs || node /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs",
+            "timeout": 10,
+            "statusMessage": "Syncing Purpose host skills"
           }
         ]
       }

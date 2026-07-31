@@ -55,6 +55,7 @@ vultr-cli = "latest"
 "pipx:b2" = "latest"
 "go:github.com/steipete/gogcli/cmd/gog" = "latest"
 "npm:@just-every/code" = "latest"
+"github:1jehuang/jcode" = { version = "latest", exe = "jcode-linux-x86_64", extract_all = "true" }
 
 [env]
 # kimi-code reads this from process.env (resolveCompletionBudget) — it is NOT a

@@ -9,6 +9,10 @@
       {
         "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs cursor sessionStart",
         "timeout": 10
+      },
+      {
+        "command": "test ! -f /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs || node /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs",
+        "timeout": 10
       }
     ]
   }

@@ -68,7 +68,7 @@
     set -euo pipefail
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-${binName}}"
+    export OTEL_SERVICE_NAME="${binName}"
     vtcode_bin="$HOME/.local/share/mise/shims/vtcode"
     if [ ! -x "$vtcode_bin" ]; then
       echo "${binName}: expected mise vtcode at $vtcode_bin" >&2
@@ -111,7 +111,7 @@
     ${clientSessionIdentity "copilot"}
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-kimi}"
+    export OTEL_SERVICE_NAME="copilot-kimi"
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
@@ -149,7 +149,7 @@
     ${clientSessionIdentity "copilot"}
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-glm}"
+    export OTEL_SERVICE_NAME="copilot-glm"
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
@@ -187,7 +187,7 @@
     ${clientSessionIdentity "copilot"}
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-minimax}"
+    export OTEL_SERVICE_NAME="copilot-minimax"
     copilot_bin="$HOME/.local/share/mise/shims/copilot"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$copilot_bin" ]; then
@@ -226,7 +226,7 @@
     set -euo pipefail
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-claude-minimax}"
+    export OTEL_SERVICE_NAME="claude-minimax"
     claude_bin="$HOME/.local/bin/claude"
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
     if [ ! -x "$claude_bin" ]; then
@@ -252,7 +252,7 @@
     ${clientSessionIdentity "copilot"}
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot-all}"
+    export OTEL_SERVICE_NAME="copilot-all"
     # Copilot's native hook processor launches the configured POSIX command
     # through the literal executable name `bash`.  Keep that runtime and the
     # shared Node hook deterministic even when the caller has a minimal PATH.
@@ -322,7 +322,7 @@
     ${clientSessionIdentity "goose"}
         # shellcheck source=/dev/null
         [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-        export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-goose}"
+        export OTEL_SERVICE_NAME="goose"
         # Prefer the installed binary: an executable mise shim can still fail
         # when the Aqua registry is temporarily unavailable.
         goose_bin="$(ls -1d "$HOME"/.local/share/mise/installs/github-aaif-goose-goose/*/goose 2>/dev/null | sort -V | tail -n 1 || true)"
@@ -513,7 +513,7 @@
     set -euo pipefail
     # shellcheck source=/dev/null
     [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-coder}"
+    export OTEL_SERVICE_NAME="coder"
     code_bin=""
     for candidate in \
       "$HOME/.local/share/mise/shims/coder" \
@@ -553,6 +553,45 @@
     export OPENAI_BASE_URL="''${OPENAI_BASE_URL:-$gateway_url/codex/v1}"
     export OPENAI_WIRE_API="''${OPENAI_WIRE_API:-responses}"
     exec "$code_bin" "$@"
+  '';
+
+  # Cursor Agent — shared OTEL wrapper for ~/.local/bin/cursor-agent and agent.
+  # Resolution: newest Cursor installer binary, then Nix store pin, then mise
+  # install tree (never the mise shim or these wrappers — avoids recursion).
+  cursorAgentEntrypoint = ''
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # shellcheck source=/dev/null
+    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
+    export OTEL_SERVICE_NAME="cursor-agent"
+
+    cursor_agent_bin=""
+    versions="$HOME/.local/share/cursor-agent/versions"
+    if [ -d "$versions" ]; then
+      cursor_agent_bin="$(ls -1dt "$versions"/*/cursor-agent 2>/dev/null | head -n 1 || true)"
+    fi
+    if [ -z "$cursor_agent_bin" ] || [ ! -x "$cursor_agent_bin" ]; then
+      nix_bin="${llm-pkgs.cursor-agent}/bin/cursor-agent"
+      if [ -x "$nix_bin" ]; then
+        cursor_agent_bin="$nix_bin"
+      fi
+    fi
+    if [ -z "$cursor_agent_bin" ] || [ ! -x "$cursor_agent_bin" ]; then
+      cursor_agent_bin="$(ls -1d \
+        "$HOME"/.local/share/mise/installs/*/bin/cursor-agent \
+        "$HOME"/.local/share/mise/installs/*/*/bin/cursor-agent \
+        2>/dev/null | sort -V | tail -n 1 || true)"
+    fi
+    case "$cursor_agent_bin" in
+      "$HOME/.local/bin/cursor-agent"|"$HOME/.local/bin/agent"|"$HOME/.local/share/mise/shims/"*)
+        cursor_agent_bin=""
+        ;;
+    esac
+    if [ -z "$cursor_agent_bin" ] || [ ! -x "$cursor_agent_bin" ]; then
+      echo "cursor-agent: binary not found" >&2
+      exit 127
+    fi
+    exec "$cursor_agent_bin" "$@"
   '';
 in {
   sops.secrets = {
@@ -611,11 +650,11 @@ in {
       vtcodeMinimaxGatewayWrapper # binary: vtcode-minimax -> minimax-m3 via llm-gateway.svc
       # Raw llm-agents packages — no key injection needed.      # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
       # these packages compile from source — disable per-host as needed.
-      pkgs.claude-code # sadjow/claude-code-nix overlay — official native binary, hourly-fresh, Cachix-cached. (Was mise; native installer's runtime self-updater is disabled in Nix.)
+      # Claude Code is owned by its native installer outside Home Manager.
+      # Cursor Agent is resolved by the wrapper below without a raw profile bin.
       # llm-pkgs.codex # disabled — Rust rebuild on aarch64
       # opencode is managed globally by mise.
       # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
-      llm-pkgs.cursor-agent # binary: cursor-agent (wrapped below for OTEL)
       # droid is managed globally by mise (wrapped below for OTEL).
       copilotKimiWrapper # binary: copilot-kimi -> routes mise GitHub Copilot CLI to Kimi K2.7 (umans-kimi-k2.7) via llm-gateway
       copilotGlmWrapper # binary: copilot-glm -> routes mise GitHub Copilot CLI to GLM-5.2 (umans-glm-5.2) via llm-gateway
@@ -651,7 +690,7 @@ in {
 
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-kimi-code}"
+          export OTEL_SERVICE_NAME="kimi-code"
 
           if [ -n "''${LLM_MUX_API_KEY:-}" ] && [ -n "''${LLM_MUX_BASE_URL:-}" ]; then
             export KIMI_API_KEY="$LLM_MUX_API_KEY"
@@ -672,7 +711,7 @@ in {
           set -euo pipefail
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-qoder}"
+          export OTEL_SERVICE_NAME="qoder"
           root="$HOME/.qoder/bin/qodercli"
           bin=""
           if [[ -f "$root/version.txt" ]]; then
@@ -701,22 +740,8 @@ in {
           ${clientSessionIdentity "copilot"}
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-copilot}"
+          export OTEL_SERVICE_NAME="copilot"
           exec "$HOME/.local/share/mise/shims/copilot" "$@"
-        '';
-      };
-
-      # Claude Code — call the Nix package directly (avoid ~/.local/bin recursion).
-      ".local/bin/claude" = {
-        executable = true;
-        force = true;
-        text = ''
-          #!/usr/bin/env bash
-          set -euo pipefail
-          # shellcheck source=/dev/null
-          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-claude-code}"
-          exec "${pkgs.claude-code}/bin/claude" "$@"
         '';
       };
 
@@ -729,7 +754,7 @@ in {
           set -euo pipefail
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-codex}"
+          export OTEL_SERVICE_NAME="codex"
           exec "$HOME/.local/share/mise/shims/codex" "$@"
         '';
       };
@@ -745,7 +770,7 @@ in {
           set -euo pipefail
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-opencode}"
+          export OTEL_SERVICE_NAME="opencode"
           exec "$HOME/.local/share/mise/shims/opencode" "$@"
         '';
       };
@@ -773,27 +798,21 @@ in {
         '';
       };
 
-      # Cursor Agent CLI — OTEL env + prefer HM package if present.
+      # Cursor Agent CLI — OTEL env; cursor-agent and agent share one wrapper.
       ".local/bin/cursor-agent" = {
         executable = true;
         force = true;
-        text = ''
-          #!/usr/bin/env bash
-          set -euo pipefail
-          # shellcheck source=/dev/null
-          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-cursor-agent}"
-          for candidate in \
-            "${llm-pkgs.cursor-agent}/bin/cursor-agent" \
-            "$HOME/.local/share/mise/shims/cursor-agent" \
-            "$HOME/.nix-profile/bin/cursor-agent"; do
-            if [ -x "$candidate" ]; then
-              exec "$candidate" "$@"
-            fi
-          done
-          echo "cursor-agent: binary not found" >&2
-          exit 127
-        '';
+        text = cursorAgentEntrypoint;
+      };
+
+      # Cursor `agent` entrypoint (IDE / remote agent). Upstream installer
+      # symlinks this to the versioned binary and never sources bashrc — so
+      # long-lived sessions inherit no OTEL_*. Shadow that symlink with the
+      # same OTEL loader and binary resolution as cursor-agent.
+      ".local/bin/agent" = {
+        executable = true;
+        force = true;
+        text = cursorAgentEntrypoint;
       };
 
       # Factory Droid — mise-managed; inject OTEL.
@@ -805,7 +824,7 @@ in {
           set -euo pipefail
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-factory-droid}"
+          export OTEL_SERVICE_NAME="factory-droid"
           exec "$HOME/.local/share/mise/shims/droid" "$@"
         '';
       };

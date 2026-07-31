@@ -21,6 +21,27 @@
 # Set HOME if missing (safety guard for minimal environments)
 [ -z "$HOME" ] && export HOME="/home/mhugo"
 
+# ── TERM upgrade ──────────────────────────────────────────────────────────────
+# mosh/Termius hand us a bare "xterm" (8-color), which caps colour in the TUI,
+# jcode, ls, etc. even though the emulator is truecolor-capable. Promote the
+# plain xterm case to 256-colour. Only the exact "xterm" value is touched, so
+# an intentional TERM=dumb (agent/CI) and already-rich values are left alone.
+[ "$TERM" = "xterm" ] && export TERM=xterm-256color
+
+# ── jcode in a persistent tmux session ────────────────────────────────────────
+# `jc` launches jcode inside a tmux session named "jcode" so the TUI survives
+# SSH/mosh disconnects; run `jc` again (or `jca`) to reattach. jcode's own
+# daemon already keeps the agent running when the TUI drops — this just keeps
+# the view+scrollback too. Full path dodges any PATH/hash staleness.
+jc() {
+	if [ -n "${TMUX:-}" ]; then
+		"$HOME/.local/bin/jcode" "$@"
+	else
+		tmux new-session -A -s jcode "$HOME/.local/bin/jcode"
+	fi
+}
+jca() { tmux attach -t jcode; }
+
 # ── Mise (polyglot runtime version manager) ───────────────────────────────────
 # Must be activated per-shell so the shims and hooks are wired up.
 # Detect zsh vs bash so the right integration is loaded.
@@ -113,9 +134,13 @@ _load_sops_secrets() {
 	val=$(_sops_val cloudflare_ai_gateway aig_token)
 	[ -n "$val" ] && export CF_AIG_TOKEN="$val"
 
-	# OpenRouter
-	val=$(_sops_val openrouter api_key)
-	[ -n "$val" ] && export OPENROUTER_API_KEY="$val"
+	# OpenRouter — deliberately NOT exported. jcode's provider_keys_for_env
+	# (external.rs:608) auto-detects the "openrouter" provider from
+	# OPENROUTER_API_KEY; there is no jcode config switch to hide it, so keeping
+	# the key out of the environment is the only way. Everything routes through
+	# llm-gateway anyway. Re-enable only if a tool needs the direct key.
+	# val=$(_sops_val openrouter api_key)
+	# [ -n "$val" ] && export OPENROUTER_API_KEY="$val"
 
 	# xAI (Grok)
 	val=$(_sops_val xai api_key)

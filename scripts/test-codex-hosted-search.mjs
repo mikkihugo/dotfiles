@@ -4,8 +4,9 @@ import test from "node:test";
 
 const readConfig = async (path) => readFile(path, "utf8");
 const disabled = /^web_search\s*=\s*"disabled"\s*$/m;
+const live = /^web_search\s*=\s*"live"\s*$/m;
 
-test("root and every gateway-backed Codex role disable hosted web search but retain MCP search", async () => {
+test("root enables live hosted search while every gateway-backed Codex role disables it", async () => {
   const seed = await readConfig("config/codex/config.toml");
   const shared = await readConfig("config/codex/shared-preferences.toml");
   const activation = await readConfig("home/modules/activation.nix");
@@ -13,8 +14,8 @@ test("root and every gateway-backed Codex role disable hosted web search but ret
     .filter((name) => name.endsWith(".toml"))
     .sort();
 
-  assert.match(seed, disabled);
-  assert.match(shared, disabled);
+  assert.match(seed, live);
+  assert.match(shared, live);
   for (const roleName of roleNames) {
     const role = await readConfig(`config/codex/agents/${roleName}`);
     if (/^model_provider\s*=\s*"llm-gateway"\s*$/m.test(role)) {

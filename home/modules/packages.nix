@@ -23,7 +23,6 @@
     psmisc # process-tree diagnostics (`pstree`) for agent/session ownership audits
     tokei # count lines of code by language
     difftastic # structural diff (understands syntax, not just lines)
-    eternal-terminal # et/etserver — reconnecting SSH session survives roams/drops
 
     # bat-extras — bat-powered wrappers for standard tools
     bat-extras.batman # man pages with syntax highlighting

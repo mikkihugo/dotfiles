@@ -19,14 +19,12 @@
       "https://cuda-maintainers.cachix.org"
       "https://nix-community.cachix.org"
       "https://cache.numtide.com"
-      "https://claude-code.cachix.org"
     ];
     extra-trusted-public-keys = [
       "default:ESyvaQTiq681JA0iaH5tsQWS+R5qqJUVdVY1OXbi9to="
       "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-      "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
     ];
     accept-flake-config = true;
     fallback = true;
@@ -61,15 +59,6 @@
     # store paths numtide built; overriding nixpkgs invalidates all of them.
     llm-agents.url = "github:numtide/llm-agents.nix";
 
-    # claude-code: Anthropic's official native binary, repackaged with hourly
-    # upstream CI bumps and a Cachix binary cache (claude-code.cachix.org).
-    # Provides pkgs.claude-code via overlays.default. Same rationale as
-    # llm-agents — NOT following our nixpkgs, or we'd miss the prebuilt cache.
-    # Freshness comes from `nix flake update` (handled by dotfiles-auto-update),
-    # not a runtime self-updater (the Nix store is read-only; it sets
-    # DISABLE_AUTOUPDATER=1). Replaces the former mise-managed install.
-    claude-code.url = "github:sadjow/claude-code-nix";
-
     # ace-coder: pinned clean source for the CUDA worker package and HM module.
     # Use a committed git revision from the local repo, not the live dirty tree,
     # so worker builds remain cacheable and reproducible.
@@ -93,7 +82,6 @@
     flake-utils,
     ace-coder,
     llm-agents,
-    claude-code,
     inference-fabric,
     ...
   }: let
@@ -107,10 +95,7 @@
         pkgs = import nixpkgs {
           system = sys;
           config.allowUnfree = true;
-          # claude-code overlay: pkgs.claude-code = sadjow's hourly-fresh native binary.
-          overlays = [
-            claude-code.overlays.default
-          ];
+          overlays = [];
         };
         extraSpecialArgs =
           specialArgs

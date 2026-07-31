@@ -34,34 +34,32 @@ local c = {
 	tab_inactive= "#262626",
 }
 
--- ── Devbox tmux helper ────────────────────────────────────────────────────────
--- Ensure Tailscale is up, then SSH to devbox and attach/create a named tmux
+-- ── Vega tmux helper ──────────────────────────────────────────────────────────
+-- Ensure Tailscale is up, then SSH to vega and attach/create a named tmux
 -- session. `tmux new -A -s NAME` attaches if NAME exists, otherwise creates
--- it — so sessions persist on devbox across wezterm restarts, reboots, drops.
-local function sh_quote(s)
-	return "'" .. tostring(s):gsub("'", [['"'"']]) .. "'"
-end
-
-local function devbox_tmux(session, cwd)
+-- it — so sessions persist on vega across wezterm restarts, reboots, drops.
+local function vega_tmux(session, cwd)
 	local tmux_cmd
 	if cwd then
 		tmux_cmd = string.format("tmux new -A -s %s -c %s", session, cwd)
 	else
 		tmux_cmd = string.format("tmux new -A -s %s", session)
 	end
-	local wsl_cmd = string.format(
-		"ssh -o ConnectTimeout=8 -t mhugo@cc-se-sto-devbox-01 %s || { echo; echo 'devbox unavailable; falling back to local WSL.'; exec bash -l; }",
-		sh_quote(tmux_cmd)
-	)
 	return {
-		"wsl.exe", "bash", "-lc", wsl_cmd,
+		"powershell.exe", "-NoProfile", "-NoLogo", "-Command",
+		string.format([[
+			$ts = 'C:\Program Files\Tailscale\tailscale.exe';
+			& $ts status *> $null;
+			if ($LASTEXITCODE -ne 0) { & $ts up | Out-Null };
+			& ssh.exe -t mhugo@vega.ts.hugo.dk '%s'
+		]], tmux_cmd),
 	}
 end
 
 -- Persistent tabs spawned on every wezterm launch.
 -- { tmux_session_name, optional_starting_cwd_on_first_create }
 local PERSISTENT_TABS = {
-	{ "devbox" },              -- general shell, ~ on devbox
+	{ "vega" },                -- general shell, ~ on vega
 	{ "root",    "/" },        -- root filesystem view
 	{ "space",   "~" },        -- scratch space
 	{ "work",    "~/code" },   -- work dir
@@ -73,10 +71,10 @@ wezterm.on("gui-startup", function(cmd)
 	-- handle that itself and don't double-spawn our 4-tab window.
 	if cmd and cmd.args and #cmd.args > 0 then return end
 	local first = PERSISTENT_TABS[1]
-	local _, _, window = wezterm.mux.spawn_window { args = devbox_tmux(first[1], first[2]) }
+	local _, _, window = wezterm.mux.spawn_window { args = vega_tmux(first[1], first[2]) }
 	for i = 2, #PERSISTENT_TABS do
 		local t = PERSISTENT_TABS[i]
-		window:spawn_tab { args = devbox_tmux(t[1], t[2]) }
+		window:spawn_tab { args = vega_tmux(t[1], t[2]) }
 	end
 	window:gui_window():maximize()
 end)
@@ -205,7 +203,7 @@ wezterm.on("format-window-title", function(tab, _pane, _tabs, _panes, _config)
 	return tab.active_pane.title
 end)
 
--- Right status: orange "devbox" + day/time, with powerline arrows.
+-- Right status: orange "vega" + day/time, with powerline arrows.
 local ARROW_LEFT = wezterm.nerdfonts.pl_right_hard_divider  --
 wezterm.on("update-right-status", function(window, _pane)
 	local time_bg, time_fg = c.bg_panel, c.fg
@@ -222,7 +220,7 @@ wezterm.on("update-right-status", function(window, _pane)
 		{ Background = { Color = c.orange } },
 		{ Foreground = { Color = c.tab_active_fg } },
 		{ Attribute = { Intensity = "Bold" } },
-		{ Text = "  devbox " },
+		{ Text = "  vega " },
 	})
 end)
 
@@ -237,27 +235,27 @@ config.scrollback_lines             = 50000
 config.enable_scroll_bar            = false
 
 -- ── Bell ──────────────────────────────────────────────────────────────────────
--- Silent. Claude Code emits BEL on task completion; health-alarm on devbox
+-- Silent. Claude Code emits BEL on task completion; health-alarm on vega
 -- uses OSC 9 desktop notifications instead, so neither flashes the window.
 config.audible_bell                 = "Disabled"
 
 -- ── Launch menu ───────────────────────────────────────────────────────────────
 -- Dropdown next to the "+" tab button. First entry is the default for new tabs.
 config.launch_menu = {
-	{ label = "devbox scratch (tmux)", args = devbox_tmux("scratch") },
-	{ label = "devbox root  (tmux)",   args = devbox_tmux("root", "/") },
-	{ label = "devbox work  (tmux)",   args = devbox_tmux("work", "~/code") },
+	{ label = "vega scratch (tmux)", args = vega_tmux("scratch") },
+	{ label = "vega root  (tmux)",   args = vega_tmux("root", "/") },
+	{ label = "vega work  (tmux)",   args = vega_tmux("work", "~/code") },
 	{ label = "WSL ~/code",           args = { "wsl.exe", "bash", "-l", "-c", "cd ~/code && exec bash" } },
 	{ label = "WSL ~",                args = { "wsl.exe", "bash", "-l" } },
 	{ label = "PowerShell",           args = { "pwsh.exe" } },
 }
 -- Initial startup window prog (used only if gui-startup handler doesn't fire).
-config.default_prog = devbox_tmux("scratch")
+config.default_prog = vega_tmux("scratch")
 
 -- ── Keys ──────────────────────────────────────────────────────────────────────
 config.keys = {
-	-- Ctrl+Shift+T → devbox tmux 'scratch' (override default which would spawn pwsh).
-	{ key = "t", mods = "CTRL|SHIFT", action = act.SpawnCommandInNewTab { args = devbox_tmux("scratch") } },
+	-- Ctrl+Shift+T → vega tmux 'scratch' (override default which would spawn pwsh).
+	{ key = "t", mods = "CTRL|SHIFT", action = act.SpawnCommandInNewTab { args = vega_tmux("scratch") } },
 	-- Ctrl+Shift+L → launcher menu (lets you pick a session or local shell).
 	{ key = "l", mods = "CTRL|SHIFT", action = act.ShowLauncherArgs({ flags = "LAUNCH_MENU_ITEMS|TABS|WORKSPACES" }) },
 

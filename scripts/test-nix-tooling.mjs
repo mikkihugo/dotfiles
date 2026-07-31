@@ -92,18 +92,11 @@ test("Home Manager gives every managed agent client a deterministic UTF-8 locale
 
 test("shell aliases consume the managed Nix tooling", async () => {
   const shell = await source("home/modules/shell.nix");
-  // Anchored to the full Nix assignment: `hms = "nh home switch";` with only
-  // whitespace allowed around `=` and before the `;`. A prefix match would
-  // silently pass again if the alias regained a flag such as `--ask`.
+  // Keep automation non-interactive: an anchored assignment rejects appended
+  // flags such as --ask while allowing ordinary Nix whitespace.
   const hmsAlias = /^\s*hms\s*=\s*"nh home switch"\s*;/m;
   assert.match(shell, hmsAlias);
-  assert.doesNotMatch(
-    shell,
-    /hms\s*=\s*"nh home switch --ask/,
-    "hms must not regain --ask",
-  );
-  // Regression witness: the pattern tolerates Nix whitespace but rejects
-  // any extra flag appended to the command.
+  assert.doesNotMatch(shell, /hms\s*=\s*"nh home switch --ask/);
   assert.match('hms  =  "nh home switch" ;', hmsAlias);
   assert.doesNotMatch('hms = "nh home switch --ask";', hmsAlias);
   assert.match(shell, /nixwhy\s*=\s*"nix-diff /);
@@ -185,4 +178,55 @@ test("global Codex instructions keep publication owned until land completes", as
   assert.match(agents, /Do not launch delegated commit, land, push, or publication work as a background process/);
   assert.match(agents, /complete synchronously within the subagent turn/);
   assert.match(agents, /coordinator must perform and verify it/);
+});
+
+test("otel-env.sh resolves OTLP helpers without mutating caller PATH", async () => {
+  const otel = await source("shell/bash/otel-env.sh");
+  assert.doesNotMatch(otel, /^\s*PATH=/m);
+  assert.doesNotMatch(otel, /export\s+PATH/);
+  assert.match(otel, /_cc_otel_resolve/);
+  assert.match(otel, /\/run\/current-system\/sw\/bin/);
+  assert.doesNotMatch(otel, /mise\/shims\/cursor-agent/);
+});
+
+test("cursor-agent and agent share one OTEL wrapper with unified binary resolution", async () => {
+  const aiTools = await source("home/modules/ai-tools.nix");
+  assert.match(aiTools, /cursorAgentEntrypoint\s*=/);
+  assert.doesNotMatch(aiTools, /mise\/shims\/cursor-agent/);
+
+  const cursorAgentFile = listBody(
+    aiTools,
+    /"\.local\/bin\/cursor-agent"\s*=\s*\{([\s\S]*?)\n\s*\};/,
+    ".local/bin/cursor-agent",
+  );
+  const agentFile = listBody(
+    aiTools,
+    /"\.local\/bin\/agent"\s*=\s*\{([\s\S]*?)\n\s*\};/,
+    ".local/bin/agent",
+  );
+
+  assert.match(cursorAgentFile, /text\s*=\s*cursorAgentEntrypoint;/);
+  assert.match(agentFile, /text\s*=\s*cursorAgentEntrypoint;/);
+
+  const entrypoint = listBody(
+    aiTools,
+    /cursorAgentEntrypoint\s*=\s*''([\s\S]*?)'';/,
+    "cursorAgentEntrypoint",
+  );
+  assert.match(entrypoint, /otel-env\.sh/);
+  assert.match(entrypoint, /OTEL_SERVICE_NAME="cursor-agent"/);
+  assert.match(
+    entrypoint,
+    /versions[\s\S]*llm-pkgs\.cursor-agent[\s\S]*mise\/installs/,
+    "binary policy must prefer versioned install, then Nix store, then mise install",
+  );
+  assert.match(entrypoint, /\.local\/bin\/(cursor-agent|agent)/);
+});
+
+test("Claude Code remains native-installer-owned outside Home Manager", async () => {
+  const aiTools = await source("home/modules/ai-tools.nix");
+  const flake = await source("flake.nix");
+  assert.doesNotMatch(aiTools, /"\.local\/bin\/claude"/);
+  assert.doesNotMatch(aiTools, /pkgs\.claude-code/);
+  assert.doesNotMatch(flake, /claude-code/);
 });

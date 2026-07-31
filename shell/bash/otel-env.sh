@@ -10,11 +10,32 @@
 # Consumers: claude, codex, cursor-agent, droid/factory, kimi, qoder, goose,
 # and any other process that honors OTEL_EXPORTER_OTLP_*.
 
+_cc_otel_resolve() {
+	local name="$1"
+	if command -v "$name" >/dev/null 2>&1; then
+		command -v "$name"
+		return 0
+	fi
+	local dir
+	for dir in /run/current-system/sw/bin /usr/bin /bin; do
+		if [ -x "$dir/$name" ]; then
+			printf '%s\n' "$dir/$name"
+			return 0
+		fi
+	done
+	return 1
+}
+
 _cc_otel_env_load() {
 	# Respect an explicit operator override.
 	if [ -n "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" ] || [ -n "${CENTRALCLOUD_OTEL_SKIP:-}" ]; then
 		return 0
 	fi
+
+	local curl_bin base64_bin bao_bin
+	curl_bin="$(_cc_otel_resolve curl 2>/dev/null || true)"
+	base64_bin="$(_cc_otel_resolve base64 2>/dev/null || true)"
+	bao_bin="$(_cc_otel_resolve bao 2>/dev/null || true)"
 
 	local collector_http="http://otel-collector.monitoring.svc.cluster.local:4318"
 	local collector_grpc="http://otel-collector.monitoring.svc.cluster.local:4317"
@@ -22,13 +43,13 @@ _cc_otel_env_load() {
 	local endpoint="" protocol="" headers=""
 
 	# Fast path: cluster collector HTTP (this host is usually on the mesh).
-	if curl -skS --max-time 1 -o /dev/null -w '' \
+	if [ -n "$curl_bin" ] && "$curl_bin" -skS --max-time 1 -o /dev/null -w '' \
 		-X POST "${collector_http}/v1/traces" \
 		-H 'Content-Type: application/x-protobuf' \
 		--data-binary '' >/dev/null 2>&1; then
 		endpoint="$collector_http"
 		protocol="http/protobuf"
-	elif curl -skS --max-time 1 -o /dev/null "${collector_grpc}" >/dev/null 2>&1; then
+	elif [ -n "$curl_bin" ] && "$curl_bin" -skS --max-time 1 -o /dev/null "${collector_grpc}" >/dev/null 2>&1; then
 		endpoint="$collector_grpc"
 		protocol="grpc"
 	else
@@ -36,28 +57,28 @@ _cc_otel_env_load() {
 		local user pass
 		user=""
 		pass=""
-		if command -v bao >/dev/null 2>&1; then
+		if [ -n "$bao_bin" ]; then
 			user="$(
 				BAO_ADDR="${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
-					bao kv get -field=username -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
+					"$bao_bin" kv get -field=username -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
 			)"
 			pass="$(
 				BAO_ADDR="${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
-					bao kv get -field=password -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
+					"$bao_bin" kv get -field=password -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
 			)"
 			endpoint="$(
 				BAO_ADDR="${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
-					bao kv get -field=endpoint -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
+					"$bao_bin" kv get -field=endpoint -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
 			)"
 			protocol="$(
 				BAO_ADDR="${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
-					bao kv get -field=protocol -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
+					"$bao_bin" kv get -field=protocol -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
 			)"
 		fi
 		endpoint="${endpoint:-$public_http}"
 		protocol="${protocol:-http/protobuf}"
-		if [ -n "$user" ] && [ -n "$pass" ]; then
-			headers="Authorization=Basic $(printf '%s:%s' "$user" "$pass" | base64 -w0 2>/dev/null || printf '%s:%s' "$user" "$pass" | base64)"
+		if [ -n "$user" ] && [ -n "$pass" ] && [ -n "$base64_bin" ]; then
+			headers="Authorization=Basic $(printf '%s:%s' "$user" "$pass" | "$base64_bin" -w0 2>/dev/null || printf '%s:%s' "$user" "$pass" | "$base64_bin")"
 		fi
 	fi
 
@@ -81,4 +102,4 @@ _cc_otel_env_load() {
 }
 
 _cc_otel_env_load
-unset -f _cc_otel_env_load
+unset -f _cc_otel_env_load _cc_otel_resolve

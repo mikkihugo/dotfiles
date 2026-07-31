@@ -236,11 +236,8 @@ in {
     };
   };
 
-  # Claude Code is Nix-managed via the sadjow/claude-code-nix overlay
-  # (pkgs.claude-code in ai-tools.nix → ~/.nix-profile/bin/claude). The native
-  # runtime self-updater is disabled (read-only store); freshness comes from
-  # `nix flake update` on the claude-code input, automated by dotfiles-auto-update.
-  # bypassPermissions is set globally via ~/.claude/settings.json — no wrapper needed.
+  # Claude Code is installed and auto-updated by Anthropic's native installer;
+  # Home Manager deliberately does not own ~/.local/bin/claude.
 
   home.shellAliases = {
     # Build first and show the generation diff before activation. nh owns

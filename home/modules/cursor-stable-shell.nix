@@ -7,6 +7,8 @@
 # Agent shells are non-interactive and do not source ~/.bashrc, so interactive
 # direnv hooks never fire. The wrapper runs `direnv export` for $PWD before
 # exec so agent commands inherit the same flake env as a direnv-aware terminal.
+# It also sources shell/bash/otel-env.sh so OTEL_EXPORTER_OTLP_* reaches CLI
+# children (claude/codex/…) without depending on a login bashrc.
 #
 # Permanent guarantees:
 # - SHELL itself is an immutable store path, so deleting or chmodding the
@@ -72,6 +74,9 @@
     done
     export PATH
     unset _stable_shell_caller_path _stable_shell_path_entries _stable_shell_seen _stable_shell_entry
+    # Agent shells skip ~/.bashrc; load CentralCloud OTLP the same way login shells do.
+    # shellcheck disable=SC1091
+    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
     ${direnvInheritLines}
     exec ${bashBin} "$@"
   '';
@@ -135,6 +140,9 @@
       printf '%s\n' 'done'
       printf '%s\n' 'export PATH'
       printf '%s\n' 'unset _stable_shell_caller_path _stable_shell_path_entries _stable_shell_seen _stable_shell_entry'
+      printf '%s\n' '# Agent shells skip ~/.bashrc; load CentralCloud OTLP env.'
+      printf '%s\n' '# shellcheck disable=SC1091'
+      printf '%s\n' '[ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"'
       printf '%s\n' 'if [ -z "''${DIRENV_DISABLE:-}" ] && [ -z "''${IN_NIX_SHELL:-}" ] && command -v direnv >/dev/null 2>&1; then'
       printf '%s\n' '  unset DIRENV_DIFF DIRENV_WATCHES'
       printf '%s\n' '  if command -v timeout >/dev/null 2>&1; then'
@@ -188,6 +196,8 @@
       "done",
       "export PATH",
       "unset _stable_shell_caller_path _stable_shell_path_entries _stable_shell_seen _stable_shell_entry",
+      '# Agent shells skip ~/.bashrc; load CentralCloud OTLP env.',
+      '[ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"',
       'if [ -z "''${DIRENV_DISABLE:-}" ] && [ -z "''${IN_NIX_SHELL:-}" ] && command -v direnv >/dev/null 2>&1; then',
       "  unset DIRENV_DIFF DIRENV_WATCHES",
       "  if command -v timeout >/dev/null 2>&1; then",

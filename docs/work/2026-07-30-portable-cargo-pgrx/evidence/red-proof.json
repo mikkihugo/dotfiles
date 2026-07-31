@@ -1,0 +1,16 @@
+{
+	"schema_version": "local-proof/v1",
+	"result_id": "portable-cargo-pgrx-red-result",
+	"status": "failed",
+	"observed_at": "2026-07-30T23:15:00Z",
+	"consumer": "JCode swarm workers and the mhugo operator on cc-se-sto-devbox-01",
+	"command": "/home/mhugo/.cargo/bin/cargo-pgrx pgrx --help",
+	"exit_code": 132,
+	"observations": [
+		"The global cargo-pgrx 0.18.0 process terminated with SIGILL.",
+		"Seven JCode-worker coredump records identify the same executable and command.",
+		"The faulting instruction is AVX-512 vmovdqu64, which this AMD EPYC 7R13 host does not expose.",
+		"The Engine fabrics/data Nix cargo-pgrx 0.18.0 executes the same help command with exit code 0."
+	],
+	"falsifier": "If the Home Manager-managed entrypoint still exits non-zero or produces a new stored SIGILL coredump, the repair is not complete."
+}

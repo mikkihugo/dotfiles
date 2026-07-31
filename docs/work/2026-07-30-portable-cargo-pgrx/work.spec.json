@@ -1,0 +1,287 @@
+{
+	"schema_version": "workspec/v4",
+	"workspec_id": "2026-07-30-portable-cargo-pgrx-work",
+	"purpose_contract_id": "2026-07-30-portable-cargo-pgrx-purpose",
+	"handover": {
+		"state": "accepted",
+		"producer": {
+			"kind": "agent",
+			"id": "codex-root"
+		},
+		"accepting_authority": {
+			"kind": "policy",
+			"id": "purpose-first-tdd-handover"
+		},
+		"decided_at": "2026-07-30T23:36:42Z",
+		"purpose_digest": {
+			"algorithm": "sha256",
+			"canonicalization": "engine-json-v1",
+			"value": "677a655608aff8f043e31fb644a4d1610105f37df1b0fdb254324e838062f910"
+		},
+		"subject_digest": {
+			"algorithm": "sha256",
+			"canonicalization": "engine-json-v1",
+			"value": "d0385f4f18f039d7cfbe9183b4b113eee56827590b295864ba0a7a5dc2ee6fd4"
+		},
+		"policy": {
+			"id": "workspec-content-handover/v1",
+			"digest": {
+				"algorithm": "sha256",
+				"canonicalization": "raw-bytes",
+				"value": "21f4dad52f9e5f5a53ee16625c7bf75e01251002911d667e879f3e06147e7192"
+			}
+		},
+		"validators": [
+			"workspec-v4.schema.json",
+			"subject-digest",
+			"purpose-first-tdd-handover"
+		],
+		"evidence_refs": [
+			"purpose.contract.json#admission",
+			"evidence/red-proof.json"
+		]
+	},
+	"feature_tree_target": {
+		"kind": "unknown",
+		"name": "2026-07-30-portable-cargo-pgrx",
+		"status": "planned"
+	},
+	"current_spec": {
+		"snapshot_id": "2026-07-30-portable-cargo-pgrx-current-spec",
+		"uri": "current-spec.snapshot.json",
+		"digest": {
+			"algorithm": "sha256",
+			"canonicalization": "raw-bytes",
+			"value": "f2b4cd6fe978c206cffb2cb8b47565dae4c2eccf205794cec58a258cd1d3e601"
+		}
+	},
+	"requirement_delta": {
+		"added": [
+			{
+				"id": "R1",
+				"statement": "Home Manager shall own a portable cargo-pgrx entrypoint that delegates to the nearest Engine fabrics/data development shell, with the canonical Engine checkout as fallback.",
+				"acceptance_criteria": [
+					"home/home.nix imports the dedicated cargo-pgrx module",
+					"the module owns executable ~/.local/bin/cargo-pgrx",
+					"the wrapper walks upward from the current directory to find fabrics/data/flake.nix",
+					"the wrapper accepts an ancestor only when Engine-specific Cargo and Nix package markers are present",
+					"the wrapper falls back to /home/mhugo/code/singularity-engine/fabrics/data",
+					"the wrapper delegates all original arguments through the Nix-owned cargo-pgrx and cannot select itself inside the nested shell",
+					"the canonical repo check executes the wrapper logic against controlled workspace, argv, unrelated-flake, and recursion fixtures"
+				],
+				"requirement_form": {
+					"ears": {
+						"pattern": "state-driven",
+						"system": "Managed cargo-pgrx entrypoint",
+						"precondition": "cargo-pgrx is invoked outside an Engine fabrics/data development shell",
+						"response": "resolve the nearest Engine fabrics/data flake or canonical fallback and execute its Nix-owned cargo-pgrx with unchanged arguments"
+					}
+				},
+				"breaker": {
+					"breaker_id": "B1",
+					"condition": "the wrapper selects an unrelated flake, drops arguments, or recursively invokes itself",
+					"witness_kind": "contract-test",
+					"expected": "rejected"
+				},
+				"risk": "medium",
+				"source": "purpose_contract"
+			},
+			{
+				"id": "R2",
+				"statement": "The activated host shall execute cargo-pgrx 0.18.0 without SIGILL from normal and Engine workspace shells after the incompatible unmanaged Cargo install is removed.",
+				"acceptance_criteria": [
+					"home-manager switch activates the managed wrapper",
+					"command -v cargo-pgrx resolves to ~/.local/bin/cargo-pgrx outside a Nix development shell",
+					"cargo pgrx --help exits 0 from /home/mhugo and a writable Engine workspace",
+					"cargo-pgrx reports version 0.18.0",
+					"the Engine fabrics/data development shell resolves its Nix store cargo-pgrx before ~/.local/bin",
+					"no new stored SIGILL coredump appears after the probes"
+				],
+				"requirement_form": {
+					"ears": {
+						"pattern": "unwanted-behavior",
+						"system": "Managed cargo-pgrx entrypoint",
+						"trigger": "the host-compatible command is invoked by JCode or the operator",
+						"response": "execute cargo-pgrx 0.18.0 successfully without an illegal instruction or recursive wrapper"
+					}
+				},
+				"breaker": {
+					"breaker_id": "B2",
+					"condition": "a live help probe exits non-zero, reports another version, resolves the removed unmanaged install, or creates a stored SIGILL coredump",
+					"witness_kind": "runtime-probe",
+					"expected": "detected"
+				},
+				"risk": "medium",
+				"source": "purpose_contract"
+			}
+		],
+		"modified": [],
+		"removed": [],
+		"renamed": []
+	},
+	"requirements": [
+		{
+			"id": "R1",
+			"statement": "Home Manager shall own a portable cargo-pgrx entrypoint that delegates to the nearest Engine fabrics/data development shell, with the canonical Engine checkout as fallback.",
+			"acceptance_criteria": [
+				"home/home.nix imports the dedicated cargo-pgrx module",
+				"the module owns executable ~/.local/bin/cargo-pgrx",
+				"the wrapper walks upward from the current directory to find fabrics/data/flake.nix",
+				"the wrapper accepts an ancestor only when Engine-specific Cargo and Nix package markers are present",
+				"the wrapper falls back to /home/mhugo/code/singularity-engine/fabrics/data",
+				"the wrapper delegates all original arguments through the Nix-owned cargo-pgrx and cannot select itself inside the nested shell",
+				"the canonical repo check executes the wrapper logic against controlled workspace, argv, unrelated-flake, and recursion fixtures"
+			],
+			"requirement_form": {
+				"ears": {
+					"pattern": "state-driven",
+					"system": "Managed cargo-pgrx entrypoint",
+					"precondition": "cargo-pgrx is invoked outside an Engine fabrics/data development shell",
+					"response": "resolve the nearest Engine fabrics/data flake or canonical fallback and execute its Nix-owned cargo-pgrx with unchanged arguments"
+				}
+			},
+			"breaker": {
+				"breaker_id": "B1",
+				"condition": "the wrapper selects an unrelated flake, drops arguments, or recursively invokes itself",
+				"witness_kind": "contract-test",
+				"expected": "rejected"
+			},
+			"risk": "medium",
+			"source": "purpose_contract"
+		},
+		{
+			"id": "R2",
+			"statement": "The activated host shall execute cargo-pgrx 0.18.0 without SIGILL from normal and Engine workspace shells after the incompatible unmanaged Cargo install is removed.",
+			"acceptance_criteria": [
+				"home-manager switch activates the managed wrapper",
+				"command -v cargo-pgrx resolves to ~/.local/bin/cargo-pgrx outside a Nix development shell",
+				"cargo pgrx --help exits 0 from /home/mhugo and a writable Engine workspace",
+				"cargo-pgrx reports version 0.18.0",
+				"the Engine fabrics/data development shell resolves its Nix store cargo-pgrx before ~/.local/bin",
+				"no new stored SIGILL coredump appears after the probes"
+			],
+			"requirement_form": {
+				"ears": {
+					"pattern": "unwanted-behavior",
+					"system": "Managed cargo-pgrx entrypoint",
+					"trigger": "the host-compatible command is invoked by JCode or the operator",
+					"response": "execute cargo-pgrx 0.18.0 successfully without an illegal instruction or recursive wrapper"
+				}
+			},
+			"breaker": {
+				"breaker_id": "B2",
+				"condition": "a live help probe exits non-zero, reports another version, resolves the removed unmanaged install, or creates a stored SIGILL coredump",
+				"witness_kind": "runtime-probe",
+				"expected": "detected"
+			},
+			"risk": "medium",
+			"source": "purpose_contract"
+		}
+	],
+	"scope": {
+		"allowed": [
+			".secrets.baseline",
+			"docs/work/2026-07-30-portable-cargo-pgrx/**",
+			"home/home.nix",
+			"home/modules/cargo-pgrx.nix",
+			"home/modules/cargo-pgrx-wrapper.sh",
+			"scripts/repo-check.sh",
+			"scripts/test-cargo-pgrx-wrapper.mjs",
+			"OBSERVATIONS.md"
+		],
+		"blocked": [
+			"config/codex/**",
+			"config/claude/**",
+			"config/kimi-code/**",
+			"config/mise/**",
+			"home/modules/ai-tools.nix",
+			"home/modules/tailscale.nix",
+			"result",
+			"result-*"
+		],
+		"expected_files": []
+	},
+	"test_plan": [
+		{
+			"id": "T1",
+			"requirement_id": "R1",
+			"kind": "contract",
+			"description": "Node execution contract for Home Manager ownership, Engine workspace identity, canonical fallback, argument forwarding, and recursion avoidance.",
+			"path": "scripts/test-cargo-pgrx-wrapper.mjs",
+			"command": "node --test scripts/test-cargo-pgrx-wrapper.mjs",
+			"must_fail_first": true
+		},
+		{
+			"id": "T2",
+			"requirement_id": "R2",
+			"kind": "smoke",
+			"description": "Activated-host probes for PATH ownership, cargo-pgrx version/help, nested-shell precedence, and coredump absence.",
+			"command": "cargo pgrx --help",
+			"must_fail_first": true
+		}
+	],
+	"verification_plan": {
+		"commands": [
+			"node --test scripts/test-cargo-pgrx-wrapper.mjs",
+			"repo check",
+			"home-manager switch --flake path:.#cc-se-sto-devbox-01 --impure",
+			"cargo pgrx --help",
+			"cd /home/mhugo/code/singularity-engine/fabrics/data && nix develop path:. --command cargo-pgrx pgrx --help",
+			"nix run path:/home/mhugo/code/singularity-engine/fabrics/tools/services/purpose-tool#validate-work -- docs/work/2026-07-30-portable-cargo-pgrx --repo-root . --require-evidence"
+		],
+		"evidence_required": [
+			"test",
+			"quality",
+			"runtime",
+			"deploy",
+			"falsifier"
+		],
+		"deploy_required": true,
+		"rollback_required": true
+	},
+	"model_requirements": {
+		"coding": 0.6,
+		"debugging": 0.4
+	},
+	"run_control": {
+		"autonomous_allowed": true,
+		"approval_required": false,
+		"max_doubt_to_proceed": 1
+	},
+	"traceability": {
+		"owner": {
+			"kind": "agent",
+			"id": "codex-root"
+		},
+		"agent_role": "implementer",
+		"source_node_id": "2026-07-30-portable-cargo-pgrx",
+		"target_planes": [
+			"tool",
+			"client"
+		],
+		"dependencies": [
+			"Engine fabrics/data cargo-pgrx 0.18.0 development-shell package"
+		],
+		"retry_policy": {
+			"max_attempts": 2,
+			"backoff": "fixed",
+			"retryable_terminal_reasons": [
+				"transient Nix cache or network failure"
+			]
+		},
+		"dispatch_scope": {
+			"kind": "local"
+		}
+	},
+	"execution_constraints": {
+		"required_capabilities": [
+			"Home Manager",
+			"Nix flakes",
+			"systemd coredump inspection"
+		],
+		"requested_isolation": "process",
+		"side_effect_policy": "fenced",
+		"expected_artifact_schemas": [],
+		"deterministic_replay_required": true
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"source": "repository-vcs-facade",
+	"files": [
+		".secrets.baseline",
+		"OBSERVATIONS.md",
+		"docs/work/2026-07-30-portable-cargo-pgrx/README.md",
+		"docs/work/2026-07-30-portable-cargo-pgrx/current-spec.snapshot.json",
+		"docs/work/2026-07-30-portable-cargo-pgrx/evidence.bundle.json",
+		"docs/work/2026-07-30-portable-cargo-pgrx/evidence/changed-files.json",
+		"docs/work/2026-07-30-portable-cargo-pgrx/evidence/red-proof.json",
+		"docs/work/2026-07-30-portable-cargo-pgrx/evidence/result.json",
+		"docs/work/2026-07-30-portable-cargo-pgrx/evidence/review-proof.json",
+		"docs/work/2026-07-30-portable-cargo-pgrx/purpose.contract.json",
+		"docs/work/2026-07-30-portable-cargo-pgrx/validation.report.json",
+		"docs/work/2026-07-30-portable-cargo-pgrx/work.spec.json",
+		"home/home.nix",
+		"home/modules/cargo-pgrx-wrapper.sh",
+		"home/modules/cargo-pgrx.nix",
+		"scripts/repo-check.sh",
+		"scripts/test-cargo-pgrx-wrapper.mjs"
+	]
+}

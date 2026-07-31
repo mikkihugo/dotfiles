@@ -1,0 +1,139 @@
+{
+	"schema_version": "purpose-contract/v2",
+	"contract_id": "2026-07-30-portable-cargo-pgrx-purpose",
+	"source": {
+		"system": "tool",
+		"repository": ".",
+		"request_id": "2026-07-30-portable-cargo-pgrx"
+	},
+	"lineage": {
+		"origin": {
+			"kind": "request",
+			"id": "2026-07-30-portable-cargo-pgrx",
+			"revision": "initial"
+		},
+		"objective": {
+			"id": "2026-07-30-portable-cargo-pgrx-objective",
+			"statement": "Restore a portable global cargo-pgrx fallback for JCode and operator shells by delegating to the Engine-owned Nix cargo-pgrx 0.18.0 package instead of the host-incompatible AVX-512 Cargo install.",
+			"measure": "Home Manager owns an executable ~/.local/bin/cargo-pgrx entrypoint; cargo pgrx --help exits 0 from a normal shell and an Engine workspace; the Engine fabric shell remains recursion-free; no new stored SIGILL coredump appears."
+		},
+		"need": {
+			"id": "2026-07-30-portable-cargo-pgrx-need",
+			"statement": "JCode and operator shells need a portable cargo-pgrx 0.18.0 fallback on this Zen 3 host.",
+			"stakeholders": [
+				"JCode swarm workers",
+				"Mikael as cc-se-sto-devbox-01 operator"
+			],
+			"baseline": "The global ~/.cargo/bin/cargo-pgrx 0.18.0 exits 132 on an AVX-512 vmovdqu64 instruction and has seven JCode-worker coredump records. The Engine fabrics/data Nix package of the same version exits 0.",
+			"consequence_of_no_action": "VectorDrive and other Engine pgrx work can crash before tests run whenever a worker resolves the global Cargo install outside the nested fabric shell.",
+			"assumptions": [
+				"Engine fabrics/data remains the package authority for cargo-pgrx 0.18.0."
+			],
+			"alternatives_considered": [
+				"Rebuild another unmanaged global Cargo install",
+				"Copy the current Nix store binary into ~/.cargo/bin",
+				"Change Engine source or every worker command"
+			]
+		}
+	},
+	"admission": {
+		"state": "accepted",
+		"producer": {
+			"kind": "agent",
+			"id": "codex-root"
+		},
+		"accepting_authority": {
+			"kind": "human",
+			"id": "mhugo"
+		},
+		"decided_at": "2026-07-30T23:36:42Z",
+		"subject_digest": {
+			"algorithm": "sha256",
+			"canonicalization": "engine-json-v1",
+			"value": "677a655608aff8f043e31fb644a4d1610105f37df1b0fdb254324e838062f910"
+		},
+		"policy": {
+			"id": "operator-directed-purpose-admission/v1",
+			"digest": {
+				"algorithm": "sha256",
+				"canonicalization": "raw-bytes",
+				"value": "60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e"
+			}
+		},
+		"validators": [
+			"purpose-contract-v2.schema.json",
+			"subject-digest",
+			"operator-authority"
+		],
+		"evidence_refs": [
+			"evidence/red-proof.json",
+			"user-request:make-swarm-durable-and-fix-it"
+		]
+	},
+	"purpose": "Restore a portable global cargo-pgrx fallback for JCode and operator shells by delegating to the Engine-owned Nix cargo-pgrx 0.18.0 package instead of the host-incompatible AVX-512 Cargo install.",
+	"consumer": "JCode swarm workers and the mhugo operator on cc-se-sto-devbox-01.",
+	"contract": "Home Manager owns an executable ~/.local/bin/cargo-pgrx entrypoint that resolves a current Engine workspace fabrics/data flake when available, otherwise the canonical Engine fabric, delegates all arguments to that flake's cargo-pgrx 0.18.0 without recursion, makes cargo pgrx --help exit 0, and leaves JCode services and Engine source unchanged.",
+	"failure_boundary": "The repair is confined to a managed dotfiles wrapper and removal of the incompatible unmanaged Cargo install after activation proof. Do not change Engine source, JCode service wiring, other Cargo tools, or active workspaces.",
+	"evidence": [
+		{
+			"kind": "test",
+			"description": "A contract test proves Home Manager ownership, nearest-workspace resolution, canonical fallback, argument forwarding, and recursion avoidance.",
+			"status": "expected"
+		},
+		{
+			"kind": "runtime",
+			"description": "After activation, cargo pgrx --help exits 0 from /home/mhugo and an Engine workspace, reports version 0.18.0, and creates no new stored SIGILL coredump.",
+			"status": "expected"
+		}
+	],
+	"falsifier": {
+		"claim": "The managed wrapper restores a portable cargo-pgrx 0.18.0 fallback.",
+		"executable_check": {
+			"kind": "test",
+			"description": "Run the wrapper contract and live help probes; any non-zero exit, wrong flake selection, recursion, version drift, or new stored SIGILL coredump falsifies the claim.",
+			"command": "node --test scripts/test-cargo-pgrx-wrapper.mjs && cargo pgrx --help"
+		}
+	},
+	"non_goals": [
+		"Repackage cargo-pgrx outside the Engine fabric",
+		"Change Engine source or pgrx test configuration",
+		"Change JCode model routing or worker capacity",
+		"Clean unrelated Cargo packages, caches, worktrees, or builds"
+	],
+	"invariants": [
+		"Engine fabrics/data remains the cargo-pgrx package authority",
+		"Home Manager owns ~/.local/bin/cargo-pgrx",
+		"The nested Engine fabric shell resolves its Nix package before ~/.local/bin and cannot recurse",
+		"JCode services, sockets, sessions, and active workspaces remain intact",
+		"No secret material enters source or evidence",
+		"All VCS actions use the repository-owned repo vcs facade"
+	],
+	"assumptions": [
+		{
+			"statement": "The Engine fabrics/data flake continues to expose cargo-pgrx 0.18.0 in its development shell.",
+			"status": "verified",
+			"doubt": 0,
+			"falsifier": "nix develop path:/home/mhugo/code/singularity-engine/fabrics/data --command cargo-pgrx pgrx --help exits non-zero or reports another version."
+		},
+		{
+			"statement": "~/.local/bin precedes the unmanaged Cargo bin directory in managed interactive and non-interactive shells.",
+			"status": "verified",
+			"doubt": 0,
+			"falsifier": "A fresh managed shell resolves cargo-pgrx to ~/.cargo/bin before ~/.local/bin."
+		}
+	],
+	"run_control": {
+		"autonomous_allowed": true,
+		"risk": "medium",
+		"blast_radius": "local",
+		"reversibility": "easy",
+		"max_active_doubt": 1
+	},
+	"target_planes": [
+		"tool",
+		"client"
+	],
+	"plane_constraints": [
+		"Home Manager owns the global entrypoint; Engine fabrics/data owns the cargo-pgrx package; JCode only consumes the command."
+	]
+}

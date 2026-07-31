@@ -38,6 +38,7 @@ in {
       ./modules/activation.nix
       ./modules/packages.nix
       ./modules/ast-grep.nix
+      ./modules/cargo-pgrx.nix
       ./modules/shell.nix
       ./modules/git.nix
       ./modules/cursor-stable-shell.nix

@@ -1,0 +1,35 @@
+{
+	"schema_version": "local-review/v1",
+	"reviewer": {
+		"kind": "independent-agent",
+		"id": "review_portable_cargo_pgrx",
+		"provider": "openai"
+	},
+	"initial_verdict": "needs-fix",
+	"initial_findings": [
+		"The source-regex-only test could not falsify flake selection, argument forwarding, or recursion.",
+		"Any ancestor containing fabrics/data/flake.nix could be mistaken for an Engine workspace.",
+		"Final evidence.bundle.json and durable runtime evidence were not yet present."
+	],
+	"fixes": [
+		"The exact shared shell logic is now executed against marked Engine, unrelated-flake, fallback, argv, and recursion fixtures.",
+		"Engine selection now requires root Cargo.toml, fabrics/data/Cargo.toml, fabrics/data/flake.nix, and fabrics/data/nix/flake/packages.nix.",
+		"The Home Manager module delegates directly to the tested shared logic."
+	],
+	"final_verdict": "accept",
+	"reviewed_at": "2026-07-31T00:01:00Z",
+  "fresh_verification": [
+    "node --test scripts/test-cargo-pgrx-wrapper.mjs: 5 passed, 0 failed",
+    "activation package build: passed",
+    "repo check: 36 passed, 0 failed"
+  ],
+  "publication_review": {
+    "reviewer_id": "final_dotfiles_review",
+    "initial_verdict": "with-fixes",
+    "finding": "The verification plan named purpose-validate-work directly even though the dotfiles shell did not expose that bare command.",
+    "resolution": "The work specification and README now declare the exact runnable pinned local Nix app invocation with --require-evidence.",
+    "closure": "The reviewer independently ran the declared command, observed ok=true and authorizes_execution=true, and reported no remaining Critical or Important issue.",
+    "closed_at": "2026-07-31T00:20:57Z"
+  },
+  "remaining_process_gate": "none"
+}

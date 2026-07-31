@@ -1,0 +1,107 @@
+{
+	"schema_version": "local-proof/v1",
+	"started_at": "2026-07-30T23:36:42Z",
+	"completed_at": "2026-07-31T00:00:34Z",
+	"result": "passed",
+	"requirements": {
+		"R1": "passed",
+		"R2": "passed"
+	},
+	"checks": [
+		{
+			"id": "purpose-preflight",
+			"command": "validate_work(require_evidence=false)",
+			"status": "passed",
+			"observed": "ok=true, authorizes_execution=true; admission, handover, subject digests, snapshot, EARS requirements, and derived requirements passed"
+		},
+		{
+			"id": "red-old-binary",
+			"command": "/home/mhugo/.cargo/bin/cargo-pgrx pgrx --help",
+			"status": "failed-as-expected",
+			"observed": "exit 132, SIGILL on AVX-512 vmovdqu64; Engine Nix cargo-pgrx 0.18.0 exited 0"
+		},
+		{
+			"id": "red-executable-contract",
+			"command": "node --test scripts/test-cargo-pgrx-wrapper.mjs",
+			"status": "failed-as-expected",
+			"observed": "four execution-level cases failed before exact wrapper logic and Engine identity markers were implemented"
+		},
+		{
+			"id": "green-executable-contract",
+			"command": "node --test scripts/test-cargo-pgrx-wrapper.mjs",
+			"status": "passed",
+			"observed": "5 passed, 0 failed; exact logic covered marked nearest Engine root, argv with spaces, unrelated ancestor rejection, marked fallback, and recursion exit 126"
+		},
+		{
+			"id": "shell-quality",
+			"command": "shellcheck home/modules/cargo-pgrx-wrapper.sh",
+			"status": "passed"
+		},
+		{
+			"id": "nix-format",
+			"command": "alejandra --check home/home.nix home/modules/cargo-pgrx.nix",
+			"status": "passed"
+		},
+		{
+			"id": "repo-check",
+			"command": "repo check",
+			"status": "passed",
+			"observed": "36 passed, 0 failed; activation package built"
+		},
+		{
+			"id": "closure-scope",
+			"command": "diff -qr current-generation/home-files candidate-generation/home-files",
+			"status": "passed",
+			"observed": "candidate changed only the managed cargo-pgrx wrapper plus immutable session-variable source paths; session-variable content was unchanged"
+		},
+		{
+			"id": "activation",
+			"command": "home-manager switch --flake path:.#cc-se-sto-devbox-01 --impure",
+			"status": "passed",
+			"observed": "Home Manager linked the corrected generation and completed all activation steps"
+		},
+		{
+			"id": "normal-shell-runtime",
+			"command": "cargo-pgrx --version && cargo pgrx --help",
+			"status": "passed",
+			"observed": "resolved /home/mhugo/.local/bin/cargo-pgrx -> /nix/store/776rh3d8l5gfqalpab9ixqwc7x6ds2x2-cargo-pgrx; cargo 0.18.0; help exit 0"
+		},
+		{
+			"id": "writable-engine-runtime",
+			"command": "cargo-pgrx --version && cargo pgrx --help",
+			"working_directory": "/home/mhugo/code/worktrees/jj/singularity-engine/exclude-vectordrive-metering",
+			"status": "passed",
+			"observed": "nearest marked Engine workspace selected; cargo 0.18.0; help exit 0"
+		},
+		{
+			"id": "nested-fabric-precedence",
+			"command": "nix develop path:. --command bash -lc 'command -v cargo-pgrx; cargo-pgrx --version'",
+			"working_directory": "/home/mhugo/code/singularity-engine/fabrics/data",
+			"status": "passed",
+			"observed": "/nix/store/48c7snkkv4kclnzi0yfrk08n0brs04rc-cargo-pgrx-0.18.0/bin/cargo-pgrx; cargo 0.18.0"
+		},
+		{
+			"id": "obsolete-install-removal",
+			"command": "/home/mhugo/.cargo/bin/cargo uninstall cargo-pgrx",
+			"status": "passed",
+			"observed": "removed only /home/mhugo/.cargo/bin/cargo-pgrx; cargo-pgrx is absent from cargo install --list"
+		},
+		{
+			"id": "sigill-falsifier",
+			"command": "coredumpctl list /home/mhugo/.cargo/bin/cargo-pgrx --no-pager",
+			"status": "passed",
+			"observed": "latest record remains the deliberate pre-removal probe at 2026-07-30T23:48:25Z; no post-removal or post-activation SIGILL"
+		},
+		{
+			"id": "jcode-regression",
+			"command": "systemctl --user show jcode-server.service jcode-webtty.service",
+			"status": "passed",
+			"observed": "both services active/running with NRestarts=0; socket mode 0600; WebTTY HTTP 200"
+		}
+	],
+	"falsifier": {
+		"status": "passed",
+		"observed_at": "2026-07-31T00:00:34Z",
+		"evidence": "The corrected managed wrapper resolved cargo-pgrx 0.18.0 and executed help from normal and writable Engine shells without recursion, wrong-flake selection, SIGILL, or a JCode service restart."
+	}
+}

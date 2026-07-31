@@ -1,0 +1,269 @@
+{
+	"schema_version": "evidence-bundle/v3",
+	"evidence_bundle_id": "2026-07-30-portable-cargo-pgrx-evidence",
+	"workspec_id": "2026-07-30-portable-cargo-pgrx-work",
+	"purpose_contract_id": "2026-07-30-portable-cargo-pgrx-purpose",
+	"purpose_subject_digest": {
+		"algorithm": "sha256",
+		"canonicalization": "engine-json-v1",
+		"value": "677a655608aff8f043e31fb644a4d1610105f37df1b0fdb254324e838062f910"
+	},
+	"workspec_subject_digest": {
+		"algorithm": "sha256",
+		"canonicalization": "engine-json-v1",
+		"value": "d0385f4f18f039d7cfbe9183b4b113eee56827590b295864ba0a7a5dc2ee6fd4"
+	},
+	"workflow_run_id": "2026-07-30-portable-cargo-pgrx-run",
+	"execution": {
+		"execution_id": "2026-07-30-portable-cargo-pgrx-execution",
+		"tool": {
+			"id": "dotfiles-repo-and-purpose-harness",
+			"version": "2026-07-31"
+		},
+		"result": {
+			"result_id": "portable-cargo-pgrx-result",
+			"digest": {
+				"algorithm": "sha256",
+				"canonicalization": "raw-bytes",
+				"value": "781d40c1c3208cee434b5dffa44638eda677a3b43ab7e5aaa5739a81018c7856"
+			}
+		},
+		"artifacts": [
+			{
+				"artifact_id": "portable-cargo-pgrx-result",
+				"uri": "evidence/result.json",
+				"digest": {
+					"algorithm": "sha256",
+					"canonicalization": "raw-bytes",
+					"value": "781d40c1c3208cee434b5dffa44638eda677a3b43ab7e5aaa5739a81018c7856"
+				}
+			},
+			{
+				"artifact_id": "portable-cargo-pgrx-red-proof",
+				"uri": "evidence/red-proof.json",
+				"digest": {
+					"algorithm": "sha256",
+					"canonicalization": "raw-bytes",
+					"value": "b42c4c50f5693d386e6453dd76459aa7c89d0a4798ee696ecae944ebe09bb6f8"
+				}
+			},
+			{
+				"artifact_id": "portable-cargo-pgrx-review-proof",
+				"uri": "evidence/review-proof.json",
+				"digest": {
+					"algorithm": "sha256",
+					"canonicalization": "raw-bytes",
+					"value": "55f7d0ac58a2e5525fbb14b952b14794d44f2fc016724d70299a8b386eec3235"
+				}
+			},
+			{
+				"artifact_id": "portable-cargo-pgrx-changed-files",
+				"uri": "evidence/changed-files.json",
+				"digest": {
+					"algorithm": "sha256",
+					"canonicalization": "raw-bytes",
+					"value": "cf6119cef7b36b1a7d25d23f1c8f1f72d94c084a4c23507182d72a29fe9ea7f4"
+				}
+			}
+		]
+	},
+	"trace": {
+		"trace_id": "2026-07-30-portable-cargo-pgrx-trace",
+		"started_at": "2026-07-30T23:36:42Z",
+		"completed_at": "2026-07-31T00:01:00Z"
+	},
+	"tests": [
+		{
+			"id": "T1",
+			"requirement_id": "R1",
+			"status": "passed",
+			"description": "Five executable contracts prove Home Manager ownership, marked nearest Engine selection, unrelated-flake rejection, marked fallback, exact argument forwarding, and recursion exit 126.",
+			"result_id": "portable-cargo-pgrx-result",
+			"artifact_ids": [
+				"portable-cargo-pgrx-result",
+				"portable-cargo-pgrx-red-proof"
+			],
+			"output_uri": "evidence/result.json",
+			"green_observed_at": "2026-07-30T23:58:00Z",
+			"red_proof": {
+				"result_id": "portable-cargo-pgrx-red-result",
+				"artifact_id": "portable-cargo-pgrx-red-proof",
+				"output_uri": "evidence/red-proof.json",
+				"observed_at": "2026-07-30T23:15:00Z"
+			}
+		},
+		{
+			"id": "T2",
+			"requirement_id": "R2",
+			"status": "passed",
+			"description": "The activated normal shell, writable Engine workspace, and nested fabric shell all executed cargo-pgrx 0.18.0; the obsolete install is absent and no post-removal SIGILL exists.",
+			"result_id": "portable-cargo-pgrx-result",
+			"artifact_ids": [
+				"portable-cargo-pgrx-result",
+				"portable-cargo-pgrx-red-proof"
+			],
+			"output_uri": "evidence/result.json",
+			"green_observed_at": "2026-07-31T00:00:34Z",
+			"red_proof": {
+				"result_id": "portable-cargo-pgrx-red-result",
+				"artifact_id": "portable-cargo-pgrx-red-proof",
+				"output_uri": "evidence/red-proof.json",
+				"observed_at": "2026-07-30T23:15:00Z"
+			}
+		}
+	],
+	"gates": [
+		{
+			"gate_id": "quality",
+			"kind": "quality",
+			"status": "passed",
+			"subject_digest": {
+				"algorithm": "sha256",
+				"canonicalization": "engine-json-v1",
+				"value": "d0385f4f18f039d7cfbe9183b4b113eee56827590b295864ba0a7a5dc2ee6fd4"
+			},
+			"artifact_ids": [
+				"portable-cargo-pgrx-result",
+				"portable-cargo-pgrx-review-proof"
+			],
+			"producer": {
+				"kind": "service",
+				"id": "dotfiles-repo-check"
+			},
+			"observed_at": "2026-07-31T00:01:00Z",
+			"rationale": "The final repository gate passed 36 tests and built the activation package; ShellCheck and Alejandra passed; the independent re-review verdict was ACCEPT."
+		},
+		{
+			"gate_id": "runtime",
+			"kind": "runtime",
+			"status": "passed",
+			"subject_digest": {
+				"algorithm": "sha256",
+				"canonicalization": "engine-json-v1",
+				"value": "d0385f4f18f039d7cfbe9183b4b113eee56827590b295864ba0a7a5dc2ee6fd4"
+			},
+			"artifact_ids": [
+				"portable-cargo-pgrx-result"
+			],
+			"producer": {
+				"kind": "agent",
+				"id": "codex-root"
+			},
+			"observed_at": "2026-07-31T00:00:34Z",
+			"rationale": "Normal, writable Engine, and nested fabric shells resolved the intended wrapper/package and executed cargo-pgrx 0.18.0 without SIGILL or recursion."
+		},
+		{
+			"gate_id": "deploy",
+			"kind": "deploy",
+			"status": "passed",
+			"subject_digest": {
+				"algorithm": "sha256",
+				"canonicalization": "engine-json-v1",
+				"value": "d0385f4f18f039d7cfbe9183b4b113eee56827590b295864ba0a7a5dc2ee6fd4"
+			},
+			"artifact_ids": [
+				"portable-cargo-pgrx-result"
+			],
+			"producer": {
+				"kind": "agent",
+				"id": "codex-root"
+			},
+			"observed_at": "2026-07-31T00:00:34Z",
+			"rationale": "Home Manager activated the corrected wrapper as ~/.local/bin/cargo-pgrx; the incompatible Cargo install was removed; JCode services remained active with zero restarts."
+		}
+	],
+	"runtime": {
+		"status": "completed",
+		"changed_file_manifest": {
+			"source": "repository-vcs-facade",
+			"artifact_id": "portable-cargo-pgrx-changed-files",
+			"digest": {
+				"algorithm": "sha256",
+				"canonicalization": "raw-bytes",
+				"value": "cf6119cef7b36b1a7d25d23f1c8f1f72d94c084a4c23507182d72a29fe9ea7f4"
+			},
+			"files": [
+				".secrets.baseline",
+				"OBSERVATIONS.md",
+				"docs/work/2026-07-30-portable-cargo-pgrx/README.md",
+				"docs/work/2026-07-30-portable-cargo-pgrx/current-spec.snapshot.json",
+				"docs/work/2026-07-30-portable-cargo-pgrx/evidence.bundle.json",
+				"docs/work/2026-07-30-portable-cargo-pgrx/evidence/changed-files.json",
+				"docs/work/2026-07-30-portable-cargo-pgrx/evidence/red-proof.json",
+				"docs/work/2026-07-30-portable-cargo-pgrx/evidence/result.json",
+				"docs/work/2026-07-30-portable-cargo-pgrx/evidence/review-proof.json",
+				"docs/work/2026-07-30-portable-cargo-pgrx/purpose.contract.json",
+				"docs/work/2026-07-30-portable-cargo-pgrx/validation.report.json",
+				"docs/work/2026-07-30-portable-cargo-pgrx/work.spec.json",
+				"home/home.nix",
+				"home/modules/cargo-pgrx-wrapper.sh",
+				"home/modules/cargo-pgrx.nix",
+				"scripts/repo-check.sh",
+				"scripts/test-cargo-pgrx-wrapper.mjs"
+			]
+		}
+	},
+	"falsifier": {
+		"executed": true,
+		"status": "passed",
+		"evidence": "The old binary and incomplete wrapper were rejected by SIGILL and executable contract proofs; the final activated wrapper passed all real-shell probes with no post-removal core.",
+		"output_uri": "evidence/result.json"
+	},
+	"contract_preserved": {
+		"status": true,
+		"scope_drift": false,
+		"requirement_drift": false
+	},
+	"reconciliation": {
+		"status": "reconciled",
+		"snapshot_digest": {
+			"algorithm": "sha256",
+			"canonicalization": "raw-bytes",
+			"value": "f2b4cd6fe978c206cffb2cb8b47565dae4c2eccf205794cec58a258cd1d3e601"
+		},
+		"delta_digest": {
+			"algorithm": "sha256",
+			"canonicalization": "engine-json-v1",
+			"value": "cf1c1167843c418f5d10b774ab8d49dc63e247413c49c211867b70591eefbaba"
+		},
+		"derived_requirement_set_digest": {
+			"algorithm": "sha256",
+			"canonicalization": "engine-json-v1",
+			"value": "acddc47bc3b1663d3e097c5bf00b6d82d77cfccafd2cd415196360589ccb5cf8"
+		},
+		"witness_artifact_id": "portable-cargo-pgrx-result"
+	},
+	"reviews": [],
+	"breaker_witnesses": [
+		{
+			"breaker_id": "B1",
+			"requirement_id": "R1",
+			"status": "passed",
+			"witness_kind": "contract-test",
+			"observed_outcome": "rejected",
+			"artifact_id": "portable-cargo-pgrx-red-proof",
+			"subject_digest": {
+				"algorithm": "sha256",
+				"canonicalization": "engine-json-v1",
+				"value": "d0385f4f18f039d7cfbe9183b4b113eee56827590b295864ba0a7a5dc2ee6fd4"
+			},
+			"observed_at": "2026-07-30T23:56:00Z",
+			"rationale": "The executable fixture suite rejected the incomplete source-regex-only wrapper contract before Engine identity and exact logic were implemented."
+		},
+		{
+			"breaker_id": "B2",
+			"requirement_id": "R2",
+			"status": "passed",
+			"witness_kind": "runtime-probe",
+			"observed_outcome": "detected",
+			"artifact_id": "portable-cargo-pgrx-result",
+			"subject_digest": {
+				"algorithm": "sha256",
+				"canonicalization": "engine-json-v1",
+				"value": "d0385f4f18f039d7cfbe9183b4b113eee56827590b295864ba0a7a5dc2ee6fd4"
+			},
+			"observed_at": "2026-07-31T00:00:34Z",
+			"rationale": "The runtime probe detected and eliminated the obsolete SIGILL path, then proved the managed 0.18.0 path with no post-removal core."
+		}
+	]
+}

@@ -43,6 +43,7 @@ in {
       ./modules/git.nix
       ./modules/cursor-stable-shell.nix
       ./modules/git-auto-backup.nix
+      ./modules/jcode-gc.nix
       ./modules/home-emergency-backup.nix
       ./modules/files.nix
       ./modules/build-cache-maintenance.nix

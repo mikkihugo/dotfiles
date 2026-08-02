@@ -1,0 +1,449 @@
+✖ requires explicit root/parent/task identity; no anonymous default (69.407612ms)
+✖ rejects Kimi agent budget above the per-coordinator ceiling of 10 (66.633347ms)
+✖ writes crash-recoverable record with required provenance and no prompt/argv leakage (58.768944ms)
+✖ falls back to ~/.local/state/codex when XDG_STATE_HOME is unset (61.084552ms)
+✖ records child exit code and failed status; launcher forwards exit code (52.198816ms)
+✖ records signal termination and maps launcher exit to 128+signo (54.717605ms)
+✖ rejects a duplicate run id instead of overwriting an existing record (54.010538ms)
+✖ preserves nested root/parent ancestry (parent is the immediate lead task) (52.030684ms)
+✖ rejects Kimi prompt mode combined with --auto or --yolo (54.398801ms)
+✖ reconciles stale dead-pid records before summing reserved Kimi budget (80.254171ms)
+✖ rejects a launch that would exceed the global 30 Kimi agent ceiling (69.876537ms)
+✖ enforces one writer per workspace lane (55.727538ms)
+✖ serializes concurrent reservations without exceeding the global ceiling (70.428144ms)
+✖ cursor harness launches without Kimi budget accounting (51.290325ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 0
+ℹ fail 14
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 936.614435
+
+✖ failing tests:
+
+test at scripts/test-codex-external-run.mjs:155:1
+✖ requires explicit root/parent/task identity; no anonymous default (69.407612ms)
+  AssertionError [ERR_ASSERTION]: stderr names the missing flag
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:164:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: "node:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.18.0\n",
+    expected: /--root-task-id/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:169:1
+✖ rejects Kimi agent budget above the per-coordinator ceiling of 10 (66.633347ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /budget/i. Input:
+  
+  'node:internal/modules/cjs/loader:1520\n' +
+    '  throw err;\n' +
+    '  ^\n' +
+    '\n' +
+    "Error: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'\n" +
+    '    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n' +
+    '    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n' +
+    '    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n' +
+    '    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n' +
+    '    at Module._load (node:internal/modules/cjs/loader:1294:5)\n' +
+    '    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n' +
+    '    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n' +
+    '    at node:internal/main/run_main_module:33:47 {\n' +
+    "  code: 'MODULE_NOT_FOUND',\n" +
+    '  requireStack: []\n' +
+    '}\n' +
+    '\n' +
+    'Node.js v24.18.0\n'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:174:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "node:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.18.0\n",
+    expected: /budget/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:179:1
+✖ writes crash-recoverable record with required provenance and no prompt/argv leakage (58.768944ms)
+  AssertionError [ERR_ASSERTION]: happy path must exit 0: node:internal/modules/cjs/loader:1520
+    throw err;
+    ^
+  
+  Error: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+      at Module._load (node:internal/modules/cjs/loader:1294:5)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v24.18.0
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:183:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:223:1
+✖ falls back to ~/.local/state/codex when XDG_STATE_HOME is unset (61.084552ms)
+  AssertionError [ERR_ASSERTION]: fallback launch must succeed: node:internal/modules/cjs/loader:1520
+    throw err;
+    ^
+  
+  Error: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+      at Module._load (node:internal/modules/cjs/loader:1294:5)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v24.18.0
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:238:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:244:1
+✖ records child exit code and failed status; launcher forwards exit code (52.198816ms)
+  AssertionError [ERR_ASSERTION]: launcher forwards the child exit code
+  
+  1 !== 3
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:247:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:255:1
+✖ records signal termination and maps launcher exit to 128+signo (54.717605ms)
+  AssertionError [ERR_ASSERTION]: launcher exit is 128+SIGTERM
+  
+  1 !== 143
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:258:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 143,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:265:1
+✖ rejects a duplicate run id instead of overwriting an existing record (54.010538ms)
+  AssertionError [ERR_ASSERTION]: first launch must succeed: node:internal/modules/cjs/loader:1520
+    throw err;
+    ^
+  
+  Error: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+      at Module._load (node:internal/modules/cjs/loader:1294:5)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v24.18.0
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:269:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:276:1
+✖ preserves nested root/parent ancestry (parent is the immediate lead task) (52.030684ms)
+  AssertionError [ERR_ASSERTION]: nested launch must succeed: node:internal/modules/cjs/loader:1520
+    throw err;
+    ^
+  
+  Error: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+      at Module._load (node:internal/modules/cjs/loader:1294:5)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v24.18.0
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:282:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:289:1
+✖ rejects Kimi prompt mode combined with --auto or --yolo (54.398801ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /--auto/. Input:
+  
+  'node:internal/modules/cjs/loader:1520\n' +
+    '  throw err;\n' +
+    '  ^\n' +
+    '\n' +
+    "Error: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'\n" +
+    '    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n' +
+    '    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n' +
+    '    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n' +
+    '    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n' +
+    '    at Module._load (node:internal/modules/cjs/loader:1294:5)\n' +
+    '    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n' +
+    '    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n' +
+    '    at node:internal/main/run_main_module:33:47 {\n' +
+    "  code: 'MODULE_NOT_FOUND',\n" +
+    '  requireStack: []\n' +
+    '}\n' +
+    '\n' +
+    'Node.js v24.18.0\n'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:297:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "node:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.18.0\n",
+    expected: /--auto/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:302:1
+✖ reconciles stale dead-pid records before summing reserved Kimi budget (80.254171ms)
+  AssertionError [ERR_ASSERTION]: 20 live + 10 new must fit under 30 after stale reconciliation: node:internal/modules/cjs/loader:1520
+    throw err;
+    ^
+  
+  Error: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+      at Module._load (node:internal/modules/cjs/loader:1294:5)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v24.18.0
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:312:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:321:1
+✖ rejects a launch that would exceed the global 30 Kimi agent ceiling (69.876537ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /30|global/i. Input:
+  
+  'node:internal/modules/cjs/loader:1520\n' +
+    '  throw err;\n' +
+    '  ^\n' +
+    '\n' +
+    "Error: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'\n" +
+    '    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n' +
+    '    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n' +
+    '    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n' +
+    '    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n' +
+    '    at Module._load (node:internal/modules/cjs/loader:1294:5)\n' +
+    '    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n' +
+    '    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n' +
+    '    at node:internal/main/run_main_module:33:47 {\n' +
+    "  code: 'MODULE_NOT_FOUND',\n" +
+    '  requireStack: []\n' +
+    '}\n' +
+    '\n' +
+    'Node.js v24.18.0\n'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:330:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "node:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.18.0\n",
+    expected: /30|global/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:336:1
+✖ enforces one writer per workspace lane (55.727538ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /workspace/i. Input:
+  
+  'node:internal/modules/cjs/loader:1520\n' +
+    '  throw err;\n' +
+    '  ^\n' +
+    '\n' +
+    "Error: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'\n" +
+    '    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n' +
+    '    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n' +
+    '    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n' +
+    '    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n' +
+    '    at Module._load (node:internal/modules/cjs/loader:1294:5)\n' +
+    '    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n' +
+    '    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n' +
+    '    at node:internal/main/run_main_module:33:47 {\n' +
+    "  code: 'MODULE_NOT_FOUND',\n" +
+    '  requireStack: []\n' +
+    '}\n' +
+    '\n' +
+    'Node.js v24.18.0\n'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:343:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "node:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.18.0\n",
+    expected: /workspace/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:349:1
+✖ serializes concurrent reservations without exceeding the global ceiling (70.428144ms)
+  AssertionError [ERR_ASSERTION]: 3x8=24 fits under 30; the 4th concurrent reservation must fail closed
+  
+  0 !== 3
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:364:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/test-codex-external-run.mjs:369:1
+✖ cursor harness launches without Kimi budget accounting (51.290325ms)
+  AssertionError [ERR_ASSERTION]: cursor launch must succeed: node:internal/modules/cjs/loader:1520
+    throw err;
+    ^
+  
+  Error: Cannot find module '/home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/config/codex/bin/codex-external-run.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+      at Module._load (node:internal/modules/cjs/loader:1294:5)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v24.18.0
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-codex-external-run.mjs:383:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

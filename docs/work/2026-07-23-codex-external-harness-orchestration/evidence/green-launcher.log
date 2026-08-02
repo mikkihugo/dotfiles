@@ -1,0 +1,22 @@
+✔ requires explicit root/parent/task identity; no anonymous default (188.190389ms)
+✔ rejects Kimi agent budget above the per-coordinator ceiling of 10 (236.529149ms)
+✔ writes crash-recoverable record with required provenance and no prompt/argv leakage (80.579558ms)
+✔ falls back to ~/.local/state/codex when XDG_STATE_HOME is unset (73.103578ms)
+✔ records child exit code and failed status; launcher forwards exit code (76.158894ms)
+✔ records signal termination and maps launcher exit to 128+signo (71.783252ms)
+✔ rejects a duplicate run id instead of overwriting an existing record (133.261009ms)
+✔ preserves nested root/parent ancestry (parent is the immediate lead task) (82.47763ms)
+✔ rejects Kimi prompt mode combined with --auto or --yolo (119.588296ms)
+✔ reconciles stale dead-pid records before summing reserved Kimi budget (89.398843ms)
+✔ rejects a launch that would exceed the global 30 Kimi agent ceiling (71.905843ms)
+✔ enforces one writer per workspace lane (66.520989ms)
+✔ serializes concurrent reservations without exceeding the global ceiling (1632.209423ms)
+✔ cursor harness launches without Kimi budget accounting (70.501422ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3085.037038

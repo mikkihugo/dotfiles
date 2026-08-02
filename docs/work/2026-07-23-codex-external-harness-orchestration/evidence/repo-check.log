@@ -1,0 +1,393 @@
+dotfiles VCS contract: ok
+these 9 derivations will be built:
+  /nix/store/if1vz0p40pljpks4ds5blvk6krqy02sy-codex-external-run.mjs.drv
+  /nix/store/7fshz586blpjsckx6qf4z7rnmfaq4dn5-hm-session-vars.sh.drv
+  /nix/store/w7j2cxrwrhlwzlrk8zib255wry43sxzb-profile.drv
+  /nix/store/xpdbsgi1dsnkyqgrjm6v0hs1k4ca2v2q-hm_..zshenv.drv
+  /nix/store/4mgsl7ma5a3p9159wpgbalikky9pn0r4-home-manager-files.drv
+  /nix/store/5rr8k9jz5gq1fvfnrbz4xdspyyzzacmx-home-manager-path.drv
+  /nix/store/7g5x6d1p6qx5imwiv28r44wdh70dms5q-check-link-targets.sh.drv
+  /nix/store/fxdg0p0nwxbii9hvihvrk220xfqcn9kv-activation-script.drv
+  /nix/store/nq8r5ngxihv61qp5ybv6ypnzq7jnj1l0-home-manager-generation.drv
+building '/nix/store/7g5x6d1p6qx5imwiv28r44wdh70dms5q-check-link-targets.sh.drv'...
+building '/nix/store/if1vz0p40pljpks4ds5blvk6krqy02sy-codex-external-run.mjs.drv'...
+building '/nix/store/7fshz586blpjsckx6qf4z7rnmfaq4dn5-hm-session-vars.sh.drv'...
+building '/nix/store/xpdbsgi1dsnkyqgrjm6v0hs1k4ca2v2q-hm_..zshenv.drv'...
+building '/nix/store/5rr8k9jz5gq1fvfnrbz4xdspyyzzacmx-home-manager-path.drv'...
+building '/nix/store/w7j2cxrwrhlwzlrk8zib255wry43sxzb-profile.drv'...
+building '/nix/store/4mgsl7ma5a3p9159wpgbalikky9pn0r4-home-manager-files.drv'...
+building '/nix/store/fxdg0p0nwxbii9hvihvrk220xfqcn9kv-activation-script.drv'...
+building '/nix/store/nq8r5ngxihv61qp5ybv6ypnzq7jnj1l0-home-manager-generation.drv'...
+ast-grep 0.42.1
+ast-grep 0.42.1
+/tmp/tmp.S6VaXJ0FHA/sample.js:1:const answer = 42;
+export LANG="C.UTF-8"
+export LC_ALL="C.UTF-8"
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.059s
+
+OK
+✔ skill frontmatter and openai.yaml exist with Use when / Not for description (16.934004ms)
+✔ main-agent-only SUBAGENT-STOP tells bounded subagent to stop and return to root (1.100981ms)
+✔ trigger: delegated external work loads skill; Codex remains sole publisher (1.598078ms)
+✔ near-miss: Default/Plan or v1/v2 wording alone cannot satisfy frontmatter trigger (2.326947ms)
+✔ alternate phrasing: encrypted_content fails closed or starts fresh portable session (1.076781ms)
+✔ Kimi prompt-mode command uses exact model/flags and forbids --prompt with --auto/--yolo (0.862859ms)
+✔ Cursor preferred subscription models are non-fast only (1.007512ms)
+✔ concurrency enforces operator hard ceilings plus resource-based lower limits (1.192784ms)
+✔ run provenance launcher contract is documented and fail-closed (2.017124ms)
+✔ Home Manager installs the launcher only under ~/.codex (1.66041ms)
+✔ Home Manager maps only this user skill; no singularity-engine-forward mapping (0.90722ms)
+✔ AGENTS handwritten section is a minimal load-skill trigger only (0.917961ms)
+✔ general orchestration runbook is absent (1.308375ms)
+✔ no-VCS rule is instruction policy, not a sandbox; worker state is untrusted (0.673028ms)
+✔ Kimi 0.28.1 prompt-mode behavior is documented (auto permission, handlers, validateOptions) (0.980591ms)
+✔ fail-closed worker evidence minimum and independent coordinator rerun (1.549027ms)
+✔ Cursor implementation and read-only commands are proven; boundary fails closed (1.178593ms)
+✔ skill activates only in Codex root; workers cannot load it; root never dispatches it to subagents (0.953331ms)
+✔ concurrency requires live memory check and stops before swap/memory pressure worsens (0.615177ms)
+✔ skill cites the exact contract-test paths and commands (0.662847ms)
+✔ requires explicit root/parent/task identity; no anonymous default (194.23516ms)
+✔ rejects Kimi agent budget above the per-coordinator ceiling of 10 (224.804682ms)
+✔ writes crash-recoverable record with required provenance and no prompt/argv leakage (73.273372ms)
+✔ falls back to ~/.local/state/codex when XDG_STATE_HOME is unset (72.640433ms)
+✔ records child exit code and failed status; launcher forwards exit code (71.41717ms)
+✔ records signal termination and maps launcher exit to 128+signo (68.062922ms)
+✔ rejects a duplicate run id instead of overwriting an existing record (137.646571ms)
+✔ preserves nested root/parent ancestry (parent is the immediate lead task) (77.809664ms)
+✔ rejects Kimi prompt mode combined with --auto or --yolo (114.294312ms)
+✔ reconciles stale dead-pid records before summing reserved Kimi budget (83.881113ms)
+✔ rejects a launch that would exceed the global 30 Kimi agent ceiling (70.372578ms)
+✔ enforces one writer per workspace lane (63.5314ms)
+✔ serializes concurrent reservations without exceeding the global ceiling (1629.675662ms)
+✔ cursor harness launches without Kimi budget accounting (73.767237ms)
+✔ root and every gateway-backed Codex role disable hosted web search but retain MCP search (15.877472ms)
+✔ Home Manager preserves the requested Forgejo and fast-Nix toolchain without tea (8.081013ms)
+✔ Home Manager owns nix-index database refresh wiring (2.752992ms)
+✔ Home Manager activation does not launch emergency backup jobs (2.754802ms)
+✔ Home Manager gives every managed agent client a deterministic UTF-8 locale (1.252603ms)
+✖ shell aliases consume the managed Nix tooling (3.078775ms)
+✔ the maintenance shell supplies every executable used by the canonical check (3.181926ms)
+✔ Home Manager does not include the retired Hermes agent (1.862401ms)
+✔ Home Manager uses the nixpkgs mise package without a private overlay (2.798903ms)
+✔ just check delegates to the single repository check implementation (1.257405ms)
+✔ global Codex instructions keep publication owned until land completes (0.882181ms)
+✔ Home Manager owns schema-valid Codex hooks.json with repo-memory swarm registration (8.684619ms)
+✔ Home Manager installs every managed hook surface (6.721318ms)
+✔ Copilot wrapper exposes the Nix bash runtime required by native hooks (0.976751ms)
+✔ Goose and Copilot wrappers export one inherited session identity (0.94972ms)
+✔ Home Manager enables only Summon delegation with ten background tasks (1.970194ms)
+✔ Goose uses Kimi K3 as main and MiniMax M3 as planner (1.71875ms)
+✔ activation merge preserves unrelated Claude settings and Kimi provider content (55.314775ms)
+✔ workspace selection is durable and scoped to the active repository (10.186847ms)
+✔ client renderers emit only native context shapes (0.796348ms)
+✔ MCP transport initializes and calls the lazy repo-memory route (48.088272ms)
+✔ Home Manager symlink execution enters the hook main routine (172.677344ms)
+✔ delivery is acknowledged only at the next observed hook boundary (3.214787ms)
+✔ MCP poll failure does not invent a filesystem bus (1.454057ms)
+ℹ tests 58
+ℹ suites 0
+ℹ pass 57
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3052.91145
+
+✖ failing tests:
+
+test at scripts/test-nix-tooling.mjs:93:1
+✖ shell aliases consume the managed Nix tooling (3.078775ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /hms\s*=\s*"nh home switch --ask"/. Input:
+  
+  '# home/modules/shell.nix — interactive shell configuration\n' +
+    '#\n' +
+    '# Covers: bash, zsh, aliases, direnv, starship prompt, zoxide.\n' +
+    '# The shared `shellInit` string is injected into both bash and zsh so\n' +
+    "# there's a single source of truth for the runtime init sequence.\n" +
+    '_: let\n' +
+    '  dotfilesRoot = "$HOME/.dotfiles";\n' +
+    '\n' +
+    '  # Injected into both bash initExtra and zsh initContent.\n' +
+    '  # Activates mise/SOPS/direnv at shell startup; reads Letta API key from file.\n' +
+    "  shellInit = ''\n" +
+    '    export DOTFILES_ROOT="${dotfilesRoot}"\n' +
+    '    export HM_MANAGED=1\n' +
+    '\n' +
+    '    # home-manager only sources hm-session-vars.sh from ~/.profile (login shells).\n' +
+    '    # WSL/terminal-emulator bash starts as a non-login interactive shell, so PATH\n' +
+    '    # entries from home.sessionPath (~/.bun/bin, ~/.npm-global/bin, ~/.cargo/bin,\n' +
+    '    # etc.) never get added. Source it here so codex/gemini/opencode\n' +
+    '    # resolve in interactive shells.\n' +
+    '    unset __HM_SESS_VARS_SOURCED\n' +
+    '    [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] \\\n' +
+    '      && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"\n' +
+    '\n' +
+    '    # Activate mise, load SOPS secrets, handle non-interactive direnv,\n' +
+    '    # and source runtime shell hooks. See shell/bash/bashrc for details.\n' +
+    '    [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"\n' +
+    '    type _load_sops_secrets >/dev/null 2>&1 && _load_sops_secrets >/dev/null 2>&1 || true\n' +
+    '\n' +
+    '    # Letta API key from file (LETTA_BASE_URL is in home.sessionVariables).\n' +
+    '    if [ -f "$HOME/.letta/api_key" ]; then\n' +
+    '      export LETTA_API_KEY="$(cat "$HOME/.letta/api_key")"\n' +
+    '    fi\n' +
+    '\n' +
+    '    # On SSH login, show detached tmux sessions that can be resumed.\n' +
+    '    if [ "\'\'${TMUX_LOGIN_PROMPT:-}" = "1" ] && [ -n "\'\'${SSH_CONNECTION:-}" ] && [ -z "\'\'${TMUX:-}" ] && [ -t 1 ] && command -v tmux >/dev/null 2>&1; then\n' +
+    '      _tmux_detached="$(\n' +
+    "        tmux list-sessions -F '#{session_attached}\t#{session_name}\t#{session_windows}\t#{session_created_string}' 2>/dev/null \\\n" +
+    `          | awk -F '\t' '$1 == 0 { printf "  %s (%s windows, created %s)\\n", $2, $3, $4 }'\n` +
+    '      )"\n' +
+    '      if [ -n "$_tmux_detached" ]; then\n' +
+    `        printf 'Detached tmux sessions:\\n%s\\n' "$_tmux_detached"\n` +
+    "        printf 'Enter an existing session to attach, a new name to create, or empty to skip.\\n'\n" +
+    '        if [ -r /dev/tty ]; then\n' +
+    "          printf 'tmux session: ' > /dev/tty\n" +
+    '          IFS= read -r _tmux_attach < /dev/tty || _tmux_attach=\n' +
+    '          if [ -n "$_tmux_attach" ]; then\n' +
+    '            exec tmux new-session -A -s "$_tmux_attach"\n' +
+    '          fi\n' +
+    '          unset _tmux_attach\n' +
+    '        fi\n' +
+    '      fi\n' +
+    '      unset _tmux_detached\n' +
+    '    fi\n' +
+    '\n' +
+    "  '';\n" +
+    'in {\n' +
+    '  home.file = {\n' +
+    '    ".local/bin/home-manager" = {\n' +
+    '      executable = true;\n' +
+    '      force = true;\n' +
+    "      text = ''\n" +
+    '        #!/usr/bin/env bash\n' +
+    '        set -euo pipefail\n' +
+    '\n' +
+    '        real_home_manager="$HOME/.nix-profile/bin/home-manager"\n' +
+    '        if [[ ! -x "$real_home_manager" ]]; then\n' +
+    '          real_home_manager="/nix/var/nix/profiles/default/bin/home-manager"\n' +
+    '        fi\n' +
+    '        if [[ ! -x "$real_home_manager" ]]; then\n' +
+    '          real_home_manager="/run/current-system/sw/bin/home-manager"\n' +
+    '        fi\n' +
+    '\n' +
+    '        if [[ "\'\'${1:-}" == "switch" ]]; then\n' +
+    '          shift\n' +
+    '          exec "$real_home_manager" switch \\\n' +
+    '            --flake "$HOME/.dotfiles#$("$HOME/.dotfiles/scripts/current-home-profile")" \\\n' +
+    "            --extra-experimental-features 'nix-command flakes' \\\n" +
+    '            "$@"\n' +
+    '        fi\n' +
+    '\n' +
+    '        exec "$real_home_manager" "$@"\n' +
+    "      '';\n" +
+    '    };\n' +
+    '\n' +
+    '    ".local/bin/receipts-browser" = {\n' +
+    '      executable = true;\n' +
+    '      force = true;\n' +
+    "      text = ''\n" +
+    '        #!/usr/bin/env bash\n' +
+    '        set -euo pipefail\n' +
+    '\n' +
+    '        profile_dir="\'\'${RECEIPTS_CHROME_PROFILE:-$HOME/.local/share/receipts-browser/chrome-profile}"\n' +
+    '        default_url="\'\'${RECEIPTS_BROWSER_URL:-about:blank}"\n' +
+    '\n' +
+    '        case "\'\'${1:-}" in\n' +
+    '          --help|-h)\n' +
+    "            cat <<'USAGE'\n" +
+    '        Usage: receipts-browser [url]\n' +
+    '\n' +
+    '        Opens Chrome/Chromium with a dedicated persistent profile for receipt\n' +
+    '        portals such as Mynt and supplier dashboards. Log in manually inside this\n' +
+    '        browser; cookies, passkeys, and normal browser state remain in this\n' +
+    '        dedicated profile. This launcher does not enable Chrome remote debugging.\n' +
+    '\n' +
+    '        Environment:\n' +
+    '          RECEIPTS_CHROME_PROFILE  Override the profile directory.\n' +
+    '          RECEIPTS_BROWSER_URL     Override the default URL.\n' +
+    '        USAGE\n' +
+    '            exit 0\n' +
+    '            ;;\n' +
+    '          --profile-dir)\n' +
+    `            printf '%s\\n' "$profile_dir"\n` +
+    '            exit 0\n' +
+    '            ;;\n' +
+    '        esac\n' +
+    '\n' +
+    '        chrome=""\n' +
+    '        for candidate in google-chrome-stable google-chrome chromium chromium-browser; do\n' +
+    '          if command -v "$candidate" >/dev/null 2>&1; then\n' +
+    '            chrome="$(command -v "$candidate")"\n' +
+    '            break\n' +
+    '          fi\n' +
+    '        done\n' +
+    '\n' +
+    '        if [[ -z "$chrome" ]]; then\n' +
+    '          echo "receipts-browser: Chrome/Chromium not found on PATH" >&2\n' +
+    '          exit 127\n' +
+    '        fi\n' +
+    '\n' +
+    '        mkdir -p "$profile_dir"\n' +
+    '\n' +
+    '        exec "$chrome" \\\n' +
+    '          --user-data-dir="$profile_dir" \\\n' +
+    '          --no-first-run \\\n' +
+    '          --no-default-browser-check \\\n' +
+    '          --class=ReceiptsBrowser \\\n' +
+    '          --new-window \\\n' +
+    '          "\'\'${1:-$default_url}"\n' +
+    "      '';\n" +
+    '    };\n' +
+    '\n' +
+    '    ".local/bin/mynt-receipts" = {\n' +
+    '      executable = true;\n' +
+    '      force = true;\n' +
+    "      text = ''\n" +
+    '        #!/usr/bin/env bash\n' +
+    '        set -euo pipefail\n' +
+    '\n' +
+    '        if [[ "\'\'${1:-}" == "--help" || "\'\'${1:-}" == "-h" ]]; then\n' +
+    "          cat <<'USAGE'\n" +
+    '        Usage: mynt-receipts [url]\n' +
+    '\n' +
+    '        Opens Mynt in the dedicated receipts browser profile. Use\n' +
+    '        receipts-browser [url] for other receipt portals that should share the\n' +
+    '        same authenticated receipt-viewing profile.\n' +
+    '        USAGE\n' +
+    '          exit 0\n' +
+    '        fi\n' +
+    '\n' +
+    '        exec "$HOME/.local/bin/receipts-browser" "\'\'${1:-https://app.mynt.com/}"\n' +
+    "      '';\n" +
+    '    };\n' +
+    '\n' +
+    '    ".local/bin/receipts-browser-api" = {\n' +
+    '      executable = true;\n' +
+    '      force = true;\n' +
+    "      text = ''\n" +
+    '        #!/usr/bin/env bash\n' +
+    '        set -euo pipefail\n' +
+    '\n' +
+    '        profile_dir="\'\'${RECEIPTS_CHROME_PROFILE:-$HOME/.local/share/receipts-browser/chrome-profile}"\n' +
+    '        default_url="\'\'${RECEIPTS_BROWSER_URL:-https://app.mynt.com/}"\n' +
+    '        port="\'\'${RECEIPTS_CDP_PORT:-9223}"\n' +
+    '\n' +
+    '        case "\'\'${1:-}" in\n' +
+    '          --help|-h)\n' +
+    "            cat <<'USAGE'\n" +
+    '        Usage: receipts-browser-api [url]\n' +
+    '\n' +
+    '        Opens the dedicated receipts browser profile with Chrome DevTools Protocol\n' +
+    '        bound to 127.0.0.1 only. Use this for manual login followed by local API\n' +
+    '        discovery or receipt export helpers. Do not expose the port over the LAN.\n' +
+    '\n' +
+    '        Environment:\n' +
+    '          RECEIPTS_CHROME_PROFILE  Override the profile directory.\n' +
+    '          RECEIPTS_BROWSER_URL     Override the default URL.\n' +
+    '          RECEIPTS_CDP_PORT        Override the local CDP port, default 9223.\n' +
+    '        USAGE\n' +
+    '            exit 0\n' +
+    '            ;;\n' +
+    '          --profile-dir)\n' +
+    `            printf '%s\\n' "$profile_dir"\n` +
+    '            exit 0\n' +
+    '            ;;\n' +
+    '          --cdp-url)\n' +
+    `            printf 'http://127.0.0.1:%s\\n' "$port"\n` +
+    '            exit 0\n' +
+    '            ;;\n' +
+    '        esac\n' +
+    '\n' +
+    '        chrome=""\n' +
+    '        for candidate in google-chrome-stable google-chrome chromium chromium-browser; do\n' +
+    '          if command -v "$candidate" >/dev/null 2>&1; then\n' +
+    '            chrome="$(command -v "$candidate")"\n' +
+    '            break\n' +
+    '          fi\n' +
+    '        done\n' +
+    '\n' +
+    '        if [[ -z "$chrome" ]]; then\n' +
+    '          echo "receipts-browser-api: Chrome/Chromium not found on PATH" >&2\n' +
+    '          exit 127\n' +
+    '        fi\n' +
+    '\n' +
+    '        mkdir -p "$profile_dir"\n' +
+    '\n' +
+    '        exec "$chrome" \\\n' +
+    '          --user-data-dir="$profile_dir" \\\n' +
+    '          --no-first-run \\\n' +
+    '          --no-default-browser-check \\\n' +
+    '          --remote-debugging-address=127.0.0.1 \\\n' +
+    '          --remote-debugging-port="$port" \\\n' +
+    '          --class=ReceiptsBrowserApi \\\n' +
+    '          --new-window \\\n' +
+    '          "\'\'${1:-$default_url}"\n' +
+    "      '';\n" +
+    '    };\n' +
+    '\n' +
+    '    ".local/bin/mynt-receipts-api" = {\n' +
+    '      executable = true;\n' +
+    '      force = true;\n' +
+    "      text = ''\n" +
+    '        #!/usr/bin/env bash\n' +
+    '        set -euo pipefail\n' +
+    '        exec "$HOME/.local/bin/receipts-browser-api" "\'\'${1:-https://app.mynt.com/}"\n' +
+    "      '';\n" +
+    '    };\n' +
+    '  };\n' +
+    '\n' +
+    '  # Claude Code is Nix-managed via the sadjow/claude-code-nix overlay\n' +
+    '  # (pkgs.claude-code in ai-tools.nix → ~/.nix-profile/bin/claude). The native\n' +
+    '  # runtime self-updater is disabled (read-only store); freshness comes from\n' +
+    '  # `nix flake update` on the claude-code input, automated by dotfiles-auto-update.\n' +
+    '  # bypassPermissions is set globally via ~/.claude/settings.json — no wrapper needed.\n' +
+    '\n' +
+    '  home.shellAliases = {\n' +
+    '    # Build first and show the generation diff before activation. nh owns\n' +
+    '    # profile discovery, so this does not parse generation symlinks by hand.\n' +
+    '    hms = "nh home switch";\n' +
+    '    # Explain why the current and previous Home Manager generations differ.\n' +
+    '    nixwhy = "nix-diff $(command ls -1dv \\"$HOME\\"/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | tail -n 2 | head -n 1) $(readlink -f \\"$HOME\\"/.local/state/nix/profiles/home-manager)";\n' +
+    '    # Show store roots over 500 MB as text.\n' +
+    '    nixdu = "nix-du -s 500MB --dot=false";\n' +
+    '\n' +
+    '    # Prefer nix-output-monitor wrappers for readable flake builds.\n' +
+    '    nb = "nom build";\n' +
+    '    nd = "nom develop";\n' +
+    '    ns = "nom shell";\n' +
+    '\n' +
+    '    # Promote the currently committed ACE revision into the dotfiles flake input.\n' +
+    '    promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";\n' +
+    '\n' +
+    '    # Secrets management\n' +
+    '    secrets = "~/.dotfiles/scripts/secrets-edit";\n' +
+    '\n' +
+    '    # Promote live Codex client model/reasoning choices into dotfiles.\n' +
+    '    codex-save-prefs = "~/.dotfiles/scripts/codex-preferences save";\n' +
+    '\n' +
+    '    # Cluster: fetch the k3s kubeconfig from rigel for off-cluster kubectl\n' +
+    '    fetch-kubeconfig = "~/.dotfiles/scripts/fetch-kubeconfig";\n' +
+    '    k = "kubectl";\n' +
+    '    kctx = "kubectx";\n' +
+    '    kns = "kubens";\n' +
+    '    kgp = "kubectl get pods";\n' +
+    '    kgs = "kubectl get services";\n' +
+    '\n' +
+    '    #ls replacements via eza. NOT aliasing grep→rg or find→fd — different\n' +
+    '    # argument syntax would break scripts that rely on them.\n' +
+    '    ls = "eza --group-directories-first";\n' +
+    '    ll = "eza -la --g'... 2994 more characters
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-orchestrator-runbook/scripts/test-nix-tooling.mjs:95:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '# home/modules/shell.nix — interactive shell configuration\n#\n# Covers: bash, zsh, aliases, direnv, starship prompt, zoxide.\n# The shared `shellInit` string is injected into both bash and zsh so\n# there\'s a single source of truth for the runtime init sequence.\n_: let\n  dotfilesRoot = "$HOME/.dotfiles";\n\n  # Injected into both bash initExtra and zsh initContent.\n  # Activates mise/SOPS/direnv at shell startup; reads Letta API key from file.\n  shellInit = \'\'\n    export DOTFILES_ROOT="${dotfilesRoot}"\n    export HM_MANAGED=1\n\n    # home-manager only sources hm-session-vars.sh from ~/.profile (login shells).\n    # WSL/terminal-emulator bash starts as a non-login interactive shell, so PATH\n    # entries from home.sessionPath (~/.bun/bin, ~/.npm-global/bin, ~/.cargo/bin,\n    # etc.) never get added. Source it here so codex/gemini/opencode\n    # resolve in interactive shells.\n    unset __HM_SESS_VARS_SOURCED\n    [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] \\\n      && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"\n\n    # Activate mise, load SOPS secrets, handle non-interactive direnv,\n    # and source runtime shell hooks. See shell/bash/bashrc for details.\n    [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"\n    type _load_sops_secrets >/dev/null 2>&1 && _load_sops_secrets >/dev/null 2>&1 || true\n\n    # Letta API key from file (LETTA_BASE_URL is in home.sessionVariables).\n    if [ -f "$HOME/.letta/api_key" ]; then\n      export LETTA_API_KEY="$(cat "$HOME/.letta/api_key")"\n    fi\n\n    # On SSH login, show detached tmux sessions that can be resumed.\n    if [ "\'\'${TMUX_LOGIN_PROMPT:-}" = "1" ] && [ -n "\'\'${SSH_CONNECTION:-}" ] && [ -z "\'\'${TMUX:-}" ] && [ -t 1 ] && command -v tmux >/dev/null 2>&1; then\n      _tmux_detached="$(\n        tmux list-sessions -F \'#{session_attached}\t#{session_name}\t#{session_windows}\t#{session_created_string}\' 2>/dev/null \\\n          | awk -F \'\t\' \'$1 == 0 { printf "  %s (%s windows, created %s)\\n", $2, $3, $4 }\'\n      )"\n      if [ -n "$_tmux_detached" ]; then\n        printf \'Detached tmux sessions:\\n%s\\n\' "$_tmux_detached"\n        printf \'Enter an existing session to attach, a new name to create, or empty to skip.\\n\'\n        if [ -r /dev/tty ]; then\n          printf \'tmux session: \' > /dev/tty\n          IFS= read -r _tmux_attach < /dev/tty || _tmux_attach=\n          if [ -n "$_tmux_attach" ]; then\n            exec tmux new-session -A -s "$_tmux_attach"\n          fi\n          unset _tmux_attach\n        fi\n      fi\n      unset _tmux_detached\n    fi\n\n  \'\';\nin {\n  home.file = {\n    ".local/bin/home-manager" = {\n      executable = true;\n      force = true;\n      text = \'\'\n        #!/usr/bin/env bash\n        set -euo pipefail\n\n        real_home_manager="$HOME/.nix-profile/bin/home-manager"\n        if [[ ! -x "$real_home_manager" ]]; then\n          real_home_manager="/nix/var/nix/profiles/default/bin/home-manager"\n        fi\n        if [[ ! -x "$real_home_manager" ]]; then\n          real_home_manager="/run/current-system/sw/bin/home-manager"\n        fi\n\n        if [[ "\'\'${1:-}" == "switch" ]]; then\n          shift\n          exec "$real_home_manager" switch \\\n            --flake "$HOME/.dotfiles#$("$HOME/.dotfiles/scripts/current-home-profile")" \\\n            --extra-experimental-features \'nix-command flakes\' \\\n            "$@"\n        fi\n\n        exec "$real_home_manager" "$@"\n      \'\';\n    };\n\n    ".local/bin/receipts-browser" = {\n      executable = true;\n      force = true;\n      text = \'\'\n        #!/usr/bin/env bash\n        set -euo pipefail\n\n        profile_dir="\'\'${RECEIPTS_CHROME_PROFILE:-$HOME/.local/share/receipts-browser/chrome-profile}"\n        default_url="\'\'${RECEIPTS_BROWSER_URL:-about:blank}"\n\n        case "\'\'${1:-}" in\n          --help|-h)\n            cat <<\'USAGE\'\n        Usage: receipts-browser [url]\n\n        Opens Chrome/Chromium with a dedicated persistent profile for receipt\n        portals such as Mynt and supplier dashboards. Log in manually inside this\n        browser; cookies, passkeys, and normal browser state remain in this\n        dedicated profile. This launcher does not enable Chrome remote debugging.\n\n        Environment:\n          RECEIPTS_CHROME_PROFILE  Override the profile directory.\n          RECEIPTS_BROWSER_URL     Override the default URL.\n        USAGE\n            exit 0\n            ;;\n          --profile-dir)\n            printf \'%s\\n\' "$profile_dir"\n            exit 0\n            ;;\n        esac\n\n        chrome=""\n        for candidate in google-chrome-stable google-chrome chromium chromium-browser; do\n          if command -v "$candidate" >/dev/null 2>&1; then\n            chrome="$(command -v "$candidate")"\n            break\n          fi\n        done\n\n        if [[ -z "$chrome" ]]; then\n          echo "receipts-browser: Chrome/Chromium not found on PATH" >&2\n          exit 127\n        fi\n\n        mkdir -p "$profile_dir"\n\n        exec "$chrome" \\\n          --user-data-dir="$profile_dir" \\\n          --no-first-run \\\n          --no-default-browser-check \\\n          --class=ReceiptsBrowser \\\n          --new-window \\\n          "\'\'${1:-$default_url}"\n      \'\';\n    };\n\n    ".local/bin/mynt-receipts" = {\n      executable = true;\n      force = true;\n      text = \'\'\n        #!/usr/bin/env bash\n        set -euo pipefail\n\n        if [[ "\'\'${1:-}" == "--help" || "\'\'${1:-}" == "-h" ]]; then\n          cat <<\'USAGE\'\n        Usage: mynt-receipts [url]\n\n        Opens Mynt in the dedicated receipts browser profile. Use\n        receipts-browser [url] for other receipt portals that should share the\n        same authenticated receipt-viewing profile.\n        USAGE\n          exit 0\n        fi\n\n        exec "$HOME/.local/bin/receipts-browser" "\'\'${1:-https://app.mynt.com/}"\n      \'\';\n    };\n\n    ".local/bin/receipts-browser-api" = {\n      executable = true;\n      force = true;\n      text = \'\'\n        #!/usr/bin/env bash\n        set -euo pipefail\n\n        profile_dir="\'\'${RECEIPTS_CHROME_PROFILE:-$HOME/.local/share/receipts-browser/chrome-profile}"\n        default_url="\'\'${RECEIPTS_BROWSER_URL:-https://app.mynt.com/}"\n        port="\'\'${RECEIPTS_CDP_PORT:-9223}"\n\n        case "\'\'${1:-}" in\n          --help|-h)\n            cat <<\'USAGE\'\n        Usage: receipts-browser-api [url]\n\n        Opens the dedicated receipts browser profile with Chrome DevTools Protocol\n        bound to 127.0.0.1 only. Use this for manual login followed by local API\n        discovery or receipt export helpers. Do not expose the port over the LAN.\n\n        Environment:\n          RECEIPTS_CHROME_PROFILE  Override the profile directory.\n          RECEIPTS_BROWSER_URL     Override the default URL.\n          RECEIPTS_CDP_PORT        Override the local CDP port, default 9223.\n        USAGE\n            exit 0\n            ;;\n          --profile-dir)\n            printf \'%s\\n\' "$profile_dir"\n            exit 0\n            ;;\n          --cdp-url)\n            printf \'http://127.0.0.1:%s\\n\' "$port"\n            exit 0\n            ;;\n        esac\n\n        chrome=""\n        for candidate in google-chrome-stable google-chrome chromium chromium-browser; do\n          if command -v "$candidate" >/dev/null 2>&1; then\n            chrome="$(command -v "$candidate")"\n            break\n          fi\n        done\n\n        if [[ -z "$chrome" ]]; then\n          echo "receipts-browser-api: Chrome/Chromium not found on PATH" >&2\n          exit 127\n        fi\n\n        mkdir -p "$profile_dir"\n\n        exec "$chrome" \\\n          --user-data-dir="$profile_dir" \\\n          --no-first-run \\\n          --no-default-browser-check \\\n          --remote-debugging-address=127.0.0.1 \\\n          --remote-debugging-port="$port" \\\n          --class=ReceiptsBrowserApi \\\n          --new-window \\\n          "\'\'${1:-$default_url}"\n      \'\';\n    };\n\n    ".local/bin/mynt-receipts-api" = {\n      executable = true;\n      force = true;\n      text = \'\'\n        #!/usr/bin/env bash\n        set -euo pipefail\n        exec "$HOME/.local/bin/receipts-browser-api" "\'\'${1:-https://app.mynt.com/}"\n      \'\';\n    };\n  };\n\n  # Claude Code is Nix-managed via the sadjow/claude-code-nix overlay\n  # (pkgs.claude-code in ai-tools.nix → ~/.nix-profile/bin/claude). The native\n  # runtime self-updater is disabled (read-only store); freshness comes from\n  # `nix flake update` on the claude-code input, automated by dotfiles-auto-update.\n  # bypassPermissions is set globally via ~/.claude/settings.json — no wrapper needed.\n\n  home.shellAliases = {\n    # Build first and show the generation diff before activation. nh owns\n    # profile discovery, so this does not parse generation symlinks by hand.\n    hms = "nh home switch";\n    # Explain why the current and previous Home Manager generations differ.\n    nixwhy = "nix-diff $(command ls -1dv \\"$HOME\\"/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | tail -n 2 | head -n 1) $(readlink -f \\"$HOME\\"/.local/state/nix/profiles/home-manager)";\n    # Show store roots over 500 MB as text.\n    nixdu = "nix-du -s 500MB --dot=false";\n\n    # Prefer nix-output-monitor wrappers for readable flake builds.\n    nb = "nom build";\n    nd = "nom develop";\n    ns = "nom shell";\n\n    # Promote the currently committed ACE revision into the dotfiles flake input.\n    promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";\n\n    # Secrets management\n    secrets = "~/.dotfiles/scripts/secrets-edit";\n\n    # Promote live Codex client model/reasoning choices into dotfiles.\n    codex-save-prefs = "~/.dotfiles/scripts/codex-preferences save";\n\n    # Cluster: fetch the k3s kubeconfig from rigel for off-cluster kubectl\n    fetch-kubeconfig = "~/.dotfiles/scripts/fetch-kubeconfig";\n    k = "kubectl";\n    kctx = "kubectx";\n    kns = "kubens";\n    kgp = "kubectl get pods";\n    kgs = "kubectl get services";\n\n    #ls replacements via eza. NOT aliasing grep→rg or find→fd — different\n    # argument syntax would break scripts that rely on them.\n    ls = "eza --group-directories-first";\n    ll = "eza -la --g'... 2994 more characters,
+    expected: /hms\s*=\s*"nh home switch --ask"/,
+    operator: 'match',
+    diff: 'simple'
+  }

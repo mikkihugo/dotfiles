@@ -33,9 +33,6 @@
       "/srv/infra"
     )
 
-    declare -A seen
-    declare -i n_skip_no_remote=0 n_failed=0 n_jj_ws=0
-
     git_net() {
       # Hard bound on any network git call. SSH keepalives are not enough:
       # a server can answer at the transport layer while git-receive-pack /
@@ -176,11 +173,15 @@
     }
 
     handle_repo() {
+      # Runs in a parallel xargs worker (one repo per process), so the old
+      # `seen` dedup map cannot live here: it is not exportable between
+      # processes. Dedup moved to add_repo during serial sweep generation.
+      # State is line-oriented: workers echo status lines, the parent
+      # aggregates counters and no-remote.current afterwards. Anything this
+      # function mutates beyond stdout is lost with the worker process.
       local repo="$1" remote branch slug dirty
       repo="$(${pkgs.git}/bin/git -C "$repo" rev-parse --show-toplevel 2>/dev/null || true)"
       [ -n "$repo" ] || return 0
-      [ -z "''${seen[$repo]+x}" ] || return 0
-      seen[$repo]=1
 
       remote="$(repo_remote "$repo" || true)"
       if [ -z "$remote" ]; then
@@ -190,8 +191,6 @@
         # silent skip-no-remote line every 15 minutes that nobody read. Counted
         # and re-listed in the run summary so it cannot hide again.
         echo "skip-no-remote $repo"
-        n_skip_no_remote+=1
-        printf '%s\n' "$repo" >> "$state_dir/no-remote.current"
         return 0
       fi
 
@@ -254,11 +253,10 @@
       # active. Reading the last-known @ is accurate whenever anyone is working
       # and costs nothing when nobody is.
       commit="$(${pkgs.jujutsu}/bin/jj --ignore-working-copy -R "$ws" log --no-graph -r @ -T 'commit_id' 2>/dev/null || true)"
-      [ -n "$commit" ] || { echo "jj-ws-no-commit $ws"; n_failed+=1; return 0; }
+      [ -n "$commit" ] || { echo "jj-ws-no-commit $ws"; return 0; }
 
       ${pkgs.git}/bin/git -C "$repo" cat-file -e "$commit" 2>/dev/null || {
         echo "jj-ws-not-exported $ws $commit"
-        n_failed+=1
         return 0
       }
 
@@ -273,43 +271,91 @@
       if git_net -C "$repo" push --quiet --force --no-verify "$remote" \
         "$commit:refs/backup/$host/$slug/workspace-$wsname/wip"; then
         echo "jj-ws-backup $ws $remote $commit"
-        n_jj_ws+=1
       else
         echo "jj-ws-backup-failed $ws $remote $commit"
-        n_failed+=1
       fi
     }
 
+    # The sweep's cost is per-repo network I/O: ~140 repositories, each with
+    # 180s-bounded fetch/push calls, ran fully serial and took 15-19 minutes --
+    # longer than the 15-minute timer interval. Generation below stays serial
+    # (local-only git/find reads, milliseconds each) and the network-bound
+    # handle_repo / handle_jj_workspace calls fan out through xargs -P, one
+    # repository per worker process for load balancing. Counters and
+    # no-remote.current are derived from the aggregated worker output, since
+    # anything a worker mutates dies with its process.
+    jobs=8
+    run_out="$(${pkgs.coreutils}/bin/mktemp "$state_dir/run-output.XXXXXX")"
+    trap 'rm -f "$run_out"' EXIT
+
+    repos=()
+    jj_workspaces=()
+    declare -A listed
+    add_repo() {
+      local top
+      top="$(${pkgs.git}/bin/git -C "$1" rev-parse --show-toplevel 2>/dev/null || true)"
+      [ -n "$top" ] || return 0
+      [ -z "''${listed[$top]+x}" ] || return 0
+      listed[$top]=1
+      repos+=("$top")
+    }
+
+    for root in "''${roots[@]}"; do
+      [ -e "$root" ] || continue
+      if [ -d "$root/.git" ]; then
+        add_repo "$root"
+        continue
+      fi
+      # -name .git without -type d: a git worktree's .git is a regular FILE,
+      # so the old -type d filter silently skipped every worktree it found.
+      # maxdepth 6, not 4: ~/code/worktrees/jj/<repo>/<workspace> sits at
+      # depth 5, one level past where the old sweep stopped looking.
+      # -prune, not -not -path: a -not -path clause only filters the RESULT,
+      # find still descends the whole tree. Measured over ~/code, pruning cuts
+      # the walk from 2300ms to 104ms -- it matters because maxdepth 6 now
+      # reaches into build trees the old maxdepth 4 never touched.
+      while IFS= read -r gitdir; do
+        add_repo "$(${pkgs.coreutils}/bin/dirname "$gitdir")"
+      done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 6 \
+        \( -name node_modules -o -name target -o -name .direnv -o -name .cache \
+           -o -name '.sf-test-*' \) -prune -o \
+        -name .git -print 2>/dev/null)
+
+      while IFS= read -r jjdir; do
+        jj_workspaces+=("$(${pkgs.coreutils}/bin/dirname "$jjdir")")
+      done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 6 \
+        \( -name node_modules -o -name target -o -name .direnv -o -name .cache \) \
+        -prune -o -type d -name .jj -print 2>/dev/null)
+    done
+
+    # xargs spawns fresh bash processes; exported functions arrive through the
+    # BASH_FUNC_* environment. All pkgs.* paths inside the functions are
+    # absolute store paths baked in at eval time, so nothing else is needed.
+    export -f git_net slugify repo_remote push_dirty_ref push_branch_or_backup \
+      mirror_branch_to_remote handle_repo handle_jj_workspace
+    export host stamp state_dir
+
     {
       echo "git-auto-backup start $stamp host=$host"
-      : > "$state_dir/no-remote.current"
-      for root in "''${roots[@]}"; do
-        [ -e "$root" ] || continue
-        if [ -d "$root/.git" ]; then
-          handle_repo "$root"
-          continue
-        fi
-        # -name .git without -type d: a git worktree's .git is a regular FILE,
-        # so the old -type d filter silently skipped every worktree it found.
-        # maxdepth 6, not 4: ~/code/worktrees/jj/<repo>/<workspace> sits at
-        # depth 5, one level past where the old sweep stopped looking.
-        # -prune, not -not -path: a -not -path clause only filters the RESULT,
-        # find still descends the whole tree. Measured over ~/code, pruning cuts
-        # the walk from 2300ms to 104ms -- it matters because maxdepth 6 now
-        # reaches into build trees the old maxdepth 4 never touched.
-        while IFS= read -r gitdir; do
-          handle_repo "$(${pkgs.coreutils}/bin/dirname "$gitdir")"
-        done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 6 \
-          \( -name node_modules -o -name target -o -name .direnv -o -name .cache \
-             -o -name '.sf-test-*' \) -prune -o \
-          -name .git -print 2>/dev/null)
+      if ((''${#repos[@]})); then
+        printf '%s\0' "''${repos[@]}" | ${pkgs.findutils}/bin/xargs -0 -r -P "$jobs" -n 1 \
+          ${pkgs.bash}/bin/bash -c 'handle_repo "$1"' _ >> "$run_out" 2>&1 || true
+      fi
+      if ((''${#jj_workspaces[@]})); then
+        printf '%s\0' "''${jj_workspaces[@]}" | ${pkgs.findutils}/bin/xargs -0 -r -P "$jobs" -n 1 \
+          ${pkgs.bash}/bin/bash -c 'handle_jj_workspace "$1"' _ >> "$run_out" 2>&1 || true
+      fi
+      ${pkgs.coreutils}/bin/cat "$run_out"
 
-        while IFS= read -r jjdir; do
-          handle_jj_workspace "$(${pkgs.coreutils}/bin/dirname "$jjdir")"
-        done < <(${pkgs.findutils}/bin/find "$root" -maxdepth 6 \
-          \( -name node_modules -o -name target -o -name .direnv -o -name .cache \) \
-          -prune -o -type d -name .jj -print 2>/dev/null)
-      done
+      # Aggregate worker output into the same state the serial sweep kept:
+      # no-remote.current holds the current standing-risk list (refreshed per
+      # completed run, so a killed run now leaves the previous list instead of
+      # an empty file), and the summary counters come from the status lines.
+      ${pkgs.gnugrep}/bin/grep '^skip-no-remote ' "$run_out" |
+        ${pkgs.coreutils}/bin/cut -d' ' -f2- > "$state_dir/no-remote.current" || true
+      n_skip_no_remote=$(${pkgs.gnugrep}/bin/grep -c '^skip-no-remote ' "$run_out" || true)
+      n_failed=$(${pkgs.gnugrep}/bin/grep -cE '^jj-ws-(no-commit|not-exported|backup-failed) ' "$run_out" || true)
+      n_jj_ws=$(${pkgs.gnugrep}/bin/grep -c '^jj-ws-backup ' "$run_out" || true)
 
       # The summary exists because the per-repo lines above scroll past unread.
       # A repository with no remote is a standing data-loss risk, not an event;

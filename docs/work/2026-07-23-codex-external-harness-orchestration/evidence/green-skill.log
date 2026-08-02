@@ -1,0 +1,28 @@
+✔ skill frontmatter and openai.yaml exist with Use when / Not for description (13.233778ms)
+✔ main-agent-only SUBAGENT-STOP tells bounded subagent to stop and return to root (1.131962ms)
+✔ trigger: delegated external work loads skill; Codex remains sole publisher (1.262185ms)
+✔ near-miss: Default/Plan or v1/v2 wording alone cannot satisfy frontmatter trigger (1.940684ms)
+✔ alternate phrasing: encrypted_content fails closed or starts fresh portable session (1.199655ms)
+✔ Kimi prompt-mode command uses exact model/flags and forbids --prompt with --auto/--yolo (0.864261ms)
+✔ Cursor preferred subscription models are non-fast only (0.961492ms)
+✔ concurrency enforces operator hard ceilings plus resource-based lower limits (1.335776ms)
+✔ run provenance launcher contract is documented and fail-closed (1.179504ms)
+✔ Home Manager installs the launcher only under ~/.codex (1.103494ms)
+✔ Home Manager maps only this user skill; no singularity-engine-forward mapping (0.926781ms)
+✔ AGENTS handwritten section is a minimal load-skill trigger only (0.910121ms)
+✔ general orchestration runbook is absent (1.397106ms)
+✔ no-VCS rule is instruction policy, not a sandbox; worker state is untrusted (0.710228ms)
+✔ Kimi 0.28.1 prompt-mode behavior is documented (auto permission, handlers, validateOptions) (1.637209ms)
+✔ fail-closed worker evidence minimum and independent coordinator rerun (0.632267ms)
+✔ Cursor implementation and read-only commands are proven; boundary fails closed (0.612748ms)
+✔ skill activates only in Codex root; workers cannot load it; root never dispatches it to subagents (0.79718ms)
+✔ concurrency requires live memory check and stops before swap/memory pressure worsens (0.595357ms)
+✔ skill cites the exact contract-test paths and commands (0.582147ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 116.265928

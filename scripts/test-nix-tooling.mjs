@@ -103,6 +103,26 @@ test("shell aliases consume the managed Nix tooling", async () => {
   assert.match(shell, /nixdu\s*=\s*"nix-du /);
 });
 
+test("the Home Manager wrapper preserves an explicitly requested flake", async () => {
+  const shell = await source("home/modules/shell.nix");
+  const wrapper = listBody(
+    shell,
+    /"\.local\/bin\/home-manager"\s*=\s*\{[\s\S]*?text\s*=\s*''([\s\S]*?)\n\s*'';/,
+    "home-manager wrapper",
+  );
+
+  assert.match(wrapper, /has_explicit_flake=0/);
+  assert.match(wrapper, /--flake\|--flake=\*\|-f\|-f\?\*\)/);
+  assert.match(
+    wrapper,
+    /if \[\[ "\$has_explicit_flake" -eq 0 \]\]; then[\s\S]*?set -- --flake "\$HOME\/\.dotfiles#\$\("\$HOME\/\.dotfiles\/scripts\/current-home-profile"\)" "\$@"/,
+  );
+  assert.match(
+    wrapper,
+    /exec "\$real_home_manager" switch[\s\S]*?--extra-experimental-features 'nix-command flakes'[\s\S]*?"\$@"/,
+  );
+});
+
 test("the maintenance shell supplies every executable used by the canonical check", async () => {
   const flake = await source("flake.nix");
   const entries = listBody(

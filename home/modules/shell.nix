@@ -71,8 +71,19 @@ in {
 
         if [[ "''${1:-}" == "switch" ]]; then
           shift
+          has_explicit_flake=0
+          for arg in "$@"; do
+            case "$arg" in
+              --flake|--flake=*|-f|-f?*)
+                has_explicit_flake=1
+                break
+                ;;
+            esac
+          done
+          if [[ "$has_explicit_flake" -eq 0 ]]; then
+            set -- --flake "$HOME/.dotfiles#$("$HOME/.dotfiles/scripts/current-home-profile")" "$@"
+          fi
           exec "$real_home_manager" switch \
-            --flake "$HOME/.dotfiles#$("$HOME/.dotfiles/scripts/current-home-profile")" \
             --extra-experimental-features 'nix-command flakes' \
             "$@"
         fi

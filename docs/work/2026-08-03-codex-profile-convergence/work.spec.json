@@ -40,7 +40,8 @@
         "acceptance_criteria": [
           "the durable seed and shared preference source specify gpt-5.6-sol",
           "activation invokes the shared preference merger after seeding",
-          "a live activation preserves unrelated TOML entries while setting the root model and provider correctly"
+          "a live activation preserves unrelated TOML entries while setting the root model and provider correctly",
+          "the Home Manager wrapper preserves an explicit caller-supplied flake rather than silently substituting the primary checkout"
         ],
         "requirement_form": {
           "ears": {
@@ -195,9 +196,11 @@
       "config/codex/external-profiles/**",
       "home/modules/activation.nix",
       "home/modules/files.nix",
+      "home/modules/shell.nix",
       "scripts/codex-preferences",
       "scripts/test-codex-hosted-search.mjs",
-      "scripts/test-codex-preferences.py"
+      "scripts/test-codex-preferences.py",
+      "scripts/test-nix-tooling.mjs"
     ],
     "blocked": [],
     "expected_files": []

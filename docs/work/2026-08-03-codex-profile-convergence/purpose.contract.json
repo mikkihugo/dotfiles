@@ -91,7 +91,8 @@
     "The root provider remains openai",
     "External providers remain available only through profile-specific fresh processes",
     "Every external profile has web_search disabled",
-    "Existing user-owned mutable configuration remains intact outside durable preference keys"
+    "Existing user-owned mutable configuration remains intact outside durable preference keys",
+    "An explicit Home Manager flake is never silently replaced with the primary checkout"
   ],
   "assumptions": [
     {

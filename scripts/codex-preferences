@@ -7,6 +7,7 @@ from pathlib import Path
 
 SHARED_KEYS = [
     "model",
+    "model_provider",
     "model_reasoning_effort",
     "model_reasoning_summary",
     "web_search",

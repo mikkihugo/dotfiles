@@ -1,0 +1,7 @@
+# Fresh, bounded reasoning task only. Do not resume an OpenAI conversation.
+# Reasoning effort stays unset until the deployed catalog exposes supported
+# named effort values for this route.
+model = "auto-kimi"
+model_provider = "llm-gateway"
+sandbox_mode = "workspace-write"
+web_search = "disabled"

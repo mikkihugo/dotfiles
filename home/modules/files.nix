@@ -96,51 +96,6 @@
       force = true;
     };
 
-    ".codex/agents/worker.toml" = {
-      source = ../../config/codex/agents/worker.toml;
-      force = true;
-    };
-
-    ".codex/agents/coder-fast.toml" = {
-      source = ../../config/codex/agents/coder-fast.toml;
-      force = true;
-    };
-
-    ".codex/agents/coder-smart.toml" = {
-      source = ../../config/codex/agents/coder-smart.toml;
-      force = true;
-    };
-
-    ".codex/agents/test-writer.toml" = {
-      source = ../../config/codex/agents/test-writer.toml;
-      force = true;
-    };
-
-    ".codex/agents/debugger.toml" = {
-      source = ../../config/codex/agents/debugger.toml;
-      force = true;
-    };
-
-    ".codex/agents/reviewer.toml" = {
-      source = ../../config/codex/agents/reviewer.toml;
-      force = true;
-    };
-
-    ".codex/agents/verifier.toml" = {
-      source = ../../config/codex/agents/verifier.toml;
-      force = true;
-    };
-
-    ".codex/agents/web-researcher.toml" = {
-      source = ../../config/codex/agents/web-researcher.toml;
-      force = true;
-    };
-
-    ".codex/agents/explorer.toml" = {
-      source = ../../config/codex/agents/explorer.toml;
-      force = true;
-    };
-
     ".codex/agents/taxonomy-worker.toml" = {
       source = ../../config/codex/agents/taxonomy-worker.toml;
       force = true;
@@ -153,6 +108,33 @@
 
     ".codex/agents/singularity-engine-harvester.toml" = {
       source = ../../config/codex/agents/singularity-engine-harvester.toml;
+      force = true;
+    };
+
+    # Gateway-backed profiles are deliberately outside ~/.codex/agents. They
+    # are only for codex exec --ephemeral --profile external-<role>.
+    ".codex/external-explorer.config.toml" = {
+      source = ../../config/codex/external-profiles/external-explorer.config.toml;
+      force = true;
+    };
+
+    ".codex/external-reasoner.config.toml" = {
+      source = ../../config/codex/external-profiles/external-reasoner.config.toml;
+      force = true;
+    };
+
+    ".codex/external-reviewer.config.toml" = {
+      source = ../../config/codex/external-profiles/external-reviewer.config.toml;
+      force = true;
+    };
+
+    ".codex/external-verifier.config.toml" = {
+      source = ../../config/codex/external-profiles/external-verifier.config.toml;
+      force = true;
+    };
+
+    ".codex/external-worker.config.toml" = {
+      source = ../../config/codex/external-profiles/external-worker.config.toml;
       force = true;
     };
 

@@ -1,0 +1,55 @@
+{
+  "observed_at": "2026-08-03T14:23:55Z",
+  "source": "authenticated llm-gateway /v1/models after the current deployment",
+  "purpose": "Profile reasoning-effort choices must be derived from the deployed catalog, not stale configuration.",
+  "models": [
+    {
+      "id": "auto-fast",
+      "resolved_model": "qwen3.5:397b",
+      "reasoning": {
+        "default_enabled": true
+      },
+      "supported_efforts": [],
+      "persisted_reasoning_effort": null
+    },
+    {
+      "id": "auto-glm",
+      "resolved_model": "glm-5.2",
+      "reasoning": {
+        "default_enabled": true
+      },
+      "supported_efforts": [],
+      "persisted_reasoning_effort": null
+    },
+    {
+      "id": "auto-kimi",
+      "resolved_model": "k3",
+      "reasoning": {
+        "default_enabled": true
+      },
+      "supported_efforts": [],
+      "persisted_reasoning_effort": null
+    },
+    {
+      "id": "auto-deepseek",
+      "resolved_model": "ollama-cloud/deepseek-v4-pro",
+      "reasoning": {
+        "default_enabled": true,
+        "default_effort": "none"
+      },
+      "supported_efforts": [
+        "none",
+        "high",
+        "max"
+      ],
+      "persisted_reasoning_effort": "high"
+    },
+    {
+      "id": "ollama-cloud/nemotron-3-ultra",
+      "resolved_model": "nemotron-3-ultra",
+      "reasoning": null,
+      "supported_efforts": [],
+      "persisted_reasoning_effort": null
+    }
+  ]
+}

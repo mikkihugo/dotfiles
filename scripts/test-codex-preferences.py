@@ -17,6 +17,7 @@ class CodexPreferencesTest(unittest.TestCase):
             live = root / "config.toml"
             shared.write_text(
                 'model = "gpt-5.6-sol"\n'
+                'model_provider = "openai"\n'
                 'model_reasoning_effort = "low"\n'
                 'web_search = "disabled"\n\n'
                 '[tui]\n'
@@ -24,6 +25,7 @@ class CodexPreferencesTest(unittest.TestCase):
             )
             live.write_text(
                 'model = "gpt-5.5"\n'
+                'model_provider = "llm-gateway"\n'
                 'model_reasoning_effort = "medium"\n'
                 'web_search = "live"\n'
                 'personality = "pragmatic"\n\n'
@@ -43,6 +45,7 @@ class CodexPreferencesTest(unittest.TestCase):
             rendered = live.read_text()
             parsed = tomllib.loads(rendered)
             self.assertEqual(parsed["model"], "gpt-5.6-sol")
+            self.assertEqual(parsed["model_provider"], "openai")
             self.assertEqual(parsed["model_reasoning_effort"], "low")
             self.assertEqual(parsed["web_search"], "disabled")
             self.assertEqual(parsed["tui"]["status_line"], ["model-with-reasoning", "thread-id"])

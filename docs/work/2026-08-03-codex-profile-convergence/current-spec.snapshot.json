@@ -1,0 +1,9 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-08-03-codex-profile-convergence-current-spec",
+  "source": {
+    "uri": "repository://config/codex",
+    "revision": "origin/main task baseline"
+  },
+  "requirements": []
+}

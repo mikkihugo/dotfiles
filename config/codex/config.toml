@@ -42,45 +42,11 @@ tool_namespace = "agents"
 [agents]
 max_depth = 2
 
+# Resident subagents carry opaque Responses items and therefore stay on the
+# OpenAI provider. Gateway models are profile-only and run in fresh processes.
 [agents.default]
 description = "Balanced general-purpose subagent (GPT-5.6 Terra): bounded mixed work that does not match a narrower specialist."
 config_file = "agents/default.toml"
-
-[agents.worker]
-description = "Standard implementer (Ollama Cloud GLM 5.2): normal feature work and fixes with an established contract or root cause."
-config_file = "agents/worker.toml"
-
-[agents.coder_fast]
-description = "Fast mechanical implementer (MiniMax M3, thinking off): boilerplate, rote refactors, and precisely specified repetitive edits."
-config_file = "agents/coder-fast.toml"
-
-[agents.coder_smart]
-description = "Deep implementer (Kimi K2.7): hard algorithms and subtle correctness work that needs sustained reasoning."
-config_file = "agents/coder-smart.toml"
-
-[agents.test_writer]
-description = "Independent red-test writer (MiniMax M3): turns a precise purpose contract into the smallest failing test before implementation."
-config_file = "agents/test-writer.toml"
-
-[agents.debugger]
-description = "Systematic debugger (DeepSeek V4 Pro): reproduce, falsify hypotheses, identify root cause, apply a minimal fix, and prove it."
-config_file = "agents/debugger.toml"
-
-[agents.reviewer]
-description = "Independent read-only code reviewer (DeepSeek V4 Pro): spec compliance, correctness, proof, and scope."
-config_file = "agents/reviewer.toml"
-
-[agents.verifier]
-description = "Adversarial read-only verifier (Nemotron 3 Ultra): independent falsification for high-stakes claims and contested decisions."
-config_file = "agents/verifier.toml"
-
-[agents.web_researcher]
-description = "Broad web researcher (Kimi K2.7): primary-source research, creative search, cross-source validation, and cited synthesis."
-config_file = "agents/web-researcher.toml"
-
-[agents.explorer]
-description = "Fast read-only explorer (Ollama Cloud Qwen 3.5 397B): file, symbol, reference, and candidate discovery in a tightly bounded scope."
-config_file = "agents/explorer.toml"
 
 [agents.taxonomy_worker]
 description = "Taxonomy discovery worker (GPT-5.6 Terra): source extraction, clustering, normalization, and boundary proposals."

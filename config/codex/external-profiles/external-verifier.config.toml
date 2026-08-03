@@ -1,0 +1,7 @@
+# Fresh, bounded adversarial-verification task only. Do not resume an OpenAI
+# conversation. Reasoning effort stays unset until the deployed catalog proves
+# support.
+model = "ollama-cloud/nemotron-3-ultra"
+model_provider = "llm-gateway"
+sandbox_mode = "read-only"
+web_search = "disabled"

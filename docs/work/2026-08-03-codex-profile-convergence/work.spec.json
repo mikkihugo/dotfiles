@@ -1,0 +1,283 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-08-03-codex-profile-convergence-work",
+  "purpose_contract_id": "2026-08-03-codex-profile-convergence-purpose",
+  "handover": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-profile-convergence"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-08-03T00:00:00Z",
+    "validators": [
+      "workspec/v4",
+      "operator-directed-purpose-admission/v1"
+    ],
+    "evidence_refs": [
+      "purpose.contract.json#admission",
+      "live:home-manager-generation-307",
+      "live:llm-gateway-v1-models"
+    ]
+  },
+  "feature_tree_target": {
+    "kind": "client-config",
+    "name": "codex-profile-convergence",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-08-03-codex-profile-convergence-current-spec",
+    "uri": "current-spec.snapshot.json"
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "The managed Codex root preference path shall converge model and provider values to gpt-5.6-sol and openai during Home Manager activation without replacing unrelated mutable settings.",
+        "acceptance_criteria": [
+          "the durable seed and shared preference source specify gpt-5.6-sol",
+          "activation invokes the shared preference merger after seeding",
+          "a live activation preserves unrelated TOML entries while setting the root model and provider correctly"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Home Manager Codex activation",
+            "response": "converge durable root model settings while preserving unrelated mutable preferences"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "the activated root config is not gpt-5.6-sol/openai or loses an unrelated setting",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "The managed resident-agent registry and Home Manager agent links shall contain only OpenAI provider definitions, while external gateway profiles are durably provisioned outside ~/.codex/agents and never registered as agents.",
+        "acceptance_criteria": [
+          "every registered resident agent source has model_provider=openai",
+          "every Home Manager .codex/agents source has model_provider=openai",
+          "each external profile-only config is durable, explicitly web_search disabled, and absent from [agents]"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Managed Codex agent configuration",
+            "response": "keep gateway profiles fresh-process-only and external to the resident agent registry"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "an llm-gateway configuration remains registered or linked as a resident agent, or an external profile is not durable",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "high",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R3",
+        "statement": "External profile reasoning settings shall be based on a fresh deployed gateway catalog rather than stale source assumptions.",
+        "acceptance_criteria": [
+          "an authenticated post-deployment catalog probe is captured",
+          "each profile uses only a reasoning effort supported by its resolved model",
+          "models without reasoning capability omit model_reasoning_effort"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "state-driven",
+            "system": "External profile provisioning",
+            "precondition": "the current gateway catalog is available",
+            "response": "persist only catalog-supported reasoning settings"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B3",
+          "condition": "a profile persists a reasoning effort for a catalog model that lacks reasoning capability",
+          "witness_kind": "live-catalog-probe",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "operator-direction"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "The managed Codex root preference path shall converge model and provider values to gpt-5.6-sol and openai during Home Manager activation without replacing unrelated mutable settings.",
+      "acceptance_criteria": [
+        "the durable seed and shared preference source specify gpt-5.6-sol",
+        "activation invokes the shared preference merger after seeding",
+        "a live activation preserves unrelated TOML entries while setting the root model and provider correctly"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Home Manager Codex activation",
+          "response": "converge durable root model settings while preserving unrelated mutable preferences"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "the activated root config is not gpt-5.6-sol/openai or loses an unrelated setting",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "The managed resident-agent registry and Home Manager agent links shall contain only OpenAI provider definitions, while external gateway profiles are durably provisioned outside ~/.codex/agents and never registered as agents.",
+      "acceptance_criteria": [
+        "every registered resident agent source has model_provider=openai",
+        "every Home Manager .codex/agents source has model_provider=openai",
+        "each external profile-only config is durable, explicitly web_search disabled, and absent from [agents]"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Managed Codex agent configuration",
+          "response": "keep gateway profiles fresh-process-only and external to the resident agent registry"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "an llm-gateway configuration remains registered or linked as a resident agent, or an external profile is not durable",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "high",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R3",
+      "statement": "External profile reasoning settings shall be based on a fresh deployed gateway catalog rather than stale source assumptions.",
+      "acceptance_criteria": [
+        "an authenticated post-deployment catalog probe is captured",
+        "each profile uses only a reasoning effort supported by its resolved model",
+        "models without reasoning capability omit model_reasoning_effort"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "state-driven",
+          "system": "External profile provisioning",
+          "precondition": "the current gateway catalog is available",
+          "response": "persist only catalog-supported reasoning settings"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B3",
+        "condition": "a profile persists a reasoning effort for a catalog model that lacks reasoning capability",
+        "witness_kind": "live-catalog-probe",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "operator-direction"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "docs/work/2026-08-03-codex-profile-convergence/**",
+      "config/codex/config.toml",
+      "config/codex/agents/**",
+      "config/codex/external-profiles/**",
+      "home/modules/activation.nix",
+      "home/modules/files.nix",
+      "scripts/codex-preferences",
+      "scripts/test-codex-hosted-search.mjs",
+      "scripts/test-codex-preferences.py"
+    ],
+    "blocked": [],
+    "expected_files": []
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "A static configuration contract rejects external resident roles and requires durable profile-only configuration.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R1",
+      "kind": "live-state",
+      "description": "A Home Manager activation proves root preference convergence without destructive replacement.",
+      "must_fail_first": false
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R3",
+      "kind": "live-catalog-probe",
+      "description": "A fresh post-deployment catalog probe validates profile reasoning settings.",
+      "must_fail_first": false
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "node --test scripts/test-codex-hosted-search.mjs",
+      "repo check",
+      "home-manager switch --flake .#cc-se-sto-devbox-01",
+      "authenticated llm-gateway /v1/models catalog probe"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier",
+      "live-state"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex-profile-convergence"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-08-03-codex-profile-convergence",
+    "target_planes": [
+      "client"
+    ],
+    "dependencies": [
+      "llm-gateway post-deploy model catalog"
+    ],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [
+      "home-manager activation",
+      "authenticated llm-gateway model catalog"
+    ],
+    "requested_isolation": "worktree",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

@@ -52,7 +52,15 @@ in {
     '';
 
     removeRetiredCodexAgentRoles = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      rm -f "$HOME/.codex/agents/coder.toml"
+      # Remove only retired Home Manager symlinks. Plain user-owned TOMLs stay
+      # untouched and cannot become resident because config.toml does not
+      # register them.
+      for role in coder worker coder-fast coder-smart test-writer debugger reviewer verifier web-researcher explorer; do
+        target="$HOME/.codex/agents/$role.toml"
+        if [ -L "$target" ]; then
+          rm -f "$target"
+        fi
+      done
     '';
 
     applySharedCodexPreferences = lib.hm.dag.entryAfter ["seedMutableCodexConfig"] ''

@@ -1,0 +1,117 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-08-03-codex-profile-convergence-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-08-03-codex-profile-convergence"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "user-directed-goal-codex-profile-convergence",
+      "revision": "2026-08-03"
+    },
+    "objective": {
+      "id": "2026-08-03-codex-profile-convergence-objective",
+      "statement": "Keep the interactive Codex client on OpenAI gpt-5.6-sol and make external llm-gateway judgment profiles fresh-process-only.",
+      "measure": "A Home Manager activation produces a live gpt-5.6-sol OpenAI root config, all registered resident agent configs use OpenAI, and each external profile is installed without being registered as an agent."
+    },
+    "need": {
+      "id": "2026-08-03-codex-profile-convergence-need",
+      "statement": "Eliminate an unsafe external-gateway resident-agent configuration while preserving the user's mutable Codex preferences and durable fresh external profiles.",
+      "stakeholders": [
+        "Mikael and Codex sessions on cc-se-sto-devbox-01"
+      ],
+      "baseline": "The active Home Manager generation links external llm-gateway TOMLs into ~/.codex/agents and config.toml registers them as resident roles; the mutable root config currently says gpt-5.6-terra although the active generation carries gpt-5.6-sol preferences.",
+      "consequence_of_no_action": "Opaque Responses conversation state can be sent to incompatible external resident roles and interactive Codex can silently drift away from the declared OpenAI main model.",
+      "assumptions": [
+        "The deployed llm-gateway model catalog is the authority for external profile reasoning capabilities."
+      ],
+      "alternatives_considered": [
+        "Keep external roles resident and rely on callers to avoid opaque Responses items",
+        "Make the entire mutable root config an immutable Home Manager symlink",
+        "Remove external profiles instead of preserving explicit fresh-process profiles"
+      ]
+    }
+  },
+  "admission": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-profile-convergence"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-08-03T00:00:00Z",
+    "validators": [
+      "purpose-contract/v2",
+      "operator-directed-purpose-admission/v1"
+    ],
+    "evidence_refs": [
+      "user-request:fix-and-land-profile-convergence",
+      "live:/home/mhugo/.codex/config.toml",
+      "live:home-manager-generation-307",
+      "evidence/catalog-2026-08-03T14-23-55Z.json"
+    ]
+  },
+  "purpose": "Keep the interactive Codex client on OpenAI gpt-5.6-sol and make external llm-gateway judgment profiles fresh-process-only.",
+  "consumer": "Mikael and Codex sessions on cc-se-sto-devbox-01.",
+  "contract": "A Home Manager activation produces a live gpt-5.6-sol OpenAI root config, all registered resident agent configs use OpenAI, and each external profile is installed without being registered as an agent.",
+  "failure_boundary": "Do not replace the mutable root config wholesale or delete user-owned preferences. Do not register or link an external model as a resident agent. Do not persist a reasoning effort unless the fresh deployed catalog supports reasoning for that profile.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "The Codex profile boundary contract rejects resident gateway registrations, resident gateway Home Manager links, missing durable profile-only configs, and an unpinned root model.",
+      "status": "expected"
+    },
+    {
+      "kind": "live-state",
+      "description": "A Home Manager activation followed by TOML and symlink inspection proves the root model and installed agent/profile boundaries.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "The activated client keeps gpt-5.6-sol as the main model and cannot use external llm-gateway definitions as resident roles.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Run the focused profile-boundary test and post-activation live inspection; any registered or linked resident gateway role, missing profile, or non-Sol root model falsifies the claim.",
+      "command": "node --test scripts/test-codex-hosted-search.mjs"
+    }
+  },
+  "non_goals": [
+    "Change llm-gateway routing or model aliases",
+    "Change non-Codex client model preferences",
+    "Remove existing external profiles",
+    "Overwrite unrelated mutable Codex configuration"
+  ],
+  "invariants": [
+    "The root provider remains openai",
+    "External providers remain available only through profile-specific fresh processes",
+    "Every external profile has web_search disabled",
+    "Existing user-owned mutable configuration remains intact outside durable preference keys"
+  ],
+  "assumptions": [
+    {
+      "statement": "The model catalog retrieved after the gateway deployment is authoritative for external profile reasoning settings.",
+      "status": "verified-at-2026-08-03T14:23:55Z",
+      "doubt": 0,
+      "falsifier": "A later authenticated /v1/models response disagrees with the profile's reasoning setting."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "medium",
+    "blast_radius": "local",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "client"
+  ],
+  "plane_constraints": [
+    "Home Manager and dotfiles own durable Codex configuration; llm-gateway model capability routing remains outside this slice."
+  ]
+}

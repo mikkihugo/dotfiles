@@ -32,6 +32,7 @@ main() {
 		node --test \
 			scripts/test-cargo-pgrx-wrapper.mjs \
 			scripts/test-codex-hosted-search.mjs \
+			scripts/test-stable-shell-path.mjs \
 			scripts/test-swarm-messages.mjs \
 			scripts/test-swarm-hook-config.mjs \
 			scripts/test-nix-tooling.mjs

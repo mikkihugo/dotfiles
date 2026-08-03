@@ -24,7 +24,6 @@ _: let
     # Activate mise, load SOPS secrets, handle non-interactive direnv,
     # and source runtime shell hooks. See shell/bash/bashrc for details.
     [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && source "$DOTFILES_ROOT/shell/bash/bashrc"
-    type _load_sops_secrets >/dev/null 2>&1 && _load_sops_secrets >/dev/null 2>&1 || true
 
     # Letta API key from file (LETTA_BASE_URL is in home.sessionVariables).
     if [ -f "$HOME/.letta/api_key" ]; then

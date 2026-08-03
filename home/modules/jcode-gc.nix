@@ -32,6 +32,20 @@
     # full session files older than 30 days (resume history beyond that is dead weight)
     ${pkgs.findutils}/bin/find "$J/sessions" -maxdepth 1 -name 'session_*.json' -mtime +30 -delete 2>/dev/null
 
+    # --- /tmp/jcode-* debris (test homes, diag logs, straces): entries older
+    # than 3 days, but never the shared workspace build cache (deliberately
+    # retained, held open by long-running jcode processes) ---
+    for e in /tmp/jcode-*; do
+        [ -e "$e" ] || continue
+        case "$(${pkgs.coreutils}/bin/basename "$e")" in
+            jcode-ws-target) continue ;;
+        esac
+        if [ "$(${pkgs.findutils}/bin/find "$e" -maxdepth 0 -mtime +3 2>/dev/null)" ]; then
+            ${pkgs.coreutils}/bin/chmod -R u+w "$e" 2>/dev/null
+            ${pkgs.coreutils}/bin/rm -rf "$e"
+        fi
+    done
+
     # --- scratch: entries older than 3 days, but never live IPC/cache dirs ---
     if [ -d "$J/scratch" ]; then
         for e in "$J"/scratch/*; do
@@ -48,9 +62,11 @@
   '';
 in {
   # Prune ~/.jcode artifacts that otherwise accumulate forever (old build
-  # versions, rotated logs, session .bak snapshots, scratch workspaces).
-  # Retention: 3d for builds/logs/baks/scratch/quarantine, 30d for full
-  # session files; the active build version is never deleted.
+  # versions, rotated logs, session .bak snapshots, scratch workspaces) plus
+  # /tmp/jcode-* test/diag debris.
+  # Retention: 3d for builds/logs/baks/scratch/quarantine//tmp debris, 30d for
+  # full session files; the active build version is never deleted, and the
+  # shared /tmp/jcode-ws-target build cache is always kept.
   systemd.user.services.jcode-gc = {
     Unit = {
       Description = "Prune accumulated ~/.jcode artifacts (old builds, logs, session baks, scratch)";

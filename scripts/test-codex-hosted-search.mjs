@@ -103,6 +103,13 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
     );
     if (profileName === "external-reviewer.config.toml") {
       assert.match(profile, /^model_reasoning_effort\s*=\s*"high"$/m);
+    } else if (profileName === "external-verifier.config.toml") {
+      assert.match(
+        profile,
+        /^model\s*=\s*"auto-minimax"$/m,
+        "the verifier must use the gateway route proven compatible with Codex Responses reasoning",
+      );
+      assert.doesNotMatch(profile, /^model_reasoning_effort\s*=/m);
     } else {
       assert.doesNotMatch(
         profile,

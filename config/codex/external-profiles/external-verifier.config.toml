@@ -1,7 +1,7 @@
 # Fresh, bounded adversarial-verification task only. Do not resume an OpenAI
-# conversation. Reasoning effort stays unset until the deployed catalog proves
-# support.
-model = "ollama-cloud/nemotron-3-ultra"
+# conversation. This route is proven compatible with the Codex Responses
+# reasoning contract; leave effort unset so Codex uses its supported default.
+model = "auto-minimax"
 model_provider = "llm-gateway"
 sandbox_mode = "read-only"
 web_search = "disabled"

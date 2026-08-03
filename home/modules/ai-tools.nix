@@ -95,7 +95,7 @@
 
   vtcodeWrapper = pkgs.writeShellScriptBin "vtcode" (vtcodeGatewayEnv "vtcode" "auto-glm");
   # Model aliases — still llm-gateway.svc only (no other providers).
-  vtcodeMinimaxGatewayWrapper = pkgs.writeShellScriptBin "vtcode-minimax" (vtcodeGatewayEnv "vtcode-minimax" "minimax-m3");
+  vtcodeMinimaxGatewayWrapper = pkgs.writeShellScriptBin "vtcode-minimax" (vtcodeGatewayEnv "vtcode-minimax" "auto-minimax");
   vtcodeKimiWrapper = pkgs.writeShellScriptBin "vtcode-kimi" (vtcodeGatewayEnv "vtcode-kimi" "auto-kimi");
   vtcodeGlmWrapper = pkgs.writeShellScriptBin "vtcode-glm" (vtcodeGatewayEnv "vtcode-glm" "auto-glm");
 
@@ -103,9 +103,9 @@
   # Kimi /coding/v1 allowlists User-Agent (KimiCLI/*, Claude Code, etc.) and
   # rejects Copilot's default UA with 403, so we override it via
   # COPILOT_AGENT_REQUEST_HEADERS.
-  # copilot-kimi — GitHub Copilot CLI routed to Kimi K2.7 (umans-kimi-k2.7)
+  # copilot-kimi — GitHub Copilot CLI routed to Kimi K3 (`auto-kimi`)
   # through the centralcloud-ai-proxy gateway at llm-gateway.centralcloud.com
-  # via BYOK. Kimi K2.7 has a 262K token context window and 32K max output.
+  # via BYOK. The gateway owns the concrete Kimi Code model and limits.
   copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
     set -euo pipefail
     ${clientSessionIdentity "copilot"}
@@ -128,7 +128,7 @@
     export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
     export COPILOT_PROVIDER_API_KEY="$edge_token"
     export COPILOT_MODEL=auto-kimi
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=262144
+    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=1048576
     export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=32768
 
     node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
@@ -140,9 +140,9 @@
     exec "$copilot_bin" "$@"
   '';
 
-  # copilot-glm — GitHub Copilot CLI routed to GLM-5.2 (umans-glm-5.2) through
+  # copilot-glm — GitHub Copilot CLI routed to Ollama Cloud GLM-5.2 (`auto-glm`) through
   # the centralcloud-ai-proxy gateway at llm-gateway.centralcloud.com via BYOK.
-  # GLM-5.2 has a 405K token context window and 131K max output tokens.
+  # The gateway catalog exposes this Ollama Cloud route with a 128K context.
   # Top open-weight coding model: 62.1% SWE-bench Pro, 81.0% Terminal-Bench 2.1.
   copilotGlmWrapper = pkgs.writeShellScriptBin "copilot-glm" ''
     set -euo pipefail
@@ -166,8 +166,8 @@
     export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
     export COPILOT_PROVIDER_API_KEY="$edge_token"
     export COPILOT_MODEL=auto-glm
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=400000
-    export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
+    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=131072
+    export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=32768
 
     node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
 
@@ -218,8 +218,8 @@
 
   # claude-minimax — Claude Code CLI routed to MiniMax-M3 through the
   # centralcloud-ai-proxy gateway's Anthropic-Messages-compatible endpoint
-  # (llm-gateway.centralcloud.com/v1/messages) via BYOK. The gateway's `auto`/
-  # `umans-*` aliases currently hang on this route (only wired through the
+  # (llm-gateway.centralcloud.com/v1/messages) via BYOK. Generic aliases
+  # currently hang on this route (only wired through the
   # OpenAI-compatible /v1/chat/completions path) — minimax-m3 is confirmed
   # working, so it's pinned explicitly rather than left to alias resolution.
   claudeMinimaxWrapper = pkgs.writeShellScriptBin "claude-minimax" ''
@@ -314,7 +314,7 @@
   '';
   # goose — upstream GitHub releases via mise.
   # Default: openai → llm-gateway.svc /v1 (SOPS/bao token), model kimi-code/k3 (1M ctx, tools+reasoning+vision).
-  # Planner: minimax-coding-plan/MiniMax-M3; swarm alternative: ollama-deepseek-v4-pro.
+  # Planner: minimax-coding-plan/MiniMax-M3; swarm alternative: auto-deepseek.
   # ACP backends (claude-acp / codex-acp) stay available via wrappers but are disabled in config.
   # Provider resolution: $GOOSE_PROVIDER > config active_provider > openai.
   gooseGatewayWrapper = pkgs.writeShellScriptBin "goose" ''
@@ -470,39 +470,30 @@
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
-  # goose-deepseek — ollama-deepseek-v4-pro (524K ctx, tools+reasoning)
+  # goose-deepseek — auto-deepseek (Ollama Cloud DeepSeek V4 Pro)
   gooseDeepseek = pkgs.writeShellScriptBin "goose-deepseek" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="ollama-deepseek-v4-pro"
-    export GOOSE_CONTEXT_LIMIT="524288"
+    export GOOSE_MODEL="auto-deepseek"
+    export GOOSE_CONTEXT_LIMIT="131072"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
-  # goose-umans-glm — umans-ai-coding-plan/umans-glm-5.2 (405K ctx)
-  gooseUmansGlm = pkgs.writeShellScriptBin "goose-umans-glm" ''
+  # goose-glm — auto-glm (Ollama Cloud GLM-5.2)
+  gooseGlm = pkgs.writeShellScriptBin "goose-glm" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-ai-coding-plan/umans-glm-5.2"
-    export GOOSE_CONTEXT_LIMIT="405504"
+    export GOOSE_MODEL="auto-glm"
+    export GOOSE_CONTEXT_LIMIT="131072"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
-  # goose-umans-kimi — umans-ai-coding-plan/umans-kimi-k2.7 (262K ctx)
-  gooseUmansKimi = pkgs.writeShellScriptBin "goose-umans-kimi" ''
+  # goose-qwen-fast — auto-qwen-fast (Ollama Cloud Qwen 3.5 397B)
+  gooseQwenFast = pkgs.writeShellScriptBin "goose-qwen-fast" ''
     set -euo pipefail
     export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-ai-coding-plan/umans-kimi-k2.7"
-    export GOOSE_CONTEXT_LIMIT="262144"
-    exec "$HOME/.local/bin/goose" "$@"
-  '';
-
-  # goose-umans-flash — umans-ai-coding-plan/umans-flash (262K ctx)
-  gooseUmansFlash = pkgs.writeShellScriptBin "goose-umans-flash" ''
-    set -euo pipefail
-    export GOOSE_PROVIDER=openai
-    export GOOSE_MODEL="umans-ai-coding-plan/umans-flash"
-    export GOOSE_CONTEXT_LIMIT="262144"
+    export GOOSE_MODEL="auto-qwen-fast"
+    export GOOSE_CONTEXT_LIMIT="131072"
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
@@ -630,11 +621,6 @@ in {
       mode = "0600";
       sopsFile = ../../secrets/api-keys.yaml;
     };
-    umans_api_key = {
-      key = "umans/api_key";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
   };
 
   # Single `home` attrset — repeated `home.*` keys trip statix.
@@ -647,7 +633,7 @@ in {
       vtcodeWrapper
       vtcodeGlmWrapper # binary: vtcode-glm -> auto-glm via llm-gateway.svc
       vtcodeKimiWrapper # binary: vtcode-kimi -> auto-kimi via llm-gateway.svc
-      vtcodeMinimaxGatewayWrapper # binary: vtcode-minimax -> minimax-m3 via llm-gateway.svc
+      vtcodeMinimaxGatewayWrapper # binary: vtcode-minimax -> auto-minimax via llm-gateway.svc
       # Raw llm-agents packages — no key injection needed.      # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
       # these packages compile from source — disable per-host as needed.
       # Claude Code is owned by its native installer outside Home Manager.
@@ -656,10 +642,10 @@ in {
       # opencode is managed globally by mise.
       # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
       # droid is managed globally by mise (wrapped below for OTEL).
-      copilotKimiWrapper # binary: copilot-kimi -> routes mise GitHub Copilot CLI to Kimi K2.7 (umans-kimi-k2.7) via llm-gateway
-      copilotGlmWrapper # binary: copilot-glm -> routes mise GitHub Copilot CLI to GLM-5.2 (umans-glm-5.2) via llm-gateway
+      copilotKimiWrapper # binary: copilot-kimi -> auto-kimi (Kimi Code K3) via llm-gateway
+      copilotGlmWrapper # binary: copilot-glm -> auto-glm (Ollama Cloud GLM-5.2) via llm-gateway
       copilotMinimaxWrapper # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 (auto-minimax) via llm-gateway
-      copilotAllWrapper # binary: copilot-all -> routes mise GitHub Copilot CLI through local centralcloud-ai-proxy (GLM-5.2 + Kimi K2.7 + umans-flash via umans.ai, MiniMax-M3 via minimax.io)
+      copilotAllWrapper # binary: copilot-all -> routes mise GitHub Copilot CLI through canonical llm-gateway auto aliases
       claudeMinimaxWrapper # binary: claude-minimax -> routes Claude Code CLI to MiniMax-M3 via llm-gateway's Anthropic-Messages endpoint
       gooseGatewayWrapper # binary: goose -> resolves provider; openai uses llm-gateway
       gooseModels # binary: goose-models -> list llm-gateway /v1/models
@@ -667,10 +653,9 @@ in {
       gooseChatgpt # binary: goose-chatgpt -> codex-acp (~/.codex OAuth)
       gooseGateway # binary: goose-gateway -> openai via llm-gateway
       gooseKimi # binary: goose-kimi -> kimi-code/k3 (1M ctx)
-      gooseDeepseek # binary: goose-deepseek -> ollama-deepseek-v4-pro (524K ctx)
-      gooseUmansGlm # binary: goose-umans-glm -> umans-glm-5.2 (405K ctx)
-      gooseUmansKimi # binary: goose-umans-kimi -> umans-kimi-k2.7 (262K ctx)
-      gooseUmansFlash # binary: goose-umans-flash -> umans-flash (262K ctx)
+      gooseDeepseek # binary: goose-deepseek -> auto-deepseek (Ollama Cloud DeepSeek V4 Pro)
+      gooseGlm # binary: goose-glm -> auto-glm (Ollama Cloud GLM-5.2)
+      gooseQwenFast # binary: goose-qwen-fast -> auto-qwen-fast (Ollama Cloud Qwen 3.5 397B)
       codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
       llm-pkgs.mistral-vibe # binary: vibe
       # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
@@ -873,22 +858,16 @@ in {
         source = "${gooseDeepseek}/bin/goose-deepseek";
       };
 
-      ".local/bin/goose-umans-glm" = {
+      ".local/bin/goose-glm" = {
         executable = true;
         force = true;
-        source = "${gooseUmansGlm}/bin/goose-umans-glm";
+        source = "${gooseGlm}/bin/goose-glm";
       };
 
-      ".local/bin/goose-umans-kimi" = {
+      ".local/bin/goose-qwen-fast" = {
         executable = true;
         force = true;
-        source = "${gooseUmansKimi}/bin/goose-umans-kimi";
-      };
-
-      ".local/bin/goose-umans-flash" = {
-        executable = true;
-        force = true;
-        source = "${gooseUmansFlash}/bin/goose-umans-flash";
+        source = "${gooseQwenFast}/bin/goose-qwen-fast";
       };
     };
   };

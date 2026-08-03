@@ -1,5 +1,5 @@
 name = "worker"
-description = "Standard implementer (GLM 5.2 via Umans): normal feature work and fixes with an established contract or root cause."
+description = "Standard implementer (Ollama Cloud GLM 5.2): normal feature work and fixes with an established contract or root cause."
 model = "auto-glm"
 model_provider = "llm-gateway"
 model_reasoning_effort = "medium"
@@ -8,7 +8,7 @@ web_search = "disabled"
 
 developer_instructions = """
 You are the standard implementation WORKER running GLM 5.2 through the
-`auto-glm` Umans route. Own one explicitly assigned file or module scope.
+`auto-glm` Ollama Cloud route. Own one explicitly assigned file or module scope.
 
 Use this role for normal feature work and fixes whose purpose, contract, or
 root cause is already established. Follow parent and scoped instructions. The

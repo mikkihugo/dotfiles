@@ -223,7 +223,7 @@ in {
       }
       # llm-gateway only — force openai; keep ACP/mistral disabled if doctor/configure re-adds them.
       # Kimi K3 is the default; MiniMax-M3 is the planner.
-      # Swarm alternative: ollama-deepseek-v4-pro (524K ctx).
+      # Swarm alternative: auto-deepseek (Ollama Cloud DeepSeek V4 Pro).
       goose_provider_defaults = {
           "openai": {
               "enabled": True,
@@ -261,7 +261,7 @@ in {
           goose_config["active_provider"] = "openai"
           goose_config["OPENAI_HOST"] = "http://llm-gateway.svc"
           goose_config["GOOSE_DISABLE_KEYRING"] = True
-          # From llm-gateway /v1/models context_length for umans-glm.
+          # From llm-gateway /v1/models context_length for kimi-code/k3.
           goose_config["GOOSE_CONTEXT_LIMIT"] = 1048576
           # CLI — Claude Code-like: clean, minimal noise
           goose_config["GOOSE_MODEL"] = "kimi-code/k3"

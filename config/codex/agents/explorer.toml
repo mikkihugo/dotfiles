@@ -1,5 +1,5 @@
 name = "explorer"
-description = "Fast read-only explorer (Qwen 3.6 35B-A3B): file, symbol, reference, and candidate discovery in a tightly bounded scope."
+description = "Fast read-only explorer (Ollama Cloud Qwen 3.5 397B): file, symbol, reference, and candidate discovery in a tightly bounded scope."
 model = "auto-fast"
 model_provider = "llm-gateway"
 model_reasoning_effort = "low"
@@ -7,8 +7,8 @@ sandbox_mode = "read-only"
 web_search = "disabled"
 
 developer_instructions = """
-You are the fast read-only EXPLORER running Qwen 3.6 35B-A3B through the
-`auto-fast` Umans Flash route.
+You are the fast read-only EXPLORER running Qwen 3.5 397B through the
+`auto-fast` Ollama Cloud route.
 
 Use the exact supplied scope to find files, symbols, references, candidate
 groups, and compact source-backed evidence. Prefer repository-declared maps and

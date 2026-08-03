@@ -7,7 +7,7 @@ active_provider: openai
 OPENAI_HOST: http://llm-gateway.svc
 
 # Model — Kimi K3 (1,048,576 ctx, tools+reasoning+vision)
-# Swarm alternatives: MiniMax-M3 (1M ctx), ollama-deepseek-v4-pro (524K ctx)
+# Swarm alternatives: MiniMax-M3 and auto-deepseek
 GOOSE_MODEL: kimi-code/k3
 GOOSE_FAST_MODEL: auto-flash
 
@@ -53,22 +53,17 @@ providers:
   # CLI: goose, goose-kimi
   # Swarm: delegate(model: "kimi-code/k3", ...)
 
-  # ollama-deepseek-v4-pro (524,288 ctx, tools+reasoning)
+  # auto-deepseek (Ollama Cloud DeepSeek V4 Pro)
   # CLI: goose-deepseek
-  # Swarm: delegate(model: "ollama-deepseek-v4-pro", ...)
+  # Swarm: delegate(model: "auto-deepseek", ...)
 
-  # === Chat-only (no tools — use for research/review) ===
-  # umans-ai-coding-plan/umans-glm-5.2 (405,504 ctx)
-  # CLI: goose-umans-glm
-  # Swarm: delegate(model: "umans-ai-coding-plan/umans-glm-5.2", ...)
+  # auto-glm (Ollama Cloud GLM-5.2)
+  # CLI: goose-glm
+  # Swarm: delegate(model: "auto-glm", ...)
 
-  # umans-ai-coding-plan/umans-kimi-k2.7 (262,144 ctx)
-  # CLI: goose-umans-kimi
-  # Swarm: delegate(model: "umans-ai-coding-plan/umans-kimi-k2.7", ...)
-
-  # umans-ai-coding-plan/umans-flash (262,144 ctx)
-  # CLI: goose-umans-flash
-  # Swarm: delegate(model: "umans-ai-coding-plan/umans-flash", ...)
+  # auto-qwen-fast (Ollama Cloud Qwen 3.5 397B)
+  # CLI: goose-qwen-fast
+  # Swarm: delegate(model: "auto-qwen-fast", ...)
 
   # === Other providers (disabled) ===
   claude-acp:

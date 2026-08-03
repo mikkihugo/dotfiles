@@ -47,7 +47,7 @@ description = "Balanced general-purpose subagent (GPT-5.6 Terra): bounded mixed 
 config_file = "agents/default.toml"
 
 [agents.worker]
-description = "Standard implementer (GLM 5.2 via Umans): normal feature work and fixes with an established contract or root cause."
+description = "Standard implementer (Ollama Cloud GLM 5.2): normal feature work and fixes with an established contract or root cause."
 config_file = "agents/worker.toml"
 
 [agents.coder_fast]
@@ -79,7 +79,7 @@ description = "Broad web researcher (Kimi K2.7): primary-source research, creati
 config_file = "agents/web-researcher.toml"
 
 [agents.explorer]
-description = "Fast read-only explorer (Qwen 3.6 35B-A3B): file, symbol, reference, and candidate discovery in a tightly bounded scope."
+description = "Fast read-only explorer (Ollama Cloud Qwen 3.5 397B): file, symbol, reference, and candidate discovery in a tightly bounded scope."
 config_file = "agents/explorer.toml"
 
 [agents.taxonomy_worker]

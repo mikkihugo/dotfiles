@@ -110,6 +110,17 @@
       }
     },
     {
+      "path": ["vcs", "amend"],
+      "description": "Correct the message of an unpushed task-head commit without changing its contents",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["amend"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
       "path": ["vcs", "push"],
       "description": "Verify and publish local main to both remotes",
       "class": "vcs",

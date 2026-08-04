@@ -33,6 +33,9 @@ sync-main:
 describe MESSAGE:
     @{{runner}} describe "$1"
 
+amend MESSAGE:
+    @{{runner}} amend "$1"
+
 push BRANCH="main":
     @{{runner}} push "$1"
 

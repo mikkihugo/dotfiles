@@ -66,6 +66,13 @@ Version control:
       1. Run `repo vcs describe`.
       2. Read back repository state through `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs amend
+    What: Correct the message of an unpushed task-head commit without changing its contents
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs amend`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs rebase
     What: Rebase the owned task branch onto one revision
     When: Before choosing a repository lifecycle transition.
@@ -161,6 +168,7 @@ if [[ ${#} -eq 0 || "${1:-}" == "--help" || "${1:-}" == "help" ]]; then
   exit 0
 fi
 if [[ "${1:-}" == 'sync' ]] && [[ "${2:-}" == 'mise-upgrade' ]]; then shift 2; exec "$ROOT/scripts/repo-maintenance.sh" 'mise-upgrade' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'amend' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'amend' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'describe' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'describe' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'diff' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'diff' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'fetch' ]]; then shift 2; exec "$ROOT/scripts/repo-vcs.sh" 'fetch' "$@"

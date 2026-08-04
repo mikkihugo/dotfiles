@@ -36,9 +36,8 @@ die() {
 }
 run_remote() { GIT_SSH_COMMAND="$remote_ssh" "$@"; }
 run_forgejo_https() {
-	local askpass
+	local askpass result=0
 	askpass="$(mktemp)"
-	trap 'rm -f -- "$askpass"' RETURN
 	cat >"$askpass" <<'ASKPASS'
 #!/usr/bin/env bash
 case "$1" in
@@ -48,7 +47,15 @@ case "$1" in
 esac
 ASKPASS
 	chmod 700 "$askpass"
-	GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 "$@"
+	GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 "$@" || result=$?
+	rm -f -- "$askpass"
+	return "$result"
+}
+fetch_forgejo_main() {
+	run_forgejo_https git -C "$1" fetch "$forgejo_https_url" '+refs/heads/main:refs/remotes/origin/main'
+}
+fetch_forgejo_pruned() {
+	run_forgejo_https git -C "$1" fetch --prune "$forgejo_https_url" '+refs/heads/*:refs/remotes/origin/*'
 }
 valid_name() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid worktree name: $1"; }
 
@@ -65,7 +72,7 @@ show)
 worktree-list) git -C "$root" worktree list --porcelain ;;
 fetch)
 	[[ $# -eq 0 ]] || die 'fetch takes no arguments'
-	run_remote git -C "$root" fetch origin --prune
+	fetch_forgejo_pruned "$root"
 	;;
 rebase)
 	[[ $# -eq 1 ]] || die 'rebase requires one revision'
@@ -81,7 +88,7 @@ sync-main)
 	branch="$(git -C "$primary" symbolic-ref --quiet --short HEAD)" || die 'primary checkout is detached'
 	[[ "$branch" == main ]] || die 'primary checkout is not on main'
 	[[ -z "$(git -C "$primary" status --porcelain)" ]] || die 'primary checkout is not clean'
-	run_remote git -C "$primary" fetch origin main
+	fetch_forgejo_main "$primary"
 	if git -C "$primary" cherry origin/main main | grep -q '^+'; then
 		die 'primary main has local commits that are not patch-equivalent upstream'
 	fi
@@ -90,16 +97,32 @@ sync-main)
 	printf 'synced=main revision=%s patch_equivalent=true\n' "$(git -C "$primary" rev-parse main)"
 	;;
 describe)
+	if [[ "${1:-}" == '--help' ]]; then
+		[[ $# -eq 1 ]] || die 'describe --help takes no arguments'
+		printf 'usage: repo vcs describe <message>\n'
+		exit 0
+	fi
 	[[ $# -eq 1 ]] || die 'describe requires one message'
 	git -C "$root" add --all
 	git -C "$root" diff --cached --quiet && die 'no changes to describe'
 	git -C "$root" commit -m "$1"
 	;;
+amend)
+	[[ $# -eq 1 ]] || die 'amend requires one message'
+	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be amended'
+	[[ "$branch" == codex/* ]] || die 'amend requires a codex/* task branch'
+	fetch_forgejo_pruned "$root"
+	published_refs="$(git -C "$root" for-each-ref --contains HEAD --format='%(refname)' refs/remotes/origin)"
+	[[ -z "$published_refs" ]] || die "amend requires an unpushed task commit; present in $published_refs"
+	# --only preserves both staged and unstaged work while correcting only the
+	# unpushed HEAD message; it is intentionally not a content rewrite surface.
+	git -C "$root" commit --amend --only -m "$1"
+	;;
 push)
 	branch="${1:-main}"
 	[[ "$branch" == main ]] || die 'publication owns only main'
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
-	run_remote git -C "$root" fetch origin main
+	fetch_forgejo_main "$root"
 	git -C "$root" merge-base --is-ancestor origin/main main || die 'main does not contain origin/main'
 	(cd "$root" && just check)
 	# Forgejo synchronously mirrors this repository to GitHub. Publish GitHub
@@ -130,7 +153,7 @@ land)
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
 	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be landed'
 	[[ "$branch" == codex/* ]] || die 'land requires a codex/* task branch'
-	run_remote git -C "$root" fetch origin main
+	fetch_forgejo_main "$root"
 	git -C "$root" merge-base --is-ancestor origin/main HEAD || die 'task branch does not contain origin/main'
 	"$root/scripts/repo-check.sh"
 	# Keep the server-side Forgejo mirror a no-op during its post-receive hook.
@@ -141,7 +164,7 @@ land)
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
 	[[ "$local_revision" == "$forgejo_revision" ]] || die 'Forgejo remote readback mismatch'
 	[[ "$local_revision" == "$github_revision" ]] || die 'GitHub remote readback mismatch'
-	run_remote git -C "$root" fetch origin main
+	fetch_forgejo_main "$root"
 	printf 'landed=main revision=%s forgejo_readback=true github_readback=true source=%s\n' "$local_revision" "$branch"
 	;;
 worktree-create)
@@ -162,7 +185,7 @@ worktree-drop)
 	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'worktree is not registered'
 	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'worktree is dirty'
 	if ! git -C "$root" merge-base --is-ancestor "codex/$name" main; then
-		run_remote git -C "$root" fetch origin main
+		fetch_forgejo_main "$root"
 		git -C "$root" merge-base --is-ancestor "codex/$name" origin/main || die 'worktree branch is not integrated into main'
 	fi
 	git -C "$root" worktree remove "$path"
@@ -197,7 +220,7 @@ contract-test)
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
 	grep -Fq "branch -D \"codex/\$name\"" "$root/scripts/repo-vcs.sh"
 	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
-	for recipe in status diff log show worktree-list fetch rebase sync-main describe push push-github worktree-create worktree-drop worktree-abandon test; do
+	for recipe in status diff log show worktree-list fetch rebase sync-main describe amend push push-github worktree-create worktree-drop worktree-abandon test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"
 	done
 	printf 'dotfiles VCS contract: ok\n'
@@ -206,5 +229,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main|describe|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main|describe|amend|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|contract-test|config}' ;;
 esac

@@ -52,13 +52,27 @@ in {
     '';
 
     removeRetiredCodexAgentRoles = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      # Remove only retired Home Manager symlinks. Plain user-owned TOMLs stay
-      # untouched and cannot become resident because config.toml does not
-      # register them.
-      for role in coder worker coder-fast coder-smart test-writer debugger reviewer verifier web-researcher explorer; do
-        target="$HOME/.codex/agents/$role.toml"
-        if [ -L "$target" ]; then
+      # ~/.codex/agents is auto-loaded by Codex, independently of [agents] in
+      # config.toml. Retire the former gateway roles so opaque Responses items
+      # cannot be routed to an external resident agent. Preserve a plain
+      # user-owned gateway TOML outside that auto-loaded directory for recovery.
+      agents_dir="$HOME/.codex/agents"
+      retired_dir="$HOME/.codex/retired-agent-roles"
+      for target in "$agents_dir"/*.toml; do
+        if [ ! -e "$target" ] && [ ! -L "$target" ]; then
+          continue
+        elif [ -L "$target" ] && [ ! -e "$target" ]; then
           rm -f "$target"
+          continue
+        fi
+        if [ -f "$target" ] && ${pkgs.gnugrep}/bin/grep -Eq "^[[:space:]]*model_provider[[:space:]]*=[[:space:]]*['\"]llm-gateway['\"][[:space:]]*(#.*)?$" "$target"; then
+          if [ -L "$target" ]; then
+            rm -f "$target"
+          else
+            mkdir -p "$retired_dir"
+            backup="$(mktemp "$retired_dir/gateway-agent.XXXXXX")"
+            mv "$target" "$backup"
+          fi
         fi
       done
     '';

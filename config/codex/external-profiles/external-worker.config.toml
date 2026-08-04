@@ -1,7 +1,9 @@
 # Fresh, bounded implementation task only. Do not resume an OpenAI
-# conversation. Reasoning effort stays unset until the deployed catalog exposes
+# conversation. Ollama Cloud GLM 5.2 is the direct gateway model ID; do not
+# route this profile through a generic alias that could drift to a different
+# provider. Reasoning effort stays unset until the deployed catalog exposes
 # supported named effort values for this route.
-model = "auto-glm"
+model = "ollama-cloud/glm-5.2"
 model_provider = "llm-gateway"
 sandbox_mode = "workspace-write"
 web_search = "disabled"

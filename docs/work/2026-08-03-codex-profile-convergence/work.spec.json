@@ -85,23 +85,23 @@
       },
       {
         "id": "R3",
-        "statement": "External profile reasoning settings shall be based on a fresh deployed gateway catalog rather than stale source assumptions.",
+        "statement": "External profile model identifiers and reasoning settings shall follow the current deployed gateway catalog and the user-selected canonical provider routes rather than stale generic aliases.",
         "acceptance_criteria": [
           "an authenticated post-deployment catalog probe is captured",
-          "each profile uses only a reasoning effort supported by its resolved model",
-          "models without reasoning capability omit model_reasoning_effort"
+          "each profile uses its explicit canonical gateway model ID and no Umans route",
+          "each profile uses only a catalog-supported reasoning effort, while a non-reasoning profile explicitly uses neutral none to suppress an inherited root effort"
         ],
         "requirement_form": {
           "ears": {
             "pattern": "state-driven",
             "system": "External profile provisioning",
             "precondition": "the current gateway catalog is available",
-            "response": "persist only catalog-supported reasoning settings"
+            "response": "persist canonical model IDs and only catalog-supported or neutral reasoning settings"
           }
         },
         "breaker": {
           "breaker_id": "B3",
-          "condition": "a profile persists a reasoning effort for a catalog model that lacks reasoning capability",
+          "condition": "a profile retains a generic or deprecated route, or a non-reasoning model inherits the root reasoning effort",
           "witness_kind": "live-catalog-probe",
           "expected": "rejected"
         },
@@ -164,23 +164,23 @@
     },
     {
       "id": "R3",
-      "statement": "External profile reasoning settings shall be based on a fresh deployed gateway catalog rather than stale source assumptions.",
-      "acceptance_criteria": [
-        "an authenticated post-deployment catalog probe is captured",
-        "each profile uses only a reasoning effort supported by its resolved model",
-        "models without reasoning capability omit model_reasoning_effort"
+        "statement": "External profile model identifiers and reasoning settings shall follow the current deployed gateway catalog and the user-selected canonical provider routes rather than stale generic aliases.",
+        "acceptance_criteria": [
+          "an authenticated post-deployment catalog probe is captured",
+          "each profile uses its explicit canonical gateway model ID and no Umans route",
+          "each profile uses only a catalog-supported reasoning effort, while a non-reasoning profile explicitly uses neutral none to suppress an inherited root effort"
       ],
       "requirement_form": {
         "ears": {
           "pattern": "state-driven",
           "system": "External profile provisioning",
           "precondition": "the current gateway catalog is available",
-          "response": "persist only catalog-supported reasoning settings"
+            "response": "persist canonical model IDs and only catalog-supported or neutral reasoning settings"
         }
       },
       "breaker": {
         "breaker_id": "B3",
-        "condition": "a profile persists a reasoning effort for a catalog model that lacks reasoning capability",
+        "condition": "a profile retains a generic or deprecated route, or a non-reasoning model inherits the root reasoning effort",
         "witness_kind": "live-catalog-probe",
         "expected": "rejected"
       },
@@ -224,7 +224,7 @@
       "id": "T3",
       "requirement_id": "R3",
       "kind": "live-catalog-probe",
-      "description": "A fresh post-deployment catalog probe validates profile reasoning settings.",
+      "description": "A fresh post-deployment catalog probe and bounded profile calls validate canonical model IDs and reasoning settings.",
       "must_fail_first": false
     }
   ],

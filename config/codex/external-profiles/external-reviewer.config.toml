@@ -1,6 +1,7 @@
 # Fresh, bounded review task only. Do not resume an OpenAI conversation.
-# The deployed catalog explicitly supports none, high, and max for this route.
-model = "auto-deepseek"
+# The deployed catalog explicitly supports none, high, and max for this
+# inference-fabric route.
+model = "ollama-cloud/deepseek-v4-pro"
 model_provider = "llm-gateway"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"

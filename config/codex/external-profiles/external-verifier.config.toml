@@ -1,7 +1,8 @@
 # Fresh, bounded adversarial-verification task only. Do not resume an OpenAI
-# conversation. This route is proven compatible with the Codex Responses
-# reasoning contract; leave effort unset so Codex uses its supported default.
-model = "auto-minimax"
+# conversation. Nemotron has no reasoning capability, so override the root
+# low-effort default with the neutral effort rather than asking it to reason.
+model = "ollama-cloud/nemotron-3-ultra"
 model_provider = "llm-gateway"
+model_reasoning_effort = "none"
 sandbox_mode = "read-only"
 web_search = "disabled"

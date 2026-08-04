@@ -1,7 +1,8 @@
 # Fresh, bounded reconnaissance only. Do not resume an OpenAI conversation.
+# Canonical gateway alias for Ollama Cloud Qwen 3.5 397B.
 # Reasoning effort stays unset until the deployed catalog exposes supported
 # named effort values for this route.
-model = "auto-fast"
+model = "auto-qwen-fast"
 model_provider = "llm-gateway"
 sandbox_mode = "read-only"
 web_search = "disabled"

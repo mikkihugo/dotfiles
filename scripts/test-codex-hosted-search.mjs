@@ -59,6 +59,13 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
     "external-verifier.config.toml",
     "external-worker.config.toml",
   ];
+  const expectedModels = {
+    "external-explorer.config.toml": "auto-qwen-fast",
+    "external-reasoner.config.toml": "kimi-code/k3",
+    "external-reviewer.config.toml": "ollama-cloud/deepseek-v4-pro",
+    "external-verifier.config.toml": "ollama-cloud/nemotron-3-ultra",
+    "external-worker.config.toml": "ollama-cloud/glm-5.2",
+  };
   const registeredFiles = [...seed.matchAll(
     /^\[agents\.[^\]]+\][\s\S]*?^config_file\s*=\s*"([^"]+)"$/gm,
   )]
@@ -67,6 +74,11 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
 
   assert.match(seed, /^model\s*=\s*"gpt-5\.6-sol"$/m);
   assert.match(seed, /^model_provider\s*=\s*"openai"$/m);
+  assert.match(
+    seed,
+    /\[model_providers\.llm-gateway\][\s\S]*?^wire_api\s*=\s*"responses"$/m,
+    "the Codex gateway provider must retain its native Responses endpoint",
+  );
   assert.match(shared, /^model\s*=\s*"gpt-5\.6-sol"$/m);
   assert.match(shared, /^model_provider\s*=\s*"openai"$/m);
   assert.deepEqual(registeredFiles, expectedResidentConfigs);
@@ -94,8 +106,14 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
   for (const profileName of expectedProfiles) {
     const profilePath = `config/codex/external-profiles/${profileName}`;
     const profile = await readConfig(profilePath);
+    assert.match(
+      profile,
+      new RegExp(`^model\\s*=\\s*"${escapeRegExp(expectedModels[profileName])}"$`, "m"),
+      `${profileName} must use its explicit canonical gateway model ID`,
+    );
     assert.match(profile, /^model_provider\s*=\s*"llm-gateway"$/m, `${profileName} must target llm-gateway`);
     assert.match(profile, disabled, `${profileName} must disable hosted web search`);
+    assert.doesNotMatch(profile, /\bumans\b/i, `${profileName} must not use a deprecated Umans route`);
     assert.match(
       managedFiles,
       new RegExp(`"\\.codex/${escapeRegExp(profileName)}"\\s*=\\s*\\{[\\s\\S]*?source\\s*=\\s*\\.\\.\\/\\.\\.\\/config\\/codex\\/external-profiles\\/${escapeRegExp(profileName)};`),
@@ -106,10 +124,9 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
     } else if (profileName === "external-verifier.config.toml") {
       assert.match(
         profile,
-        /^model\s*=\s*"auto-minimax"$/m,
-        "the verifier must use the gateway route proven compatible with Codex Responses reasoning",
+        /^model_reasoning_effort\s*=\s*"none"$/m,
+        "the non-reasoning verifier must suppress the inherited root reasoning effort",
       );
-      assert.doesNotMatch(profile, /^model_reasoning_effort\s*=/m);
     } else {
       assert.doesNotMatch(
         profile,
@@ -119,5 +136,39 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
     }
   }
 
-  assert.match(activation, /for role in coder worker coder-fast coder-smart test-writer debugger reviewer verifier web-researcher explorer/);
+  assert.match(
+    activation,
+    /agents_dir="\$HOME\/\.codex\/agents"/,
+    "activation must inspect the whole auto-loaded agent directory rather than only historical role names",
+  );
+  assert.match(
+    activation,
+    /for target in "\$agents_dir"\/\*\.toml/,
+    "activation must inspect every standalone custom agent TOML",
+  );
+  assert.match(
+    activation,
+    /if \[ -L "\$target" \]; then[\s\S]*?rm -f "\$target"/,
+    "activation must retire stale managed resident-role symlinks",
+  );
+  assert.match(
+    activation,
+    /gnugrep[\s\S]*?model_provider[\s\S]*?llm-gateway/,
+    "activation must detect a stale plain gateway agent file",
+  );
+  assert.ok(
+    activation.includes("['\\\"]llm-gateway['\\\"]"),
+    "activation must recognize both legal TOML string delimiters for llm-gateway",
+  );
+  assert.match(
+    activation,
+    /retired-agent-roles/,
+    "activation must quarantine stale plain gateway role files because ~/.codex/agents is auto-loaded",
+  );
+  assert.match(
+    activation,
+    /backup="\$\(mktemp "\$retired_dir\/gateway-agent\.XXXXXX"\)"[\s\S]*?mv "\$target" "\$backup"/,
+    "activation must use the mktemp reservation itself as the quarantine target",
+  );
+  assert.doesNotMatch(activation, /"\$backup\.toml"/);
 });

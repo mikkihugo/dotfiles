@@ -54,7 +54,7 @@ if ! AMEND_LOG="$amend_log" SE_GIT_BIN="$tmp/amend/git" "$root/bin/repo" vcs ame
 	exit 1
 fi
 grep -Fqx -- "-C $root commit --amend --only -m fix(vcs): safe help" "$amend_log"
-grep -Fqx -- "-C $root fetch --prune https://git.infra.centralcloud.com/mhugo/dotfiles.git +refs/heads/*:refs/remotes/origin/*" "$amend_log"
+grep -Fqx -- "-C $root fetch --prune https://git.centralcloud.net/mhugo/dotfiles.git +refs/heads/*:refs/remotes/origin/*" "$amend_log"
 grep -Fqx -- "-C $root for-each-ref --contains HEAD --format=%(refname) refs/remotes/origin" "$amend_log"
 
 amend_blocked_log="$tmp/amend-blocked.log"

@@ -7,7 +7,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 remote_ssh="${DOTFILES_GIT_SSH_COMMAND:-ssh -o ControlMaster=no -o ControlPath=none -o ControlPersist=no}"
-forgejo_https_url="https://git.infra.centralcloud.com/mhugo/dotfiles.git"
+forgejo_https_url="https://git.centralcloud.net/mhugo/dotfiles.git"
 github_url="git@github.com:mikkihugo/dotfiles.git"
 push_timeout="${DOTFILES_GIT_PUSH_TIMEOUT:-300}"
 git_bin="${SE_GIT_BIN:-}"

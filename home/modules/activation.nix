@@ -13,6 +13,22 @@
   USER_TOOL_PATH = "${config.home.homeDirectory}/.local/bin:${config.home.homeDirectory}/.npm-global/bin:${config.home.homeDirectory}/.bun/bin:${config.home.homeDirectory}/.cargo/bin";
 in {
   home.activation = {
+    # Retire the old host-local sweeper. It blindly recovered old Engine lanes
+    # before attempting closure; dirty lanes then held a fresh lease until TTL.
+    # JCode terminal cleanup owns normal lease release, so activation must only
+    # remove this legacy timer and never mutate a workspace itself.
+    retireUnsafeJcodeLaneSettle = lib.hm.dag.entryBefore ["reloadSystemd"] ''
+      ${pkgs.systemd}/bin/systemctl --user disable --now jcode-lane-settle.timer || true
+      # A timer stop does not stop a currently running oneshot service. Stop it
+      # explicitly before removing its unit file so it cannot recover a lease
+      # concurrently with this activation.
+      ${pkgs.systemd}/bin/systemctl --user stop jcode-lane-settle.service || true
+      ${pkgs.coreutils}/bin/rm -f \
+        "$HOME/.config/systemd/user/jcode-lane-settle.timer" \
+        "$HOME/.config/systemd/user/jcode-lane-settle.service" \
+        "$HOME/.local/bin/jcode-lane-settle.sh"
+    '';
+
     # A previous transient user-unit failure makes home-manager report the whole
     # user manager as degraded before it reloads services. Clear stale failed
     # states first; real failures during this activation will still be reported.

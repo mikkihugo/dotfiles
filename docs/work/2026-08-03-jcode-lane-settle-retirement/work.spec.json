@@ -1,0 +1,284 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-08-03-jcode-lane-settle-retirement-work",
+  "purpose_contract_id": "2026-08-03-jcode-lane-settle-retirement-purpose",
+  "handover": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-jcode-lane-settle-retirement"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-08-03T00:00:00Z",
+    "purpose_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "856952716f425e51083ccb78c576b33fadea9af21eea8dc606dadd856c99d48e"
+    },
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "dda8a1158e4a9c435f30acf7eec04c14fb713b0e26781ae3f9980a0c7b6d6118"
+    },
+    "policy": {
+      "id": "operator-directed-purpose-admission/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "aa662f62e9221952449e07fb77788c178bed958f92f4526805b9ae062d52b6ab"
+      }
+    },
+    "validators": [
+      "workspec/v4",
+      "operator-directed-purpose-admission/v1"
+    ],
+    "evidence_refs": [
+      "purpose.contract.json#admission",
+      "live:systemctl-user-jcode-lane-settle-timer",
+      "live:/home/mhugo/.local/bin/jcode-lane-settle.sh"
+    ]
+  },
+  "feature_tree_target": {
+    "kind": "component",
+    "name": "jcode-lane-settle-retirement",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-08-03-jcode-lane-settle-retirement-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "caf7d0f94d855f1229d95b819fad429d2c007a38ca4402f872afccd4126ce8ba"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "The Home Manager activation shall disable the legacy jcode-lane-settle timer, stop an already-running legacy service, and remove its exact timer, service, and script paths before Home Manager reloads user systemd.",
+        "acceptance_criteria": [
+          "activation contains systemctl --user disable --now jcode-lane-settle.timer",
+          "activation contains systemctl --user stop jcode-lane-settle.service after timer disable and before file removal",
+          "activation removes only $HOME/.config/systemd/user/jcode-lane-settle.timer, $HOME/.config/systemd/user/jcode-lane-settle.service, and $HOME/.local/bin/jcode-lane-settle.sh",
+          "the hook is ordered before reloadSystemd"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Home Manager activation",
+            "trigger": "a switch activates the managed dotfiles generation",
+            "response": "disable the timer, stop any running legacy service, and retire the exact legacy lane-settle user artifacts before systemd reload"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "the named timer remains enabled, the timer or service remains active, or any named legacy artifact remains after activation",
+          "witness_kind": "runtime-probe",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "The retirement hook shall not invoke an Engine workspace lifecycle operation.",
+        "acceptance_criteria": [
+          "the hook contains no workspace-recover, workspace-close, workspace-release, or workspace-abandon command",
+          "activation scope is limited to the three named legacy files and user-systemd state"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "unwanted-behavior",
+            "system": "Home Manager lane-settle retirement hook",
+            "trigger": "the hook executes during activation",
+            "precondition": "the hook executes during activation",
+            "response": "must not mutate an Engine workspace or its lease"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "the activation hook contains a workspace lifecycle command or targets an unlisted user path",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "high",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "The Home Manager activation shall disable the legacy jcode-lane-settle timer, stop an already-running legacy service, and remove its exact timer, service, and script paths before Home Manager reloads user systemd.",
+      "acceptance_criteria": [
+        "activation contains systemctl --user disable --now jcode-lane-settle.timer",
+        "activation contains systemctl --user stop jcode-lane-settle.service after timer disable and before file removal",
+        "activation removes only $HOME/.config/systemd/user/jcode-lane-settle.timer, $HOME/.config/systemd/user/jcode-lane-settle.service, and $HOME/.local/bin/jcode-lane-settle.sh",
+        "the hook is ordered before reloadSystemd"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Home Manager activation",
+          "trigger": "a switch activates the managed dotfiles generation",
+          "response": "disable the timer, stop any running legacy service, and retire the exact legacy lane-settle user artifacts before systemd reload"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "the named timer remains enabled, the timer or service remains active, or any named legacy artifact remains after activation",
+        "witness_kind": "runtime-probe",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "The retirement hook shall not invoke an Engine workspace lifecycle operation.",
+      "acceptance_criteria": [
+        "the hook contains no workspace-recover, workspace-close, workspace-release, or workspace-abandon command",
+        "activation scope is limited to the three named legacy files and user-systemd state"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "unwanted-behavior",
+          "system": "Home Manager lane-settle retirement hook",
+          "trigger": "the hook executes during activation",
+          "precondition": "the hook executes during activation",
+          "response": "must not mutate an Engine workspace or its lease"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "the activation hook contains a workspace lifecycle command or targets an unlisted user path",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "high",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "docs/work/2026-08-03-jcode-lane-settle-retirement/**",
+      ".secrets.baseline",
+      "lefthook.yml",
+      "home/modules/activation.nix",
+      "scripts/detect-secrets-work-packet-filter.py",
+      "scripts/test-detect-secrets-work-packet-filter.mjs",
+      "scripts/test-jcode-lane-settle-retirement.mjs",
+      "scripts/repo-check.sh",
+      "scripts/test-nix-tooling.mjs"
+    ],
+    "blocked": [
+      "singularity-engine workspace registry and task workspaces",
+      "unrelated Home Manager services and scripts"
+    ],
+    "expected_files": [
+      "home/modules/activation.nix",
+      ".secrets.baseline",
+      "lefthook.yml",
+      "scripts/detect-secrets-work-packet-filter.py",
+      "scripts/test-detect-secrets-work-packet-filter.mjs",
+      "scripts/test-jcode-lane-settle-retirement.mjs",
+      "scripts/repo-check.sh",
+      "scripts/test-nix-tooling.mjs"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Focused Node test fails until the exact retirement hook disables the timer, stops the service, and validates its ordering and exact paths.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "The same focused test rejects workspace lifecycle commands in the retirement hook.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R1",
+      "kind": "smoke",
+      "description": "A Home Manager switch proves timer disabled, both timer and service inactive, and exact legacy artifacts absent.",
+      "must_fail_first": false
+    },
+    {
+      "id": "T4",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "A real detect-secrets scan filters only exact canonical sha256 digest objects in purpose.contract.json, work.spec.json, and evidence.bundle.json; uppercase, non-digest, and wrong-filename entropy remain findings.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "node --test scripts/test-jcode-lane-settle-retirement.mjs",
+      "node --test scripts/test-detect-secrets-work-packet-filter.mjs",
+      "repo check",
+      "home-manager switch --flake .#cc-se-sto-devbox-01",
+      "! systemctl --user is-enabled --quiet jcode-lane-settle.timer; ! systemctl --user is-active --quiet jcode-lane-settle.timer; ! systemctl --user is-active --quiet jcode-lane-settle.service; test ! -e $HOME/.config/systemd/user/jcode-lane-settle.timer; test ! -e $HOME/.config/systemd/user/jcode-lane-settle.service; test ! -e $HOME/.local/bin/jcode-lane-settle.sh"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier",
+      "runtime"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.5,
+    "debugging": 0.5
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex-jcode-lane-settle-retirement"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-08-03-jcode-lane-settle-retirement",
+    "target_planes": [
+      "client",
+      "host"
+    ],
+    "dependencies": [
+      "Home Manager user activation",
+      "JCode terminal lane cleanup source fix"
+    ],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [
+      "Home Manager activation",
+      "user systemd"
+    ],
+    "requested_isolation": "process",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

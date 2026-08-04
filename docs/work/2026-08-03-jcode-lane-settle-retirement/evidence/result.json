@@ -1,0 +1,24 @@
+{
+  "result_id": "2026-08-03-jcode-lane-settle-retirement-result",
+  "status": "passed",
+  "observed_at": "2026-08-04T02:44:05Z",
+  "commands": [
+    {
+      "command": "env -u DIRENV_DISABLE direnv exec /home/mhugo/.dotfiles-worktrees/jcode-lane-settle-retirement-20260803 bash -lc 'cd \"$1\" && node --test scripts/test-jcode-lane-settle-retirement.mjs' bash /home/mhugo/.dotfiles-worktrees/jcode-lane-settle-retirement-20260803",
+      "exit_code": 0,
+      "summary": "1 test passed; 0 failed, cancelled, skipped, or todo."
+    },
+    {
+      "command": "env -u DIRENV_DISABLE direnv exec /home/mhugo/.dotfiles-worktrees/jcode-lane-settle-retirement-20260803 bash -lc 'cd \"$1\" && repo help >/dev/null && repo check' bash /home/mhugo/.dotfiles-worktrees/jcode-lane-settle-retirement-20260803",
+      "exit_code": 0,
+      "summary": "The repository verification gate completed successfully and reported 'dotfiles VCS contract: ok'."
+    }
+  ],
+  "falsifier": {
+    "status": "passed",
+    "summary": "The focused contract test accepted the narrow hook that disables the timer, stops the service, removes exactly the three named artifacts, and rejects workspace lifecycle commands."
+  },
+  "limitations": [
+    "No Home Manager switch or post-switch live-state assertion was run by this evidence lane; deployment evidence remains required after landing."
+  ]
+}

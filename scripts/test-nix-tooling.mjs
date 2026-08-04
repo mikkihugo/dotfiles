@@ -178,6 +178,8 @@ test("just check delegates to the single repository check implementation", async
     "scripts/test-repo-vcs.sh",
     "scripts/test-codex-preferences.py",
     "scripts/test-codex-hosted-search.mjs",
+    "scripts/test-detect-secrets-work-packet-filter.mjs",
+    "scripts/test-jcode-lane-settle-retirement.mjs",
     "scripts/test-swarm-messages.mjs",
     "scripts/test-swarm-hook-config.mjs",
     "scripts/test-nix-tooling.mjs",

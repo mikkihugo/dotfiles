@@ -1,0 +1,19 @@
+{
+  "review_id": "2026-08-03-jcode-lane-settle-retirement-independent-audit",
+  "status": "pre-change-blocked",
+  "observed_at": "2026-08-04T02:17:30.830Z",
+  "reviewer": {
+    "kind": "independent-agent",
+    "id": "dotfiles_lane_settle_finish_audit"
+  },
+  "provenance": {
+    "kind": "recorded-agent-message",
+    "uri": "codex-session://019fca88-e210-73e1-a862-fe24f995c96d/2026-08-04T02:17:30.830Z"
+  },
+  "findings": [
+    "The earlier implementation lacked an explicit stop for an already-running legacy service.",
+    "The earlier full repository gate omitted the focused retirement test.",
+    "The earlier packet lacked evidence.bundle.json and no post-activation removal proof existed."
+  ],
+  "disposition": "This audit is retained as provenance, not as final approval. The service-stop and repository-gate findings are addressed by the current diff and freshly rechecked in evidence/result.json; post-activation live proof remains outstanding."
+}

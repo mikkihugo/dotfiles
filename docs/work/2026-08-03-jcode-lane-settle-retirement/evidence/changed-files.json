@@ -1,0 +1,23 @@
+{
+  "source": "repository-vcs-facade",
+  "observation": {
+    "command": "repo vcs status; repo vcs diff",
+    "observed_at": "2026-08-04T02:44:05Z"
+  },
+  "files": [
+    "docs/work/2026-08-03-jcode-lane-settle-retirement/README.md",
+    "docs/work/2026-08-03-jcode-lane-settle-retirement/current-spec.snapshot.json",
+    "docs/work/2026-08-03-jcode-lane-settle-retirement/evidence.bundle.json",
+    "docs/work/2026-08-03-jcode-lane-settle-retirement/evidence/changed-files.json",
+    "docs/work/2026-08-03-jcode-lane-settle-retirement/evidence/red-result.json",
+    "docs/work/2026-08-03-jcode-lane-settle-retirement/evidence/result.json",
+    "docs/work/2026-08-03-jcode-lane-settle-retirement/evidence/review.json",
+    "docs/work/2026-08-03-jcode-lane-settle-retirement/purpose.contract.json",
+    "docs/work/2026-08-03-jcode-lane-settle-retirement/validation.report.json",
+    "docs/work/2026-08-03-jcode-lane-settle-retirement/work.spec.json",
+    "home/modules/activation.nix",
+    "scripts/repo-check.sh",
+    "scripts/test-jcode-lane-settle-retirement.mjs",
+    "scripts/test-nix-tooling.mjs"
+  ]
+}

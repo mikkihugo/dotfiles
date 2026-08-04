@@ -1,0 +1,9 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-08-03-jcode-lane-settle-retirement-current-spec",
+  "source": {
+    "uri": "repository://home/modules/activation.nix",
+    "revision": "origin/main task baseline"
+  },
+  "requirements": []
+}

@@ -28,4 +28,4 @@ pre-commit:
 
     detect-secrets:
       exclude: \.secrets\.baseline$
-      run: detect-secrets-hook --baseline .secrets.baseline {staged_files}
+      run: PYTHONDONTWRITEBYTECODE=1 detect-secrets-hook --baseline .secrets.baseline {staged_files}

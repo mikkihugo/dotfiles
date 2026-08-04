@@ -34,6 +34,8 @@ main() {
 		node --test \
 			scripts/test-cargo-pgrx-wrapper.mjs \
 			scripts/test-codex-hosted-search.mjs \
+			scripts/test-detect-secrets-work-packet-filter.mjs \
+			scripts/test-jcode-lane-settle-retirement.mjs \
 			scripts/test-stable-shell-path.mjs \
 			scripts/test-swarm-messages.mjs \
 			scripts/test-swarm-hook-config.mjs \

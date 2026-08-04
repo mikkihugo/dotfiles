@@ -1,0 +1,142 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-08-03-jcode-lane-settle-retirement-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-08-03-jcode-lane-settle-retirement"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "user-directed-goal-fix-and-land-jcode-lane-capacity",
+      "revision": "2026-08-03"
+    },
+    "objective": {
+      "id": "2026-08-03-jcode-lane-settle-retirement-objective",
+      "statement": "Prevent the retired JCode lane-settle timer from reviving stale Engine workspace leases.",
+      "measure": "Home Manager activation disables the legacy timer, stops an already-running legacy service, and removes its exact user-unit and script files without recovering, closing, or otherwise mutating Engine workspaces."
+    },
+    "need": {
+      "id": "2026-08-03-jcode-lane-settle-retirement-need",
+      "statement": "An unmanaged hourly timer blindly recovers expired foreign Engine workspace leases before attempting closure; dirty lanes reject closure but receive a fresh lease, which consumes limited workspace capacity.",
+      "stakeholders": [
+        "JCode workers and singularity-engine workspace admission on cc-se-sto-devbox-01"
+      ],
+      "baseline": "The live jcode-lane-settle.timer was enabled and its script invoked repo vcs workspace-recover for old workspace rows. The timer was safely disabled immediately, but its unit and script remain on disk and could be re-enabled or recreated by mutable host state.",
+      "consequence_of_no_action": "The timer can repeatedly refresh leases for dirty inactive lanes, keeping the Engine admission pool exhausted for up to the lease TTL and making workers wait for minutes or fail to start.",
+      "assumptions": [
+        "The terminal-lane cleanup fix will make the retired sweeper unnecessary for normal JCode task completion."
+      ],
+      "alternatives_considered": [
+        "Keep the timer and add age or ownership checks to its recovery loop",
+        "Increase the Engine workspace cap or weaken fresh-lease admission",
+        "Disable the timer only in live systemd state without a managed retirement"
+      ]
+    }
+  },
+  "admission": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-jcode-lane-settle-retirement"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-08-03T00:00:00Z",
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "856952716f425e51083ccb78c576b33fadea9af21eea8dc606dadd856c99d48e"
+    },
+    "policy": {
+      "id": "operator-directed-purpose-admission/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "aa662f62e9221952449e07fb77788c178bed958f92f4526805b9ae062d52b6ab"
+      }
+    },
+    "validators": [
+      "purpose-contract/v2",
+      "operator-directed-purpose-admission/v1"
+    ],
+    "evidence_refs": [
+      "user-request:fix-and-land",
+      "live:systemctl-user-jcode-lane-settle-timer",
+      "live:/home/mhugo/.local/bin/jcode-lane-settle.sh"
+    ]
+  },
+  "purpose": "Prevent the retired JCode lane-settle timer from reviving stale Engine workspace leases.",
+  "consumer": "JCode workers and singularity-engine workspace admission on cc-se-sto-devbox-01.",
+  "contract": "Home Manager activation disables the legacy timer, stops an already-running legacy service, and removes its exact user-unit and script files without recovering, closing, or otherwise mutating Engine workspaces; the secret gate ignores only canonical digest records in Purpose work packets.",
+  "failure_boundary": "The activation is limited to stopping the named legacy service plus the three named legacy user files. If systemd disabling or stopping fails, it must not start a workspace recovery path; the managed reload phase still observes the resulting user-unit state.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "A focused static contract test proves the activation hook disables the timer, stops the service, and removes only the named legacy timer, service, and script, with no workspace lifecycle command.",
+      "status": "expected"
+    },
+    {
+      "kind": "test",
+      "description": "A focused real detect-secrets scan proves canonical sha256 digest records in only the three Purpose work-packet filenames are filtered while non-digest high-entropy values remain findings.",
+      "status": "passed"
+    },
+    {
+      "kind": "runtime",
+      "description": "A Home Manager switch followed by strict user-systemd and filesystem assertions proves both timer and service are inactive and all three exact legacy files are absent.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "The retired sweeper can no longer refresh an Engine workspace lease after Home Manager activation.",
+    "executable_check": {
+      "kind": "command",
+      "description": "Run the focused test, activate the selected Home Manager flake, then require disabled timer state, inactive timer and service state, and absence of the three exact legacy files. Any recovery command in the hook, enabled/active unit, or remaining file falsifies the claim.",
+      "command": "node --test scripts/test-jcode-lane-settle-retirement.mjs && home-manager switch --flake .#cc-se-sto-devbox-01"
+    }
+  },
+  "non_goals": [
+    "Reclaim, close, abandon, or edit any existing Engine workspace",
+    "Change Engine fresh-lease admission semantics or workspace-cap value",
+    "Change JCode terminal lease closure behavior in this dotfiles slice",
+    "Delete unrelated user systemd units or scripts"
+  ],
+  "invariants": [
+    "Only the exact jcode-lane-settle timer, service, and script are removed",
+    "An already-running jcode-lane-settle.service is stopped before its unit file is removed",
+    "Activation never calls repo vcs workspace-recover, workspace-close, workspace-release, or workspace-abandon",
+    "Systemd is reloaded by Home Manager after the retirement hook",
+    "Dirty and live peer workspaces remain preserved"
+  ],
+  "assumptions": [
+    {
+      "statement": "No supported JCode flow depends on the legacy sweeper after terminal lane cleanup is corrected.",
+      "status": "verified",
+      "doubt": 1,
+      "falsifier": "A supported JCode runbook or source path identifies jcode-lane-settle.timer as a required recovery mechanism rather than retired host residue."
+    },
+    {
+      "statement": "Home Manager activation runs as the same user that owns the timer and script.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "Post-switch user-systemd inspection reports a different unit manager or preserves the named files."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "medium",
+    "blast_radius": "local",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "client",
+    "host"
+  ],
+  "plane_constraints": [
+    "Dotfiles and Home Manager own durable retirement; singularity-engine owns workspace lifecycle semantics."
+  ]
+}

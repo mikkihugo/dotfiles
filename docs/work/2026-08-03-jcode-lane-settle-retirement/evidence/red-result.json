@@ -1,0 +1,12 @@
+{
+  "result_id": "2026-08-03-jcode-lane-settle-retirement-red-result",
+  "status": "failed",
+  "observed_at": "2026-08-03T22:31:21.382Z",
+  "command": "node --test scripts/test-jcode-lane-settle-retirement.mjs",
+  "exit_code": 1,
+  "provenance": {
+    "kind": "recorded-command-output",
+    "uri": "codex-session://019fc727-eb88-75d2-a30e-4a8ab9ed927b/2026-08-03T22:31:21.382Z"
+  },
+  "summary": "The newly added focused test failed because activation.nix had no retireUnsafeJcodeLaneSettle hook. The command reported 0 passing and 1 failing test."
+}

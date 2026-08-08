@@ -151,7 +151,13 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
 
   assert.match(service, /jcodeLauncher\s*=\s*pkgs\.writeShellApplication/);
   assert.match(service, /name\s*=\s*"jcode"/);
-  assert.match(service, /packages\s*=\s*\[jcodeLauncher jcodeTui\]/);
+  // jcodeLauncher must stay OUT of home.packages: it is a writeShellApplication
+  // named "jcode", so listing it collides in pkgs.buildEnv with ai-tools.nix's
+  // jcodeGatewayWrapper, which owns bin/jcode and enforces the provider
+  // allowlist. The service consumes the launcher by store path in ExecStart.
+  assert.match(service, /packages\s*=\s*\[jcodeTui\]/);
+  assert.doesNotMatch(service, /packages\s*=\s*\[[^\]]*jcodeLauncher/);
+  assert.doesNotMatch(service, /file\."\.local\/bin\/jcode"/);
   assert.match(
     service,
     /unset[\s\S]*JCODE_PROVIDER_LLM_GATEWAY_API_KEY[\s\S]*KIMI_API_KEY/,
@@ -169,7 +175,6 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
     service,
     /paneStartCommand=.*pane_start_command[\s\S]*\$\{jcodeLauncher\}\/bin\/jcode[\s\S]*kill-session -t jcode-ui/,
   );
-  assert.match(service, /"\.local\/bin\/jcode"\s*=\s*\{/);
   assert.doesNotMatch(service, /JCODE_RUNTIME_DIR|runtime-allowlisted/);
 
   assert.match(

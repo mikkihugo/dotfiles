@@ -105,12 +105,17 @@
 in
   lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
     home = {
-      packages = [jcodeLauncher jcodeTui];
-      file.".local/bin/jcode" = {
-        executable = true;
-        force = true;
-        source = "${jcodeLauncher}/bin/jcode";
-      };
+      # jcodeLauncher is deliberately NOT in home.packages: it is a
+      # writeShellApplication named "jcode", so it collides in buildEnv with
+      # ai-tools.nix's jcodeGatewayWrapper (also bin/jcode, and the module that
+      # enforces the provider allowlist). The service reaches it by store path in
+      # ExecStart, so it needs no PATH entry.
+      packages = [jcodeTui];
+      # The shadowed jcode entry under ~/.local/bin is owned by ai-tools.nix
+      # (jcodeGatewayWrapper), which enforces the llm-gateway + OAuth provider
+      # allowlist. Declaring it here too produced a conflicting home-manager
+      # definition and broke evaluation. The allowlist wrapper wins; this service
+      # reaches its launcher through the store path in ExecStart instead.
     };
 
     systemd.user.services.jcode-server = {

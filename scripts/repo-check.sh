@@ -49,6 +49,7 @@ main() {
 	python3 "$root/scripts/test-jcode-preferences.py"
 	python3 "$root/scripts/test-merge-authorized-keys.py"
 	bash "$root/scripts/test-nix-gate-script-coverage.sh"
+	bash "$root/scripts/test-engine-worktree-cleanup.sh"
 	(
 		cd "$root"
 		node --test \

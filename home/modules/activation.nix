@@ -32,6 +32,33 @@ in {
     # A previous transient user-unit failure makes home-manager report the whole
     # user manager as degraded before it reloads services. Clear stale failed
     # states first; real failures during this activation will still be reported.
+    # engine-worktree-cleanup was an unmanaged plain script plus hand-written
+    # units until 2026-08-08, when a pipefail/SIGPIPE bug in that copy deleted 7
+    # REGISTERED jj workspaces (see home/modules/engine-worktree-cleanup.nix).
+    # Home Manager now owns both units, and a plain file in the way of a store
+    # symlink aborts activation with "would be clobbered" — so the old copies
+    # must go before checkLinkTargets. Stop the timer and any in-flight run
+    # FIRST, or the destructive version can fire while this activation replaces
+    # it.
+    #
+    # One-shot by construction: guarded on the plain (non-symlink) unit file, so
+    # later switches leave the managed timer alone. Unconditional would be a
+    # trap — reloadSystemd uses sd-switch, which diffs old-units against
+    # new-units and does nothing when a unit is unchanged, so a `disable --now`
+    # on every switch would leave the timer stopped from the second `hms` on.
+    retireUnmanagedEngineWorktreeCleanup = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
+      if [ -e "$HOME/.config/systemd/user/engine-worktree-cleanup.timer" ] &&
+         [ ! -L "$HOME/.config/systemd/user/engine-worktree-cleanup.timer" ]; then
+        ${pkgs.systemd}/bin/systemctl --user disable --now engine-worktree-cleanup.timer || true
+        ${pkgs.systemd}/bin/systemctl --user stop engine-worktree-cleanup.service || true
+        ${pkgs.coreutils}/bin/rm -f \
+          "$HOME/.config/systemd/user/engine-worktree-cleanup.service" \
+          "$HOME/.config/systemd/user/engine-worktree-cleanup.timer" \
+          "$HOME/.config/systemd/user/timers.target.wants/engine-worktree-cleanup.timer" \
+          "$HOME/.local/bin/engine-worktree-cleanup"
+      fi
+    '';
+
     resetFailedUserUnits = lib.hm.dag.entryBefore ["reloadSystemd"] ''
       ${pkgs.systemd}/bin/systemctl --user reset-failed || true
     '';

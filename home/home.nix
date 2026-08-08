@@ -44,6 +44,7 @@ in {
       ./modules/cursor-stable-shell.nix
       ./modules/git-auto-backup.nix
       ./modules/jcode-gc.nix
+      ./modules/engine-worktree-cleanup.nix
       ./modules/home-emergency-backup.nix
       ./modules/files.nix
       ./modules/build-cache-maintenance.nix

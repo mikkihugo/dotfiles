@@ -8,8 +8,12 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 nix_gate_path_re='(^|/)[^/]+\.nix$|^flake\.lock$|^home/|^config/|^secrets/'
 
 # Non-nix scripts pulled into the activation package through a
-# `${../../scripts/NAME}` interpolation in home/modules/*.nix. Derived at check
-# time rather than hand-listed: the old hardcoded allow-list named
+# `${../../scripts/NAME}` interpolation in home/modules/*.nix. The name part is
+# an open character class on purpose: grex over the three references that exist
+# today emits
+#   ^\.\./\.\./scripts/(?:merge\-authorized\-key|(?:codex|jcode)\-preference)s$
+# which is a closed enumeration and would reintroduce exactly the drift below.
+# Derived at check time rather than hand-listed: the old hardcoded allow-list named
 # codex-preferences and merge-authorized-keys but not jcode-preferences, so once
 # home/modules/jcode-providers.nix started referencing it that script could be
 # changed alone and silently skip this gate.

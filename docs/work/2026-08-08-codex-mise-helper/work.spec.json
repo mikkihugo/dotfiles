@@ -20,7 +20,7 @@
     "digest": {
       "algorithm": "sha256",
       "canonicalization": "raw-bytes",
-      "value": "85e87dd712f07cc18abc7c765898f1bb77e54a0169ce2b00f28bbd6842d95035"
+      "value": "5dfdf18c285bd37b7d1cc831b6ca7b337cb1114fb7626a75f9cc3f2a304238db"
     }
   },
   "requirement_delta": {

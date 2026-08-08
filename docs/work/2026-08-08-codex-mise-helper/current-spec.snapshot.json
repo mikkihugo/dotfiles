@@ -3,7 +3,7 @@
   "snapshot_id": "2026-08-08-codex-mise-helper-current-spec",
   "source": {
     "uri": "repository://config/mise/config.toml,home/modules/mise-auto-update.nix,justfile,scripts/repo-maintenance.sh,scripts/test-nix-tooling.mjs",
-    "revision": "origin/main baseline observed in codex-mise-helper-pdd"
+    "revision": "origin/main@516b3b7141f3816192eaa3731ae56388008314ba observed after PDD worktree rebase"
   },
   "requirements": []
 }

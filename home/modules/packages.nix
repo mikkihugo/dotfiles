@@ -94,6 +94,8 @@
     stern # multi-pod log tailing
     kubeseal # sealed-secrets CLI (encrypts secrets for GitOps)
     cosign # container/image signing and verification (sigstore)
+    openapi-generator-cli # OpenAPI codegen. The npm @openapitools wrapper only
+    # downloads this Java generator at runtime; nixpkgs ships the generator itself.
     gitui # terminal git UI (fast, keyboard-driven)
     flyctl # Fly.io CLI (deploy, scale, monitor)
     hcloud # Hetzner Cloud CLI

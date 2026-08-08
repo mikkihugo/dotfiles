@@ -1,0 +1,26 @@
+{
+  "source": "repository-vcs-facade",
+  "scope": "2026-07-24-jcode-direct-gateway-routing",
+  "files": [
+    "config/jcode/shared-preferences.toml",
+    "config/jcode/swarm-prompt.md",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/README.md",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/current-spec.snapshot.json",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence.bundle.json",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence/changed-files.json",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence/red-t1.json",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence/red-t2.json",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence/red-t3.json",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence/result.json",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/purpose.contract.json",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/validation.report.json",
+    "docs/work/2026-07-24-jcode-direct-gateway-routing/work.spec.json",
+    "home/home.nix",
+    "home/modules/jcode-providers.nix",
+    "home/modules/jcode-server.nix",
+    "scripts/jcode-preferences",
+    "scripts/repo-check.sh",
+    "scripts/test-jcode-preferences.py",
+    "scripts/test-nix-tooling.mjs"
+  ]
+}

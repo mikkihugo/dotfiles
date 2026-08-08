@@ -1,0 +1,11 @@
+{
+  "schema_version": "test-result/v1",
+  "result_id": "2026-07-24-jcode-direct-gateway-routing-red-t3",
+  "status": "failed",
+  "observed_at": "2026-07-24T20:45:26Z",
+  "proof_kind": "stale-source-baseline",
+  "command": "python3 scripts/test-jcode-preferences.py; node --test scripts/test-nix-tooling.mjs",
+  "failure": "The baseline had no provider-preference merger or preservation test, and the global swarm prompt still routed around stale Claude/Fable guidance instead of the requested Umans, direct K3, and direct M3 policy.",
+  "falsified_by_green": "The mutable TOML merger preserves unrelated tables, manual failover remains configured, and the global prompt names direct-first K3/M3 routes plus the live kimi-for-coding and minimax-coding-plan gateway fallbacks; tests reject substituting OpenCode or generic MiniMax fallback IDs.",
+  "timestamp_basis": "Purpose-contract admission timestamp for the source-traced stale baseline."
+}

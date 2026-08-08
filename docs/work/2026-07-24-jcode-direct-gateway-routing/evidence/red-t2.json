@@ -1,0 +1,11 @@
+{
+  "schema_version": "test-result/v1",
+  "result_id": "2026-07-24-jcode-direct-gateway-routing-red-t2",
+  "status": "failed",
+  "observed_at": "2026-07-24T20:45:26Z",
+  "proof_kind": "contract-test-and-activation-regression",
+  "command": "node --test scripts/test-nix-tooling.mjs; home-manager switch --flake path:.#cc-se-sto-devbox-01",
+  "failure": "The initial contract test rejected the missing provider module. The first activation attempt then proved that rendering new credentials in the activation DAG ran before sops-nix had materialized the newly declared Kimi secret.",
+  "falsified_by_green": "Credential rendering is now an ordered oneshot requiring and running after sops-nix, provider files are mode 0600 under a mode-0700 directory, its result is success, and exactly one serve process is live.",
+  "timestamp_basis": "Purpose-contract admission timestamp; the exact activation-order failure was retained from the implementation transcript."
+}

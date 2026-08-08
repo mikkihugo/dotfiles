@@ -1,0 +1,188 @@
+#!/usr/bin/env python3
+"""Apply the Home Manager-owned J-Code provider preferences without replacing UI state."""
+
+import argparse
+import os
+import re
+import stat
+import tempfile
+import tomllib
+from pathlib import Path
+
+
+MANAGED_SECTIONS = ("provider", "auth")
+MANAGED_PROFILES = ("llm-gateway", "minimax-direct")
+SECTION_HEADER = re.compile(r"^\s*(\[\[?)([^\]]+)(\]\]?)\s*(?:#.*)?$")
+KEY = re.compile(r"^\s*([A-Za-z0-9_-]+)\s*=")
+
+
+def load_toml(path: Path, *, allow_missing: bool = False) -> dict:
+    if allow_missing and not path.exists():
+        return {}
+    with path.open("rb") as stream:
+        return tomllib.load(stream)
+
+
+def toml_value(value: object) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int | float):
+        return str(value)
+    if isinstance(value, str):
+        return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    if isinstance(value, list) and all(not isinstance(item, dict) for item in value):
+        return "[" + ", ".join(toml_value(item) for item in value) + "]"
+    raise ValueError(f"unsupported TOML preference value: {value!r}")
+
+
+def managed_source(path: Path) -> tuple[dict[str, dict], dict[str, dict]]:
+    data = load_toml(path)
+    sections: dict[str, dict] = {}
+    for name in MANAGED_SECTIONS:
+        value = data.get(name, {})
+        if not isinstance(value, dict):
+            raise ValueError(f"[{name}] must be a TOML table")
+        sections[name] = value
+
+    providers = data.get("providers")
+    if not isinstance(providers, dict):
+        raise ValueError("[providers] must contain the managed provider profiles")
+    profiles: dict[str, dict] = {}
+    for name in MANAGED_PROFILES:
+        value = providers.get(name)
+        if not isinstance(value, dict):
+            raise ValueError(f"[providers.{name}] is required")
+        profiles[name] = value
+    return sections, profiles
+
+
+def chunks(lines: list[str]) -> list[tuple[str | None, list[str]]]:
+    result: list[tuple[str | None, list[str]]] = []
+    current_name: str | None = None
+    current: list[str] = []
+    for line in lines:
+        match = SECTION_HEADER.match(line)
+        if match:
+            result.append((current_name, current))
+            current_name = match.group(2).strip()
+            current = [line]
+        else:
+            current.append(line)
+    result.append((current_name, current))
+    return result
+
+
+def patch_section(chunk: list[str], values: dict) -> list[str]:
+    output = [chunk[0]]
+    seen: set[str] = set()
+    for line in chunk[1:]:
+        match = KEY.match(line)
+        key = match.group(1) if match else None
+        if key in values:
+            if key not in seen:
+                output.append(f"{key} = {toml_value(values[key])}")
+                seen.add(key)
+            continue
+        output.append(line)
+    output.extend(f"{key} = {toml_value(values[key])}" for key in values if key not in seen)
+    return output
+
+
+def render_profile(name: str, profile: dict) -> list[str]:
+    root = f"providers.{name}"
+    scalar_items = []
+    nested_tables: list[tuple[str, dict]] = []
+    array_tables: list[tuple[str, list[dict]]] = []
+    for key, value in profile.items():
+        if isinstance(value, dict):
+            nested_tables.append((key, value))
+        elif isinstance(value, list) and all(isinstance(item, dict) for item in value):
+            array_tables.append((key, value))
+        else:
+            scalar_items.append((key, value))
+
+    output = [f"[{root}]"]
+    output.extend(f"{key} = {toml_value(value)}" for key, value in scalar_items)
+    for key, values in nested_tables:
+        output.extend(["", f"[{root}.{key}]"])
+        output.extend(f"{nested_key} = {toml_value(nested_value)}" for nested_key, nested_value in values.items())
+    for key, entries in array_tables:
+        for entry in entries:
+            output.extend(["", f"[[{root}.{key}]]"])
+            output.extend(f"{nested_key} = {toml_value(nested_value)}" for nested_key, nested_value in entry.items())
+    return output
+
+
+def is_managed_profile(name: str | None) -> bool:
+    if name is None:
+        return False
+    return any(name == f"providers.{profile}" or name.startswith(f"providers.{profile}.") for profile in MANAGED_PROFILES)
+
+
+def apply_preferences(source: Path, target: Path) -> None:
+    section_values, profiles = managed_source(source)
+    # Parse before touching the target so malformed user configuration is never overwritten.
+    load_toml(target, allow_missing=True)
+
+    original = target.read_text() if target.exists() else ""
+    output: list[str] = []
+    seen_sections: set[str] = set()
+    profile_inserted = False
+    profile_block = [line for name in MANAGED_PROFILES for line in ([""] if name != MANAGED_PROFILES[0] else []) + render_profile(name, profiles[name])]
+
+    for name, chunk in chunks(original.splitlines()):
+        if is_managed_profile(name):
+            if not profile_inserted:
+                if output and output[-1]:
+                    output.append("")
+                output.extend(profile_block)
+                profile_inserted = True
+            continue
+        if name in section_values:
+            output.extend(patch_section(chunk, section_values[name]))
+            seen_sections.add(name)
+        else:
+            output.extend(chunk)
+
+    for name in MANAGED_SECTIONS:
+        if name not in seen_sections:
+            if output and output[-1]:
+                output.append("")
+            output.append(f"[{name}]")
+            output.extend(f"{key} = {toml_value(value)}" for key, value in section_values[name].items())
+
+    if not profile_inserted:
+        if output and output[-1]:
+            output.append("")
+        output.extend(profile_block)
+
+    rendered = "\n".join(output).rstrip() + "\n"
+    tomllib.loads(rendered)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    mode = stat.S_IMODE(target.stat().st_mode) if target.exists() else 0o600
+    with tempfile.NamedTemporaryFile("w", dir=target.parent, prefix=f".{target.name}.", delete=False) as temporary:
+        temporary.write(rendered)
+        temporary.flush()
+        os.fsync(temporary.fileno())
+        temporary_path = Path(temporary.name)
+    try:
+        os.chmod(temporary_path, mode)
+        os.replace(temporary_path, target)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+
+
+def main() -> None:
+    home = Path.home()
+    parser = argparse.ArgumentParser(description="Apply Home Manager-owned J-Code provider preferences.")
+    subcommands = parser.add_subparsers(dest="command", required=True)
+    apply = subcommands.add_parser("apply")
+    apply.add_argument("--source", default=str(home / ".dotfiles/config/jcode/shared-preferences.toml"))
+    apply.add_argument("--target", default=str(home / ".jcode/config.toml"))
+    args = parser.parse_args()
+    if args.command == "apply":
+        apply_preferences(Path(args.source).expanduser(), Path(args.target).expanduser())
+
+
+if __name__ == "__main__":
+    main()

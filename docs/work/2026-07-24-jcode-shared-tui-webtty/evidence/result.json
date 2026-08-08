@@ -1,0 +1,95 @@
+{
+  "schema_version": "verification-result/v1",
+  "result_id": "2026-07-24-jcode-shared-tui-webtty-result",
+  "status": "passed",
+  "observed_at": "2026-07-24T20:07:39Z",
+  "repository": {
+    "workspace": "/home/mhugo/.dotfiles-worktrees/jcode-server-service",
+    "branch": "codex/jcode-server-service",
+    "base_revision": "d6f378eeced841d4163bc0a0144be3f75ce4efd9",
+    "publication": "not-authorized"
+  },
+  "tests": [
+    {
+      "command": "node --test scripts/test-nix-tooling.mjs",
+      "status": "passed",
+      "tests": 11,
+      "failures": 0
+    },
+    {
+      "command": "repo check",
+      "status": "passed",
+      "tests": 32,
+      "failures": 0
+    }
+  ],
+  "quality": [
+    {
+      "command": "alejandra --check home/modules/jcode-server.nix",
+      "status": "passed"
+    },
+    {
+      "command": "statix check home/modules/jcode-server.nix",
+      "status": "passed"
+    },
+    {
+      "command": "deadnix --fail home/modules/jcode-server.nix",
+      "status": "passed"
+    },
+    {
+      "command": "home-manager switch --flake path:.#cc-se-sto-devbox-01",
+      "status": "passed",
+      "effect": "Restarted jcode-webtty.service only; jcode-server.service retained PID 2317515 and NRestarts=0."
+    }
+  ],
+  "runtime": {
+    "jcode_server": {
+      "active": true,
+      "enabled": true,
+      "pid": 2317515,
+      "restart_count": 0,
+      "serve_process_count": 1,
+      "model": "umans-ai-coding-plan/umans-glm-5.2"
+    },
+    "jcode_webtty": {
+      "active": true,
+      "enabled": true,
+      "pid": 2547870,
+      "restart_count": 0,
+      "listener": "127.0.0.1%lo:7681",
+      "origin_check": true,
+      "loopback_http": "HTTP/1.1 200 OK",
+      "public_address_probe": "refused-or-unreachable"
+    },
+    "shared_tui": {
+      "tmux_server_count": 1,
+      "tmux_pid": 2561704,
+      "tui_process_count": 1,
+      "tui_pid": 2561710,
+      "session": "jcode-ui",
+      "socket": "/run/user/1000/jcode-ui.tmux.sock",
+      "socket_mode": "0600",
+      "jcode_client_count": 1,
+      "jcode_client_name": "Kikazaru",
+      "jcode_session_id": "session_kikazaru_1784923126508_26ae07a7f4352794"
+    },
+    "entry_point_proof": {
+      "ssh_style_pty": "jcode-tui rendered server Devbox and client Kikazaru, then detached without creating a second J-Code client.",
+      "browser_websocket": "The ttyd WebSocket rendered jcode-ui, server Devbox, client Kikazaru, and the configured Umans GLM 5.2 model; clients:map remained count=1 afterward."
+    },
+    "user_linger": true,
+    "jcode_socket_mode": "0600"
+  },
+  "review": {
+    "reviewer": "jcode_webtty_final_review",
+    "independent": true,
+    "verdict": "approved",
+    "finding_closed": "The regression test now requires /run/user/<uid> and rejects /tmp, covering the PrivateTmp socket-namespace failure.",
+    "remaining_implementation_defects": 0
+  },
+  "limits": [
+    "The source changes are activated but remain uncommitted and unintegrated in the isolated dotfiles worktree.",
+    "The shared tmux screen is created lazily on first jcode-tui or WebTTY attach after reboot.",
+    "Provider quota sensing and Kimi K3 orchestrator failover are outside this change and remain unverified."
+  ]
+}

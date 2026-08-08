@@ -1,0 +1,140 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-07-24-jcode-shared-tui-webtty-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-07-24-jcode-shared-tui-webtty"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-07-24-jcode-shared-tui-webtty",
+      "revision": "initial"
+    },
+    "objective": {
+      "id": "2026-07-24-jcode-shared-tui-webtty-objective",
+      "statement": "Keep one persistent full J-Code TUI attachable from SSH and a secure browser terminal while retaining one long-lived J-Code daemon.",
+      "measure": "SSH and the loopback browser terminal attach to one named tmux TUI, the browser listener is restricted to 127.0.0.1, and exactly one J-Code serve process remains active."
+    },
+    "need": {
+      "id": "2026-07-24-jcode-shared-tui-webtty-need",
+      "statement": "Mikael needs to operate the full J-Code TUI across disconnects from SSH and a browser without spawning additional agent daemons or exposing a public shell.",
+      "stakeholders": [
+        "Mikael operating J-Code remotely from SSH or a browser through an SSH tunnel."
+      ],
+      "baseline": "The J-Code daemon and SSH path are live, but jcode connect is line-oriented, no shared tmux TUI exists, ttyd is absent, and nothing listens on port 7681.",
+      "consequence_of_no_action": "Remote reconnects either create independent TUI frontends or remain line-only, and no browser terminal can reach J-Code.",
+      "assumptions": [],
+      "alternatives_considered": [
+        "Use independent jcode --resume TUI clients instead of sharing the exact screen",
+        "Enable the J-Code WebSocket gateway even though it has no browser TUI frontend",
+        "Expose ttyd publicly with basic authentication",
+        "Keep SSH-only access"
+      ]
+    }
+  },
+  "admission": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-07-24T19:32:22Z",
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "686d0771465fc72dd083ad88d1de89a5d1d5ba4b27d736af04c4f34f26a19800"
+    },
+    "policy": {
+      "id": "operator-directed-purpose-admission/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e"
+      }
+    },
+    "validators": [
+      "purpose-contract-v2.schema.json",
+      "subject-digest",
+      "operator-authority"
+    ],
+    "evidence_refs": [
+      "user-request:from-web-and-ssh",
+      "user-request:attach-to-tui",
+      "observed:jcode-connect-is-line-client",
+      "observed:no-port-7681-listener"
+    ]
+  },
+  "purpose": "Keep one persistent full J-Code TUI attachable from SSH and a secure browser terminal while retaining one long-lived J-Code daemon.",
+  "consumer": "Mikael operating J-Code remotely from SSH or a browser through an SSH tunnel.",
+  "contract": "Home Manager provides a jcode-tui command backed by one named tmux session and a user WebTTY service bound only to 127.0.0.1; both attach to the existing J-Code daemon and do not expose a public shell.",
+  "failure_boundary": "The WebTTY must remain loopback-only and must not alter or stop jcode-server.service. If the WebTTY, tmux attachment, or single-daemon invariant fails, keep SSH and the daemon available and do not expose the browser endpoint on a non-loopback address.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "Home Manager contract tests prove the wrapper and loopback-only service declaration; live probes prove one tmux TUI, an HTTP endpoint on 127.0.0.1:7681, and one J-Code daemon.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "SSH and browser access share one persistent full TUI without exposing a public shell or creating another daemon.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Run the repository check and live listener/process probes; any non-loopback ttyd listener, missing tmux TUI, or second jcode serve process falsifies the claim.",
+      "command": "node --test scripts/test-nix-tooling.mjs && repo check"
+    }
+  },
+  "non_goals": [
+    "Expose a public Internet WebTTY",
+    "Implement a native browser frontend for the J-Code WebSocket gateway",
+    "Change J-Code provider or model failover",
+    "Replace SSH authentication",
+    "Modify the J-Code daemon protocol"
+  ],
+  "invariants": [
+    "jcode-server.service remains the only long-lived J-Code daemon",
+    "The WebTTY listener binds only to 127.0.0.1",
+    "SSH remains key-only and independently usable",
+    "Browser disconnects do not terminate the tmux-hosted TUI",
+    "No secret is embedded in the Nix module or command line"
+  ],
+  "assumptions": [
+    {
+      "statement": "The Nixpkgs ttyd package is available for this host.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "nix eval or build cannot resolve nixpkgs#ttyd."
+    },
+    {
+      "statement": "The full J-Code TUI can run as a client of the existing daemon inside tmux.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "A tmux-launched plain jcode process fails to register as a client of the existing server."
+    },
+    {
+      "statement": "A loopback-only ttyd listener reached through SSH forwarding does not create a public shell endpoint.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "ss reports ttyd listening on any non-loopback address."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "medium",
+    "blast_radius": "local",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "client",
+    "runtime"
+  ],
+  "plane_constraints": [
+    "Home Manager owns the wrapper and user services; network exposure remains loopback-only."
+  ]
+}

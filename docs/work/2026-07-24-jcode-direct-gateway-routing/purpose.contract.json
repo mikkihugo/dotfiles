@@ -1,0 +1,146 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-07-24-jcode-direct-gateway-routing-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-07-24-jcode-direct-gateway-routing"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-07-24-jcode-direct-gateway-routing",
+      "revision": "user-clarified-direct-preferred-with-gateway-fallback"
+    },
+    "objective": {
+      "id": "2026-07-24-jcode-direct-gateway-routing-objective",
+      "statement": "Keep one managed J-Code runtime able to route Kimi K3 and MiniMax M3 directly to their native APIs while retaining explicit CentralCloud gateway fallbacks.",
+      "measure": "The live swarm catalog simultaneously lists direct kimi:k3, direct minimax-direct:MiniMax-M3, and explicit llm-gateway K3/M3 routes while exactly one J-Code daemon remains active."
+    },
+    "need": {
+      "id": "2026-07-24-jcode-direct-gateway-routing-need",
+      "statement": "J-Code currently exposes K3 and M3 only through llm-gateway even though separate native-provider subscriptions and SOPS credentials exist.",
+      "stakeholders": [
+        "Mikael operating J-Code on cc-se-sto-devbox-01.",
+        "The root J-Code swarm coordinator selecting worker routes."
+      ],
+      "baseline": "The live picker has 128 llm-gateway routes and zero direct Kimi or MiniMax routes; the daemon has no direct credentials, Kimi's env file is absent, MiniMax's is empty, and the global prompt incorrectly forbids gateway fallback.",
+      "consequence_of_no_action": "The coordinator cannot use the direct subscriptions, cannot distinguish direct from gateway routing reliably, and loses the requested fallback choice.",
+      "assumptions": [],
+      "alternatives_considered": [
+        "Activate the old gateway-only Home Manager branch",
+        "Patch the J-Code MiniMax key-prefix endpoint heuristic before enabling any direct route",
+        "Override the built-in minimax profile with a same-name configured profile",
+        "Keep only gateway routes"
+      ]
+    }
+  },
+  "admission": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-07-24T20:45:26Z",
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "a273aecb4a4ca45fdf2b46b39d144c29059683a4ce4a6ab3764f51fa391765c7"
+    },
+    "policy": {
+      "id": "operator-directed-purpose-admission/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e"
+      }
+    },
+    "validators": [
+      "purpose-contract-v2.schema.json",
+      "subject-digest",
+      "operator-authority"
+    ],
+    "evidence_refs": [
+      "user-request:allow-both-direct-and-gateway",
+      "observed:swarm-list-models-gateway-only",
+      "observed:kimi-direct-catalog-includes-k3",
+      "observed:minimax-international-catalog-includes-MiniMax-M3"
+    ]
+  },
+  "purpose": "Keep one managed J-Code runtime able to route Kimi K3 and MiniMax M3 directly to their native APIs while retaining explicit CentralCloud gateway fallbacks.",
+  "consumer": "Mikael and the root J-Code swarm coordinator on cc-se-sto-devbox-01.",
+  "contract": "Home Manager owns one J-Code launcher, mutable provider preferences, global swarm prompt, and SOPS-backed provider credential files; direct kimi:k3 and minimax-direct:MiniMax-M3 routes coexist with explicit llm-gateway K3/M3 routes without creating a second daemon or embedding secrets.",
+  "failure_boundary": "Fail closed if a native credential is missing, a direct-prefixed route resolves through llm-gateway, the managed preferences would clobber unrelated J-Code settings, or activation would create a second runtime. Keep the existing gateway coordinator available on any direct-provider failure.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "Focused tests prove the mutable config merger, SOPS-only credential rendering, one-launcher wiring, prompt policy, and explicit route names.",
+      "status": "expected"
+    },
+    {
+      "kind": "runtime",
+      "description": "Authenticated catalog-only probes and the live swarm route list prove direct and gateway coexistence without paid inference.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "One live J-Code runtime exposes direct-preferred K3/M3 routes and explicit gateway fallbacks with isolated SOPS credentials.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Run focused repository tests, catalog-only provider probes, swarm list_models, and the single-daemon process check.",
+      "command": "node --test scripts/test-nix-tooling.mjs && python3 scripts/test-jcode-preferences.py && repo check"
+    }
+  },
+  "non_goals": [
+    "Send paid chat, streaming, or tool-loop probes",
+    "Change the Umans GLM coordinator default",
+    "Implement quota sensing or autonomous ambient scheduling",
+    "Patch and publish the upstream J-Code MiniMax region heuristic in this change",
+    "Activate the obsolete gateway-only runtime directory"
+  ],
+  "invariants": [
+    "jcode-server.service remains the only long-lived J-Code daemon",
+    "Direct and gateway route names remain visibly distinct",
+    "Provider secret values never enter tracked files or the Nix store",
+    "Unrelated live J-Code config tables and keys survive preference application",
+    "Cross-provider failover remains manual"
+  ],
+  "assumptions": [
+    {
+      "statement": "The native Kimi catalog continues to expose model id k3.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "A fresh authenticated catalog-only model list omits k3."
+    },
+    {
+      "statement": "A named openai-compatible profile at https://api.minimax.io/v1 avoids the built-in sk-cp endpoint heuristic and exposes MiniMax-M3 directly.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "The authenticated named-profile catalog request targets api.minimaxi.com or omits MiniMax-M3."
+    },
+    {
+      "statement": "Catalog-only provider probes do not consume completion tokens.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "The provider reports billed generation usage for GET /models."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "medium",
+    "blast_radius": "local",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "client",
+    "runtime"
+  ],
+  "plane_constraints": [
+    "Home Manager owns durable configuration and SOPS rendering; the live daemon consumes the same default runtime and config paths as CLI and WebTTY clients."
+  ]
+}

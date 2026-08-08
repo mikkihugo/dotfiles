@@ -48,6 +48,8 @@ in {
       ./modules/files.nix
       ./modules/build-cache-maintenance.nix
       ./modules/ai-tools.nix
+      ./modules/jcode-providers.nix
+      ./modules/jcode-server.nix
       ./modules/ops-tools.nix
       ./modules/nix-index.nix
       ./modules/dotfiles-auto-update.nix

@@ -1,0 +1,331 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-07-24-jcode-direct-gateway-routing-work",
+  "purpose_contract_id": "2026-07-24-jcode-direct-gateway-routing-purpose",
+  "handover": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "accepting_authority": {
+      "kind": "policy",
+      "id": "purpose-first-tdd-handover"
+    },
+    "decided_at": "2026-07-24T20:45:26Z",
+    "purpose_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "a273aecb4a4ca45fdf2b46b39d144c29059683a4ce4a6ab3764f51fa391765c7"
+    },
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "ad5e3e93d5e09c71e808f3670ebe146729bf041717376ce51a67efaa7571ccb9"
+    },
+    "policy": {
+      "id": "workspec-content-handover/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "21f4dad52f9e5f5a53ee16625c7bf75e01251002911d667e879f3e06147e7192"
+      }
+    },
+    "validators": [
+      "workspec-v4.schema.json",
+      "subject-digest",
+      "purpose-first-tdd-handover"
+    ],
+    "evidence_refs": [
+      "purpose.contract.json#admission",
+      "source-trace:jcode-provider-routing",
+      "runtime-baseline:gateway-only-model-list"
+    ]
+  },
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-07-24-jcode-direct-gateway-routing",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-07-24-jcode-direct-gateway-routing-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "96908b0f04a20ae55d2049e70c9a4688671b2bcf0cff117f025453ed23ebc63c"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "The managed J-Code model surface shall expose native Kimi K3 and native MiniMax M3 routes alongside explicit CentralCloud gateway K3/M3 routes.",
+        "acceptance_criteria": [
+          "swarm list_models reports kimi:k3 through openai-compatible:kimi",
+          "swarm list_models reports minimax-direct:MiniMax-M3 through openai-compatible:minimax-direct",
+          "swarm list_models retains explicit llm-gateway K3 and MiniMax-M3 routes",
+          "the direct MiniMax profile targets https://api.minimax.io/v1 and does not use the built-in minimaxi.com heuristic"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Managed J-Code provider surface",
+            "response": "expose distinct direct Kimi K3, direct MiniMax M3, and llm-gateway fallback routes"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "a direct-prefixed K3 or M3 route resolves through llm-gateway, or either fallback family disappears",
+          "witness_kind": "runtime-probe",
+          "expected": "rejected"
+        },
+        "risk": "high",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "Home Manager shall render provider-specific mode-0600 credential files from SOPS and shall use one launcher and one default J-Code runtime for the daemon, TUI, WebTTY, and CLI.",
+        "acceptance_criteria": [
+          "Kimi receives KIMI_API_KEY through kimi.env",
+          "the named MiniMax direct profile receives MINIMAX_API_KEY through minimax-direct.env",
+          "llm-gateway receives JCODE_PROVIDER_LLM_GATEWAY_API_KEY through its provider env file",
+          "tracked and Nix-store files contain no provider secret values",
+          "exactly one jcode serve process remains after activation"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "unwanted-behavior",
+            "system": "Managed J-Code launcher and credential renderer",
+            "trigger": "Home Manager activates provider routing",
+            "response": "render isolated credentials and keep every client on the existing default runtime without a second daemon"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "a secret enters the Nix store, a provider reads another provider's key, or a second runtime/daemon appears",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "high",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R3",
+        "statement": "The global swarm policy and mutable J-Code preferences shall prefer direct K3/M3 routes, allow explicit gateway fallbacks, preserve unrelated settings, and keep failover manual.",
+        "acceptance_criteria": [
+          "the global prompt names direct and gateway route IDs and no longer forbids gateway fallback",
+          "the preferences merger updates only managed provider/auth keys and named profiles",
+          "unrelated keybindings, display, MCP, hooks, and safety settings survive application",
+          "cross_provider_failover remains manual"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "J-Code global routing policy",
+            "trigger": "the coordinator selects Kimi K3 or MiniMax M3",
+            "response": "choose the direct route first and use an explicitly named llm-gateway route only as fallback"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B3",
+          "condition": "preference application deletes unrelated config or the policy allows an implicit/mislabeled fallback",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "The managed J-Code model surface shall expose native Kimi K3 and native MiniMax M3 routes alongside explicit CentralCloud gateway K3/M3 routes.",
+      "acceptance_criteria": [
+        "swarm list_models reports kimi:k3 through openai-compatible:kimi",
+        "swarm list_models reports minimax-direct:MiniMax-M3 through openai-compatible:minimax-direct",
+        "swarm list_models retains explicit llm-gateway K3 and MiniMax-M3 routes",
+        "the direct MiniMax profile targets https://api.minimax.io/v1 and does not use the built-in minimaxi.com heuristic"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Managed J-Code provider surface",
+          "response": "expose distinct direct Kimi K3, direct MiniMax M3, and llm-gateway fallback routes"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "a direct-prefixed K3 or M3 route resolves through llm-gateway, or either fallback family disappears",
+        "witness_kind": "runtime-probe",
+        "expected": "rejected"
+      },
+      "risk": "high",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "Home Manager shall render provider-specific mode-0600 credential files from SOPS and shall use one launcher and one default J-Code runtime for the daemon, TUI, WebTTY, and CLI.",
+      "acceptance_criteria": [
+        "Kimi receives KIMI_API_KEY through kimi.env",
+        "the named MiniMax direct profile receives MINIMAX_API_KEY through minimax-direct.env",
+        "llm-gateway receives JCODE_PROVIDER_LLM_GATEWAY_API_KEY through its provider env file",
+        "tracked and Nix-store files contain no provider secret values",
+        "exactly one jcode serve process remains after activation"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "unwanted-behavior",
+          "system": "Managed J-Code launcher and credential renderer",
+          "trigger": "Home Manager activates provider routing",
+          "response": "render isolated credentials and keep every client on the existing default runtime without a second daemon"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "a secret enters the Nix store, a provider reads another provider's key, or a second runtime/daemon appears",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "high",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R3",
+      "statement": "The global swarm policy and mutable J-Code preferences shall prefer direct K3/M3 routes, allow explicit gateway fallbacks, preserve unrelated settings, and keep failover manual.",
+      "acceptance_criteria": [
+        "the global prompt names direct and gateway route IDs and no longer forbids gateway fallback",
+        "the preferences merger updates only managed provider/auth keys and named profiles",
+        "unrelated keybindings, display, MCP, hooks, and safety settings survive application",
+        "cross_provider_failover remains manual"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "J-Code global routing policy",
+          "trigger": "the coordinator selects Kimi K3 or MiniMax M3",
+          "response": "choose the direct route first and use an explicitly named llm-gateway route only as fallback"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B3",
+        "condition": "preference application deletes unrelated config or the policy allows an implicit/mislabeled fallback",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "docs/work/2026-07-24-jcode-direct-gateway-routing/**",
+      "docs/work/2026-07-24-jcode-shared-tui-webtty/**",
+      "config/jcode/**",
+      "home/home.nix",
+      "home/modules/jcode-server.nix",
+      "home/modules/jcode-providers.nix",
+      "scripts/jcode-preferences",
+      "scripts/test-jcode-preferences.py",
+      "scripts/test-nix-tooling.mjs",
+      "scripts/repo-check.sh"
+    ],
+    "blocked": [
+      "secrets/**",
+      "system SSH configuration",
+      "public firewall configuration",
+      "J-Code source snapshots and vendor trees"
+    ],
+    "expected_files": []
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "integration",
+      "description": "Catalog-only and swarm route probes reject missing, gateway-mislabeled, or wrong-endpoint direct routes.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "Home Manager source tests reject missing SOPS rendering, secret literals, divergent launchers, or alternate runtime directories.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R3",
+      "kind": "contract",
+      "description": "Preference-merger tests prove managed routing keys change while unrelated TOML settings survive; prompt tests prove direct-first explicit fallback wording.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "python3 scripts/test-jcode-preferences.py",
+      "node --test scripts/test-nix-tooling.mjs",
+      "repo check",
+      "jcode -p kimi model list --json",
+      "jcode --provider-profile minimax-direct model list --json",
+      "jcode debug 'tool:swarm {\"action\":\"list_models\",\"intent\":\"Verify direct and gateway routing\"}'",
+      "systemctl --user is-active jcode-server.service jcode-webtty.service",
+      "purpose-validate-work docs/work/2026-07-24-jcode-direct-gateway-routing --repo-root . --require-evidence"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "runtime",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.5,
+    "debugging": 0.5
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "agent_role": "integrator",
+    "source_node_id": "2026-07-24-jcode-direct-gateway-routing",
+    "target_planes": [
+      "client",
+      "runtime"
+    ],
+    "dependencies": [
+      "2026-07-24-jcode-shared-tui-webtty"
+    ],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [
+      "home-manager",
+      "sops-nix",
+      "jcode-provider-catalog"
+    ],
+    "requested_isolation": "process",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [
+      "evidence-bundle/v3"
+    ],
+    "deterministic_replay_required": true
+  }
+}

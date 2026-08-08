@@ -1,0 +1,350 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-07-24-jcode-direct-gateway-routing-evidence",
+  "workspec_id": "2026-07-24-jcode-direct-gateway-routing-work",
+  "purpose_contract_id": "2026-07-24-jcode-direct-gateway-routing-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "a273aecb4a4ca45fdf2b46b39d144c29059683a4ce4a6ab3764f51fa391765c7"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "ad5e3e93d5e09c71e808f3670ebe146729bf041717376ce51a67efaa7571ccb9"
+  },
+  "workflow_run_id": "2026-07-24-jcode-direct-gateway-routing-run",
+  "execution": {
+    "execution_id": "2026-07-24-jcode-direct-gateway-routing-execution",
+    "tool": {
+      "id": "purpose-validate-work",
+      "version": "0.6.87"
+    },
+    "result": {
+      "result_id": "2026-07-24-jcode-direct-gateway-routing-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "fdc44b856e401deda5323fe40ce1a8e5792aca28db1751f970279116b280dd77"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "2026-07-24-jcode-direct-gateway-routing-result-artifact",
+        "uri": "evidence/result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "fdc44b856e401deda5323fe40ce1a8e5792aca28db1751f970279116b280dd77"
+        }
+      },
+      {
+        "artifact_id": "2026-07-24-jcode-direct-gateway-routing-changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "2963c23fc1edad7e8ed811f59a13f934d3c8202129a09e26c5d25b82c9a8c837"
+        }
+      },
+      {
+        "artifact_id": "2026-07-24-jcode-direct-gateway-routing-red-t1-artifact",
+        "uri": "evidence/red-t1.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "66d1817f109e14c702e98423c88d25df69981c2b41e06e564ab99c9de9003024"
+        }
+      },
+      {
+        "artifact_id": "2026-07-24-jcode-direct-gateway-routing-red-t2-artifact",
+        "uri": "evidence/red-t2.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "00c22f34a1f5c3d3cc58e443c0cbc162207c497dd9fabc13a5ae020e10134b33"
+        }
+      },
+      {
+        "artifact_id": "2026-07-24-jcode-direct-gateway-routing-red-t3-artifact",
+        "uri": "evidence/red-t3.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "30eda0bf27618aa15c915b096816428b8fbd5708f82c339ac2cfddbb57b2a735"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-07-24-jcode-direct-gateway-routing-trace",
+    "started_at": "2026-07-24T20:45:26Z",
+    "completed_at": "2026-07-24T21:25:39Z"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Authenticated catalog-only and live swarm probes expose distinct direct Kimi K3, direct MiniMax M3, and explicit gateway fallback routes.",
+      "result_id": "2026-07-24-jcode-direct-gateway-routing-result",
+      "artifact_ids": [
+        "2026-07-24-jcode-direct-gateway-routing-result-artifact"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-07-24T21:25:39Z",
+      "red_proof": {
+        "result_id": "2026-07-24-jcode-direct-gateway-routing-red-t1",
+        "artifact_id": "2026-07-24-jcode-direct-gateway-routing-red-t1-artifact",
+        "output_uri": "evidence/red-t1.json",
+        "observed_at": "2026-07-24T20:45:26Z"
+      },
+      "command": "jcode -p kimi model list --json; jcode --provider-profile minimax-direct model list --json; jcode debug --session <live-session> 'tool:swarm {\"action\":\"list_models\"}'"
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "description": "Home Manager renders ordered provider credentials at mode 0600, keeps mutable config at mode 0600, and owns exactly one live serve process.",
+      "result_id": "2026-07-24-jcode-direct-gateway-routing-result",
+      "artifact_ids": [
+        "2026-07-24-jcode-direct-gateway-routing-result-artifact"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-07-24T21:25:39Z",
+      "red_proof": {
+        "result_id": "2026-07-24-jcode-direct-gateway-routing-red-t2",
+        "artifact_id": "2026-07-24-jcode-direct-gateway-routing-red-t2-artifact",
+        "output_uri": "evidence/red-t2.json",
+        "observed_at": "2026-07-24T20:45:26Z"
+      },
+      "command": "node --test scripts/test-nix-tooling.mjs; home-manager switch --flake path:.#cc-se-sto-devbox-01; systemctl --user show jcode-provider-config.service jcode-server.service"
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R3",
+      "status": "passed",
+      "description": "The preference merger preserves unrelated TOML state and the global prompt encodes direct-first, explicit-fallback, bounded-concurrency policy.",
+      "result_id": "2026-07-24-jcode-direct-gateway-routing-result",
+      "artifact_ids": [
+        "2026-07-24-jcode-direct-gateway-routing-result-artifact"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-07-24T21:25:39Z",
+      "red_proof": {
+        "result_id": "2026-07-24-jcode-direct-gateway-routing-red-t3",
+        "artifact_id": "2026-07-24-jcode-direct-gateway-routing-red-t3-artifact",
+        "output_uri": "evidence/red-t3.json",
+        "observed_at": "2026-07-24T20:45:26Z"
+      },
+      "command": "python3 scripts/test-jcode-preferences.py; node --test scripts/test-nix-tooling.mjs"
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ad5e3e93d5e09c71e808f3670ebe146729bf041717376ce51a67efaa7571ccb9"
+      },
+      "artifact_ids": [
+        "2026-07-24-jcode-direct-gateway-routing-result-artifact"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "codex-root"
+      },
+      "observed_at": "2026-07-24T21:25:39Z",
+      "rationale": "The focused preference test, 12 focused Home Manager tests, 33-test repository check, activation build, and Home Manager switch passed."
+    },
+    {
+      "gate_id": "runtime",
+      "kind": "runtime",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ad5e3e93d5e09c71e808f3670ebe146729bf041717376ce51a67efaa7571ccb9"
+      },
+      "artifact_ids": [
+        "2026-07-24-jcode-direct-gateway-routing-result-artifact"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "codex-root"
+      },
+      "observed_at": "2026-07-24T21:25:39Z",
+      "rationale": "Fresh live probes proved one server, one current-generation TUI client, ordered provider configuration, mode-0600 credentials, direct native K3/M3 catalogs, explicit gateway fallbacks, and loopback-only WebTTY."
+    },
+    {
+      "gate_id": "independent-review",
+      "kind": "review",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ad5e3e93d5e09c71e808f3670ebe146729bf041717376ce51a67efaa7571ccb9"
+      },
+      "artifact_ids": [
+        "2026-07-24-jcode-direct-gateway-routing-result-artifact"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "review_jcode_dotfiles_all"
+      },
+      "observed_at": "2026-07-24T21:36:50Z",
+      "rationale": "The independent follow-up reviewer found no remaining Critical, Important, or Minor findings after the evidence and user-requested route IDs were reconciled."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "2026-07-24-jcode-direct-gateway-routing-changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "2963c23fc1edad7e8ed811f59a13f934d3c8202129a09e26c5d25b82c9a8c837"
+      },
+      "files": [
+        "config/jcode/shared-preferences.toml",
+        "config/jcode/swarm-prompt.md",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/README.md",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/current-spec.snapshot.json",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence.bundle.json",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence/changed-files.json",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence/red-t1.json",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence/red-t2.json",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence/red-t3.json",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/evidence/result.json",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/purpose.contract.json",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/validation.report.json",
+        "docs/work/2026-07-24-jcode-direct-gateway-routing/work.spec.json",
+        "home/home.nix",
+        "home/modules/jcode-providers.nix",
+        "home/modules/jcode-server.nix",
+        "scripts/jcode-preferences",
+        "scripts/repo-check.sh",
+        "scripts/test-jcode-preferences.py",
+        "scripts/test-nix-tooling.mjs"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "The declared direct-route, credential-isolation, singleton-runtime, mutable-config-preservation, and explicit-fallback falsifiers were executed and did not disprove this packet's contract.",
+    "output_uri": "evidence/result.json"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false,
+    "review_required": true
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "96908b0f04a20ae55d2049e70c9a4688671b2bcf0cff117f025453ed23ebc63c"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "8b91b9d3d297dfdea736fc2e94eba91ca7b5aeb76956e8cf36aec505733b9a31"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "449b05fbad7867893f157650771f57035ddd5b3cce9d7188513d15e2dd07e954"
+    },
+    "witness_artifact_id": "2026-07-24-jcode-direct-gateway-routing-result-artifact"
+  },
+  "reviews": [
+    {
+      "review_id": "2026-07-24-jcode-direct-gateway-routing-initial-review",
+      "reviewer": {
+        "kind": "agent",
+        "id": "review_jcode_dotfiles_all"
+      },
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ad5e3e93d5e09c71e808f3670ebe146729bf041717376ce51a67efaa7571ccb9"
+      },
+      "verdict": "changes-required",
+      "artifact_id": "2026-07-24-jcode-direct-gateway-routing-result-artifact",
+      "observed_at": "2026-07-24T21:25:39Z",
+      "independent": true,
+      "rationale": "The reviewer found no implementation defect but required this digest-bound completion evidence and a require-evidence validation."
+    },
+    {
+      "review_id": "2026-07-24-jcode-direct-gateway-routing-final-review",
+      "reviewer": {
+        "kind": "agent",
+        "id": "review_jcode_dotfiles_all"
+      },
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ad5e3e93d5e09c71e808f3670ebe146729bf041717376ce51a67efaa7571ccb9"
+      },
+      "verdict": "approved",
+      "artifact_id": "2026-07-24-jcode-direct-gateway-routing-result-artifact",
+      "observed_at": "2026-07-24T21:36:50Z",
+      "independent": true,
+      "rationale": "No remaining Critical, Important, or Minor findings; prompt, assertions, live route proof, and evidence consistently use Kimi for Coding and MiniMax Coding Plan fallbacks while rejecting OpenCode substitutions."
+    }
+  ],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "runtime-probe",
+      "observed_outcome": "rejected",
+      "artifact_id": "2026-07-24-jcode-direct-gateway-routing-result-artifact",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ad5e3e93d5e09c71e808f3670ebe146729bf041717376ce51a67efaa7571ccb9"
+      },
+      "observed_at": "2026-07-24T21:25:39Z",
+      "rationale": "The live swarm list labels direct Kimi and MiniMax routes with their native providers while retaining separately labeled gateway fallbacks."
+    },
+    {
+      "breaker_id": "B2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "2026-07-24-jcode-direct-gateway-routing-result-artifact",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ad5e3e93d5e09c71e808f3670ebe146729bf041717376ce51a67efaa7571ccb9"
+      },
+      "observed_at": "2026-07-24T21:25:39Z",
+      "rationale": "The contract test rejects secret literals, alternate runtimes, missing oneshot ordering, widened ambient credentials, or a second serve daemon."
+    },
+    {
+      "breaker_id": "B3",
+      "requirement_id": "R3",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "2026-07-24-jcode-direct-gateway-routing-result-artifact",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ad5e3e93d5e09c71e808f3670ebe146729bf041717376ce51a67efaa7571ccb9"
+      },
+      "observed_at": "2026-07-24T21:25:39Z",
+      "rationale": "The preservation test rejects deletion of unrelated TOML and prompt tests reject implicit or mislabeled fallback policy."
+    }
+  ]
+}

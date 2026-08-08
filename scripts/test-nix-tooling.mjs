@@ -90,6 +90,141 @@ test("Home Manager gives every managed agent client a deterministic UTF-8 locale
   assert.match(home, /systemd\.user\.sessionVariables\s*=\s*localeEnvironment;/);
 });
 
+test("Home Manager owns one persistent JCode server on the devbox", async () => {
+  const home = await source("home/home.nix");
+  assert.match(home, /\.\/modules\/jcode-server\.nix/);
+
+  const service = await source("home/modules/jcode-server.nix");
+  assert.match(service, /lib\.toLower hostname == "cc-se-sto-devbox-01"/);
+  assert.match(service, /systemd\.user\.services\.jcode-server/);
+  assert.match(
+    service,
+    /ExecStart\s*=\s*"\$\{jcodeLauncher\}\/bin\/jcode --no-update --model llm-gateway:umans-ai-coding-plan\/umans-glm-5\.2 serve --server-name devbox"/,
+  );
+  assert.match(service, /Restart\s*=\s*"always"/);
+  assert.match(service, /KillMode\s*=\s*"control-group"/);
+  assert.match(service, /Install\.WantedBy\s*=\s*\["default\.target"\]/);
+  assert.match(service, /"JCODE_DEBUG_CONTROL=1"/);
+  assert.match(service, /name\s*=\s*"jcode-tui"/);
+  assert.match(
+    service,
+    /runtimeDir="\/run\/user\/\$\(\$\{pkgs\.coreutils\}\/bin\/id -u\)"/,
+  );
+  assert.doesNotMatch(service, /runtimeDir="\/tmp/);
+  assert.match(service, /tmuxSocket="\$runtimeDir\/jcode-ui\.tmux\.sock"/);
+  assert.match(
+    service,
+    /tmux}\/bin\/tmux -S "\$tmuxSocket" new-session -A -s jcode-ui "\$\{jcodeLauncher\}\/bin\/jcode"/,
+  );
+  assert.match(service, /systemd\.user\.services\.jcode-webtty/);
+  assert.match(
+    service,
+    /ExecStart\s*=\s*"\$\{pkgs\.ttyd\}\/bin\/ttyd -W -O -i lo -p 7681 -m 4 -w \$\{homeDir\} \$\{jcodeTui\}\/bin\/jcode-tui"/,
+  );
+  assert.match(service, /After\s*=\s*\["jcode-server\.service"\]/);
+  assert.match(service, /Wants\s*=\s*\["jcode-server\.service"\]/);
+  assert.match(service, /NoNewPrivileges\s*=\s*true/);
+  assert.match(
+    service,
+    /RestrictAddressFamilies\s*=\s*\["AF_UNIX" "AF_INET" "AF_NETLINK"\]/,
+  );
+  assert.doesNotMatch(
+    service,
+    /ExecStartPre|rm\s+-f.*jcode(?:-daemon\.lock|\.sock)/,
+    "service must not delete another daemon's live lock or socket",
+  );
+  assert.doesNotMatch(
+    service,
+    /ttyd[^"\n]*(?:0\.0\.0\.0|\[::\]|--credential|jcode connect)/,
+    "WebTTY must remain loopback-only, credential-free behind SSH, and use the full TUI",
+  );
+});
+
+test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gateway fallbacks", async () => {
+  const home = await source("home/home.nix");
+  const service = await source("home/modules/jcode-server.nix");
+  const providers = await source("home/modules/jcode-providers.nix");
+  const preferences = await source("config/jcode/shared-preferences.toml");
+  const prompt = await source("config/jcode/swarm-prompt.md");
+
+  assert.match(home, /\.\/modules\/jcode-providers\.nix/);
+
+  assert.match(service, /jcodeLauncher\s*=\s*pkgs\.writeShellApplication/);
+  assert.match(service, /name\s*=\s*"jcode"/);
+  assert.match(service, /packages\s*=\s*\[jcodeLauncher jcodeTui\]/);
+  assert.match(
+    service,
+    /unset[\s\S]*JCODE_PROVIDER_LLM_GATEWAY_API_KEY[\s\S]*KIMI_API_KEY/,
+  );
+  assert.match(
+    service,
+    /ExecStart\s*=\s*"\$\{jcodeLauncher\}\/bin\/jcode --no-update --model llm-gateway:umans-ai-coding-plan\/umans-glm-5\.2 serve --server-name devbox"/,
+  );
+  assert.doesNotMatch(service, /--provider-profile llm-gateway/);
+  assert.match(
+    service,
+    /tmux}\/bin\/tmux -S "\$tmuxSocket" new-session -A -s jcode-ui "\$\{jcodeLauncher\}\/bin\/jcode"/,
+  );
+  assert.match(
+    service,
+    /paneStartCommand=.*pane_start_command[\s\S]*\$\{jcodeLauncher\}\/bin\/jcode[\s\S]*kill-session -t jcode-ui/,
+  );
+  assert.match(service, /"\.local\/bin\/jcode"\s*=\s*\{/);
+  assert.doesNotMatch(service, /JCODE_RUNTIME_DIR|runtime-allowlisted/);
+
+  assert.match(
+    providers,
+    /kimi_api_key\s*=\s*\{[\s\S]*?key\s*=\s*"sf\/env\/KIMI_API_KEY";[\s\S]*?mode\s*=\s*"0600";/,
+  );
+  assert.match(providers, /config\.sops\.secrets\.kimi_api_key\.path/);
+  assert.match(providers, /config\.sops\.secrets\.minimax_api_key\.path/);
+  assert.match(providers, /config\.sops\.secrets\.llm_gateway_api_key\.path/);
+  assert.match(providers, /kimi\.env/);
+  assert.match(providers, /KIMI_API_KEY/);
+  assert.match(providers, /minimax-direct\.env/);
+  assert.match(providers, /MINIMAX_API_KEY/);
+  assert.match(providers, /provider-llm-gateway\.env/);
+  assert.match(providers, /JCODE_PROVIDER_LLM_GATEWAY_API_KEY/);
+  assert.match(providers, /chmod 600/);
+  assert.match(providers, /jcode-preferences/);
+  assert.match(providers, /shared-preferences\.toml/);
+  assert.match(providers, /swarm-prompt\.md/);
+  assert.match(providers, /systemd\.user\.services\.jcode-provider-config/);
+  assert.match(providers, /Requires\s*=\s*\["sops-nix\.service"\]/);
+  assert.match(providers, /After\s*=\s*\["sops-nix\.service"\]/);
+  assert.match(providers, /Before\s*=\s*\["jcode-server\.service"\]/);
+  assert.doesNotMatch(providers, /home\.activation\.configureJcodeProviders/);
+  assert.match(service, /Requires\s*=\s*\["jcode-provider-config\.service"\]/);
+  assert.match(
+    service,
+    /After\s*=\s*\["network-online\.target" "jcode-provider-config\.service"\]/,
+  );
+  assert.doesNotMatch(
+    providers,
+    /(?:KIMI_API_KEY|MINIMAX_API_KEY|JCODE_PROVIDER_LLM_GATEWAY_API_KEY)\s*=\s*"[A-Za-z0-9_-]{16,}"/,
+  );
+
+  assert.match(preferences, /model_picker_providers\s*=\s*\["llm-gateway", "kimi", "minimax-direct", "openai-oauth"\]/);
+  assert.match(preferences, /cross_provider_failover\s*=\s*"manual"/);
+  assert.match(preferences, /trusted_external_sources\s*=\s*\[\]/);
+  assert.match(preferences, /trusted_external_source_paths\s*=\s*\[\]/);
+  assert.match(preferences, /\[providers\.llm-gateway\]/);
+  assert.match(preferences, /base_url\s*=\s*"https:\/\/llm-gateway\.centralcloud\.com\/v1"/);
+  assert.match(preferences, /\[providers\.minimax-direct\]/);
+  assert.match(preferences, /base_url\s*=\s*"https:\/\/api\.minimax\.io\/v1"/);
+  assert.match(preferences, /api_key_env\s*=\s*"MINIMAX_API_KEY"/);
+  assert.match(preferences, /default_model\s*=\s*"MiniMax-M3"/);
+  assert.doesNotMatch(preferences, /api\.minimaxi\.com/);
+
+  assert.match(prompt, /direct `kimi:k3`/);
+  assert.match(prompt, /direct `minimax-direct:MiniMax-M3`/);
+  assert.match(prompt, /`llm-gateway:kimi-for-coding\/k3`/);
+  assert.match(prompt, /`llm-gateway:minimax-coding-plan\/MiniMax-M3`/);
+  assert.doesNotMatch(prompt, /`llm-gateway:opencode-go\/kimi-k3`/);
+  assert.doesNotMatch(prompt, /`llm-gateway:minimax\/MiniMax-M3`/);
+  assert.doesNotMatch(prompt, /Never route (?:MiniMax M3|K3) through `llm-gateway`/);
+});
+
 test("shell aliases consume the managed Nix tooling", async () => {
   const shell = await source("home/modules/shell.nix");
   // Keep automation non-interactive: an anchored assignment rejects appended

@@ -1,0 +1,131 @@
+{
+  "schema_version": "verification-result/v1",
+  "result_id": "2026-07-24-jcode-direct-gateway-routing-result",
+  "status": "passed",
+  "observed_at": "2026-07-24T21:36:50Z",
+  "repository": {
+    "workspace": "/home/mhugo/.dotfiles-worktrees/jcode-server-service",
+    "branch": "codex/jcode-server-service",
+    "base_revision": "d6f378eeced841d4163bc0a0144be3f75ce4efd9",
+    "publication": "not-authorized"
+  },
+  "tests": [
+    {
+      "command": "python3 scripts/test-jcode-preferences.py",
+      "status": "passed",
+      "tests": 1,
+      "failures": 0
+    },
+    {
+      "command": "node --test scripts/test-nix-tooling.mjs",
+      "status": "passed",
+      "tests": 12,
+      "failures": 0
+    },
+    {
+      "command": "repo check",
+      "status": "passed",
+      "tests": 33,
+      "failures": 0
+    }
+  ],
+  "quality": [
+    {
+      "command": "home-manager switch --flake path:.#cc-se-sto-devbox-01",
+      "status": "passed",
+      "effect": "Activated the provider-config oneshot and restarted the single J-Code server with the route-prefixed Umans GLM model and no provider-profile narrowing."
+    },
+    {
+      "command": "systemctl --user show jcode-provider-config.service -p Result -p ExecMainStatus",
+      "status": "passed",
+      "result": "success",
+      "exec_main_status": 0
+    }
+  ],
+  "runtime": {
+    "provider_credentials": {
+      "provider_directory_mode": "0700",
+      "kimi_env_mode": "0600",
+      "minimax_direct_env_mode": "0600",
+      "llm_gateway_env_mode": "0600",
+      "mutable_config_mode": "0600",
+      "literal_secrets_recorded": false
+    },
+    "jcode_server": {
+      "active": true,
+      "result": "success",
+      "pid": 3800678,
+      "serve_process_count": 1,
+      "model": "llm-gateway:umans-ai-coding-plan/umans-glm-5.2",
+      "provider_profile_argument_present": false,
+      "current_generation_launcher": "/nix/store/5q9lks169dgmd5awbsw3fi0z3k7jh3lr-jcode/bin/jcode"
+    },
+    "model_routes": {
+      "current_spawn_default": "umans-ai-coding-plan/umans-glm-5.2",
+      "direct_kimi": {
+        "route": "kimi:k3",
+        "provider": "openai-compatible:kimi",
+        "base_url": "https://api.kimi.com/coding/v1",
+        "authenticated_catalog_available": true
+      },
+      "direct_minimax": {
+        "route": "minimax-direct:MiniMax-M3",
+        "provider": "openai-compatible:minimax-direct",
+        "base_url": "https://api.minimax.io/v1",
+        "authenticated_catalog_available": true
+      },
+      "gateway_kimi": {
+        "route": "llm-gateway:kimi-for-coding/k3",
+        "provider": "openai-compatible:llm-gateway",
+        "authenticated_catalog_available": true
+      },
+      "gateway_minimax": {
+        "route": "llm-gateway:minimax-coding-plan/MiniMax-M3",
+        "provider": "openai-compatible:llm-gateway",
+        "authenticated_catalog_available": true
+      },
+      "gateway_glm": {
+        "route": "llm-gateway:umans-ai-coding-plan/umans-glm-5.2",
+        "provider": "openai-compatible:llm-gateway",
+        "authenticated_catalog_available": true
+      },
+      "probe_kind": "catalog-only",
+      "paid_inference_sent": false
+    },
+    "jcode_webtty": {
+      "active": true,
+      "result": "success",
+      "pid": 3657854,
+      "listener": "127.0.0.1%lo:7681",
+      "loopback_http_code": 200,
+      "public_address_probe": "connection-refused"
+    },
+    "shared_tui": {
+      "session": "jcode-ui",
+      "socket": "/run/user/1000/jcode-ui.tmux.sock",
+      "pane_launcher_matches_current_generation": true,
+      "jcode_client_count": 1,
+      "jcode_client_name": "sunflower",
+      "root_model": "umans-ai-coding-plan/umans-glm-5.2"
+    },
+    "recovery_observation": {
+      "sunflower": "completed a bounded read-only recovery review and independently confirmed the four requested direct and gateway routes plus the remaining structural autonomy gaps",
+      "herb": "crashed",
+      "unicorn": "stopped",
+      "durable_bus_replies": 0
+    }
+  },
+  "review": {
+    "reviewer": "review_jcode_dotfiles_all",
+    "independent": true,
+    "verdict": "approved",
+    "finding_closed": "The missing completion evidence was added. A route-name concern was falsified by a fresh live catalog showing the user-requested kimi-for-coding and minimax-coding-plan gateway fallbacks; evidence and positive/negative regression assertions were corrected.",
+    "remaining_slice_defects": 0
+  },
+  "limits": [
+    "The source changes are activated but remain uncommitted, unintegrated, and unpublished in the isolated dotfiles worktree.",
+    "Automatic GLM-to-K3 coordinator takeover, restart-safe driver ownership, jj workspace brokering, enforced verification/escalation, and authorized publication are outside this provider/server packet.",
+    "The Redteam harness could not mount the local worktree and therefore returned an operator missing-evidence issue rather than a code verdict; the independent OpenAI reviewer inspected the real worktree.",
+    "Provider quota sensing and enforcement are not implemented; the concurrency and cooldown values are routing policy only."
+  ]
+}

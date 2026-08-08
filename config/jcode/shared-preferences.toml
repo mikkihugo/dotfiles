@@ -1,0 +1,45 @@
+[provider]
+# The server remains on the Umans GLM gateway route.  Worker routes are always
+# selected explicitly by swarm policy.
+default_provider = "llm-gateway"
+default_model = "llm-gateway:umans-ai-coding-plan/umans-glm-5.2"
+model_picker_providers = ["llm-gateway", "kimi", "minimax-direct", "openai-oauth"]
+cross_provider_failover = "manual"
+
+[auth]
+trusted_external_sources = []
+trusted_external_source_paths = []
+
+[providers.llm-gateway]
+type = "open-ai-compatible"
+base_url = "https://llm-gateway.centralcloud.com/v1"
+auth = "bearer"
+api_key_env = "JCODE_PROVIDER_LLM_GATEWAY_API_KEY"
+env_file = "provider-llm-gateway.env"
+default_model = "auto"
+requires_api_key = true
+provider_routing = false
+allow_provider_pinning = false
+model_catalog = true
+
+[[providers.llm-gateway.models]]
+id = "auto"
+
+# Do not call this profile "minimax": J-Code's built-in minimax profile wins
+# that prefix and may select its key-prefix based China endpoint.  This named
+# profile is the direct international route and remains distinct from the
+# CentralCloud gateway fallback.
+[providers.minimax-direct]
+type = "open-ai-compatible"
+base_url = "https://api.minimax.io/v1"
+auth = "bearer"
+api_key_env = "MINIMAX_API_KEY"
+env_file = "minimax-direct.env"
+default_model = "MiniMax-M3"
+requires_api_key = true
+provider_routing = false
+allow_provider_pinning = false
+model_catalog = true
+
+[[providers.minimax-direct.models]]
+id = "MiniMax-M3"

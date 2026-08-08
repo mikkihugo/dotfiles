@@ -1,0 +1,19 @@
+{
+  "source": "repository-vcs-facade",
+  "files": [
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/README.md",
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/current-spec.snapshot.json",
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/evidence.bundle.json",
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/evidence/changed-files.json",
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/evidence/red-t1.json",
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/evidence/red-t2.json",
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/evidence/red-t3.json",
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/evidence/result.json",
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/purpose.contract.json",
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/validation.report.json",
+    "docs/work/2026-07-24-jcode-shared-tui-webtty/work.spec.json",
+    "home/home.nix",
+    "home/modules/jcode-server.nix",
+    "scripts/test-nix-tooling.mjs"
+  ]
+}

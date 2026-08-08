@@ -1,0 +1,15 @@
+{
+  "schema_version": "test-result/v1",
+  "result_id": "2026-07-24-jcode-shared-tui-webtty-red-t3",
+  "status": "failed",
+  "observed_at": "2026-07-24T19:54:00Z",
+  "command": "jcode debug clients:map; ps -eo pid,ppid,args",
+  "failure": "PrivateTmp isolated the default tmux socket: SSH and WebTTY produced two jcode-ui tmux servers and two full-TUI J-Code clients instead of one shared screen.",
+  "observed_processes": {
+    "host_tmux": 2347205,
+    "host_tui": 2347209,
+    "webtty_tmux": 2425858,
+    "webtty_tui": 2425862
+  },
+  "timestamp_basis": "Minute-rounded from the recorded runtime and independent-review transcripts."
+}

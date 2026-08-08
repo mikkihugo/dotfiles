@@ -28,6 +28,7 @@ main() {
 	"$root/scripts/test-repo-vcs.sh"
 	HOME_MANAGER_PROFILE="$profile" bash "$root/scripts/test-ast-grep-shim.sh"
 	python3 "$root/scripts/test-codex-preferences.py"
+	python3 "$root/scripts/test-jcode-preferences.py"
 	python3 "$root/scripts/test-merge-authorized-keys.py"
 	(
 		cd "$root"

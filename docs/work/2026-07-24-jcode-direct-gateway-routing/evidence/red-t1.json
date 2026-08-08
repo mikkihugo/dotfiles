@@ -1,0 +1,11 @@
+{
+  "schema_version": "test-result/v1",
+  "result_id": "2026-07-24-jcode-direct-gateway-routing-red-t1",
+  "status": "failed",
+  "observed_at": "2026-07-24T20:45:26Z",
+  "proof_kind": "runtime-baseline",
+  "command": "jcode debug --session <live-session> 'tool:swarm {\"action\":\"list_models\"}'",
+  "failure": "The pre-change server used --provider-profile llm-gateway, so its live swarm catalog exposed gateway routes but no direct Kimi or named MiniMax routes.",
+  "falsified_by_green": "The deployed MultiProvider server now reports k3 via openai-compatible:kimi, MiniMax-M3 via openai-compatible:minimax-direct, and the explicit llm-gateway fallbacks in one live list.",
+  "timestamp_basis": "Purpose-contract admission timestamp for the recorded gateway-only runtime baseline."
+}

@@ -1,0 +1,323 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-07-24-jcode-shared-tui-webtty-work",
+  "purpose_contract_id": "2026-07-24-jcode-shared-tui-webtty-purpose",
+  "handover": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "accepting_authority": {
+      "kind": "policy",
+      "id": "purpose-first-tdd-handover"
+    },
+    "decided_at": "2026-07-24T19:32:22Z",
+    "purpose_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "686d0771465fc72dd083ad88d1de89a5d1d5ba4b27d736af04c4f34f26a19800"
+    },
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "bfacf34e5fdb3609d4926f081b9636a21b97b0ad19a7a4c994c931c12b21e00a"
+    },
+    "policy": {
+      "id": "workspec-content-handover/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "21f4dad52f9e5f5a53ee16625c7bf75e01251002911d667e879f3e06147e7192"
+      }
+    },
+    "validators": [
+      "workspec-v4.schema.json",
+      "subject-digest",
+      "purpose-first-tdd-handover"
+    ],
+    "evidence_refs": [
+      "purpose.contract.json#admission",
+      "source-trace:jcode-default-full-tui",
+      "runtime-baseline:no-webtty-no-tmux"
+    ]
+  },
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-07-24-jcode-shared-tui-webtty",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-07-24-jcode-shared-tui-webtty-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "f9f63d8cdf8c953e68c6386070669c89929256ba9d21bc520acf3b3d214b787d"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "Home Manager shall provide a jcode-tui command that attaches to one named tmux session and launches the full J-Code TUI client only when that session does not exist.",
+        "acceptance_criteria": [
+          "jcode-tui resolves from the activated user PATH",
+          "two invocations target the same tmux session named jcode-ui",
+          "the tmux pane runs the full J-Code TUI client rather than jcode connect",
+          "the TUI registers against the existing jcode-server.service socket"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Managed jcode-tui command",
+            "trigger": "an SSH or WebTTY client invokes jcode-tui",
+            "response": "attach to the existing jcode-ui tmux session or create it with one full J-Code TUI client"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "a second invocation creates a different tmux TUI or launches the line-oriented connect client",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "The managed J-Code WebTTY service shall listen only on 127.0.0.1:7681 and shall run jcode-tui as a writable terminal with same-origin checking.",
+        "acceptance_criteria": [
+          "systemd reports jcode-webtty.service active",
+          "ss reports exactly one ttyd listener at 127.0.0.1:7681",
+          "curl to http://127.0.0.1:7681 returns the ttyd terminal page",
+          "no listener exists on 0.0.0.0:7681, [::]:7681, or a public host address"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Managed J-Code WebTTY service",
+            "response": "serve a writable same-origin browser terminal only on the IPv4 loopback address"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "ttyd accepts connections through a non-loopback listener",
+          "witness_kind": "runtime-probe",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R3",
+        "statement": "The WebTTY and shared TUI shall reuse the existing J-Code daemon and shall not create, replace, or stop jcode-server.service.",
+        "acceptance_criteria": [
+          "jcode-server.service remains active with NRestarts unchanged during attachment",
+          "exactly one process has the J-Code serve subcommand",
+          "the shared TUI appears as a client in jcode debug clients:map",
+          "stopping jcode-webtty.service leaves jcode-server.service active"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "unwanted-behavior",
+            "system": "Shared J-Code access path",
+            "trigger": "an SSH or browser client attaches",
+            "response": "reuse the existing daemon without starting or stopping a serve process"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B3",
+          "condition": "attachment creates another serve process or disrupts the active daemon",
+          "witness_kind": "runtime-probe",
+          "expected": "rejected"
+        },
+        "risk": "high",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "Home Manager shall provide a jcode-tui command that attaches to one named tmux session and launches the full J-Code TUI client only when that session does not exist.",
+      "acceptance_criteria": [
+        "jcode-tui resolves from the activated user PATH",
+        "two invocations target the same tmux session named jcode-ui",
+        "the tmux pane runs the full J-Code TUI client rather than jcode connect",
+        "the TUI registers against the existing jcode-server.service socket"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Managed jcode-tui command",
+          "trigger": "an SSH or WebTTY client invokes jcode-tui",
+          "response": "attach to the existing jcode-ui tmux session or create it with one full J-Code TUI client"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "a second invocation creates a different tmux TUI or launches the line-oriented connect client",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "The managed J-Code WebTTY service shall listen only on 127.0.0.1:7681 and shall run jcode-tui as a writable terminal with same-origin checking.",
+      "acceptance_criteria": [
+        "systemd reports jcode-webtty.service active",
+        "ss reports exactly one ttyd listener at 127.0.0.1:7681",
+        "curl to http://127.0.0.1:7681 returns the ttyd terminal page",
+        "no listener exists on 0.0.0.0:7681, [::]:7681, or a public host address"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Managed J-Code WebTTY service",
+          "response": "serve a writable same-origin browser terminal only on the IPv4 loopback address"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "ttyd accepts connections through a non-loopback listener",
+        "witness_kind": "runtime-probe",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R3",
+      "statement": "The WebTTY and shared TUI shall reuse the existing J-Code daemon and shall not create, replace, or stop jcode-server.service.",
+      "acceptance_criteria": [
+        "jcode-server.service remains active with NRestarts unchanged during attachment",
+        "exactly one process has the J-Code serve subcommand",
+        "the shared TUI appears as a client in jcode debug clients:map",
+        "stopping jcode-webtty.service leaves jcode-server.service active"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "unwanted-behavior",
+          "system": "Shared J-Code access path",
+          "trigger": "an SSH or browser client attaches",
+          "response": "reuse the existing daemon without starting or stopping a serve process"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B3",
+        "condition": "attachment creates another serve process or disrupts the active daemon",
+        "witness_kind": "runtime-probe",
+        "expected": "rejected"
+      },
+      "risk": "high",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "docs/work/2026-07-24-jcode-shared-tui-webtty/**",
+      "home/home.nix",
+      "home/modules/jcode-server.nix",
+      "scripts/test-nix-tooling.mjs"
+    ],
+    "blocked": [
+      "config/jcode/**",
+      "secrets/**",
+      "system SSH configuration",
+      "public firewall configuration"
+    ],
+    "expected_files": []
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Home Manager source tests reject a missing jcode-tui wrapper, the line client, or a non-shared tmux command.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "Home Manager source tests and live listener probes reject a missing, non-writable, cross-origin, or non-loopback WebTTY.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R3",
+      "kind": "integration",
+      "description": "Live process and debug-socket probes prove attachment leaves exactly one J-Code daemon and adds a TUI client.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "node --test scripts/test-nix-tooling.mjs",
+      "repo check",
+      "systemctl --user is-active jcode-server.service jcode-webtty.service",
+      "ss -lntp",
+      "curl --fail --silent --show-error http://127.0.0.1:7681/",
+      "tmux has-session -t jcode-ui",
+      "jcode debug server:info",
+      "jcode debug clients:map",
+      "purpose-validate-work docs/work/2026-07-24-jcode-shared-tui-webtty --repo-root . --require-evidence"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.4,
+    "debugging": 0.6
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-07-24-jcode-shared-tui-webtty",
+    "target_planes": [
+      "client",
+      "runtime"
+    ],
+    "dependencies": [
+      "jcode-server.service",
+      "nixpkgs#ttyd",
+      "nixpkgs#tmux"
+    ],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [
+      "user-systemd",
+      "loopback-http",
+      "pseudo-terminal"
+    ],
+    "requested_isolation": "process",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

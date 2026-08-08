@@ -34,10 +34,15 @@
 # daemon already keeps the agent running when the TUI drops — this just keeps
 # the view+scrollback too. Full path dodges any PATH/hash staleness.
 jc() {
+	if ! systemctl --user is-active --quiet jcode-server.service; then
+		echo "jc: managed jcode-server.service is not active; refusing standalone server auto-start" >&2
+		return 78
+	fi
+	export JCODE_SOCKET="${JCODE_SOCKET:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/jcode.sock}"
 	if [ -n "${TMUX:-}" ]; then
 		"$HOME/.local/bin/jcode" "$@"
 	else
-		tmux new-session -A -s jcode "$HOME/.local/bin/jcode"
+		tmux new-session -A -s jcode "$HOME/.local/bin/jcode" "$@"
 	fi
 }
 jca() { tmux attach -t jcode; }

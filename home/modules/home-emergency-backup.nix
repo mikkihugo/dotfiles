@@ -111,7 +111,7 @@
     set -euo pipefail
 
     export HOME="${homeDir}"
-    export BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}"
+    export BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}"
 
     key_path="${keyPath}"
     pub_path="$key_path.pub"

@@ -252,7 +252,16 @@ in {
   home.shellAliases = {
     # Build first and show the generation diff before activation. nh owns
     # profile discovery, so this does not parse generation symlinks by hand.
-    hms = "nh home switch";
+    #
+    # -c is mandatory: without it nh matches the homeConfigurations attribute on
+    # $USER, which selects the generic "mhugo" fallback. That fallback is built
+    # with hostname = "" (see flake.nix), so every host-gated module silently
+    # evaluates to false and activation SILENTLY REMOVES those services --
+    # observed 2026-08-08 dropping jcode-server, jcode-webtty, jcode-tui and
+    # ttyd on cc-se-sto-devbox-01. scripts/current-home-profile is the same
+    # hostname->profile resolver the .local/bin/home-manager wrapper already
+    # uses, so both activation paths agree on one source of truth.
+    hms = ''nh home switch "$HOME/.dotfiles" -c "$("$HOME/.dotfiles/scripts/current-home-profile")"'';
     # Explain why the current and previous Home Manager generations differ.
     nixwhy = "nix-diff $(command ls -1dv \"$HOME\"/.local/state/nix/profiles/home-manager-*-link 2>/dev/null | tail -n 2 | head -n 1) $(readlink -f \"$HOME\"/.local/state/nix/profiles/home-manager)";
     # Show store roots over 500 MB as text.

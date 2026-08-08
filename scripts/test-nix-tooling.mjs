@@ -232,13 +232,19 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
 
 test("shell aliases consume the managed Nix tooling", async () => {
   const shell = await source("home/modules/shell.nix");
-  // Keep automation non-interactive: an anchored assignment rejects appended
-  // flags such as --ask while allowing ordinary Nix whitespace.
-  const hmsAlias = /^\s*hms\s*=\s*"nh home switch"\s*;/m;
+  // Keep automation non-interactive (no --ask), and require an explicit
+  // profile selection. Without -c, nh matches homeConfigurations on $USER and
+  // picks the generic "mhugo" fallback, which is built with hostname = "" —
+  // every host-gated module then evaluates false and activation silently
+  // removes those services. current-home-profile is the same resolver the
+  // .local/bin/home-manager wrapper uses.
+  const hmsAlias = /^\s*hms\s*=\s*''nh home switch "\$HOME\/\.dotfiles" -c "\$\("\$HOME\/\.dotfiles\/scripts\/current-home-profile"\)"'';/m;
   assert.match(shell, hmsAlias);
-  assert.doesNotMatch(shell, /hms\s*=\s*"nh home switch --ask/);
-  assert.match('hms  =  "nh home switch" ;', hmsAlias);
-  assert.doesNotMatch('hms = "nh home switch --ask";', hmsAlias);
+  assert.doesNotMatch(shell, /hms\s*=\s*\S*nh home switch[^;]*--ask/);
+  // hms must never activate without naming the configuration.
+  const hmsLine = shell.match(/^\s*hms\s*=.*$/m)[0];
+  assert.match(hmsLine, /-c /);
+  assert.match(hmsLine, /current-home-profile/);
   assert.match(shell, /nixwhy\s*=\s*"nix-diff /);
   assert.match(shell, /nixdu\s*=\s*"nix-du /);
 });

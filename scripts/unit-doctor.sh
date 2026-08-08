@@ -45,6 +45,33 @@ if [ -d "$HOME/.config/systemd/user" ]; then
 fi
 [ "$found_dupe" -eq 0 ] && printf '  none\n'
 
+printf '\n== systemd drop-ins (must be repo-managed, not hand-edited) ==\n'
+# A drop-in is how one layer extends a unit another layer owns. Hand-written
+# drop-ins are invisible to both repos and rot silently: an unmanaged
+# jcode-server override.conf sat here carrying
+# `ExecStartPre=-/usr/bin/env pkill -f '...jcode serve' || true`. systemd does
+# not shell-interpret ExecStartPre, so `||` and `true` became extra pkill
+# arguments -> "pkill: only one pattern can be provided", 3036 journal errors,
+# and the pattern matched nothing anyway (the real process argv was
+# `jcode --provider auto serve`, not `jcode serve`).
+found_dropin=0
+while IFS= read -r conf; do
+	[ -e "$conf" ] || continue
+	found_dropin=1
+	target="$(readlink -f "$conf" 2>/dev/null || echo "$conf")"
+	case "$target" in
+	/nix/store/*)
+		printf '  ok        %s\n' "${conf#"$HOME"/.config/systemd/user/}"
+		;;
+	*)
+		status=1
+		printf '  UNMANAGED %s\n' "${conf#"$HOME"/.config/systemd/user/}"
+		printf '            resolves to %s - not /nix/store, so neither repo owns it\n' "$target"
+		;;
+	esac
+done < <(find "$HOME/.config/systemd/user" -mindepth 2 -name '*.conf' 2>/dev/null | sort)
+[ "$found_dropin" -eq 0 ] && printf '  none\n'
+
 printf '\n== orphaned long-lived processes (no owning .service) ==\n'
 patterns="${UNIT_DOCTOR_PATTERNS:-jcode ttyd}"
 found_orphan=0

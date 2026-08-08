@@ -35,6 +35,10 @@
     # NixOS 26.05 release branch: stable base for the user environment.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
+    # Unstable used only for selected tooling pins (currently jujutsu 0.43).
+    # Drop when nixos-26.05 backports jj ≥ 0.43.
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+
     # Home Manager release branch follows the matching nixpkgs release.
     home-manager = {
       url = "github:nix-community/home-manager/release-26.05";
@@ -77,6 +81,7 @@
 
   outputs = {
     nixpkgs,
+    nixpkgs-unstable,
     home-manager,
     sops-nix,
     flake-utils,
@@ -95,7 +100,13 @@
         pkgs = import nixpkgs {
           system = sys;
           config.allowUnfree = true;
-          overlays = [];
+          overlays = [
+            # jujutsu 0.43: better change-id rebase on git fetch, immutable WC
+            # snapshot, `jj run`, aarch64 corrupt-object fix. 26.05 is still 0.41.
+            (_final: _prev: {
+              jujutsu = nixpkgs-unstable.legacyPackages.${sys}.jujutsu;
+            })
+          ];
         };
         extraSpecialArgs =
           specialArgs

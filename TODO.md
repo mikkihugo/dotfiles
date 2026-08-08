@@ -17,7 +17,7 @@ Current split:
 | Declarative secrets   | SOPS + age (in this repo)                  | git         |
 | Network layer         | Tailscale / headscale                      | overlay     |
 | Desired state         | home-manager (this repo)                   | pull, `hms` |
-| Admin actions         | OpenBao UI at `kv.infra.centralcloud.com/ui` | public/OIDC |
+| Admin actions         | OpenBao UI at `kv.admin.centralcloud.net/ui` | public/OIDC |
 
 No custom control-plane service. No home-grown device-pairing protocol.
 Humans authenticate to Authentik with a passkey; machines authenticate

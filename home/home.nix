@@ -110,11 +110,12 @@ in {
         CMAKE_C_COMPILER_LAUNCHER = "ccache";
         CMAKE_CXX_COMPILER_LAUNCHER = "ccache";
         LETTA_BASE_URL = "http://127.0.0.1:8283";
-        # OpenBao CLI — served at kv.infra.centralcloud.com (public, Authentik
-        # forward-auth on /ui, token auth on API). `bao login -method=oidc`
-        # authenticates via Authentik (passkey/TOTP). bao appends /v1 so no
-        # trailing slash.
-        BAO_ADDR = "https://kv.infra.centralcloud.com";
+        # OpenBao CLI — this devbox runs inside the k3s cluster, so the CLI
+        # talks to the active server's ClusterIP service directly (plain HTTP;
+        # the public edge kv.centralcloud.net is Authentik forward-auth gated
+        # and rejects CLI requests). bao appends /v1 so no trailing slash.
+        BAO_ADDR = "http://vault-active.vault.svc.cluster.local:8200";
+        FORGEJO_HOST = "git.centralcloud.net";
       };
   };
 

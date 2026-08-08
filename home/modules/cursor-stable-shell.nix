@@ -34,6 +34,7 @@
   # Shared body used by declarative wrapper, refresh script, and Node recovery hook.
   # Enter Nix once: skip direnv when already in a flake/Nix shell so nested bash
   # (repo shebang, scripts) does not cold-eval a jj worktree flake again.
+  # NixOS programs.direnv owns DIRENV_CONFIG=/etc/direnv (nix-direnv 3.2.0).
   direnvInheritLines = ''
     if [ -z "''${DIRENV_DISABLE:-}" ] \
       && [ -z "''${IN_NIX_SHELL:-}" ] \

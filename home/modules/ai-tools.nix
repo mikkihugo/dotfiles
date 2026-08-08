@@ -1038,6 +1038,36 @@ in {
         '';
       };
 
+      # Codex spawns its command runner as `codex-code-mode-host` resolved from
+      # PATH, NOT relative to the codex binary. Until 2026-08-08 that name was
+      # supplied by a mise shim; removing aqua:openai/codex from mise (and
+      # reshimming) deleted the shim, so every Codex tool call failed with
+      # "the local Codex command runner: ~/.local/bin/codex-code-mode-host is
+      # missing" (openai/codex#31831, #31833). The npm package vendors the real
+      # binary next to its own codex; expose it under the name Codex looks for.
+      ".local/bin/codex-code-mode-host" = {
+        executable = true;
+        force = true;
+        text = ''
+          #!/usr/bin/env bash
+          set -euo pipefail
+          # npm links only `codex` (the meta package's sole bin; the platform
+          # package declares bin: null), so the sidecar never reaches PATH.
+          # Try the current layout first, then fall back to a search so a new
+          # version, target triple, or npm hoisting decision does not break it.
+          root="$HOME/.npm-global/lib/node_modules/@openai"
+          vendor="$root/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex-code-mode-host"
+          if [ ! -x "$vendor" ]; then
+            vendor="$(find "$root" -name codex-code-mode-host -type f -perm -u+x 2>/dev/null | head -n 1)"
+          fi
+          if [ -z "''${vendor:-}" ] || [ ! -x "$vendor" ]; then
+            echo "codex-code-mode-host: vendored binary not found under $root (reinstall with: npm i -g @openai/codex)" >&2
+            exit 127
+          fi
+          exec "$vendor" "$@"
+        '';
+      };
+
       # OpenCode — mise-managed; inject OTEL (native OTLP when
       # OTEL_EXPORTER_OTLP_ENDPOINT is set; AI SDK spans via
       # experimental.openTelemetry in ~/.config/opencode/opencode.json).

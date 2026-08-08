@@ -14,7 +14,9 @@
 #             and ports that a unit wants. Its cgroup has no .service, so systemd
 #             will never stop or restart it.
 #
-# Exits non-zero when either is found, so it can gate a handoff.
+# Exits non-zero when either is found. Nothing invokes this automatically --
+# it is a manually-run doctor (`just unit-doctor`), so the non-zero exit is
+# there for whoever runs it, not for an installed gate.
 set -euo pipefail
 
 status=0
@@ -78,7 +80,10 @@ found_orphan=0
 for pat in $patterns; do
 	while IFS= read -r pid; do
 		[ -n "$pid" ] || continue
-		etime="$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ')"
+		# `|| true` is load-bearing: under `set -euo pipefail` a pid that exits
+		# between pgrep and ps makes this substitution fail and aborts the whole
+		# script, silently skipping the port check and the final verdict.
+		etime="$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
 		[ -n "$etime" ] || continue
 		[ "$etime" -ge 300 ] || continue
 		unit="$(grep -oE '[a-zA-Z0-9_.@-]+\.service' "/proc/$pid/cgroup" 2>/dev/null | tail -1 || true)"

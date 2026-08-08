@@ -1036,8 +1036,13 @@ in {
       # headers, so nothing dynamic was being contributed and the endpoint is
       # expressible statically. See config/codex/config.toml.
 
-      # Codex spawns its command runner as `codex-code-mode-host` resolved from
-      # PATH, NOT relative to the codex binary. Until 2026-08-08 that name was
+      # Codex spawns its command runner as `codex-code-mode-host`. At least one
+      # invocation path resolves that name from PATH rather than beside the codex
+      # binary -- that is the failure upstream reports, and it is what broke here.
+      # Other paths do use the vendor sibling: processes observed at 21:54/22:04
+      # ran the vendored binary while no PATH entry carried the name. So this
+      # wrapper is a belt-and-braces fix for the PATH-resolving callers, not a
+      # claim that every caller uses PATH. Until 2026-08-08 that name was
       # supplied by a mise shim; removing aqua:openai/codex from mise (and
       # reshimming) deleted the shim, so every Codex tool call failed with
       # "the local Codex command runner: ~/.local/bin/codex-code-mode-host is

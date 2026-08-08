@@ -7,5 +7,17 @@ model_provider = "openai"
 model_reasoning_effort = "low"
 web_search = "live"
 
+# AGENTS.md read cap. Default is 32768, verified by measurement: a 89,970-byte
+# AGENTS.md in a scratch repo was truncated at exactly 32 KiB (markers past that
+# were invisible to the model). That silently discarded 55% of
+# singularity-forge/AGENTS.md, 36% of singularity-engine and 24% of unity-coder,
+# including the "MCP tools you will need" and "Skill index" sections.
+project_doc_max_bytes = 131072
+
+# Per-tool-output storage budget. Measured across 8,434 real tool outputs:
+# p50 145 tok, p95 8.9k, p99 10.9k, max 58.7k. 32k truncates 0.1% of them, so it
+# only clips pathological outliers before they consume the context window.
+tool_output_token_limit = 32000
+
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "project-name", "git-branch", "run-state", "five-hour-limit", "weekly-limit", "thread-id", "thread-title", "task-progress"]

@@ -11,6 +11,11 @@ SHARED_KEYS = [
     "model_reasoning_effort",
     "model_reasoning_summary",
     "web_search",
+    # Codex truncates AGENTS.md at 32 KiB by default (measured: a 89,970-byte
+    # AGENTS.md was cut at exactly 32 KiB). Several repos here exceed that, so
+    # this must be shared to every machine, not just set locally.
+    "project_doc_max_bytes",
+    "tool_output_token_limit",
 ]
 SHARED_TUI_KEYS = ["status_line"]
 

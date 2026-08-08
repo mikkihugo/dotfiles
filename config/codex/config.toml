@@ -69,3 +69,10 @@ name = "CentralCloud LLM Gateway"
 base_url = "http://llm-gateway.svc:80/codex/v1"
 env_key = "LLM_MUX_API_KEY"
 wire_api = "responses"
+
+# history.jsonl safety cap. NOTE: this governs ONLY history.jsonl -- codex has
+# no retention whatsoever for the ~/.codex/sessions rollout files, which grow
+# unbounded (12.8 GB / 4.6k files observed on the devbox 2026-08-08).
+[history]
+persistence = "save-all"
+max_bytes = 104857600

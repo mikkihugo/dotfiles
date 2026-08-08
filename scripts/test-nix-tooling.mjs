@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
@@ -393,4 +393,199 @@ test("Claude Code remains native-installer-owned outside Home Manager", async ()
   assert.doesNotMatch(aiTools, /"\.local\/bin\/claude"/);
   assert.doesNotMatch(aiTools, /pkgs\.claude-code/);
   assert.doesNotMatch(flake, /claude-code/);
+});
+
+// Home Manager merges every module's home.file set into one attrset and every
+// module's home.packages into one pkgs.buildEnv, so two modules claiming one
+// path is an eval-time error that otherwise surfaces only during a full nix
+// build. GAP 7: ai-tools.nix and jcode-server.nix both claimed
+// ~/.local/bin/jcode and both listed a derivation named "jcode", producing a
+// conflicting home.file definition and then a buildEnv "conflicting subpath".
+// These scanners are deliberately textual so the next such pair fails in
+// `just check` in milliseconds instead of during `land`.
+//
+// Known blind spots — a flagged duplicate needs triage, not an automatic bug
+// verdict, and a clean run is not proof that no collision exists:
+//   * computed keys (`${stableBashRel}` in cursor-stable-shell.nix) are
+//     invisible to a quoted-key scan;
+//   * generated attrsets (`xdg.configFile = lib.mapAttrs' …` in
+//     home-emergency-backup.nix) are skipped whole;
+//   * host gating (`lib.mkIf (lib.toLower hostname == …)` in jcode-server.nix)
+//     is not modelled, so two modules may legitimately claim one path on
+//     disjoint hosts;
+//   * bin names of raw pkgs entries are not knowable without evaluating nix;
+//     only the attr-name heuristic below approximates them.
+// The sentinel assertions exist because a scanner whose regexes stopped
+// matching reports zero duplicates exactly like a clean tree does.
+
+const moduleSources = async () => {
+  const dir = "home/modules";
+  const names = (await readdir(join(contractRoot, dir)))
+    .filter((name) => name.endsWith(".nix"))
+    .sort();
+  return Promise.all(
+    names.map(async (name) => ({
+      name,
+      lines: (await source(join(dir, name))).split("\n"),
+    })),
+  );
+};
+
+// Quoted attr keys inside a `home.file = { … }` / `file = { … }` /
+// `xdg.configFile = { … }` block at depth 0 of that block, plus the dotted
+// single-key forms `home.file."…"`, `file."…"` and `xdg.configFile."…"`.
+const collectFileKeys = (modules) => {
+  const keys = new Map();
+  const add = (key, where) => {
+    if (!keys.has(key)) keys.set(key, []);
+    keys.get(key).push(where);
+  };
+  for (const { name, lines } of modules) {
+    let inBlock = false;
+    let depth = 0;
+    lines.forEach((line, index) => {
+      const code = line.split("#")[0];
+      const dotted = code.match(/(?:^|\s)(?:home\.)?(?:file|xdg\.configFile|configFile)\."([^"]+)"/);
+      if (dotted) {
+        add(dotted[1], `${name}:${index + 1}`);
+        return;
+      }
+      if (!inBlock) {
+        if (/^\s*(?:home\.file|file|xdg\.configFile|configFile)\s*=\s*\{/.test(code)) {
+          inBlock = true;
+          depth = 0;
+        }
+        return;
+      }
+      if (depth === 0) {
+        const key = code.match(/^\s*"([^"]+)"\s*=/);
+        if (key) add(key[1], `${name}:${index + 1}`);
+      }
+      depth += (code.match(/\{/g) ?? []).length - (code.match(/\}/g) ?? []).length;
+      if (depth < 0) inBlock = false;
+    });
+  }
+  return keys;
+};
+
+// `name = pkgs.writeShellScriptBin "bin"` and
+// `name = pkgs.writeShellApplication { name = "bin"; … }`.
+const collectWrappers = (modules) => {
+  const wrappers = [];
+  for (const { name, lines } of modules) {
+    lines.forEach((line, index) => {
+      const code = line.split("#")[0];
+      const script = code.match(
+        /^\s*([A-Za-z0-9_'-]+)\s*=\s*pkgs\.(?:writeShellScriptBin|writeScriptBin)\s+"([^"]+)"/,
+      );
+      if (script) {
+        wrappers.push({ variable: script[1], bin: script[2], where: `${name}:${index + 1}` });
+        return;
+      }
+      const application = code.match(
+        /^\s*([A-Za-z0-9_'-]+)\s*=\s*pkgs\.writeShellApplication\s*\{/,
+      );
+      if (!application) return;
+      for (let ahead = index + 1; ahead < Math.min(index + 6, lines.length); ahead += 1) {
+        const bin = lines[ahead].match(/^\s*name\s*=\s*"([^"]+)"/);
+        if (bin) {
+          wrappers.push({ variable: application[1], bin: bin[1], where: `${name}:${index + 1}` });
+          break;
+        }
+      }
+    });
+  }
+  return wrappers;
+};
+
+// Tokens listed inside any `home.packages = [ … ]` / `packages = [ … ]`, with
+// comments stripped so a commented-out entry does not count as active.
+const collectPackageEntries = (modules) => {
+  const entries = [];
+  for (const { name, lines } of modules) {
+    let inList = false;
+    let depth = 0;
+    lines.forEach((line, index) => {
+      const code = line.split("#")[0];
+      let scanFrom = code;
+      if (!inList) {
+        if (!/^\s*(?:home\.packages|packages)\s*=\s*(?:with pkgs;\s*)?\[/.test(code)) return;
+        inList = true;
+        depth = 1;
+        scanFrom = code.slice(code.indexOf("[") + 1);
+      }
+      for (const token of scanFrom.match(/[A-Za-z0-9_'.-]+/g) ?? []) {
+        entries.push({ token, where: `${name}:${index + 1}` });
+      }
+      depth += (scanFrom.match(/\[/g) ?? []).length - (scanFrom.match(/\]/g) ?? []).length;
+      if (depth <= 0) inList = false;
+    });
+  }
+  return entries;
+};
+
+test("Home Manager modules keep single ownership of every managed path and bin name", async () => {
+  const modules = await moduleSources();
+  assert.ok(modules.length >= 20, `module scan found only ${modules.length} files`);
+
+  const fileKeys = collectFileKeys(modules);
+  // Sentinel: the key scanner still sees the real key set.
+  assert.ok(fileKeys.size >= 60, `home.file scan found only ${fileKeys.size} keys`);
+  const duplicateKeys = [...fileKeys]
+    .filter(([, sites]) => sites.length > 1)
+    .map(([key, sites]) => `${key} <- ${sites.join(", ")}`);
+  assert.deepEqual(
+    duplicateKeys,
+    [],
+    "two modules claim one home.file path; home-manager merges them into one attrset and fails to evaluate",
+  );
+
+  const wrappers = collectWrappers(modules);
+  // Sentinel: the wrapper scanner still sees both jcode-named derivations, so
+  // the bin-collision assertion below is exercised rather than vacuous.
+  assert.deepEqual(
+    wrappers.filter((wrapper) => wrapper.bin === "jcode").map((wrapper) => wrapper.variable).sort(),
+    ["jcodeGatewayWrapper", "jcodeLauncher"],
+    "wrapper scan no longer sees both jcode-named derivations",
+  );
+
+  const entries = collectPackageEntries(modules);
+  const listedVariables = new Set(entries.map((entry) => entry.token));
+  // Sentinel: the packages scanner still reaches entries on continuation lines.
+  assert.ok(
+    listedVariables.has("jcodeGatewayWrapper"),
+    "packages scan no longer sees multi-line home.packages entries",
+  );
+
+  const binOwners = new Map();
+  for (const wrapper of wrappers) {
+    if (!listedVariables.has(wrapper.variable)) continue;
+    if (!binOwners.has(wrapper.bin)) binOwners.set(wrapper.bin, []);
+    binOwners.get(wrapper.bin).push(`${wrapper.variable}@${wrapper.where}`);
+  }
+  const collidingBins = [...binOwners]
+    .filter(([, owners]) => owners.length > 1)
+    .map(([bin, owners]) => `bin/${bin} <- ${owners.join(", ")}`);
+  assert.deepEqual(
+    collidingBins,
+    [],
+    'two derivations named alike are both in home.packages; pkgs.buildEnv fails with "conflicting subpath"',
+  );
+
+  // A raw package whose attr name resolves to a wrapper's bin name collides the
+  // same way (re-enabling llm-pkgs.goose-cli would shadow gooseGatewayWrapper).
+  const wrapperVariables = new Set(wrappers.map((wrapper) => wrapper.variable));
+  const wrapperBins = new Set(wrappers.map((wrapper) => wrapper.bin));
+  const shadowedRawPackages = entries
+    .filter((entry) => {
+      if (wrapperVariables.has(entry.token)) return false;
+      const base = entry.token.split(".").pop().replace(/-(?:cli|bin)$/, "");
+      return wrapperBins.has(base);
+    })
+    .map((entry) => `${entry.token} @ ${entry.where}`);
+  assert.deepEqual(
+    shadowedRawPackages,
+    [],
+    "a raw package in home.packages provides a bin name a wrapper derivation already owns",
+  );
 });

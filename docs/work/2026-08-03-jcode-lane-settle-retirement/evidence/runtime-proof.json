@@ -1,0 +1,28 @@
+{
+  "result_id": "2026-08-04-jcode-lane-settle-retirement-runtime",
+  "status": "passed",
+  "observed_at": "2026-08-04T04:55:17Z",
+  "activation": {
+    "command": "home-manager switch --flake .#cc-se-sto-devbox-01",
+    "worktree": "/home/mhugo/.dotfiles-worktrees/jcode-lane-settle-retirement-20260803",
+    "exit_code": 0,
+    "observed_hook_order": [
+      "resetFailedUserUnits",
+      "retireUnsafeJcodeLaneSettle",
+      "reloadSystemd"
+    ]
+  },
+  "probe": {
+    "command": "! systemctl --user is-enabled --quiet jcode-lane-settle.timer; ! systemctl --user is-active --quiet jcode-lane-settle.timer; ! systemctl --user is-active --quiet jcode-lane-settle.service; test ! -e $HOME/.config/systemd/user/jcode-lane-settle.timer; test ! -e $HOME/.config/systemd/user/jcode-lane-settle.service; test ! -e $HOME/.local/bin/jcode-lane-settle.sh",
+    "exit_code": 0,
+    "units": {
+      "jcode-lane-settle.timer": {"enabled": "not-found", "active": "inactive"},
+      "jcode-lane-settle.service": {"enabled": "not-found", "active": "inactive"}
+    },
+    "paths": {
+      "/home/mhugo/.config/systemd/user/jcode-lane-settle.timer": false,
+      "/home/mhugo/.config/systemd/user/jcode-lane-settle.service": false,
+      "/home/mhugo/.local/bin/jcode-lane-settle.sh": false
+    }
+  }
+}

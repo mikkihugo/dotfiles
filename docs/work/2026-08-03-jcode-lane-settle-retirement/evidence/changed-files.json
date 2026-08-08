@@ -1,10 +1,11 @@
 {
   "source": "repository-vcs-facade",
   "observation": {
-    "command": "repo vcs status; repo vcs diff",
-    "observed_at": "2026-08-04T02:44:05Z"
+    "command": "repo vcs diff --name-only origin/main...HEAD",
+    "observed_at": "2026-08-04T03:50:36Z"
   },
   "files": [
+    ".secrets.baseline",
     "docs/work/2026-08-03-jcode-lane-settle-retirement/README.md",
     "docs/work/2026-08-03-jcode-lane-settle-retirement/current-spec.snapshot.json",
     "docs/work/2026-08-03-jcode-lane-settle-retirement/evidence.bundle.json",
@@ -16,7 +17,10 @@
     "docs/work/2026-08-03-jcode-lane-settle-retirement/validation.report.json",
     "docs/work/2026-08-03-jcode-lane-settle-retirement/work.spec.json",
     "home/modules/activation.nix",
+    "lefthook.yml",
+    "scripts/detect-secrets-work-packet-filter.py",
     "scripts/repo-check.sh",
+    "scripts/test-detect-secrets-work-packet-filter.mjs",
     "scripts/test-jcode-lane-settle-retirement.mjs",
     "scripts/test-nix-tooling.mjs"
   ]

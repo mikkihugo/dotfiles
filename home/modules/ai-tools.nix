@@ -1023,20 +1023,18 @@ in {
         '';
       };
 
-      # Codex CLI — npm-managed (`npm i -g @openai/codex`); inject OTEL.
-      # NOT mise: the aqua registry drops the codex-code-mode-host sidecar.
-      ".local/bin/codex" = {
-        executable = true;
-        force = true;
-        text = ''
-          #!/usr/bin/env bash
-          set -euo pipefail
-          # shellcheck source=/dev/null
-          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="codex"
-          exec "$HOME/.npm-global/bin/codex" "$@"
-        '';
-      };
+      # Codex CLI is npm-managed (`npm i -g @openai/codex`) and needs no wrapper:
+      # ~/.npm-global/bin is already on PATH via home.sessionPath.
+      #
+      # The former OTEL wrapper here sourced otel-env.sh and exported
+      # OTEL_SERVICE_NAME. Codex 0.147.0 configures OTLP natively instead --
+      # verified with `codex exec --strict-config`, which rejects unknown fields
+      # and accepted otel.exporter / otel.environment / otel.log_user_prompt.
+      # The exporter must be the struct form; the bare string "otlp-http" is
+      # rejected with "invalid type: unit variant, expected struct variant".
+      # On this host otel-env.sh resolved to the in-cluster collector with EMPTY
+      # headers, so nothing dynamic was being contributed and the endpoint is
+      # expressible statically. See config/codex/config.toml.
 
       # Codex spawns its command runner as `codex-code-mode-host` resolved from
       # PATH, NOT relative to the codex binary. Until 2026-08-08 that name was

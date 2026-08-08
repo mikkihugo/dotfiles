@@ -76,3 +76,12 @@ wire_api = "responses"
 [history]
 persistence = "save-all"
 max_bytes = 104857600
+
+# Native OTLP export, replacing the former ~/.local/bin/codex OTEL wrapper.
+# Verified accepted by `codex exec --strict-config` (which rejects unknown
+# fields). exporter MUST be the struct form -- the bare string "otlp-http" is
+# rejected: "invalid type: unit variant, expected struct variant".
+[otel]
+environment = "devbox"
+log_user_prompt = false
+exporter = {otlp-http = {endpoint = "http://otel-collector.monitoring.svc.cluster.local:4318", protocol = "binary", headers = {}}}

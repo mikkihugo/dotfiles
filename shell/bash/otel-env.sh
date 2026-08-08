@@ -59,19 +59,19 @@ _cc_otel_env_load() {
 		pass=""
 		if [ -n "$bao_bin" ]; then
 			user="$(
-				BAO_ADDR="${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+				BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
 					"$bao_bin" kv get -field=username -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
 			)"
 			pass="$(
-				BAO_ADDR="${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+				BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
 					"$bao_bin" kv get -field=password -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
 			)"
 			endpoint="$(
-				BAO_ADDR="${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+				BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
 					"$bao_bin" kv get -field=endpoint -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
 			)"
 			protocol="$(
-				BAO_ADDR="${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+				BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
 					"$bao_bin" kv get -field=protocol -mount=kv tenants/shared/otel-ingest-client 2>/dev/null || true
 			)"
 		fi

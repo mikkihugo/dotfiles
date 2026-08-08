@@ -77,7 +77,7 @@
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
     if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
       edge_token="$(
-        BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+        BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
           bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
       )"
     fi
@@ -371,7 +371,7 @@
         edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
         if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
           edge_token="$(
-            BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+            BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
               bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
           )"
         fi
@@ -410,7 +410,7 @@
         edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
         if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
           edge_token="$(
-            BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+            BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
               bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
           )"
         fi
@@ -537,7 +537,7 @@
     fi
     if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
       edge_token="$(
-        BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+        BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
           bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
       )"
     fi

@@ -10,6 +10,11 @@ check:
 unit-doctor:
     bash scripts/unit-doctor.sh
 
+# Prune Codex subagent rollouts (dry run; pass --apply to delete). Codex has no
+# retention of its own for ~/.codex/sessions, which grows without bound.
+codex-rollout-gc *ARGS:
+    bash scripts/codex-rollout-gc.sh {{ARGS}}
+
 mise-upgrade:
     mise install --yes
     mise upgrade --yes

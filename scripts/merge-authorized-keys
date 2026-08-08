@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""Append declared SSH public keys to ~/.ssh/authorized_keys, never removing any.
+
+Purpose: keep the keys published at https://sshid.io/mhugo authorised on this
+host without hand-editing authorized_keys on every machine.
+
+Consumer: the mergeDeclaredAuthorizedKeys home-manager activation hook in
+home/modules/activation.nix.
+
+Why a merge script and not home.file:
+  * sshd on these hosts runs StrictModes yes. home.file would replace
+    ~/.ssh/authorized_keys with a symlink into /nix/store, which is
+    root:nixbld 0775 (group-writable). Writing a real 0600 user-owned file
+    keeps the file trivially StrictModes-clean instead of depending on how
+    sshd walks a symlinked path.
+  * authorized_keys on these hosts also carries keys dotfiles does not own
+    (ssh-import-id, Termius, hardware ECDSA-SK tokens). A declarative
+    overwrite would silently revoke them, so this is append-only.
+
+The declared key list is checked into the repo and never fetched at activation
+time: pulling it over the network during `hms` would let whoever controls that
+endpoint grant login access to the machine, and would make activation fail
+offline.
+"""
+import argparse
+import os
+import stat
+import sys
+from pathlib import Path
+
+KEY_TYPE_PREFIXES = ("ssh-", "ecdsa-", "sk-")
+
+
+def key_blob(line: str) -> str | None:
+    """Return the base64 key material of an authorized_keys line.
+
+    Matching is on the blob rather than the whole line because the same key
+    carries different trailing comments in different places: the keys served by
+    sshid.io are commented '#ssh.id - @mhugo' while their already-authorised
+    copies on this host have no comment at all. A line may also start with an
+    options field (restrict, command="..."), so the type token is located
+    rather than assumed to be first.
+    """
+    parts = line.split()
+    for index, part in enumerate(parts):
+        if part.startswith(KEY_TYPE_PREFIXES) and index + 1 < len(parts):
+            return parts[index + 1]
+    return None
+
+
+def significant(lines: list[str]) -> list[str]:
+    return [ln.strip() for ln in lines if ln.strip() and not ln.strip().startswith("#")]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--declared", required=True, help="file of public keys to authorise")
+    parser.add_argument("--target", required=True, help="authorized_keys file to merge into")
+    args = parser.parse_args()
+
+    declared_path = Path(args.declared)
+    target = Path(args.target)
+
+    if not declared_path.is_file():
+        # Activation must not fail because a key list is missing; the host just
+        # keeps whatever it already authorises.
+        print(f"WARNING: declared key file not found: {declared_path}", file=sys.stderr)
+        return 0
+
+    target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+
+    existing = target.read_text().splitlines(keepends=True) if target.exists() else []
+    have = {blob for blob in (key_blob(ln) for ln in significant(existing)) if blob}
+
+    added = []
+    for line in significant(declared_path.read_text().splitlines()):
+        blob = key_blob(line)
+        if blob is None:
+            print(f"WARNING: skipping unparsable declared key line: {line[:40]}...", file=sys.stderr)
+            continue
+        if blob in have:
+            continue
+        have.add(blob)
+        added.append(line)
+
+    if added:
+        text = "".join(existing)
+        if text and not text.endswith("\n"):
+            text += "\n"
+        text += "\n".join(added) + "\n"
+        # Write-then-rename so a crash cannot leave a truncated authorized_keys
+        # and lock the host out. The temp file is created 0600 before it is
+        # visible under the real name.
+        staged = target.with_name(target.name + ".hm-new")
+        staged.write_text(text)
+        os.chmod(staged, stat.S_IRUSR | stat.S_IWUSR)
+        os.replace(staged, target)
+        print(f"authorized_keys: authorised {len(added)} new declared key(s)", flush=True)
+    else:
+        print("authorized_keys: all declared keys already authorised", flush=True)
+
+    os.chmod(target, stat.S_IRUSR | stat.S_IWUSR)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

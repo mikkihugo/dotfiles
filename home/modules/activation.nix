@@ -470,6 +470,23 @@ in {
       PY
     '';
 
+    # Authorise the public keys published at https://sshid.io/mhugo.
+    #
+    # Not home.file: that would make ~/.ssh/authorized_keys a symlink into
+    # /nix/store (root:nixbld 0775, group-writable) while sshd here runs
+    # StrictModes yes. Writing a real 0600 user-owned file keeps it clean, the
+    # same reason renderHetznerSshKey writes key material instead of linking it.
+    #
+    # Append-only: these hosts also authorise keys dotfiles does not own
+    # (ssh-import-id, Termius, ECDSA-SK hardware tokens), so a declarative
+    # overwrite would silently revoke them. The key list is checked in and never
+    # fetched during activation. See scripts/merge-authorized-keys.
+    mergeDeclaredAuthorizedKeys = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      ${pkgs.python3}/bin/python3 "${../../scripts/merge-authorized-keys}" \
+        --declared "${../../config/ssh/authorized_keys.sshid}" \
+        --target "${config.home.homeDirectory}/.ssh/authorized_keys"
+    '';
+
     # @opencode-ai/sdk — TypeScript SDK for OpenCode API (programmatic access to
     # both OpenAI-compatible /v1/chat/completions and Anthropic /v1/messages endpoints).
     # Installed via npm global so it is available to ad-hoc Node scripts.

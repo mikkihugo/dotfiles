@@ -4,9 +4,10 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
 # Paths whose changes can alter the homeConfigurations activation package:
 # any *.nix file, the lock, plus the non-nix trees the modules read through
-# ${../../...} references (config/, secrets/, scripts/codex-preferences —
-# see home/modules/activation.nix and home/modules/files.nix).
-nix_gate_path_re='(^|/)[^/]+\.nix$|^flake\.lock$|^home/|^config/|^secrets/|^scripts/codex-preferences$'
+# ${../../...} references (config/, secrets/, scripts/codex-preferences,
+# scripts/merge-authorized-keys — see home/modules/activation.nix and
+# home/modules/files.nix).
+nix_gate_path_re='(^|/)[^/]+\.nix$|^flake\.lock$|^home/|^config/|^secrets/|^scripts/codex-preferences$|^scripts/merge-authorized-keys$'
 
 nix_gate_needs_build() {
 	# Returns 0 when the nix build gate must run, 1 when the diff against
@@ -27,6 +28,7 @@ main() {
 	"$root/scripts/test-repo-vcs.sh"
 	HOME_MANAGER_PROFILE="$profile" bash "$root/scripts/test-ast-grep-shim.sh"
 	python3 "$root/scripts/test-codex-preferences.py"
+	python3 "$root/scripts/test-merge-authorized-keys.py"
 	(
 		cd "$root"
 		node --test \

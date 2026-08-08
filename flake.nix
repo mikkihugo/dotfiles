@@ -35,8 +35,8 @@
     # NixOS 26.05 release branch: stable base for the user environment.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
-    # Unstable used only for selected tooling pins (currently jujutsu 0.43).
-    # Drop when nixos-26.05 backports jj ≥ 0.43.
+    # Unstable used only for selected tooling pins (currently jujutsu 0.44).
+    # Drop when nixos-26.05 backports jj ≥ 0.44.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     # Home Manager release branch follows the matching nixpkgs release.
@@ -101,7 +101,12 @@
           system = sys;
           config.allowUnfree = true;
           overlays = [
-            # jujutsu 0.43: better change-id rebase on git fetch, immutable WC
+            # jujutsu 0.44: stabilised tag fetch/push, `jj tag track|untrack`,
+            # `jj git push --allow-conflicts`, `merge_point()` revset. Breaking:
+            # `jj git fetch` now fetches tags, `jj git push --all` also pushes
+            # tags, and `--fetch-tags` is gone -- the facades here push a NAMED
+            # bookmark, so none of that reaches them. Earlier 0.43 notes:
+            # better change-id rebase on git fetch, immutable WC
             # snapshot, `jj run`, aarch64 corrupt-object fix. 26.05 is still 0.41.
             (_final: _prev: {
               jujutsu = nixpkgs-unstable.legacyPackages.${sys}.jujutsu;

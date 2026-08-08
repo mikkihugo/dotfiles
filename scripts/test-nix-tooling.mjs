@@ -306,6 +306,14 @@ test("Home Manager uses the nixpkgs mise package without a private overlay", asy
   assert.doesNotMatch(bootstrap, /home-manager\/master|nix profile install/);
   assert.match(updater, /"\$mise_bin" install --yes/);
   assert.match(updater, /"\$mise_bin" upgrade --yes/);
+  assert.match(packages, /^\s*gnumake\b/m);
+  assert.match(packages, /^\s*pkg-config\b/m);
+  assert.match(updater, /NIX_CFLAGS_COMPILE/);
+  assert.match(updater, /NIX_LDFLAGS/);
+  assert.match(updater, /-Wl,-rpath,/);
+  assert.match(updater, /PKG_CONFIG_PATH/);
+  assert.match(updater, /share\/pkgconfig/);
+  assert.match(updater, /^\s*tcl\b/m);
   assert.doesNotMatch(updater, /nix develop|just mise-upgrade/);
 });
 

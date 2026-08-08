@@ -40,6 +40,8 @@
     forgejo-cli
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
+    gnumake # source builds used by mise backends such as python-build
+    pkg-config # native library discovery for mise-managed source builds
     go # build local Go tools
     pnpm # fast, disk-efficient Node package manager
     just # durable task runner; avoid Cargo binaries tied to collected Nix loaders

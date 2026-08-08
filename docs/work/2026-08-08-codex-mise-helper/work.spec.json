@@ -1,0 +1,346 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-08-08-codex-mise-helper-work",
+  "purpose_contract_id": "2026-08-08-codex-mise-helper-purpose",
+  "handover": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-mise-helper-pdd"
+    }
+  },
+  "feature_tree_target": {
+    "kind": "client-config",
+    "name": "codex-mise-helper",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-08-08-codex-mise-helper-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "85e87dd712f07cc18abc7c765898f1bb77e54a0169ce2b00f28bbd6842d95035"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "The managed mise tool registry shall select npm:@openai/codex at the established latest policy and shall not select aqua:openai/codex.",
+        "acceptance_criteria": [
+          "config/mise/config.toml contains npm:@openai/codex with value latest",
+          "config/mise/config.toml contains no aqua:openai/codex entry",
+          "the focused static test fails against the pre-change provider selection"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Managed mise tool registry",
+            "response": "select the npm Codex provider that preserves the executable helper layout"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "The registry selects Aqua for Codex or does not select the npm provider.",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "Each declared dotfiles mise upgrade path shall run mise install, mise upgrade, and mise reshim in that order.",
+        "acceptance_criteria": [
+          "justfile mise-upgrade has the ordered sequence",
+          "scripts/repo-maintenance.sh mise-upgrade has the ordered sequence",
+          "home/modules/mise-auto-update.nix has the ordered sequence",
+          "the focused static test fails before these sequences are corrected"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Dotfiles mise update entrypoint",
+            "response": "refresh mise shims after installing and upgrading managed tools"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "Any declared update path omits reshim or executes it before install or upgrade.",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R3",
+        "statement": "The scheduled mise update service shall expose the Nix Node runtime before it invokes an npm-provider update.",
+        "acceptance_criteria": [
+          "home/modules/mise-auto-update.nix includes the Nix Node bin path in the service PATH",
+          "the static test rejects a service PATH without Node",
+          "the maintenance-service trace shows Node resolves for the update process"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "state-driven",
+            "system": "mise-auto-update service",
+            "precondition": "an npm-managed Codex update is scheduled",
+            "response": "make the declared Nix Node runtime available to the mise process"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B3",
+          "condition": "The service depends on an ambient Node path or fails to resolve Node.",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "operator-direction"
+      },
+      {
+        "id": "R4",
+        "statement": "After an authorized Home Manager activation, the active Codex mise install shall contain an executable codex-code-mode-host sibling and the managed wrapper shall resolve the refreshed Codex version.",
+        "acceptance_criteria": [
+          "Home Manager activation is built before switching",
+          "mise install and mise reshim complete under the activated environment",
+          "codex --version resolves through the managed wrapper",
+          "the expected helper path is executable in the active npm Codex installation"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Authorized Home Manager and mise activation",
+            "trigger": "the durable configuration is applied",
+            "response": "make the Codex executable and its code-mode helper available together"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B4",
+          "condition": "The active Codex executable lacks an executable code-mode helper sibling after the declared update sequence.",
+          "witness_kind": "integration-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "The managed mise tool registry shall select npm:@openai/codex at the established latest policy and shall not select aqua:openai/codex.",
+      "acceptance_criteria": [
+        "config/mise/config.toml contains npm:@openai/codex with value latest",
+        "config/mise/config.toml contains no aqua:openai/codex entry",
+        "the focused static test fails against the pre-change provider selection"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Managed mise tool registry",
+          "response": "select the npm Codex provider that preserves the executable helper layout"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "The registry selects Aqua for Codex or does not select the npm provider.",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "Each declared dotfiles mise upgrade path shall run mise install, mise upgrade, and mise reshim in that order.",
+      "acceptance_criteria": [
+        "justfile mise-upgrade has the ordered sequence",
+        "scripts/repo-maintenance.sh mise-upgrade has the ordered sequence",
+        "home/modules/mise-auto-update.nix has the ordered sequence",
+        "the focused static test fails before these sequences are corrected"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Dotfiles mise update entrypoint",
+          "response": "refresh mise shims after installing and upgrading managed tools"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "Any declared update path omits reshim or executes it before install or upgrade.",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R3",
+      "statement": "The scheduled mise update service shall expose the Nix Node runtime before it invokes an npm-provider update.",
+      "acceptance_criteria": [
+        "home/modules/mise-auto-update.nix includes the Nix Node bin path in the service PATH",
+        "the static test rejects a service PATH without Node",
+        "the maintenance-service trace shows Node resolves for the update process"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "state-driven",
+          "system": "mise-auto-update service",
+          "precondition": "an npm-managed Codex update is scheduled",
+          "response": "make the declared Nix Node runtime available to the mise process"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B3",
+        "condition": "The service depends on an ambient Node path or fails to resolve Node.",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "operator-direction"
+    },
+    {
+      "id": "R4",
+      "statement": "After an authorized Home Manager activation, the active Codex mise install shall contain an executable codex-code-mode-host sibling and the managed wrapper shall resolve the refreshed Codex version.",
+      "acceptance_criteria": [
+        "Home Manager activation is built before switching",
+        "mise install and mise reshim complete under the activated environment",
+        "codex --version resolves through the managed wrapper",
+        "the expected helper path is executable in the active npm Codex installation"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Authorized Home Manager and mise activation",
+          "trigger": "the durable configuration is applied",
+          "response": "make the Codex executable and its code-mode helper available together"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B4",
+        "condition": "The active Codex executable lacks an executable code-mode helper sibling after the declared update sequence.",
+        "witness_kind": "integration-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "docs/work/2026-08-08-codex-mise-helper/**",
+      "config/mise/config.toml",
+      "home/modules/mise-auto-update.nix",
+      "justfile",
+      "scripts/repo-maintenance.sh",
+      "scripts/test-nix-tooling.mjs"
+    ],
+    "blocked": [
+      "home/modules/ai-tools.nix",
+      "home/modules/files.nix",
+      "config/codex/**",
+      "flake.nix"
+    ],
+    "expected_files": [
+      "config/mise/config.toml",
+      "home/modules/mise-auto-update.nix",
+      "justfile",
+      "scripts/repo-maintenance.sh",
+      "scripts/test-nix-tooling.mjs"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Extend the Nix tooling static test with a provider-selection assertion that fails against the Aqua baseline.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "Extend the Nix tooling static test to require install, upgrade, then reshim in each declared update entrypoint.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R3",
+      "kind": "contract",
+      "description": "Extend the Nix tooling static test to require the Nix Node bin path in mise-auto-update.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T4",
+      "requirement_id": "R4",
+      "kind": "integration",
+      "description": "Build the Home Manager activation before switching, then verify the active Codex version and executable code-mode helper after install and reshim.",
+      "must_fail_first": false
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "node --test scripts/test-nix-tooling.mjs",
+      "repo check",
+      "nix build --no-link .#homeConfigurations.$(scripts/current-home-profile).activationPackage",
+      "home-manager switch --flake .#$(scripts/current-home-profile)",
+      "mise install --yes && mise reshim && codex --version"
+    ],
+    "evidence_required": [
+      "test",
+      "runtime",
+      "trace"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex-mise-helper-implementer"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-08-08-codex-mise-helper",
+    "target_planes": [
+      "client"
+    ],
+    "dependencies": [
+      "npm @openai/codex Linux platform package",
+      "Home Manager activation",
+      "mise npm backend"
+    ],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [
+      "mise",
+      "Node runtime",
+      "Home Manager activation"
+    ],
+    "requested_isolation": "worktree",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

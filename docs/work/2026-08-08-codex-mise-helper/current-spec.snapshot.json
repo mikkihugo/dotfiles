@@ -1,0 +1,9 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-08-08-codex-mise-helper-current-spec",
+  "source": {
+    "uri": "repository://config/mise/config.toml,home/modules/mise-auto-update.nix,justfile,scripts/repo-maintenance.sh,scripts/test-nix-tooling.mjs",
+    "revision": "origin/main baseline observed in codex-mise-helper-pdd"
+  },
+  "requirements": []
+}

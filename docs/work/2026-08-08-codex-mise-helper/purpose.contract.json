@@ -1,0 +1,118 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-08-08-codex-mise-helper-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-08-08-codex-mise-helper"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "operator-directed-codex-mise-helper-repair",
+      "revision": "2026-08-08"
+    },
+    "objective": {
+      "id": "2026-08-08-codex-mise-helper-objective",
+      "statement": "Repair the Codex code-mode helper packaging defect through the durable dotfiles and Home Manager ownership path.",
+      "measure": "A refreshed mise Codex installation contains an executable codex-code-mode-host sibling, and all declared update paths install, upgrade, and reshim with Node available."
+    },
+    "need": {
+      "id": "2026-08-08-codex-mise-helper-need",
+      "statement": "Prevent Codex code-mode tool execution from depending on an Aqua package layout that omits the helper executable expected by Codex 0.147.0.",
+      "stakeholders": [
+        "Mikael",
+        "Codex code-mode sessions on cc-se-sto-devbox-01"
+      ],
+      "baseline": "config/mise/config.toml selects aqua:openai/codex=latest; the installed Aqua 0.147.0 layout lacks codex-code-mode-host, while the npm platform package includes it. justfile, scripts/repo-maintenance.sh, and the mise-auto-update service run install and upgrade without reshim; the service PATH omits the Nix Node runtime.",
+      "consequence_of_no_action": "A mise upgrade can leave Codex 0.147.0 executable but without the local code-mode helper, producing intermittent or total failure when the client launches code-mode tool execution.",
+      "assumptions": [
+        "The npm provider remains compatible with the existing Home Manager wrapper, which delegates to the mise shim.",
+        "mise reshim is the supported way to refresh shims after a provider install or upgrade."
+      ],
+      "alternatives_considered": [
+        "Force-reinstall or reshim the Aqua package while retaining the provider",
+        "Copy the helper from an older Codex release",
+        "Bypass mise with a global Codex installation"
+      ]
+    }
+  },
+  "admission": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-mise-helper-pdd"
+    }
+  },
+  "purpose": "Repair the Codex code-mode helper packaging defect through the durable dotfiles and Home Manager ownership path.",
+  "consumer": "Mikael and Codex code-mode sessions on cc-se-sto-devbox-01.",
+  "contract": "Codex is installed from npm:@openai/codex at the existing latest policy; every declared mise upgrade path runs install, upgrade, and reshim with Node available; after the authorized Home Manager activation, the active Codex install contains an executable codex-code-mode-host sibling.",
+  "failure_boundary": "Do not activate Home Manager, mutate the live mise installation, copy an executable between versions, change the Codex wrapper ownership, or broaden the provider migration beyond Codex in this work item. Stop if npm:@openai/codex does not expose both the client executable and code-mode helper on this platform.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "A focused static regression in scripts/test-nix-tooling.mjs rejects the Aqua provider, an update path without mise reshim, and a timer PATH without Node.",
+      "status": "expected"
+    },
+    {
+      "kind": "runtime",
+      "description": "The authorized Home Manager activation followed by mise install and mise reshim proves the live executable and sibling helper layout.",
+      "status": "expected"
+    },
+    {
+      "kind": "trace",
+      "description": "Captured maintenance-service output proves the timer executes the intended update sequence with the declared Nix Node runtime available.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "The durable Codex update path leaves an executable code-mode helper beside the active Codex binary.",
+    "executable_check": {
+      "kind": "integration",
+      "description": "After an authorized activation, run the focused static test, the repository check, mise install, mise reshim, codex --version, and an executable-file check for the helper in the active mise install.",
+      "command": "node --test scripts/test-nix-tooling.mjs && repo check && mise install --yes && mise reshim && codex --version"
+    }
+  },
+  "non_goals": [
+    "Activate Home Manager or change the live Codex install during planning",
+    "Migrate unrelated mise tools to npm",
+    "Replace the Home Manager Codex wrapper",
+    "Pin Codex to an older release",
+    "Copy the helper from another installed Codex version"
+  ],
+  "invariants": [
+    "config/mise/config.toml remains the source of truth for the Codex provider selection",
+    "The managed ~/.local/bin/codex wrapper remains Home Manager-owned and delegates to the mise shim",
+    "Every declared mise lifecycle path uses the same install, upgrade, reshim ordering",
+    "The scheduled update can resolve Node without relying on an ambient interactive PATH",
+    "No live activation occurs until the implementation packet is independently admitted"
+  ],
+  "assumptions": [
+    {
+      "statement": "The npm platform package for @openai/codex 0.147.0 includes both codex and codex-code-mode-host.",
+      "status": "verified-at-2026-08-08",
+      "doubt": 0,
+      "falsifier": "A fresh npm-provider install at the selected version lacks either executable."
+    },
+    {
+      "statement": "mise reshim refreshes the shim surface after the npm provider install or upgrade.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "After install and reshim, mise which codex or codex --version still resolves an obsolete executable."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "medium",
+    "blast_radius": "local",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "client"
+  ],
+  "plane_constraints": [
+    "Dotfiles and Home Manager own durable client configuration; package execution remains mise-owned.",
+    "The planned change must not use a global installation or a copied helper as a compatibility workaround."
+  ]
+}

@@ -220,7 +220,7 @@ contract-test)
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
 	grep -Fq "branch -D \"codex/\$name\"" "$root/scripts/repo-vcs.sh"
 	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
-	for recipe in status diff log show worktree-list fetch rebase sync-main describe amend push push-github worktree-create worktree-drop worktree-abandon test; do
+	for recipe in status diff log show worktree-list fetch rebase sync-main describe amend push push-github land worktree-create worktree-drop worktree-abandon test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"
 	done
 	printf 'dotfiles VCS contract: ok\n'

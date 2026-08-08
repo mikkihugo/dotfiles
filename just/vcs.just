@@ -42,6 +42,9 @@ push BRANCH="main":
 push-github BRANCH="main":
     @{{runner}} push-github "$1"
 
+land:
+    @{{runner}} land
+
 worktree-create NAME REVISION="main":
     @{{runner}} worktree-create "$1" "$2"
 

@@ -296,7 +296,6 @@ in {
               "model": "kimi-code/k3",
           },
           "claude-acp": {"enabled": False, "configured": False, "model": "current"},
-          "codex-acp": {"enabled": False, "configured": False, "model": "current"},
           "mistral": {"enabled": False, "configured": False, "model": "mistral-medium-latest"},
       }
       # Goose must be able to write telemetry consent into this file. Replace any
@@ -343,7 +342,6 @@ in {
           goose_config["GOOSE_MAX_CODE_BLOCK_LINES"] = 100
           goose_config["GOOSE_MODE"] = "auto"
           goose_config["claude-acp_configured"] = False
-          goose_config["codex-acp_configured"] = False
           goose_config["mistral_configured"] = False
           providers = goose_config.setdefault("providers", {})
           if not isinstance(providers, dict):

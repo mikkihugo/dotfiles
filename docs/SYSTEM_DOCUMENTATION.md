@@ -10,7 +10,7 @@ The system architecture is centered on:
 - `SOPS + age` for declarative, git-tracked secret encryption.
 - `Headscale` as the central self-hosted Tailscale control plane.
 - `Tailscale` clients on every machine for private overlay networking.
-- `OpenBao` at `kv.infra.centralcloud.com` for runtime secrets and machine/service auth.
+- `OpenBao` at `kv.centralcloud.net` for runtime secrets and machine/service auth.
 - `Authentik` for human identity and passkey-based login to admin surfaces.
 
 ## Host Inventory
@@ -82,7 +82,7 @@ This data is used during bootstrap and activation and is not treated as runtime-
 
 Runtime secrets are handled by OpenBao KV v2 via `BAO_ADDR`.
 
-- `home/home.nix` exports `BAO_ADDR="https://kv.infra.centralcloud.com"`.
+- `home/home.nix` exports `BAO_ADDR="http://vault-active.vault.svc.cluster.local:8200"` (in-cluster service; the devbox runs inside k3s). The public `kv.centralcloud.net` is Authentik forward-auth gated (browser UI), so the CLI uses the direct service.
 - `home/modules/packages.nix` installs the `openbao` CLI.
 - Runtime secrets policy is to fetch with `bao kv get kv/<path>` and to use AppRole/OIDC for auth.
 
@@ -94,7 +94,7 @@ Key integration points:
 
 - `BAO_ADDR` is exported globally for user shells.
 - The `openbao` CLI is installed in every user profile.
-- The OpenBao UI is served at `kv.infra.centralcloud.com/ui` (Authentik forward-auth).
+- The OpenBao UI is served at `kv.admin.centralcloud.net/ui` (Authentik forward-auth).
 
 The repo currently favors:
 

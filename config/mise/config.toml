@@ -1,15 +1,17 @@
 [tools]
-"aqua:openai/codex" = "latest"
+# codex: managed by the official npm package (`npm i -g @openai/codex`,
+# ~/.npm-global/bin/codex), not mise. The aqua registry ships only the bare
+# `codex` binary from 0.146.0 onward and drops the `codex-code-mode-host`
+# sidecar, which makes every shell/exec tool call inside Codex fail with
+# "failed to spawn code-mode host ... (os error 2)". The npm platform
+# package @openai/codex-linux-x64 vendors codex + codex-code-mode-host.
 "npm:@moonshot-ai/kimi-code" = "latest"
 "github:aaif-goose/goose" = "latest"
 # ACP adapter so goose can use Claude Code as provider `claude-acp`.
 "npm:@agentclientprotocol/claude-agent-acp" = "latest"
-# ACP adapter so goose can use ChatGPT/Codex OAuth (~/.codex) as `codex-acp`.
-"npm:@agentclientprotocol/codex-acp" = "latest"
 # Qoder CLI is not in the mise registry; pin the OSS release tarball (http backend).
 "http:qodercli" = { version = "1.1.1", url = "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/1.1.1/qodercli-linux-x64.tar.gz", checksum = "sha256:21b60e3d0d9db9c35e5385c6d9523628e18735b7be5bbbc1a91996e4ed6a2b2a" }
 "github:vinhnx/vtcode" = "latest"
-flyctl = "latest"
 "aqua:nodejs/node" = "24"
 "npm:@github/copilot" = "latest"
 "npm:@hrrrsn/mcp-vnc" = "latest"
@@ -22,27 +24,13 @@ flyctl = "latest"
 gcloud = "latest"
 "npm:firebase-tools" = "latest"
 python = "latest"
-pulumi = "latest"
 java = "latest"
 crush = "latest"
-hcloud = "latest"
 opencode = "latest"
-cloudflared = "latest"
-uv = "latest"
 rust = "latest"
-helm = "latest"
-flux2 = "latest"
-k9s = "latest"
-gitui = "latest"
-dust = "latest"
-stern = "latest"
-kubectx = "latest"
-kubens = "latest"
-kubeseal = "latest"
 "github:contabo/cntb" = "latest"
 "github:ovh/ovhcloud-cli" = "latest"
 awscli = { version = "latest", symlink_bins = "true" }
-cosign = "latest"
 # claude: managed by the native installer (~/.local/bin/claude, auto-updating), not mise.
 claude-squad = "latest"
 "npm:@kilocode/cli" = "latest"

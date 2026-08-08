@@ -70,10 +70,6 @@ providers:
     enabled: false
     configured: false
     model: current
-  codex-acp:
-    enabled: false
-    configured: false
-    model: current
   mistral:
     enabled: false
     configured: false

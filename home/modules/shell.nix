@@ -3,7 +3,7 @@
 # Covers: bash, zsh, aliases, direnv, starship prompt, zoxide.
 # The shared `shellInit` string is injected into both bash and zsh so
 # there's a single source of truth for the runtime init sequence.
-_: let
+{pkgs, ...}: let
   dotfilesRoot = "$HOME/.dotfiles";
 
   # Injected into both bash initExtra and zsh initContent.
@@ -333,9 +333,32 @@ in {
 
     # direnv: auto-load nix devShell when cd-ing into a project.
     # nix-direnv caches the nix eval so `cd` is instant after the first load.
+    # Pin 3.2.0 (nix-direnv#753): log with `>&2` instead of `>/dev/stderr`.
+    # Agent/non-tty shells often ENXIO on /dev/stderr ("No such device or address").
+    # Plain install (no resholve): ambient coreutils from the flake shell PATH.
     direnv = {
       enable = true;
-      nix-direnv.enable = true;
+      nix-direnv = {
+        enable = true;
+        package = pkgs.stdenvNoCC.mkDerivation {
+          pname = "nix-direnv";
+          version = "3.2.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "nix-community";
+            repo = "nix-direnv";
+            rev = "3.2.0";
+            # Public nixpkgs SRI source hash, not a credential.
+            hash = "sha256-dNJeSRuuqA2avtLpTse7mTTmnYdVnC5BxRsofuLXiqE="; # pragma: allowlist secret
+          };
+          dontConfigure = true;
+          dontBuild = true;
+          installPhase = ''
+            runHook preInstall
+            install -m400 -D direnvrc $out/share/nix-direnv/direnvrc
+            runHook postInstall
+          '';
+        };
+      };
       config = {
         global.warn_timeout = "5m";
         whitelist = {

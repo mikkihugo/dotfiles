@@ -77,7 +77,7 @@
     edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
     if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
       edge_token="$(
-        BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+        BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
           bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
       )"
     fi
@@ -315,7 +315,7 @@
   # goose — upstream GitHub releases via mise.
   # Default: openai → llm-gateway.svc /v1 (SOPS/bao token), model kimi-code/k3 (1M ctx, tools+reasoning+vision).
   # Planner: minimax-coding-plan/MiniMax-M3; swarm alternative: auto-deepseek.
-  # ACP backends (claude-acp / codex-acp) stay available via wrappers but are disabled in config.
+  # ACP backend (claude-acp) stays available via wrappers but is disabled in config.
   # Provider resolution: $GOOSE_PROVIDER > config active_provider > openai.
   gooseGatewayWrapper = pkgs.writeShellScriptBin "goose" ''
     set -euo pipefail
@@ -358,12 +358,8 @@
         export GOOSE_PROVIDER="$provider"
 
         case "$provider" in
-          claude-acp|codex-acp)
+          claude-acp)
             export GOOSE_MODEL="''${GOOSE_MODEL:-current}"
-            if [ "$provider" = "codex-acp" ]; then
-              export CODEX_HOME="''${CODEX_HOME:-$HOME/.codex}"
-              unset OPENAI_API_KEY CODEX_API_KEY || true
-            fi
             exec "$goose_bin" "$@"
             ;;
         esac
@@ -371,7 +367,7 @@
         edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
         if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
           edge_token="$(
-            BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+            BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
               bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
           )"
         fi
@@ -410,7 +406,7 @@
         edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || true)"
         if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
           edge_token="$(
-            BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+            BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
               bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
           )"
         fi
@@ -441,15 +437,6 @@
     set -euo pipefail
     export GOOSE_PROVIDER=claude-acp
     export GOOSE_MODEL="''${GOOSE_MODEL:-current}"
-    exec "$HOME/.local/bin/goose" "$@"
-  '';
-
-  gooseChatgpt = pkgs.writeShellScriptBin "goose-chatgpt" ''
-    set -euo pipefail
-    export GOOSE_PROVIDER=codex-acp
-    export GOOSE_MODEL="''${GOOSE_MODEL:-current}"
-    export CODEX_HOME="''${CODEX_HOME:-$HOME/.codex}"
-    unset OPENAI_API_KEY CODEX_API_KEY || true
     exec "$HOME/.local/bin/goose" "$@"
   '';
 
@@ -528,7 +515,7 @@
     fi
     if [ -z "''${edge_token:-}" ] && command -v bao >/dev/null 2>&1; then
       edge_token="$(
-        BAO_ADDR="''${BAO_ADDR:-https://kv.infra.centralcloud.com}" \
+        BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
           bao kv get -field=api_key -mount=kv llm-gateway 2>/dev/null || true
       )"
     fi
@@ -886,7 +873,6 @@ in {
       gooseGatewayWrapper # binary: goose -> resolves provider; openai uses llm-gateway
       gooseModels # binary: goose-models -> list llm-gateway /v1/models
       gooseClaude # binary: goose-claude -> claude-acp
-      gooseChatgpt # binary: goose-chatgpt -> codex-acp (~/.codex OAuth)
       gooseGateway # binary: goose-gateway -> openai via llm-gateway
       gooseKimi # binary: goose-kimi -> kimi-code/k3 (1M ctx)
       gooseDeepseek # binary: goose-deepseek -> auto-deepseek (Ollama Cloud DeepSeek V4 Pro)
@@ -1037,7 +1023,8 @@ in {
         '';
       };
 
-      # Codex CLI — mise-managed; inject OTEL.
+      # Codex CLI — npm-managed (`npm i -g @openai/codex`); inject OTEL.
+      # NOT mise: the aqua registry drops the codex-code-mode-host sidecar.
       ".local/bin/codex" = {
         executable = true;
         force = true;
@@ -1047,7 +1034,7 @@ in {
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
           export OTEL_SERVICE_NAME="codex"
-          exec "$HOME/.local/share/mise/shims/codex" "$@"
+          exec "$HOME/.npm-global/bin/codex" "$@"
         '';
       };
 
@@ -1139,12 +1126,6 @@ in {
         executable = true;
         force = true;
         source = "${gooseClaude}/bin/goose-claude";
-      };
-
-      ".local/bin/goose-chatgpt" = {
-        executable = true;
-        force = true;
-        source = "${gooseChatgpt}/bin/goose-chatgpt";
       };
 
       ".local/bin/goose-gateway" = {

@@ -4,9 +4,10 @@
 # Grouped by role — remove a whole group if a machine doesn't need it.
 {pkgs, ...}: {
   home.packages = with pkgs; [
-    # Networking — resilient remote shell.
+    # Networking — resilient remote shell and DNS diagnostics.
     mosh # UDP-based ssh replacement, survives roaming/sleep, local echo
     abduco # session detach/attach only (no multiplexing); pairs with mosh
+    dnsutils # dig, host, nslookup — DNS query tools
 
     # Modern CLI replacements — faster, friendlier alternatives to coreutils.
     # Aliases (ls→eza, man→batman) are declared in shell.nix shellAliases.
@@ -22,6 +23,15 @@
     btop # process/resource monitor (replaces htop)
     psmisc # process-tree diagnostics (`pstree`) for agent/session ownership audits
     tokei # count lines of code by language
+    dust # du replacement (interactive disk usage tree)
+    sd # sed replacement (fast find & replace, regex-safe)
+    xh # curl/HTTPie replacement (friendly HTTP client)
+    procs # ps replacement (modern process listing)
+    choose # cut/awk replacement (simpler field extraction)
+    hyperfine # benchmarking tool (replaces `time` with statistical analysis)
+    broot # interactive tree-based file browser
+    bandwhich # network bandwidth usage by process
+    grex # generate regex from example strings
     difftastic # structural diff (understands syntax, not just lines)
 
     # bat-extras — bat-powered wrappers for standard tools
@@ -54,7 +64,7 @@
     sops # encrypts/decrypts YAML/JSON secrets
     age # encryption backend (replaces GPG for SOPS)
     ssh-to-age # derives age pubkey from SSH ed25519 key
-    openbao # `bao` CLI — talks to kv.infra.centralcloud.com (Authentik-gated /ui) via BAO_ADDR
+    openbao # `bao` CLI — BAO_ADDR points at vault-active.vault.svc.cluster.local:8200 (in-cluster); public UI at kv.admin.centralcloud.net/ui
     # Shell tooling — linters used by lefthook pre-commit hooks.
     shellcheck # static analysis for shell scripts
     shfmt # formatter for shell scripts
@@ -77,6 +87,18 @@
     nix-fast-build # parallel evaluation/build, used by the repository check
     nh # builds, shows the generation diff, then activates Home Manager
     kubectl # Kubernetes CLI for Flux/k3s validation and ops
+    kubernetes-helm # K8s package manager (chart install/upgrade)
+    fluxcd # Flux CD CLI (GitOps reconciliation)
+    kubectx # fast K8s context switching (`kubectx`, `kubens`)
+    k9s # K8s TUI (interactive cluster browser)
+    stern # multi-pod log tailing
+    kubeseal # sealed-secrets CLI (encrypts secrets for GitOps)
+    cosign # container/image signing and verification (sigstore)
+    gitui # terminal git UI (fast, keyboard-driven)
+    flyctl # Fly.io CLI (deploy, scale, monitor)
+    hcloud # Hetzner Cloud CLI
+    cloudflared # Cloudflare tunnel client/CLI
+    pulumi # infrastructure-as-code (TypeScript/Python/Go)
 
     # Nerd Fonts — required for starship icons, eza glyphs, git symbols.
     # WSL2/VSCode Remote: also install on the Windows side for the terminal font:

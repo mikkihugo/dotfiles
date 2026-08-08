@@ -87,21 +87,6 @@
       exec ${pkgs.tmux}/bin/tmux -S "$tmuxSocket" new-session -A -s jcode-ui "${jcodeLauncher}/bin/jcode"
     '';
   };
-  servicePath = lib.concatStringsSep ":" [
-    "${homeDir}/.local/bin"
-    "${homeDir}/.local/share/mise/shims"
-    "${homeDir}/.npm-global/bin"
-    "${homeDir}/.cargo/bin"
-    "${pkgs.bashInteractive}/bin"
-    "${pkgs.coreutils}/bin"
-    "${pkgs.findutils}/bin"
-    "${pkgs.gnugrep}/bin"
-    "${pkgs.gnused}/bin"
-    "${pkgs.openssh}/bin"
-    "/run/current-system/sw/bin"
-    "/usr/bin"
-    "/bin"
-  ];
 in
   lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
     home = {
@@ -116,59 +101,34 @@ in
       # allowlist. Declaring it here too produced a conflicting home-manager
       # definition and broke evaluation. The allowlist wrapper wins; this service
       # reaches its launcher through the store path in ExecStart instead.
+
+      # The NixOS jcode-server unit does not know about jcode-provider-config,
+      # which is a Home Manager service rendering the provider env files. A
+      # systemd DROP-IN adds that ordering without redefining the unit, so NixOS
+      # keeps sole ownership of ExecStart and there is still exactly one unit.
+      # Replacing the whole unit here is what caused the shadowing bug below.
+      file.".config/systemd/user/jcode-server.service.d/10-provider-config.conf".text = ''
+        [Unit]
+        Requires=jcode-provider-config.service
+        After=jcode-provider-config.service
+      '';
     };
 
-    systemd.user.services.jcode-server = {
-      Unit = {
-        Description = "JCode single-server agent daemon";
-        Requires = ["jcode-provider-config.service"];
-        After = ["network-online.target" "jcode-provider-config.service"];
-        Wants = ["network-online.target"];
-      };
-
-      Service = {
-        Type = "simple";
-        WorkingDirectory = homeDir;
-        # Let J-Code build its MultiProvider catalog so swarm workers can see
-        # every configured direct route. The route-prefixed model still pins
-        # the root coordinator to the llm-gateway GLM profile.
-        ExecStart = "${jcodeLauncher}/bin/jcode --no-update --model llm-gateway:umans-ai-coding-plan/umans-glm-5.2 serve --server-name devbox";
-        Environment = [
-          "JCODE_DEBUG_CONTROL=1"
-          "JCODE_NO_AUTO_UPDATE=1"
-          "PATH=${servicePath}"
-        ];
-        Restart = "always";
-        RestartSec = "2s";
-        KillMode = "control-group";
-        TimeoutStopSec = "30s";
-        UMask = "0077";
-      };
-
-      Install.WantedBy = ["default.target"];
-    };
-
-    systemd.user.services.jcode-webtty = {
-      Unit = {
-        Description = "Loopback WebTTY for the shared JCode TUI";
-        After = ["jcode-server.service"];
-        Wants = ["jcode-server.service"];
-      };
-
-      Service = {
-        Type = "simple";
-        WorkingDirectory = homeDir;
-        ExecStart = "${pkgs.ttyd}/bin/ttyd -W -O -i lo -p 7681 -m 4 -w ${homeDir} ${jcodeTui}/bin/jcode-tui";
-        Restart = "always";
-        RestartSec = "2s";
-        KillMode = "control-group";
-        TimeoutStopSec = "10s";
-        UMask = "0077";
-        NoNewPrivileges = true;
-        PrivateTmp = true;
-        RestrictAddressFamilies = ["AF_UNIX" "AF_INET" "AF_NETLINK"];
-      };
-
-      Install.WantedBy = ["default.target"];
-    };
+    # jcode-server and jcode-webtty are declared by NixOS in
+    # /srv/infra/hosts/cc-se-sto-devbox-01/etc/nixos/swarm-runtime.nix as systemd
+    # *user* services. Home Manager writes ~/.config/systemd/user, which takes
+    # precedence over /etc/systemd/user, so duplicating them here silently
+    # SHADOWED the system units: `systemctl --user show jcode-webtty
+    # -p FragmentPath` resolved to the Home Manager copy.
+    #
+    # The two designs are not interchangeable. The system pair is coherent - the
+    # server listens on %t/jcode.sock and webtty attaches to that same socket via
+    # jcode-tmux-session, so the browser terminal survives disconnects. The Home
+    # Manager copies ran a different binary with no socket and piped jcode-tui
+    # straight into ttyd. Both wanted port 7681, so the shadowing copy won the
+    # unit name and lost the bind, leaving jcode-webtty in an EADDRINUSE restart
+    # loop (38 restarts in 5 minutes, 2026-08-08) while a hand-started
+    # webtty-manual.service held the port and actually served the browser.
+    #
+    # One owner: NixOS. Home Manager keeps only the jcode-tui package.
   }

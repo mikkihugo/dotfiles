@@ -90,21 +90,32 @@ test("Home Manager gives every managed agent client a deterministic UTF-8 locale
   assert.match(home, /systemd\.user\.sessionVariables\s*=\s*localeEnvironment;/);
 });
 
-test("Home Manager owns one persistent JCode server on the devbox", async () => {
+test("NixOS owns the JCode units; Home Manager must not shadow them", async () => {
   const home = await source("home/home.nix");
   assert.match(home, /\.\/modules\/jcode-server\.nix/);
 
   const service = await source("home/modules/jcode-server.nix");
   assert.match(service, /lib\.toLower hostname == "cc-se-sto-devbox-01"/);
-  assert.match(service, /systemd\.user\.services\.jcode-server/);
-  assert.match(
+
+  // jcode-server and jcode-webtty are systemd *user* services declared by NixOS
+  // in /srv/infra/.../swarm-runtime.nix. Home Manager writes
+  // ~/.config/systemd/user, which takes precedence over /etc/systemd/user, so
+  // redeclaring either name here silently shadows the system unit. That is how
+  // jcode-webtty ended up piping jcode-tui straight into ttyd with no socket,
+  // losing the 7681 bind to a hand-started webtty-manual.service and restarting
+  // 38 times in 5 minutes (2026-08-08).
+  assert.doesNotMatch(
     service,
-    /ExecStart\s*=\s*"\$\{jcodeLauncher\}\/bin\/jcode --no-update --model llm-gateway:umans-ai-coding-plan\/umans-glm-5\.2 serve --server-name devbox"/,
+    /systemd\.user\.services\.jcode-server\b/,
+    "jcode-server is owned by NixOS; declaring it here shadows the system unit",
   );
-  assert.match(service, /Restart\s*=\s*"always"/);
-  assert.match(service, /KillMode\s*=\s*"control-group"/);
-  assert.match(service, /Install\.WantedBy\s*=\s*\["default\.target"\]/);
-  assert.match(service, /"JCODE_DEBUG_CONTROL=1"/);
+  assert.doesNotMatch(
+    service,
+    /systemd\.user\.services\.jcode-webtty\b/,
+    "jcode-webtty is owned by NixOS; declaring it here shadows the system unit",
+  );
+
+  // The jcode-tui launcher stays Home Manager's, and keeps its tmux persistence.
   assert.match(service, /name\s*=\s*"jcode-tui"/);
   assert.match(
     service,
@@ -116,27 +127,16 @@ test("Home Manager owns one persistent JCode server on the devbox", async () => 
     service,
     /tmux}\/bin\/tmux -S "\$tmuxSocket" new-session -A -s jcode-ui "\$\{jcodeLauncher\}\/bin\/jcode"/,
   );
-  assert.match(service, /systemd\.user\.services\.jcode-webtty/);
-  assert.match(
-    service,
-    /ExecStart\s*=\s*"\$\{pkgs\.ttyd\}\/bin\/ttyd -W -O -i lo -p 7681 -m 4 -w \$\{homeDir\} \$\{jcodeTui\}\/bin\/jcode-tui"/,
-  );
-  assert.match(service, /After\s*=\s*\["jcode-server\.service"\]/);
-  assert.match(service, /Wants\s*=\s*\["jcode-server\.service"\]/);
-  assert.match(service, /NoNewPrivileges\s*=\s*true/);
-  assert.match(
-    service,
-    /RestrictAddressFamilies\s*=\s*\["AF_UNIX" "AF_INET" "AF_NETLINK"\]/,
-  );
+
   assert.doesNotMatch(
     service,
     /ExecStartPre|rm\s+-f.*jcode(?:-daemon\.lock|\.sock)/,
-    "service must not delete another daemon's live lock or socket",
+    "must not delete another daemon's live lock or socket",
   );
   assert.doesNotMatch(
     service,
     /ttyd[^"\n]*(?:0\.0\.0\.0|\[::\]|--credential|jcode connect)/,
-    "WebTTY must remain loopback-only, credential-free behind SSH, and use the full TUI",
+    "WebTTY must remain loopback-only and credential-free behind SSH",
   );
 });
 
@@ -162,10 +162,10 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
     service,
     /unset[\s\S]*JCODE_PROVIDER_LLM_GATEWAY_API_KEY[\s\S]*KIMI_API_KEY/,
   );
-  assert.match(
-    service,
-    /ExecStart\s*=\s*"\$\{jcodeLauncher\}\/bin\/jcode --no-update --model llm-gateway:umans-ai-coding-plan\/umans-glm-5\.2 serve --server-name devbox"/,
-  );
+  // The jcode-server ExecStart (and therefore its --model routing) moved to the
+  // NixOS unit in /srv/infra/.../swarm-runtime.nix. Home Manager must not
+  // redeclare it, or it shadows the system unit — see the anti-shadowing test
+  // above. Only the launcher's provider hygiene is Home Manager's contract here.
   assert.doesNotMatch(service, /--provider-profile llm-gateway/);
   assert.match(
     service,
@@ -199,11 +199,15 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   assert.match(providers, /After\s*=\s*\["sops-nix\.service"\]/);
   assert.match(providers, /Before\s*=\s*\["jcode-server\.service"\]/);
   assert.doesNotMatch(providers, /home\.activation\.configureJcodeProviders/);
-  assert.match(service, /Requires\s*=\s*\["jcode-provider-config\.service"\]/);
+  // jcode-server itself is a NixOS unit now. Home Manager keeps the ordering
+  // against its own jcode-provider-config through a systemd drop-in, which adds
+  // the dependency without redefining (and therefore shadowing) the unit.
   assert.match(
     service,
-    /After\s*=\s*\["network-online\.target" "jcode-provider-config\.service"\]/,
+    /file\.".config\/systemd\/user\/jcode-server\.service\.d\/10-provider-config\.conf"/,
   );
+  assert.match(service, /Requires=jcode-provider-config\.service/);
+  assert.match(service, /After=jcode-provider-config\.service/);
   assert.doesNotMatch(
     providers,
     /(?:KIMI_API_KEY|MINIMAX_API_KEY|JCODE_PROVIDER_LLM_GATEWAY_API_KEY)\s*=\s*"[A-Za-z0-9_-]{16,}"/,

@@ -1,0 +1,158 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-08-09-swarm-hook-single-flight-purpose",
+  "source": {
+    "system": "manual",
+    "repository": ".",
+    "request_id": "2026-08-09-swarm-hook-single-flight"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "user:FIX-THE-RACE-BUG",
+      "revision": "2026-08-09"
+    },
+    "objective": {
+      "id": "2026-08-09-swarm-hook-single-flight-objective",
+      "statement": "Prevent duplicate durable swarm-message context when one client invokes the same hook concurrently and restore the repository gate fixtures that validate the change.",
+      "measure": "One durable delivery results in no more than one native hook context for a shared client/session/workspace state scope, and the declared repository check reaches the hook contracts without a fixture-only raw-Git refusal or a false-positive source-revision secret finding."
+    },
+    "need": {
+      "id": "2026-08-09-swarm-hook-single-flight-need",
+      "statement": "Concurrent hook processes currently read, poll, emit, and write the same state independently, so one durable message can be shown twice. The repository check is also blocked because an upstream detect-secrets fixture inherits the agent-facing Git refusal shim, and the guarded pre-commit scanner rejects canonical work-packet source revisions as high-entropy strings.",
+      "stakeholders": [
+        "Codex and other Home Manager-managed agent clients receiving repo-memory swarm context through native lifecycle hooks."
+      ],
+      "baseline": "The controlled concurrent hook regression test observes two polls and two native contexts for one message. The full repository gate independently fails in scripts/test-detect-secrets-work-packet-filter.mjs because detect-secrets-hook internally invokes git through the refusal shim, and the guarded pre-commit scanner reports canonical 40-character source revisions in this work packet as Hex High Entropy String findings.",
+      "consequence_of_no_action": "A client can show duplicate unread durable swarm messages, confusing agents and making coordination noisier.",
+      "assumptions": [
+        "Each hook process shares the state directory for the same client/session/workspace scope."
+      ],
+      "alternatives_considered": [
+        "Keep at-least-once delivery without concurrency control",
+        "Deduplicate rendered text after polling",
+        "Serialize the shared state-scope transition with a kernel advisory file lock"
+      ]
+    }
+  },
+  "admission": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "accepting_authority": {
+      "kind": "human",
+      "id": "mhugo"
+    },
+    "decided_at": "2026-08-09T02:13:21Z",
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "7a9820b5b5fe0727d5c2a7aef81504ef8240268f706f5d929da88ee2852808b2"
+    },
+    "policy": {
+      "id": "operator-directed-purpose-admission/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e"
+      }
+    },
+    "validators": [
+      "purpose-contract-v2.schema.json",
+      "subject-digest",
+      "operator-authority"
+    ],
+    "evidence_refs": [
+      "user-request:FIX-THE-RACE-BUG",
+      "baseline:controlled-concurrent-hook-repro"
+    ]
+  },
+  "purpose": "Prevent duplicate durable swarm-message context when one client invokes the same hook concurrently and repair the blocking detect-secrets fixtures without weakening secret detection.",
+  "consumer": "Codex and other Home Manager-managed agent clients receiving repo-memory swarm context through native lifecycle hooks.",
+  "contract": "For a shared client/session/workspace state scope, overlapping hook processes serialize delivery through a kernel advisory lock so a durable message is emitted at most once per pending cycle while deferred acknowledgement, bootstrap, retry, and fail-open behavior remain correct. The lock file remains stable and a terminated owner releases its lease automatically. A helper that does not signal lock readiness within the bounded acquisition interval fails open without polling or mutating state; a legacy non-regular lock path is preserved and fails closed. The Home Manager projection must inject the pinned flock and shell paths. The detect-secrets fixture must give only its upstream child process the declared pinned Git path, without weakening the agent-facing Git refusal policy. Its entropy filter may exempt one canonical 40-character Git source revision only when it is the top-level source record in an approved current-spec snapshot or red/green proof path; nested, duplicate, duplicate-key, malformed, or differently named values remain detectable.",
+  "failure_boundary": "A contending hook may safely return no context, but it must not poll, acknowledge, render, or overwrite the active state transition. A terminated hook owner must not permanently prevent later delivery. A pre-existing unlocked lock file must be reusable; the implementation must never remove or replace the stable lock path while another process can hold its inode. A non-regular legacy lock path is neither moved nor deleted, and a helper that does not signal readiness is terminated without calling a bus or writing state.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "Controlled in-process and separate-process concurrent runs prove that one delivery causes one poll path and one native context, followed by a later acknowledgement boundary; a held kernel lease blocks mutation and releases after its owner exits; a stalled helper and a legacy lock directory fail without mutation.",
+      "status": "expected"
+    },
+    {
+      "kind": "other",
+      "description": "The Home Manager activation package evaluates with the hook source installed, and the full repository gate reaches the changed hook and detect-secrets source-revision contracts.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "The shared hook state scope is single-flight without weakening durable acknowledgement semantics.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Run the focused swarm-message contract suite; duplicate poll/context output, same-boundary acknowledgement, a stuck lease after owner exit, polling after a stalled helper, or movement of a legacy lock path falsifies the claim.",
+      "command": "node --test scripts/test-swarm-messages.mjs"
+    }
+  },
+  "non_goals": [
+    "Suppressing legitimate messages from separate sessions or workspaces",
+    "Changing repo-memory delivery guarantees",
+    "Changing client hook registration count",
+    "Weakening the agent-facing Git refusal policy or the production pre-commit hook",
+    "Suppressing arbitrary high-entropy strings or any source revision outside the exact work-packet source records",
+    "Replacing the MCP transport or filesystem migration fallback"
+  ],
+  "invariants": [
+    "Repo-memory remains the durable delivery authority behind MCP",
+    "A successful delivery is acknowledged only at a later observed hook boundary",
+    "A contending invocation does not mutate state",
+    "The lock is scoped by the same state path as durable acknowledgement state",
+    "The same stable lock-file inode is used for every contender in one state scope",
+    "Lock ownership is held by the operating system and released when its lease process exits",
+    "Lock acquisition has a bounded readiness interval and cannot consume the native hook timeout",
+    "A legacy non-regular lock path is preserved and causes a fail-closed no-op",
+    "No lock metadata or hook output contains secrets",
+    "A source-revision exemption is limited to one top-level source record at an approved work-packet path"
+  ],
+  "assumptions": [
+    {
+      "statement": "The pinned util-linux flock binary provides advisory exclusion for all hook processes using the same stable local state lock file.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "A controlled concurrent test still observes two poll paths or two native contexts, or an owner exit leaves later delivery blocked."
+    },
+    {
+      "statement": "Home Manager replaceVars injects immutable flock and shell paths into the installed Codex hook while source-level tests use the development-shell fallback only when placeholders are unexpanded.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "The activation package fails to evaluate, an installed hook retains an unresolved tool placeholder, or a test source cannot acquire the declared lock."
+    },
+    {
+      "statement": "SE_GIT_BIN names the pinned Git executable in the declared Nix test environment, and scoping its directory to the detect-secrets child cannot weaken the parent agent PATH guard.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "The detect-secrets fixture remains blocked by the refusal shim, or the test must replace the parent process PATH to pass."
+    },
+    {
+      "statement": "Work-packet source revisions use only the two declared top-level source shapes, so the path- and shape-bound exemption cannot hide arbitrary high-entropy data.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "The focused filter test permits a nested, duplicate, duplicate-key, malformed, or differently named source-revision value."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "low",
+    "blast_radius": "local",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "tool",
+    "client"
+  ],
+  "plane_constraints": [
+    "Home Manager owns the hook source and installed projection.",
+    "Repo-memory owns message and acknowledgement authority.",
+    "The hook remains a thin client-side adapter."
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": "swarm-hook-single-flight-result/v1",
+  "result_id": "2026-08-09-swarm-hook-single-flight-result",
+  "observed_at": "2026-08-09T04:39:36Z",
+  "status": "passed",
+  "commands": [
+    {
+      "command": "node --check config/codex/hooks/swarm-messages.mjs && node --test scripts/test-swarm-messages.mjs",
+      "status": "passed",
+      "summary": "Node syntax validation exited 0 and the focused hook contract passed 22 tests under SHELL=/bin/bash, including independent-process overlap, killed-owner release, bounded readiness, raw-template Bash fallback, and directory/symlink legacy-path containment."
+    },
+    {
+      "command": "node --test scripts/test-swarm-hook-config.mjs",
+      "status": "passed",
+      "summary": "8 Home Manager hook-configuration tests passed, including the pinned flock and Bash replaceVars mapping."
+    },
+    {
+      "command": "node --test scripts/test-detect-secrets-work-packet-filter.mjs",
+      "status": "passed",
+      "summary": "The focused contract passed 1 test: scan and detect-secrets-hook admitted the exact current-spec, red-proof, red-fixture-proof, green-proof, and green-fixture-proof source-revision paths. The green-positive and duplicate-negative fixtures use distinct paths, and a set-cardinality assertion proves every declared fixture path is unique; duplicate values, duplicate JSON keys, nested source records, malformed source records, and differently named files remained detected."
+    },
+    {
+      "command": "PATH=<dirname-of-SE_GIT_BIN>:$PATH PYTHONDONTWRITEBYTECODE=1 detect-secrets-hook --baseline .secrets.baseline <four admitted work-packet source files>",
+      "status": "passed",
+      "summary": "The actual work-packet current-spec and proof records passed the upstream hook with the same child-scoped pinned Git path used by the fixture; the parent agent Git refusal policy was not changed."
+    },
+    {
+      "command": "nix build path:.#homeConfigurations.cc-se-sto-devbox-01.activationPackage --no-link --print-out-paths",
+      "status": "passed",
+      "summary": "The Home Manager activation package built at /nix/store/ayl8dhhaf1hqdsi76a7ggk9y35k41sk6-home-manager-generation. Its projected hook has immutable util-linux flock and Bash paths, no unresolved placeholders, and passes node syntax validation."
+    },
+    {
+      "command": "repo check",
+      "status": "passed",
+      "summary": "The complete repository verification gate exited 0 with 105 passing Node test contracts, including the strict duplicate-key and distinct-fixture-path detect-secrets regressions."
+    }
+  ]
+}

@@ -50,6 +50,8 @@
     ".codex/hooks/swarm-messages.mjs" = {
       source = pkgs.replaceVars ../../config/codex/hooks/swarm-messages.mjs {
         node = "${pkgs.nodejs}/bin/node";
+        flock = "${pkgs.util-linux}/bin/flock";
+        bash = "${pkgs.bash}/bin/bash";
       };
       executable = true;
       force = true;

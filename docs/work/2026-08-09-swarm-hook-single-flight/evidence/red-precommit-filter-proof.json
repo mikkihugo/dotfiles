@@ -1,0 +1,19 @@
+{
+  "schema_version": "swarm-hook-single-flight-red-precommit-filter-proof/v1",
+  "result_id": "2026-08-09-swarm-hook-single-flight-r3-red",
+  "observed_at": "2026-08-09T04:14:18Z",
+  "status": "failed",
+  "source": {
+    "path": "scripts/detect-secrets-work-packet-filter.py",
+    "revision": "7cbfc0fbe1615ddec0fd2c21a92496c2aef9e2ce",
+    "role": "pre-fix baseline"
+  },
+  "command": "node --test scripts/test-detect-secrets-work-packet-filter.mjs (top-level source-revision boundary baseline)",
+  "observed": {
+    "guarded_precommit": "current-spec.snapshot.json, evidence/red-proof.json, and evidence/red-fixture-proof.json were each reported as Hex High Entropy String findings",
+    "strengthened_fixture": "a nested source-shaped record in an otherwise approved green-fixture-proof path was incorrectly filtered",
+    "review_reproduction": "duplicate JSON object keys collapsed during parsing, allowing a malformed source record to hide behind a later canonical source; detect-secrets scan produced no findings and detect-secrets-hook exited 0"
+  },
+  "result": "rejected",
+  "falsified_claim": "The detect-secrets work-packet filter permits only canonical top-level source revision metadata."
+}

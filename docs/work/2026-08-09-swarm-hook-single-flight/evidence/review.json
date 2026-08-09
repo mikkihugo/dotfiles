@@ -1,0 +1,17 @@
+{
+  "schema_version": "swarm-hook-single-flight-review/v1",
+  "review_id": "2026-08-09-swarm-hook-single-flight-filter-final-review",
+  "status": "approved",
+  "observed_at": "2026-08-09T04:22:39Z",
+  "reviewer": {
+    "kind": "agent",
+    "id": "swarm_filter_review"
+  },
+  "scope": [
+    "scripts/detect-secrets-work-packet-filter.py",
+    "scripts/test-detect-secrets-work-packet-filter.mjs"
+  ],
+  "verdict": "approved",
+  "findings": [],
+  "rationale": "The review first reproduced a duplicate-JSON-key bypass affecting both the new source-revision and existing digest exemptions. The final strict object-pairs parser rejects duplicate keys before either exemption branch; raw fixture coverage proves scan and upstream-hook rejection of the former bypass, while canonical path/shape and nested/duplicate/malformed filename boundaries remain covered. No P0/P1 remained after re-review."
+}

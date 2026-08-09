@@ -1,0 +1,28 @@
+{
+  "schema_version": "swarm-hook-single-flight-green-proof/v1",
+  "result_id": "2026-08-09-swarm-hook-single-flight-r1-green",
+  "observed_at": "2026-08-09T03:55:39Z",
+  "status": "passed",
+  "source": {
+    "path": "config/codex/hooks/swarm-messages.mjs",
+    "role": "patched task worktree"
+  },
+  "exercise": "Run the focused swarm hook suite under the required Nix entry with SHELL=/bin/bash, including the raw-template CLI fixture whose deliberately invalid SHELL must fall back to PATH-resolved bash, controlled same-process and independent-process overlap, a held kernel lease, killed owner, stalled helper, and legacy directory lock path.",
+  "observed": {
+    "tests": 22,
+    "failures": 0,
+    "same_process_overlap": {
+      "polls": 1,
+      "native_contexts": 1
+    },
+    "separate_process_overlap": {
+      "polls": 1,
+      "native_contexts": 1
+    },
+    "crash_recovery": "replacement delivery acquired the unchanged lock inode after SIGKILL",
+    "timeout": "stalled helper returned before the native hook timeout without polling",
+    "legacy_path": "directory and symlink lock paths remained present and caused no mutation",
+    "raw_source_shell_fallback": "the unexpanded @bash@ template resolved bash through PATH when SHELL named a non-existent absolute path"
+  },
+  "result": "passed"
+}

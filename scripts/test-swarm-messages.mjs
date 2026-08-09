@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { execFile as execFileCallback } from "node:child_process";
+import { execFile as execFileCallback, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmod, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
@@ -33,6 +34,28 @@ const consumerForSession = (client, sessionID, prefix = client) => {
   return `${prefix}-${digest}`;
 };
 
+const writeInitializedState = (stateDir, consumer, workspace = "singularity-engine", pending = []) => writeFile(
+  join(stateDir, `${consumer}--${workspace}.json`),
+  `${JSON.stringify({
+    schema: "repo-memory-hook-state/v1",
+    initialized: true,
+    availability_pending: false,
+    pending,
+  })}\n`,
+);
+
+const messageBus = (counter) => ({
+  name: "repo-memory",
+  async subscribe() {},
+  async poll() {
+    counter.count += 1;
+    return [message];
+  },
+  async ack() {},
+  async post() {},
+  async close() {},
+});
+
 function execFileWithClosedInput(file, args, options) {
   return new Promise((resolve, reject) => {
     const child = execFileCallback(file, args, options, (error, stdout, stderr) => {
@@ -40,6 +63,51 @@ function execFileWithClosedInput(file, args, options) {
       else resolve({ stdout, stderr });
     });
     child.stdin.end();
+  });
+}
+
+function holdKernelLock(lockPath) {
+  const readyMarker = "repo-memory-hook-lock-acquired";
+  const child = spawn(
+    process.env.FLOCK_BIN ?? "flock",
+    [
+      "--exclusive",
+      "--nonblock",
+      "--conflict-exit-code",
+      "75",
+      "--no-fork",
+      lockPath,
+      "bash",
+      "-c",
+      `printf '${readyMarker}\\n'; IFS= read -r _ || true`,
+    ],
+    { stdio: ["pipe", "pipe", "pipe"] },
+  );
+  let stderr = "";
+  let output = "";
+  let ready = false;
+  const closed = new Promise((resolve) => {
+    child.once("close", (code, signal) => resolve({ code, signal }));
+  });
+
+  return new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.stdout.on("data", (chunk) => {
+      output += chunk;
+      if (ready || !output.includes(readyMarker)) return;
+      ready = true;
+      resolve({
+        async release() {
+          child.stdin.end();
+          const result = await closed;
+          assert.equal(result.code, 0, `kernel lock holder failed: ${stderr}`);
+        },
+      });
+    });
+    child.once("close", (code, signal) => {
+      if (!ready) reject(new Error(`kernel lock holder exited before readiness: code=${code} signal=${signal} ${stderr}`));
+    });
   });
 }
 
@@ -326,6 +394,10 @@ test("Home Manager symlink execution enters the hook main routine", async (t) =>
       REPO_MEMORY_SWARM_CONSUMER: "codex-symlink1",
       SE_WORKSPACE_OWNER: "codex:symlink1",
       REPO_MEMORY_SWARM_STATE_DIR: stateDir,
+      // The source fixture deliberately retains `@bash@`. Its fallback must
+      // resolve Bash through PATH rather than trusting a non-existent shell
+      // path inherited by Nix-aware agent launchers.
+      SHELL: "/definitely-missing-shell",
     },
     timeout: 5_000,
   };
@@ -334,6 +406,99 @@ test("Home Manager symlink execution enters the hook main routine", async (t) =>
   const delivered = await execFileWithClosedInput(link, ["codex", "UserPromptSubmit"], options);
   assert.match(delivered.stdout, /New work after bootstrap/);
   assert.equal(subscribeCount, 1);
+});
+
+test("separate hook processes serialize one durable delivery", async (t) => {
+  const base = await mkdtemp(join(tmpdir(), "repo-memory-hook-processes-"));
+  const target = join(base, "swarm-messages.mjs");
+  const stateDir = join(base, "state");
+  const source = await readFile(new URL("../config/codex/hooks/swarm-messages.mjs", import.meta.url), "utf8");
+  await writeFile(target, source.replace("#!@node@", `#!${process.execPath}`));
+  await chmod(target, 0o555);
+
+  const later = { ...message, id: "process-later", body: "One process owns this delivery." };
+  let pollCalls = 0;
+  let ackCalls = 0;
+  let releaseFirstPoll;
+  const firstPollStarted = new Promise((resolve) => { releaseFirstPoll = resolve; });
+  let firstPollReady;
+  const firstPollIsReady = new Promise((resolve) => { firstPollReady = resolve; });
+  const server = createServer(async (request, response) => {
+    if (request.method === "DELETE") {
+      response.writeHead(204).end();
+      return;
+    }
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    const rpc = body ? JSON.parse(body) : {};
+    if (rpc.method === "notifications/initialized") {
+      response.writeHead(202).end();
+      return;
+    }
+    response.setHeader("Content-Type", "application/json");
+    response.setHeader("Mcp-Session-Id", "process-lock-test-session");
+    const tool = rpc.params?.arguments?.tool;
+    let toolResult = {};
+    if (tool === "swarm_bus_subscribe") {
+      toolResult = { cursor: 7, created: true };
+    } else if (tool === "swarm_bus_poll") {
+      pollCalls += 1;
+      if (pollCalls === 1) {
+        firstPollReady();
+        await firstPollStarted;
+        toolResult = { messages: [later], next_cursor: 1 };
+      } else {
+        toolResult = { messages: [], next_cursor: pollCalls };
+      }
+    } else if (tool === "swarm_bus_ack") {
+      ackCalls += 1;
+    }
+    const result = rpc.method === "initialize"
+      ? { protocolVersion: "2025-11-25", capabilities: { tools: {} }, serverInfo: { name: "test", version: "1" } }
+      : { content: [{ type: "text", text: JSON.stringify(toolResult) }] };
+    response.end(JSON.stringify({ jsonrpc: "2.0", id: rpc.id, result }));
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+
+  let first;
+  t.after(async () => {
+    releaseFirstPoll();
+    if (first) await first.catch(() => {});
+    await new Promise((resolve) => server.close(resolve));
+    await rm(base, { recursive: true, force: true });
+  });
+
+  const address = server.address();
+  const options = {
+    cwd: base,
+    env: {
+      ...process.env,
+      MCP_GATEWAY_URL: `http://127.0.0.1:${address.port}/mcp`,
+      REPO_MEMORY_SWARM_WORKSPACE: "process-lock-proof",
+      REPO_MEMORY_SWARM_CONSUMER: "codex-process-lock",
+      SE_WORKSPACE_OWNER: "codex:process-lock",
+      REPO_MEMORY_SWARM_STATE_DIR: stateDir,
+    },
+    timeout: 5_000,
+  };
+  const bootstrap = await execFileWithClosedInput(target, ["codex", "UserPromptSubmit"], options);
+  assert.equal(bootstrap.stdout, "");
+  const stateFiles = (await readdir(stateDir)).filter((file) => file.endsWith(".json"));
+  assert.equal(stateFiles.length, 1);
+  const stateFile = join(stateDir, stateFiles[0]);
+  const initialState = await readFile(stateFile, "utf8");
+
+  first = execFileWithClosedInput(target, ["codex", "UserPromptSubmit"], options);
+  await firstPollIsReady;
+  const contender = await execFileWithClosedInput(target, ["codex", "UserPromptSubmit"], options);
+  assert.equal(await readFile(stateFile, "utf8"), initialState);
+  assert.equal(ackCalls, 0);
+  releaseFirstPoll();
+  const delivered = await first;
+
+  assert.match(delivered.stdout, /One process owns this delivery/);
+  assert.equal(contender.stdout, "");
+  assert.equal(pollCalls, 1);
 });
 
 test("delivery is acknowledged only at the next observed hook boundary", async () => {
@@ -406,6 +571,292 @@ test("delivery is acknowledged only at the next observed hook boundary", async (
       0,
     );
   } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("overlapping hook invocations emit one durable delivery once", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-overlap-"));
+  const payload = { cwd: "/workspace", session_id: "overlap-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  let markPollStarted;
+  let releasePoll;
+  const pollStarted = new Promise((resolve) => { markPollStarted = resolve; });
+  const pollReleased = new Promise((resolve) => { releasePoll = resolve; });
+  let pollCalls = 0;
+  let emitted = 0;
+  const durable = {
+    name: "repo-memory",
+    async subscribe() {},
+    async poll() {
+      pollCalls += 1;
+      markPollStarted();
+      await pollReleased;
+      return [message];
+    },
+    async ack() {},
+    async post() {},
+    async close() {},
+  };
+
+  try {
+    await writeInitializedState(stateDir, consumer);
+    const first = runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [durable],
+      emitOutput: async () => { emitted += 1; },
+    });
+    await pollStarted;
+    const contender = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [durable],
+      emitOutput: async () => { emitted += 1; },
+    });
+    releasePoll();
+    const delivered = await first;
+
+    assert.match(JSON.stringify(delivered.output), /Review revision abc123/);
+    assert.equal(contender.output, null);
+    assert.equal(pollCalls, 1);
+    assert.equal(emitted, 1);
+    assert.deepEqual(
+      JSON.parse(await readFile(join(stateDir, `${consumer}--singularity-engine.json`), "utf8")).pending,
+      [{ bus: "repo-memory", workspace: "singularity-engine", message_id: message.id }],
+    );
+    assert.equal(existsSync(join(stateDir, `${consumer}--singularity-engine.json.lock`)), true);
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("a contending hook does not repeat the active acknowledgement", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-overlap-ack-"));
+  const payload = { cwd: "/workspace", session_id: "overlap-ack-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  let markAckStarted;
+  let releaseAck;
+  const ackStarted = new Promise((resolve) => { markAckStarted = resolve; });
+  const ackReleased = new Promise((resolve) => { releaseAck = resolve; });
+  let ackCalls = 0;
+  let pollCalls = 0;
+  const durable = {
+    name: "repo-memory",
+    async subscribe() {},
+    async poll() { pollCalls += 1; return []; },
+    async ack() {
+      ackCalls += 1;
+      markAckStarted();
+      await ackReleased;
+    },
+    async post() {},
+    async close() {},
+  };
+
+  try {
+    await writeInitializedState(stateDir, consumer, "singularity-engine", [{
+      bus: "repo-memory", workspace: "singularity-engine", message_id: "prior-delivery",
+    }]);
+    const first = runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [durable],
+    });
+    await ackStarted;
+    const contender = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [durable],
+    });
+    releaseAck();
+    await first;
+
+    assert.equal(contender.output, null);
+    assert.equal(ackCalls, 1);
+    assert.equal(pollCalls, 1);
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("a kernel-held stable state lock yields then allows delivery after owner exit", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-kernel-lock-"));
+  const payload = { cwd: "/workspace", session_id: "kernel-lock-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const lockPath = join(stateDir, `${consumer}--singularity-engine.json.lock`);
+  const counter = { count: 0 };
+  let holder;
+
+  try {
+    await writeInitializedState(stateDir, consumer);
+    holder = await holdKernelLock(lockPath);
+    const inode = (await stat(lockPath)).ino;
+    const contended = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [messageBus(counter)],
+    });
+
+    assert.equal(contended.output, null);
+    assert.equal(counter.count, 0);
+    assert.equal(existsSync(lockPath), true);
+
+    await holder.release();
+    holder = null;
+    const delivered = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [messageBus(counter)],
+    });
+
+    assert.match(JSON.stringify(delivered.output), /Review revision abc123/);
+    assert.equal(counter.count, 1);
+    assert.equal(existsSync(lockPath), true);
+    assert.equal((await stat(lockPath)).ino, inode);
+  } finally {
+    if (holder) await holder.release().catch(() => {});
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("killing a hook process releases its kernel lease for a replacement delivery", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-killed-owner-"));
+  const payload = { cwd: "/workspace", session_id: "killed-owner-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const lockPath = join(stateDir, `${consumer}--singularity-engine.json.lock`);
+  const runner = join(stateDir, "blocked-hook.mjs");
+  const hookURL = new URL("../config/codex/hooks/swarm-messages.mjs", import.meta.url).href;
+  let outer;
+  let outerExited;
+
+  try {
+    await writeInitializedState(stateDir, consumer);
+    await writeFile(runner, [
+      `import { runHook } from ${JSON.stringify(hookURL)};`,
+      "await runHook({",
+      '  client: "codex", eventName: "UserPromptSubmit",',
+      `  payload: ${JSON.stringify(payload)}, workspace: "singularity-engine",`,
+      `  stateDir: ${JSON.stringify(stateDir)},`,
+      "  buses: [{",
+      '    name: "repo-memory", async subscribe() {},',
+      '    async poll() { process.stdout.write("poll-started\\n"); await new Promise(() => {}); },',
+      "    async ack() {}, async post() {}, async close() {},",
+      "  }],",
+      "});",
+    ].join("\n"));
+    outer = spawn(process.execPath, [runner], { stdio: ["ignore", "pipe", "pipe"] });
+    outerExited = new Promise((resolve) => {
+      outer.once("close", (code, signal) => resolve({ code, signal }));
+    });
+    let started = "";
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("outer hook did not reach poll")), 2_000);
+      outer.once("error", reject);
+      outer.stdout.on("data", (chunk) => {
+        started += chunk;
+        if (!started.includes("poll-started")) return;
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
+    const inode = (await stat(lockPath)).ino;
+    outer.kill("SIGKILL");
+    assert.equal((await outerExited).signal, "SIGKILL");
+
+    const counter = { count: 0 };
+    let delivered = { output: null };
+    for (let attempt = 0; attempt < 20 && delivered.output === null; attempt += 1) {
+      delivered = await runHook({
+        client: "codex", eventName: "UserPromptSubmit", payload,
+        workspace: "singularity-engine", stateDir, buses: [messageBus(counter)],
+      });
+      if (delivered.output === null) await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    assert.match(JSON.stringify(delivered.output), /Review revision abc123/);
+    assert.equal(counter.count, 1);
+    assert.equal((await stat(lockPath)).ino, inode);
+  } finally {
+    if (outer && outer.exitCode === null && outer.signalCode === null) {
+      outer.kill("SIGKILL");
+      await outerExited;
+    }
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("a legacy state-lock directory fails closed without being moved", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-legacy-lock-"));
+  const payload = { cwd: "/workspace", session_id: "legacy-lock-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const lockPath = join(stateDir, `${consumer}--singularity-engine.json.lock`);
+  const counter = { count: 0 };
+
+  try {
+    await writeInitializedState(stateDir, consumer);
+    await mkdir(lockPath);
+    const result = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [messageBus(counter)],
+    });
+
+    assert.equal(result.output, null);
+    assert.equal(counter.count, 0);
+    assert.equal(existsSync(lockPath), true);
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("a symlinked state lock fails closed without following it", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-symlink-lock-"));
+  const payload = { cwd: "/workspace", session_id: "symlink-lock-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const lockPath = join(stateDir, `${consumer}--singularity-engine.json.lock`);
+  const target = join(stateDir, "legacy-lock-target");
+  const counter = { count: 0 };
+
+  try {
+    await writeInitializedState(stateDir, consumer);
+    await writeFile(target, "legacy lock target\n");
+    await symlink(target, lockPath);
+    const result = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [messageBus(counter)],
+    });
+
+    assert.equal(result.output, null);
+    assert.equal(counter.count, 0);
+    assert.equal((await lstat(lockPath)).isSymbolicLink(), true);
+    assert.equal(await readFile(target, "utf8"), "legacy lock target\n");
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("a flock helper that never becomes ready times out without polling", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-acquire-timeout-"));
+  const fakeBin = join(stateDir, "bin");
+  const payload = { cwd: "/workspace", session_id: "acquire-timeout-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const counter = { count: 0 };
+  const originalPath = process.env.PATH;
+  const maxWaitMs = 1_500;
+
+  try {
+    await writeInitializedState(stateDir, consumer);
+    await mkdir(fakeBin);
+    const fakeFlock = join(fakeBin, "flock");
+    await writeFile(fakeFlock, "#!/bin/sh\nexec sleep 10\n");
+    await chmod(fakeFlock, 0o755);
+    process.env.PATH = `${fakeBin}:${originalPath}`;
+    const startedAt = Date.now();
+    const result = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [messageBus(counter)],
+    });
+
+    assert.equal(result.output, null);
+    assert.equal(counter.count, 0);
+    assert.ok(Date.now() - startedAt < maxWaitMs, "lock acquisition must not consume the native hook timeout");
+  } finally {
+    if (originalPath === undefined) delete process.env.PATH;
+    else process.env.PATH = originalPath;
     await rm(stateDir, { recursive: true, force: true });
   }
 });

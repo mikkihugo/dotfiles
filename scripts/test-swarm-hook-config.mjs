@@ -34,6 +34,12 @@ test("Home Manager installs every managed hook surface", async () => {
   assert.match(files, /\.copilot\/hooks\/swarm-messages\.json/);
   assert.match(files, /\.cursor\/hooks\.json/);
   assert.match(files, /replaceVars[\s\S]*config\/codex\/hooks\/swarm-messages\.mjs/);
+  const codexHook = files.slice(
+    files.indexOf('".codex/hooks/swarm-messages.mjs"'),
+    files.indexOf('".claude/hooks/swarm-messages.sh"'),
+  );
+  assert.match(codexHook, /flock = "\$\{pkgs\.util-linux\}\/bin\/flock"/);
+  assert.match(codexHook, /bash = "\$\{pkgs\.bash\}\/bin\/bash"/);
   assert.match(files, /replaceVars[\s\S]*config\/claude\/hooks\/swarm-messages\.sh/);
   assert.match(files, /replaceVars[\s\S]*config\/kimi-code\/hooks\/swarm-messages\.sh/);
   const activation = await readFile("home/modules/activation.nix", "utf8");

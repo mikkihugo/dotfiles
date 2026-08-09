@@ -1,0 +1,18 @@
+{
+  "schema_version": "swarm-hook-single-flight-green-fixture-proof/v1",
+  "result_id": "2026-08-09-swarm-hook-single-flight-r2-green",
+  "observed_at": "2026-08-09T04:39:36Z",
+  "status": "passed",
+  "source": {
+    "path": "scripts/test-detect-secrets-work-packet-filter.mjs",
+    "role": "patched fixture"
+  },
+  "command": "node --test scripts/test-detect-secrets-work-packet-filter.mjs",
+  "observed": {
+    "tests": 1,
+    "failures": 0,
+    "git_scope": "the pinned Git directory is prepended only for detect-secrets-hook and its upstream subprocesses",
+    "fixture_path_invariant": "the green-positive and duplicate-negative source-revision fixtures use distinct paths, and the test asserts that every declared fixture path is unique"
+  },
+  "result": "passed"
+}

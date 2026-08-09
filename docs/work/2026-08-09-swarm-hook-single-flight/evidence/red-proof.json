@@ -1,0 +1,20 @@
+{
+  "schema_version": "swarm-hook-single-flight-red-proof/v1",
+  "result_id": "2026-08-09-swarm-hook-single-flight-r1-red",
+  "observed_at": "2026-08-09T02:39:20Z",
+  "status": "failed",
+  "source": {
+    "path": "/home/mhugo/.dotfiles/config/codex/hooks/swarm-messages.mjs",
+    "revision": "7cbfc0fbe1615ddec0fd2c21a92496c2aef9e2ce",
+    "role": "unmodified canonical baseline"
+  },
+  "command": "node --test scripts/test-swarm-messages.mjs (controlled concurrent-hook baseline)",
+  "exercise": "Start one hook call, pause its poll, then invoke the same client/session/workspace state scope concurrently.",
+  "observed": {
+    "polls": 2,
+    "native_contexts": 2,
+    "duplicate": true
+  },
+  "result": "rejected",
+  "falsified_claim": "The baseline hook serializes one shared durable delivery."
+}

@@ -1,0 +1,320 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-08-09-swarm-hook-single-flight-work",
+  "purpose_contract_id": "2026-08-09-swarm-hook-single-flight-purpose",
+  "handover": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "accepting_authority": {
+      "kind": "policy",
+      "id": "purpose-first-tdd-handover"
+    },
+    "decided_at": "2026-08-09T02:13:21Z",
+    "purpose_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "7a9820b5b5fe0727d5c2a7aef81504ef8240268f706f5d929da88ee2852808b2"
+    },
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "d2c294886ff519c7317f48f53668be149f06b7f91457d8823a03f49252dd9a92"
+    },
+    "policy": {
+      "id": "purpose-first-tdd-handover/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "21f4dad52f9e5f5a53ee16625c7bf75e01251002911d667e879f3e06147e7192"
+      }
+    },
+    "validators": [
+      "workspec-v4.schema.json",
+      "subject-digest",
+      "purpose-first-tdd-handover"
+    ],
+    "evidence_refs": [
+      "purpose.contract.json#admission",
+      "baseline:controlled-concurrent-hook-repro"
+    ]
+  },
+  "feature_tree_target": {
+    "kind": "code",
+    "name": "swarm-hook-single-flight",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-08-09-swarm-hook-single-flight-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "806aa2febcbd8e94c7c2b5e7a3a7474d2c080a0459f0226ac75de53e8cd20002"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "When two native hook processes overlap for the same client/session/workspace state scope, the shared swarm hook shall allow only one process to poll, render, and record a durable delivery.",
+        "acceptance_criteria": [
+          "A controlled concurrent invocation with one durable message emits exactly one native context.",
+          "The contending invocation does not call poll, ack, emitOutput, or write the state file.",
+          "A later non-overlapping boundary acknowledges the one preserved pending delivery.",
+          "A live kernel lease blocks a second hook without any poll, acknowledgement, output, or state mutation.",
+          "When the lease-owning process exits, the next hook acquires the same stable lock file and can deliver; a pre-existing unlocked lock file does not block delivery.",
+          "A helper that does not report lock readiness within the bounded acquisition interval returns without polling or mutating state.",
+          "A legacy non-regular lock path fails closed and is neither moved nor deleted."
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "unwanted-behavior",
+            "system": "Shared repo-memory swarm hook",
+            "trigger": "two hook processes overlap for one state scope",
+            "response": "serialize the state transition so the durable delivery is emitted only once"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "a concurrent pair of hook invocations emits duplicate context or a lock prevents later recovery",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "operator"
+      },
+      {
+        "id": "R2",
+        "statement": "When the detect-secrets work-packet fixture invokes the upstream detect-secrets hook, the fixture shall provide the declared pinned Git executable only to that child process so the test remains compatible with the agent-facing Git refusal shim.",
+        "acceptance_criteria": [
+          "scripts/test-detect-secrets-work-packet-filter.mjs passes under the normal Nix development environment.",
+          "The parent process PATH is not modified and the production lefthook command remains unchanged.",
+          "repo check no longer fails because the upstream fixture inherited the refusal shim."
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "detect-secrets work-packet fixture",
+            "trigger": "the upstream detect-secrets hook performs its internal Git baseline check",
+            "response": "supply the declared pinned Git path only to that child process"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "the fixture fails with the agent Git refusal or must alter the parent PATH to pass",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "operator"
+      },
+      {
+        "id": "R3",
+        "statement": "When the detect-secrets scanner sees a 40-character Git revision in this work packet, it shall exempt exactly one canonical top-level source revision only in current-spec.snapshot.json or a red/green proof record, while retaining detection for nested, duplicate, duplicate-key, malformed, or differently named values.",
+        "acceptance_criteria": [
+          "The focused fixture runs both detect-secrets scan and detect-secrets-hook for current-spec.snapshot.json, red-proof.json, and red-fixture-proof.json with canonical source revisions.",
+          "A nested source-shaped record, a duplicated revision, a duplicate JSON object key, a malformed source record, and a differently named evidence file remain detectable.",
+          "The production lefthook command remains unchanged."
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "detect-secrets work-packet filter",
+            "trigger": "an entropy detector reports a candidate 40-character Git revision",
+            "response": "exempt only one canonical top-level source revision at an approved work-packet path"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B3",
+          "condition": "a canonical allowed source revision is reported, or a noncanonical occurrence is filtered",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "operator"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "When two native hook processes overlap for the same client/session/workspace state scope, the shared swarm hook shall allow only one process to poll, render, and record a durable delivery.",
+      "acceptance_criteria": [
+        "A controlled concurrent invocation with one durable message emits exactly one native context.",
+        "The contending invocation does not call poll, ack, emitOutput, or write the state file.",
+          "A later non-overlapping boundary acknowledges the one preserved pending delivery.",
+          "A live kernel lease blocks a second hook without any poll, acknowledgement, output, or state mutation.",
+          "When the lease-owning process exits, the next hook acquires the same stable lock file and can deliver; a pre-existing unlocked lock file does not block delivery.",
+          "A helper that does not report lock readiness within the bounded acquisition interval returns without polling or mutating state.",
+          "A legacy non-regular lock path fails closed and is neither moved nor deleted."
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "unwanted-behavior",
+          "system": "Shared repo-memory swarm hook",
+          "trigger": "two hook processes overlap for one state scope",
+          "response": "serialize the state transition so the durable delivery is emitted only once"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "a concurrent pair of hook invocations emits duplicate context or a lock prevents later recovery",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "operator"
+    },
+    {
+      "id": "R2",
+      "statement": "When the detect-secrets work-packet fixture invokes the upstream detect-secrets hook, the fixture shall provide the declared pinned Git executable only to that child process so the test remains compatible with the agent-facing Git refusal shim.",
+      "acceptance_criteria": [
+        "scripts/test-detect-secrets-work-packet-filter.mjs passes under the normal Nix development environment.",
+        "The parent process PATH is not modified and the production lefthook command remains unchanged.",
+        "repo check no longer fails because the upstream fixture inherited the refusal shim."
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "detect-secrets work-packet fixture",
+          "trigger": "the upstream detect-secrets hook performs its internal Git baseline check",
+          "response": "supply the declared pinned Git path only to that child process"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "the fixture fails with the agent Git refusal or must alter the parent PATH to pass",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "operator"
+    },
+    {
+      "id": "R3",
+      "statement": "When the detect-secrets scanner sees a 40-character Git revision in this work packet, it shall exempt exactly one canonical top-level source revision only in current-spec.snapshot.json or a red/green proof record, while retaining detection for nested, duplicate, duplicate-key, malformed, or differently named values.",
+      "acceptance_criteria": [
+        "The focused fixture runs both detect-secrets scan and detect-secrets-hook for current-spec.snapshot.json, red-proof.json, and red-fixture-proof.json with canonical source revisions.",
+        "A nested source-shaped record, a duplicated revision, a duplicate JSON object key, a malformed source record, and a differently named evidence file remain detectable.",
+        "The production lefthook command remains unchanged."
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "detect-secrets work-packet filter",
+          "trigger": "an entropy detector reports a candidate 40-character Git revision",
+          "response": "exempt only one canonical top-level source revision at an approved work-packet path"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B3",
+        "condition": "a canonical allowed source revision is reported, or a noncanonical occurrence is filtered",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "operator"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "config/codex/hooks/swarm-messages.mjs",
+      "scripts/detect-secrets-work-packet-filter.py",
+      "scripts/test-detect-secrets-work-packet-filter.mjs",
+      "home/modules/files.nix",
+      "scripts/test-swarm-hook-config.mjs",
+      "scripts/test-swarm-messages.mjs",
+      "docs/work/2026-08-09-swarm-hook-single-flight/**"
+    ],
+    "blocked": [],
+    "expected_files": [
+      "config/codex/hooks/swarm-messages.mjs",
+      "scripts/detect-secrets-work-packet-filter.py",
+      "scripts/test-detect-secrets-work-packet-filter.mjs",
+      "home/modules/files.nix",
+      "scripts/test-swarm-hook-config.mjs",
+      "scripts/test-swarm-messages.mjs"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Controlled in-process and separate-process hook calls must produce one durable poll/output path, preserve deferred acknowledgement, honor a held kernel lease, deliver after a normal or killed holder exits without replacing the stable lock file, fail silently when the lock helper cannot become ready, and preserve a legacy non-regular lock path.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "The detect-secrets work-packet fixture must run its upstream hook with the child-only pinned Git path while retaining the parent guard.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R3",
+      "kind": "contract",
+      "description": "The detect-secrets filter must exercise scan and upstream-hook paths for every exact admitted source-revision filename, while adversarial nested, duplicate, duplicate-key, malformed, and differently named values remain reported.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "node --test scripts/test-swarm-messages.mjs",
+      "node --test scripts/test-swarm-hook-config.mjs",
+      "node --test scripts/test-detect-secrets-work-packet-filter.mjs",
+      "nix build path:.#homeConfigurations.cc-se-sto-devbox-01.activationPackage --no-link",
+      "repo check",
+      "purpose-validate-work docs/work/2026-08-09-swarm-hook-single-flight --repo-root . --require-evidence"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex-root"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-08-09-swarm-hook-single-flight",
+    "target_planes": [
+      "tool",
+      "client"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "process",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

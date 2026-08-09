@@ -2,6 +2,7 @@
 import {
   chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   realpathSync,
   readFileSync,
@@ -9,6 +10,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -17,6 +19,12 @@ const DEFAULT_GATEWAY_URL = "http://mcp-gateway.svc/mcp";
 const DEFAULT_PRIMARY_WORKSPACE = "/home/mhugo/code/singularity-engine";
 const DEFAULT_STATE_DIR = "/home/mhugo/.local/state/repo-memory-hooks";
 const SUPPORTED_PROTOCOL = "2025-11-25";
+const FLOCK_BIN = "@flock@";
+const LOCK_SHELL = "@bash@";
+const STATE_LOCK_READY = "repo-memory-hook-lock-acquired";
+const STATE_LOCK_CONFLICT_EXIT = 75;
+const STATE_LOCK_ACQUIRE_GRACE_MS = 500;
+const STATE_LOCK_RELEASE_GRACE_MS = 1_000;
 
 const safePart = (value) => String(value).replace(/[^A-Za-z0-9._-]+/g, "-");
 
@@ -258,6 +266,105 @@ function statePath(stateDir, consumer, workspace) {
   return join(stateDir, `${safePart(consumer)}--${safePart(workspace)}.json`);
 }
 
+function stateLockPath(stateDir, consumer, workspace) {
+  return `${statePath(stateDir, consumer, workspace)}.lock`;
+}
+
+function configuredBinary(template, fallback) {
+  return /^@[^@]+@$/u.test(template) ? fallback : template;
+}
+
+/**
+ * Acquire an OS-owned lease for one hook state scope.
+ *
+ * Hook commands are separate Node processes, so an in-memory promise cannot
+ * serialize their poll, output, and acknowledgement transition. The stable
+ * file path is never removed or renamed: `flock` owns the lease and the kernel
+ * releases it when its helper exits, including after an interrupted hook.
+ */
+async function acquireStateLock(stateDir, consumer, workspace) {
+  mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+  const lockPath = stateLockPath(stateDir, consumer, workspace);
+  try {
+    if (!lstatSync(lockPath).isFile()) return null;
+  } catch (error) {
+    if (error?.code !== "ENOENT") return null;
+  }
+
+  const child = spawn(
+    configuredBinary(FLOCK_BIN, "flock"),
+    [
+      "--exclusive",
+      "--nonblock",
+      "--conflict-exit-code",
+      String(STATE_LOCK_CONFLICT_EXIT),
+      "--no-fork",
+      lockPath,
+      // The uncompiled source runs in the Nix development shell, where
+      // `$SHELL` can intentionally be `/bin/bash` even though `/bin` is not
+      // populated. Resolve the development fallback through PATH; Home
+      // Manager substitutes `@bash@` with its immutable absolute path.
+      configuredBinary(LOCK_SHELL, "bash"),
+      "-c",
+      `printf '${STATE_LOCK_READY}\\n'; IFS= read -r _ || true`,
+    ],
+    { stdio: ["pipe", "pipe", "ignore"] },
+  );
+  let active = false;
+  let stdout = "";
+  const exited = new Promise((resolve) => {
+    child.once("close", (code, signal) => {
+      active = false;
+      resolve({ code, signal });
+    });
+  });
+  const lease = await new Promise((resolve) => {
+    let settled = false;
+    let timer;
+    const settle = (value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
+    child.once("error", () => settle(null));
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+      if (active || !stdout.includes(STATE_LOCK_READY)) return;
+      active = true;
+      settle({
+        held() {
+          return active;
+        },
+        async release() {
+          if (!child.stdin.destroyed) child.stdin.end();
+          let releaseTimer;
+          const result = await Promise.race([
+            exited,
+            new Promise((resolveTimeout) => {
+              releaseTimer = setTimeout(
+                () => resolveTimeout(null),
+                STATE_LOCK_RELEASE_GRACE_MS,
+              );
+            }),
+          ]);
+          clearTimeout(releaseTimer);
+          if (result !== null) return;
+          child.kill("SIGKILL");
+          await exited;
+        },
+      });
+    });
+    child.once("close", () => settle(null));
+    timer = setTimeout(() => settle(null), STATE_LOCK_ACQUIRE_GRACE_MS);
+    if (settled) clearTimeout(timer);
+  });
+  if (lease !== null) return lease;
+  if (child.exitCode === null) child.kill("SIGKILL");
+  await exited;
+  return null;
+}
+
 function readState(stateDir, consumer, workspace) {
   const path = statePath(stateDir, consumer, workspace);
   if (!existsSync(path)) {
@@ -366,7 +473,7 @@ function consumerFor(client, payload, env) {
   return `${safePart(explicitPrefix || client)}-${digest}`;
 }
 
-export async function runHook({
+async function runHookWithLease({
   client,
   eventName,
   payload = {},
@@ -377,8 +484,9 @@ export async function runHook({
   buses,
   env = process.env,
   emitOutput = async () => {},
+  consumer,
+  stateLock,
 }) {
-  const consumer = consumerFor(client, payload, env);
   const byName = new Map(buses.map((bus) => [bus.name, bus]));
   const state = readState(stateDir, consumer, workspace);
   const prior = state.pending ?? [];
@@ -460,6 +568,7 @@ export async function runHook({
     const availabilityRequired = sessionStart || state.availability_pending === true;
     const subscriptionsComplete = stillPending.length === 0 && scopesComplete.every(Boolean);
     if (!subscriptionsComplete) {
+      if (!stateLock.held()) return { output: null, errors, deliveries: [] };
       writeState(
         stateDir,
         consumer,
@@ -472,6 +581,7 @@ export async function runHook({
     }
 
     const availabilityPosted = await postAvailability(availabilityRequired);
+    if (!stateLock.held()) return { output: null, errors, deliveries: [] };
     writeState(
       stateDir,
       consumer,
@@ -512,6 +622,7 @@ export async function runHook({
   const publicDeliveries = deliveries.map(({ _bus, _workspace, ...item }) => item);
   const context = publicDeliveries.length ? createContext(publicDeliveries) : "";
   const output = renderClientOutput(client, eventName, context, payload);
+  if (!stateLock.held()) return { output: null, errors, deliveries: [] };
   if (output !== null) await emitOutput(output);
 
   const newlyPending = output === null
@@ -521,6 +632,7 @@ export async function runHook({
         workspace: item._workspace,
         message_id: item.id,
       }));
+  if (!stateLock.held()) return { output: null, errors, deliveries: [] };
   writeState(
     stateDir,
     consumer,
@@ -530,6 +642,21 @@ export async function runHook({
     availabilityRequired && !availabilityPosted,
   );
   return { output, errors, deliveries: publicDeliveries };
+}
+
+export async function runHook(args) {
+  const payload = args.payload ?? {};
+  const env = args.env ?? process.env;
+  const stateDir = args.stateDir ?? DEFAULT_STATE_DIR;
+  const consumer = consumerFor(args.client, payload, env);
+  const stateLock = await acquireStateLock(stateDir, consumer, args.workspace);
+  if (!stateLock) return { output: null, errors: [], deliveries: [] };
+
+  try {
+    return await runHookWithLease({ ...args, payload, env, stateDir, consumer, stateLock });
+  } finally {
+    await stateLock.release();
+  }
 }
 
 async function readStdin() {

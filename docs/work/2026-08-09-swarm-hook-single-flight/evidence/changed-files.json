@@ -1,0 +1,26 @@
+{
+  "source": "repository-vcs-facade",
+  "files": [
+    "config/codex/hooks/swarm-messages.mjs",
+    "home/modules/files.nix",
+    "scripts/detect-secrets-work-packet-filter.py",
+    "scripts/test-detect-secrets-work-packet-filter.mjs",
+    "scripts/test-swarm-hook-config.mjs",
+    "scripts/test-swarm-messages.mjs",
+    "docs/work/2026-08-09-swarm-hook-single-flight/README.md",
+    "docs/work/2026-08-09-swarm-hook-single-flight/current-spec.snapshot.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/evidence.bundle.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/evidence/changed-files.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/evidence/green-fixture-proof.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/evidence/green-precommit-filter-proof.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/evidence/green-proof.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/evidence/red-fixture-proof.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/evidence/red-precommit-filter-proof.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/evidence/red-proof.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/evidence/result.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/evidence/review.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/purpose.contract.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/validation.report.json",
+    "docs/work/2026-08-09-swarm-hook-single-flight/work.spec.json"
+  ]
+}

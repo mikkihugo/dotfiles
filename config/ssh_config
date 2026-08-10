@@ -168,6 +168,18 @@ Host git.infra.centralcloud.com
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
+# git.centralcloud.net is the same Forgejo backend as git.infra.centralcloud.com
+# (confirmed: both resolve to the same repo state), on the FQDN the
+# chore/retire-infra-centralcloud-com migration is moving to. Kept as a
+# separate Host block, not merged with the one above, so retiring the old
+# name later doesn't also need to touch this one.
+Host git.centralcloud.net
+    HostName git.centralcloud.net
+    Port 2222
+    User git
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
 Host github.com
     HostName github.com
     User git

@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""Fetch the public keys published at https://sshid.io/mhugo and commit any
+new ones into config/ssh/authorized_keys.sshid.
+
+Consumer: the sshid-key-sync systemd user timer
+(home/modules/sshid-key-sync.nix).
+
+This only updates the checked-in snapshot -- the same file
+scripts/merge-authorized-keys reads at home-manager activation. It never
+touches ~/.ssh/authorized_keys directly and never pushes the commit:
+git-auto-backup already pushes any local-ahead commit on this repo within
+15 minutes, and every host only authorises the new key the next time it runs
+`hms` (home-manager switch), which stays a manual, reviewed step -- same as
+every other dotfiles change dotfiles-auto-update.nix notifies about.
+
+Fetching shells out to curl rather than urllib: sshid.io's CloudFront front
+end serves the SPA's index.html instead of the plaintext key list to
+urllib's TLS client (confirmed by testing -- same URL, same headers, only
+the client differs), while curl gets the real text/plain response every
+time.
+"""
+import subprocess
+import sys
+from pathlib import Path
+
+SSHID_URL = "https://sshid.io/mhugo"
+REPO = Path(__file__).resolve().parent.parent
+DECLARED = REPO / "config/ssh/authorized_keys.sshid"
+KEY_TYPE_PREFIXES = ("ssh-", "ecdsa-", "sk-")
+
+
+def key_blob(line: str) -> str | None:
+    parts = line.split()
+    for index, part in enumerate(parts):
+        if part.startswith(KEY_TYPE_PREFIXES) and index + 1 < len(parts):
+            return parts[index + 1]
+    return None
+
+
+def significant(lines: list[str]) -> list[str]:
+    return [ln.strip() for ln in lines if ln.strip() and not ln.strip().startswith("#")]
+
+
+def notify(message: str) -> None:
+    try:
+        subprocess.run(["notify-send", "sshid-key-sync", message], check=False)
+    except FileNotFoundError:
+        pass
+
+
+def main() -> int:
+    result = subprocess.run(
+        ["curl", "-fsS", "-H", "Cache-Control: no-cache", SSHID_URL],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    if result.returncode != 0:
+        # A transient network blip is not worth alarming on -- the timer
+        # retries next hour.
+        print(f"sshid-key-sync: fetch failed: {result.stderr.strip()}", file=sys.stderr)
+        return 0
+    remote_text = result.stdout
+
+    existing_text = DECLARED.read_text() if DECLARED.exists() else ""
+    have = {blob for blob in (key_blob(ln) for ln in significant(existing_text.splitlines())) if blob}
+
+    added = []
+    for line in significant(remote_text.splitlines()):
+        blob = key_blob(line)
+        if blob is None:
+            print(f"sshid-key-sync: skipping unparsable remote line: {line[:40]}...", file=sys.stderr)
+            continue
+        if blob in have:
+            continue
+        have.add(blob)
+        added.append(line)
+
+    if not added:
+        print("sshid-key-sync: no new keys")
+        return 0
+
+    text = existing_text
+    if text and not text.endswith("\n"):
+        text += "\n"
+    text += "\n".join(added) + "\n"
+    DECLARED.write_text(text)
+
+    subprocess.run(["git", "-C", str(REPO), "add", str(DECLARED)], check=True)
+    message = f"sshid-key-sync: add {len(added)} new key(s) from sshid.io/mhugo"
+    subprocess.run(["git", "-C", str(REPO), "commit", "-m", message], check=True)
+    print(f"sshid-key-sync: committed {len(added)} new key(s)")
+    notify(f"{len(added)} new SSH key(s) added from sshid.io -- run hms to authorise")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

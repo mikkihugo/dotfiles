@@ -29,6 +29,7 @@
       # were unmerged and one carried 10 uncommitted files, none backed up.
       "$HOME/.dotfiles-worktrees"
       "$HOME/code"
+      "$HOME/backups"
       "$HOME/workspaces"
       "/srv/infra"
     )

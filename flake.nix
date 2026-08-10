@@ -181,6 +181,9 @@
         shellHook = ''
           export DOTFILES_ROOT="$(pwd -P)"
           export PATH="$DOTFILES_ROOT/bin:$PATH"
+          # Contract tests scope this immutable Git path to child processes
+          # that need native Git while keeping the agent-facing facade intact.
+          export SE_GIT_BIN="${maintenance-pkgs.git}/bin/git"
           export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
           mkdir -p "$(dirname "$SOPS_AGE_KEY_FILE")"
 

@@ -6,6 +6,17 @@ default_model = "llm-gateway:umans-ai-coding-plan/umans-glm-5.2"
 model_picker_providers = ["llm-gateway", "kimi", "minimax-direct", "openai-oauth"]
 cross_provider_failover = "manual"
 
+# jcode's own memory agent is off. Durable agent memory belongs in the
+# repo_memory bank reached through the CentralCloud MCP gateway; a per-client
+# store is invisible to every other coding client, so a fact learned here is
+# re-learned or contradicted in Codex, Claude Code, or Qoder. This gates the
+# WRITE path, not just recall: crates/jcode-app-core/src/server.rs only spawns
+# memory_agent::init() when features.memory is true, so nothing new accumulates.
+# Do NOT substitute agents.memory_sidecar_enabled -- that only falls back to the
+# no-LLM hybrid path and writes continue.
+[features]
+memory = false
+
 [auth]
 trusted_external_sources = []
 trusted_external_source_paths = []

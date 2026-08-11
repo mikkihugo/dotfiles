@@ -5,7 +5,6 @@
   },
   "plugin": [
     "envsitter-guard@latest",
-    "opencode-mem@latest",
     "oh-my-opencode@latest"
   ],
   "mcp": {

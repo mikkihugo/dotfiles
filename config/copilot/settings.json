@@ -14,7 +14,7 @@
   "continueOnAutoMode": true,
   "effortLevel": "high",
   "keepAlive": "busy",
-  "memory": true,
+  "memory": false,
   "mergeStrategy": "rebase",
   "showReasoning": true,
   "stream": true,

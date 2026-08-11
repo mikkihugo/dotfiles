@@ -1201,3 +1201,88 @@ test("MCP subscription failure does not invent a filesystem bus", async () => {
     await rm(stateDir, { recursive: true, force: true });
   }
 });
+
+test("a purged message is settled, not retried, and does not block later acknowledgements", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-ack-purged-"));
+  const payload = { cwd: "/workspace", session_id: "ack-purged-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const stateFile = join(stateDir, `${consumer}--singularity-engine.json`);
+  const calls = [];
+  const durable = {
+    name: "repo-memory",
+    async poll(workspace) { calls.push(`poll:${workspace}`); return []; },
+    async ack(workspace, _consumer, delivery) {
+      calls.push(`ack:${workspace}:${delivery.id}`);
+      // Exactly what repo-memory returns once retention has deleted the message.
+      if (delivery.id === "purged") {
+        throw new Error("message_id not found in workspace or is not addressed to consumer");
+      }
+    },
+    async post() {},
+    async close() {},
+  };
+
+  try {
+    await writeFile(stateFile, `${JSON.stringify({
+      schema: "repo-memory-hook-state/v1",
+      initialized: true,
+      availability_pending: false,
+      pending: [
+        { bus: "repo-memory", workspace: "executor-kernel", message_id: "purged" },
+        { bus: "repo-memory", workspace: "executor-kernel", message_id: "later" },
+      ],
+    })}\n`);
+
+    await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload, workspace: "singularity-engine",
+      stateDir, buses: [durable],
+    });
+
+    assert.ok(
+      calls.includes("ack:executor-kernel:later"),
+      "a purged message must not head-of-line-block the acknowledgement behind it",
+    );
+    const state = JSON.parse(await readFile(stateFile, "utf8"));
+    assert.deepEqual(
+      state.pending, [],
+      "a purged message has nothing left to acknowledge and must be dropped, not retried forever",
+    );
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("a pending entry for a bus this build no longer registers is dropped", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-ack-unknownbus-"));
+  const payload = { cwd: "/workspace", session_id: "ack-unknown-bus-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const stateFile = join(stateDir, `${consumer}--singularity-engine.json`);
+  const durable = {
+    name: "repo-memory",
+    async poll() { return []; },
+    async ack() {},
+    async post() {},
+    async close() {},
+  };
+
+  try {
+    await writeFile(stateFile, `${JSON.stringify({
+      schema: "repo-memory-hook-state/v1",
+      initialized: true,
+      availability_pending: false,
+      // "filesystem" was retired; 20 such entries exist on this host and could
+      // never be acknowledged, so they leaked on every run forever.
+      pending: [{ bus: "filesystem", workspace: "singularity-engine", message_id: "orphan" }],
+    })}\n`);
+
+    await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload, workspace: "singularity-engine",
+      stateDir, buses: [durable],
+    });
+
+    const state = JSON.parse(await readFile(stateFile, "utf8"));
+    assert.deepEqual(state.pending, [], "an unackable entry for an unregistered bus must be dropped");
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});

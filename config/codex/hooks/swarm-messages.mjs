@@ -16,6 +16,17 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const DEFAULT_GATEWAY_URL = "http://mcp-gateway.svc/mcp";
+
+// An ack the server can never satisfy is settled, not failed. Swarm retention
+// deletes messages after their window, so a pending entry for a purged message
+// must be dropped; retrying it forever head-of-line-blocks its bus+workspace
+// scope, and because ack is the only thing that advances the durable cursor,
+// that freezes the consumer permanently and re-delivers the same batch each turn.
+const ACK_SETTLED_PATTERN = /not found in workspace|swarm message not found/i;
+
+// Bound retries for genuine transport failures so a long outage cannot leave an
+// entry retrying for the life of the state file.
+const MAX_ACK_ATTEMPTS = 5;
 const DEFAULT_PRIMARY_WORKSPACE = "/home/mhugo/code/singularity-engine";
 const DEFAULT_STATE_DIR = "/home/mhugo/.local/state/repo-memory-hooks";
 const SUPPORTED_PROTOCOL = "2025-11-25";
@@ -504,15 +515,34 @@ async function runHookWithLease({
       continue;
     }
     if (!bus) {
-      stillPending.push(pending);
+      // The entry names a bus this build no longer registers (e.g. the retired
+      // "filesystem" bus). It can never be acked, so keeping it leaks a pending
+      // entry forever -- 20 such entries already exist on this host.
       continue;
     }
     try {
       await bus.ack(pendingWorkspace, consumer, { id: pending.message_id });
     } catch (error) {
-      stillPending.push(pending);
+      const text = String(error);
+      if (ACK_SETTLED_PATTERN.test(text)) {
+        // The message is gone from the server -- retention purged it, or it was
+        // never addressed to us. Either way there is nothing left to acknowledge,
+        // so the entry is settled. Retrying it would fail identically forever and
+        // block every later ack in this scope, freezing the consumer's cursor and
+        // re-delivering the same messages every turn.
+        continue;
+      }
+      const attempts = (pending.attempts ?? 0) + 1;
+      if (attempts >= MAX_ACK_ATTEMPTS) {
+        // A genuine transport failure that has not cleared in MAX_ACK_ATTEMPTS
+        // runs is indistinguishable in effect from an unackable entry: drop it
+        // rather than wedge the scope, but say so loudly.
+        errors.push({ bus: bus.name, operation: "ack", error: `${text} (dropped after ${attempts} attempts)` });
+        continue;
+      }
+      stillPending.push({ ...pending, attempts });
       blockedAckScopes.add(ackScope);
-      errors.push({ bus: bus.name, operation: "ack", error: String(error) });
+      errors.push({ bus: bus.name, operation: "ack", error: text });
     }
   }
 

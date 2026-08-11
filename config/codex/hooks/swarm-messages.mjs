@@ -675,15 +675,23 @@ async function runHookWithLease({
           // than our unread tail. Re-register at the current head instead of
           // rendering that batch.
           //
-          // This is a deliberate tradeoff, not a free win. Most of such a batch
-          // is history this identity already processed, and rendering it would
-          // re-inject old coordination as if it were fresh. But the server
-          // cannot tell us which part we already saw, so a message posted to a
-          // reaped consumer while it was away -- still inside MAX_AGE, genuinely
-          // unread -- is discarded here too, and nothing redelivers it. Closing
-          // that gap needs the server to report the reaped cursor so we could
-          // resume from it rather than from head; until then this errs toward
-          // not re-running stale instructions.
+          // Discarding is correct here, and this is a settled decision rather
+          // than a gap awaiting a server-side fix.
+          //
+          // consumerFor below requires a session id and appends
+          // sha256(sessionID) to it -- REPO_MEMORY_SWARM_CONSUMER only sets the
+          // prefix -- so an identity is strictly session-scoped. A consumer the
+          // server no longer knows is therefore a session that has ended: it
+          // cannot poll again, and the next session arrives under a different
+          // digest, hence a different identity, which correctly starts at head.
+          // There is no returning reader whose place we could keep.
+          //
+          // A server-side tombstone (retain the reaped cursor so a resubscriber
+          // resumes from it) was designed and rejected for that reason: with no
+          // identity that ever comes back, it would only replay history to a
+          // fresh consumer, trading silent loss for silent replay. If consumer
+          // identities ever become durable across sessions, revisit this --
+          // that change, not this branch, is what would make resuming possible.
           errors.push({
             bus: bus.name,
             workspace: pollWorkspace,

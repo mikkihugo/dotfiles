@@ -273,15 +273,23 @@ test("client renderers emit only native context shapes", () => {
   assert.match(durableContext, /2026-07-19T16:00:01Z claude -> codex/);
 });
 
-test("JCode session hook derives a unique consumer from its native environment", async () => {
+// jcode announces itself but never subscribes or polls. Its session_start hook
+// is an OBSERVER -- "spawned detached, fire-and-forget" per jcode/docs/HOOKS.md
+// -- so its stdout is never consumed and it can never receive a bus message.
+// Subscribing anyway created a durable cursor that could never advance (only
+// acking advances it, and it can never ack), and such a cursor pins the
+// workspace-wide delivered-retention floor for as long as it exists.
+test("JCode announces availability without creating a consumer cursor it can never advance", async () => {
   const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-jcode-session-"));
-  const calls = [];
+  const subscribes = [];
+  const polls = [];
+  const posts = [];
   const durable = {
     name: "repo-memory",
-    async subscribe(workspace, consumer) { calls.push({ workspace, consumer }); },
-    async poll() { return []; },
+    async subscribe(workspace, consumer) { subscribes.push({ workspace, consumer }); },
+    async poll(workspace) { polls.push(workspace); return []; },
     async ack() {},
-    async post() {},
+    async post(workspace, message) { posts.push({ workspace, sender: message.sender }); },
     async close() {},
   };
   try {
@@ -294,9 +302,13 @@ test("JCode session hook derives a unique consumer from its native environment",
       buses: [durable],
       env: { JCODE_HOOK_SESSION_ID: "session-rooster-1234" },
     });
-    assert.deepEqual(calls, [{
+    assert.deepEqual(subscribes, [], "jcode must not create a cursor it can never advance");
+    assert.deepEqual(polls, [], "jcode cannot receive, so polling only costs a round trip");
+    // The identity is still derived from the native session id, and is still
+    // used: availability is posted, which needs no stdout.
+    assert.deepEqual(posts, [{
       workspace: "singularity-engine",
-      consumer: consumerForSession("jcode", "session-rooster-1234"),
+      sender: consumerForSession("jcode", "session-rooster-1234"),
     }]);
   } finally {
     await rm(stateDir, { recursive: true, force: true });
@@ -1282,6 +1294,90 @@ test("a pending entry for a bus this build no longer registers is dropped", asyn
 
     const state = JSON.parse(await readFile(stateFile, "utf8"));
     assert.deepEqual(state.pending, [], "an unackable entry for an unregistered bus must be dropped");
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+// Retention can reap an idle consumer's cursor. The server then reports
+// known_consumer:false and returns everything it still holds from sequence 0,
+// which is mostly history this identity already processed.
+test("a reaped cursor re-subscribes at head instead of replaying the bus into the model", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-reaped-"));
+  const payload = { cwd: "/workspace", session_id: "reaped-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const stateFile = join(stateDir, `${consumer}--singularity-engine.json`);
+  const subscribes = [];
+  const acks = [];
+  const durable = {
+    name: "repo-memory",
+    async poll() {
+      // Shape the real RepoMemoryBus.poll returns for an unknown identity.
+      const messages = [{ id: "old-1", body: "ancient coordination", origin: "repo-memory" }];
+      messages.knownConsumer = false;
+      return messages;
+    },
+    async subscribe(workspace, who) { subscribes.push({ workspace, consumer: who }); },
+    async ack(_w, _c, delivery) { acks.push(delivery.id); },
+    async post() {},
+    async close() {},
+  };
+
+  try {
+    await writeFile(stateFile, `${JSON.stringify({
+      schema: "repo-memory-hook-state/v1",
+      initialized: true,
+      availability_pending: false,
+      pending: [],
+    })}\n`);
+
+    const result = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload, workspace: "singularity-engine",
+      stateDir, buses: [durable],
+    });
+
+    assert.equal(result.output, null, "a replayed batch must not be rendered into the model as fresh context");
+    assert.deepEqual(result.deliveries, [], "nothing from an unknown-consumer poll counts as delivered");
+    assert.deepEqual(subscribes, [{ workspace: "singularity-engine", consumer }],
+      "the identity must be re-registered at the current head");
+    assert.deepEqual(acks, [], "there is nothing to acknowledge for a batch that was never delivered");
+    assert.ok(
+      result.errors.some((e) => e.operation === "resubscribe"),
+      "a reap must leave an operator-visible trace, not pass silently",
+    );
+    const state = JSON.parse(await readFile(stateFile, "utf8"));
+    assert.deepEqual(state.pending, [], "a discarded batch must not be queued for acknowledgement");
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("a re-subscribe that itself fails is reported and does not wedge the run", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-reaped-fail-"));
+  const payload = { cwd: "/workspace", session_id: "reaped-fail-session" };
+  const durable = {
+    name: "repo-memory",
+    async poll() {
+      const messages = [];
+      messages.knownConsumer = false;
+      return messages;
+    },
+    async subscribe() { throw new Error("bus unavailable"); },
+    async ack() {},
+    async post() {},
+    async close() {},
+  };
+
+  try {
+    const result = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload, workspace: "singularity-engine",
+      stateDir, buses: [durable],
+    });
+    assert.ok(
+      result.errors.some((e) => e.operation === "subscribe" && /bus unavailable/.test(e.error)),
+      "a failed re-subscribe must surface, so a permanently broken consumer is noticeable",
+    );
+    assert.deepEqual(result.deliveries, [], "a failed re-subscribe delivers nothing");
   } finally {
     await rm(stateDir, { recursive: true, force: true });
   }

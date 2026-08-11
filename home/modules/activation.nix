@@ -273,6 +273,11 @@ in {
                   "enabledProjectMcpServers": [],
                   "disabledProjectMcpServers": [],
               }
+              # Qoder's own auto-memory store (~/.qoder/memories/) is off:
+              # durable agent memory belongs in the repo_memory bank reached
+              # through the gateway above, not in a per-client store no other
+              # coding client can read, supersede, retain, or purge.
+              data["autoMemoryEnabled"] = False
           path.parent.mkdir(parents=True, exist_ok=True)
           path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 

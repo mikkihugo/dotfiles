@@ -17,7 +17,19 @@ SHARED_KEYS = [
     "project_doc_max_bytes",
     "tool_output_token_limit",
 ]
-SHARED_TUI_KEYS = ["status_line"]
+# Section-scoped shared keys. ~/.codex/config.toml is mutable and rewritten by
+# Codex itself, so anything that must survive a Codex write has to be re-applied
+# here on every activation rather than seeded once.
+SHARED_SECTION_KEYS = {
+    "tui": ["status_line"],
+    # Codex's own on-disk memory store stays off: durable agent memory belongs
+    # in the repo_memory bank, not a per-client store no other tool can read.
+    "features": ["memories"],
+    "memories": ["use_memories", "generate_memories"],
+}
+
+# Retained for callers that still refer to the tui-only list.
+SHARED_TUI_KEYS = SHARED_SECTION_KEYS["tui"]
 
 
 def load_toml(path: Path) -> dict:
@@ -42,8 +54,12 @@ def save(args) -> None:
     target = Path(args.target).expanduser()
     data = load_toml(source)
     prefs = {key: data[key] for key in SHARED_KEYS if key in data}
-    tui = data.get("tui", {})
-    tui_prefs = {key: tui[key] for key in SHARED_TUI_KEYS if key in tui}
+    section_prefs = {}
+    for section, keys in SHARED_SECTION_KEYS.items():
+        source_section = data.get(section, {})
+        picked = {key: source_section[key] for key in keys if key in source_section}
+        if picked:
+            section_prefs[section] = picked
 
     target.parent.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -53,12 +69,14 @@ def save(args) -> None:
         "",
     ]
     lines.extend(f"{key} = {toml_value(prefs[key])}" for key in SHARED_KEYS if key in prefs)
-    if tui_prefs:
-        lines.extend(["", "[tui]"])
-        lines.extend(f"{key} = {toml_value(tui_prefs[key])}" for key in SHARED_TUI_KEYS if key in tui_prefs)
+    for section, picked in section_prefs.items():
+        lines.extend(["", f"[{section}]"])
+        lines.extend(f"{key} = {toml_value(picked[key])}" for key in SHARED_SECTION_KEYS[section] if key in picked)
     target.write_text("\n".join(lines).rstrip() + "\n")
 
-    saved = list(prefs) + [f"tui.{key}" for key in tui_prefs]
+    saved = list(prefs) + [
+        f"{section}.{key}" for section, picked in section_prefs.items() for key in picked
+    ]
     if saved:
         print(f"saved {', '.join(saved)} to {target}")
     else:
@@ -71,58 +89,66 @@ def apply(args) -> None:
     target = Path(args.target).expanduser()
     prefs = {key: value for key, value in load_toml(source).items() if key in SHARED_KEYS}
     source_data = load_toml(source)
-    source_tui = source_data.get("tui", {})
-    tui_prefs = {key: source_tui[key] for key in SHARED_TUI_KEYS if key in source_tui}
-    if not prefs and not tui_prefs:
+    section_prefs = {}
+    for section, keys in SHARED_SECTION_KEYS.items():
+        source_section = source_data.get(section, {})
+        picked = {key: source_section[key] for key in keys if key in source_section}
+        if picked:
+            section_prefs[section] = picked
+    if not prefs and not section_prefs:
         return
 
     target.parent.mkdir(parents=True, exist_ok=True)
     original = target.read_text().splitlines() if target.exists() else []
     seen = set()
-    seen_tui = set()
+    seen_section = {section: set() for section in section_prefs}
     output = []
     top_level_key = re.compile(r"^([A-Za-z0-9_]+)\s*=")
     section_header = re.compile(r"^\s*\[([^]]+)]\s*$")
     section = None
 
+    def flush_section(name):
+        """Append any managed key the section declared but never contained."""
+        if name not in section_prefs:
+            return
+        picked = section_prefs[name]
+        for key in SHARED_SECTION_KEYS[name]:
+            if key in picked and key not in seen_section[name]:
+                output.append(f"{key} = {toml_value(picked[key])}")
+                seen_section[name].add(key)
+
     for line in original:
         section_match = section_header.match(line)
         if section_match:
-            if section == "tui":
-                for key in SHARED_TUI_KEYS:
-                    if key in tui_prefs and key not in seen_tui:
-                        output.append(f"{key} = {toml_value(tui_prefs[key])}")
-                        seen_tui.add(key)
+            flush_section(section)
             section = section_match.group(1)
         match = top_level_key.match(line)
         if section is None and match and match.group(1) in prefs:
             key = match.group(1)
             output.append(f"{key} = {toml_value(prefs[key])}")
             seen.add(key)
-        elif section == "tui" and match and match.group(1) in tui_prefs:
+        elif section in section_prefs and match and match.group(1) in section_prefs[section]:
             key = match.group(1)
-            output.append(f"{key} = {toml_value(tui_prefs[key])}")
-            seen_tui.add(key)
+            output.append(f"{key} = {toml_value(section_prefs[section][key])}")
+            seen_section[section].add(key)
         else:
             output.append(line)
 
-    if section == "tui":
-        for key in SHARED_TUI_KEYS:
-            if key in tui_prefs and key not in seen_tui:
-                output.append(f"{key} = {toml_value(tui_prefs[key])}")
-                seen_tui.add(key)
+    flush_section(section)
 
     missing = [key for key in SHARED_KEYS if key in prefs and key not in seen]
     if missing:
         insert = [f"{key} = {toml_value(prefs[key])}" for key in missing]
         output = insert + ([""] if output and output[0] else []) + output
 
-    missing_tui = [key for key in SHARED_TUI_KEYS if key in tui_prefs and key not in seen_tui]
-    if missing_tui:
+    for name, picked in section_prefs.items():
+        missing = [key for key in SHARED_SECTION_KEYS[name] if key in picked and key not in seen_section[name]]
+        if not missing:
+            continue
         if output and output[-1]:
             output.append("")
-        output.append("[tui]")
-        output.extend(f"{key} = {toml_value(tui_prefs[key])}" for key in missing_tui)
+        output.append(f"[{name}]")
+        output.extend(f"{key} = {toml_value(picked[key])}" for key in missing)
 
     target.write_text("\n".join(output).rstrip() + "\n")
 

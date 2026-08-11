@@ -20,6 +20,12 @@ trust_level = "trusted"
 hide_full_access_warning = true
 
 [features]
+# Codex's own on-disk memory store is off: durable agent memory belongs in the
+# repo_memory bank reached through the CentralCloud MCP gateway, not in a
+# per-client store no other tool can read, supersede, or purge.
+# ~/.codex/memories/skills and ~/.codex/memories/.agents are the authored
+# instruction plane and are unaffected by this flag.
+memories = false
 unified_exec = true
 shell_snapshot = true
 multi_agent = true
@@ -59,6 +65,12 @@ config_file = "agents/taxonomy-validator.toml"
 [agents.singularity_engine_harvester]
 description = "Singularity Engine harvester (GPT-5.6 Terra): source-grounded architecture and capability harvesting from donor systems."
 config_file = "agents/singularity-engine-harvester.toml"
+
+# Belt and braces alongside [features].memories: never generate new local
+# memories, never read the existing ones back into context.
+[memories]
+use_memories = false
+generate_memories = false
 
 [mcp_servers.centralcloud-mcp-gateway]
 url = "http://mcp-gateway.svc/mcp"

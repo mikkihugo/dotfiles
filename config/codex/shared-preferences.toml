@@ -19,5 +19,22 @@ project_doc_max_bytes = 131072
 # only clips pathological outliers before they consume the context window.
 tool_output_token_limit = 32000
 
+# Codex's own on-disk memory store is off. Durable agent memory belongs in the
+# repo_memory bank reached through the CentralCloud MCP gateway: a per-client
+# store is invisible to every other coding client, so a fact learned in Codex is
+# re-learned or contradicted in Claude Code, Cursor, or Qoder, and nothing
+# supersedes, retains, or purges across them.
+#
+# ~/.codex/config.toml is mutable and rewritten by Codex itself, which is why
+# these live here (re-applied every activation) and not only in config.toml
+# (seeded once). ~/.codex/memories/skills and ~/.codex/memories/.agents are the
+# authored instruction plane, not memory, and are untouched by these flags.
+[features]
+memories = false
+
+[memories]
+use_memories = false
+generate_memories = false
+
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "project-name", "git-branch", "run-state", "five-hour-limit", "weekly-limit", "thread-id", "thread-title", "task-progress"]

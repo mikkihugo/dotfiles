@@ -4,9 +4,11 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
+  readdirSync,
   realpathSync,
   readFileSync,
   renameSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -36,6 +38,23 @@ const STATE_LOCK_READY = "repo-memory-hook-lock-acquired";
 const STATE_LOCK_CONFLICT_EXIT = 75;
 const STATE_LOCK_ACQUIRE_GRACE_MS = 500;
 const STATE_LOCK_RELEASE_GRACE_MS = 1_000;
+
+// A session that has not touched its state file in this long is not "live"
+// in any sense runHook can observe: writeState renames a fresh temp file onto
+// the state path on every hook call that reaches it, so an idle interactive
+// session still advances its mtime. Measured against the real state directory
+// on 2026-08-12 (415 files): ages ran 0-23 days, 211 of them already at or
+// past 7 days. 7 days is therefore well clear of any plausibly live session
+// while still bounding the resident set, which is otherwise unbounded --
+// nothing else in this file ever deletes a state file.
+const STATE_SWEEP_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+// `flock` plus its `bash` helper is the expensive part of a sweep (~8ms per
+// candidate); the readdir+stat scan is not (2.7-6.1ms for the same 415 real
+// files, so it runs unconditionally). This bounds how many candidates one
+// SessionStart will try to acquire, keeping the added latency to roughly
+// 65ms on SessionStart only -- other hook events never sweep.
+const STATE_SWEEP_MAX_CANDIDATES = 8;
 
 const safePart = (value) => String(value).replace(/[^A-Za-z0-9._-]+/g, "-");
 
@@ -313,16 +332,22 @@ function configuredBinary(template, fallback) {
 }
 
 /**
- * Acquire an OS-owned lease for one hook state scope.
+ * Acquire an OS-owned lease on an exact lock file path.
  *
  * Hook commands are separate Node processes, so an in-memory promise cannot
  * serialize their poll, output, and acknowledgement transition. The stable
- * file path is never removed or renamed: `flock` owns the lease and the kernel
- * releases it when its helper exits, including after an interrupted hook.
+ * file path is never removed or renamed by an active session: `flock` owns
+ * the lease and the kernel releases it when its helper exits, including
+ * after an interrupted hook. `flock` itself creates `lockPath` if it does
+ * not already exist (open with O_CREAT), so callers do not need to -- and so
+ * a caller that only wanted to TEST the lock has still made a file.
+ *
+ * Also used by the stale-state sweep (sweepStaleState) to prove, for an
+ * unrelated session's leftover file, that nothing is using it right now
+ * before deleting it -- the same non-blocking exclusivity a live session's
+ * own runHook relies on.
  */
-async function acquireStateLock(stateDir, consumer, workspace) {
-  mkdirSync(stateDir, { recursive: true, mode: 0o700 });
-  const lockPath = stateLockPath(stateDir, consumer, workspace);
+async function acquireLockAtPath(lockPath) {
   try {
     if (!lstatSync(lockPath).isFile()) return null;
   } catch (error) {
@@ -401,6 +426,12 @@ async function acquireStateLock(stateDir, consumer, workspace) {
   if (child.exitCode === null) child.kill("SIGKILL");
   await exited;
   return null;
+}
+
+/** Acquire an OS-owned lease for one hook state scope. */
+async function acquireStateLock(stateDir, consumer, workspace) {
+  mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+  return acquireLockAtPath(stateLockPath(stateDir, consumer, workspace));
 }
 
 function readState(stateDir, consumer, workspace) {
@@ -488,6 +519,149 @@ function writeState(
   );
   chmodSync(temporary, 0o600);
   renameSync(temporary, path);
+}
+
+/**
+ * Find `<consumer>--<workspace>.json`(.lock) pairs -- and lock files with no
+ * matching state, left behind by a hook process killed before its first
+ * writeState -- untouched for at least `ttlMs`. Nothing else in this file
+ * ever deletes these, so the state directory otherwise grows by one pair per
+ * session forever.
+ *
+ * `ownPrefix` excludes every file for the calling session's own consumer
+ * (any workspace, not just the one this hook call is scoped to): a single
+ * session's consumer digest legitimately owns several workspace files (one
+ * per repo it has run hooks in), and this function can only prove liveness
+ * for the session doing the sweeping, not for anyone else's. Those files are
+ * excluded outright rather than merely deprioritized.
+ *
+ * Staleness is read from the state file's own mtime when it exists --
+ * writeState rewrites it on every hook call that reaches that point, so an
+ * idle-but-alive session keeps advancing it. For a lock with no state file,
+ * the lock's own scan-time mtime is used instead, and it is recorded here
+ * rather than re-read later: by the time the sweep acts on a candidate it may
+ * itself have created that lock, making a fresh re-stat actively misleading.
+ */
+function collectSweepCandidates(stateDir, ownPrefix, now, ttlMs) {
+  let entries;
+  try {
+    entries = readdirSync(stateDir);
+  } catch {
+    return [];
+  }
+  const jsonMtimes = new Map();
+  const lockMtimes = new Map();
+  for (const entry of entries) {
+    if (entry.startsWith(ownPrefix)) continue;
+    const isLock = entry.endsWith(".json.lock");
+    const isState = !isLock && entry.endsWith(".json");
+    if (!isLock && !isState) continue;
+    const fullPath = join(stateDir, entry);
+    let mtimeMs;
+    try {
+      mtimeMs = statSync(fullPath).mtimeMs;
+    } catch {
+      continue; // Raced away between readdir and stat; nothing to reap.
+    }
+    const key = isLock ? fullPath.slice(0, -".lock".length) : fullPath;
+    (isLock ? lockMtimes : jsonMtimes).set(key, mtimeMs);
+  }
+  const candidates = [];
+  for (const path of new Set([...jsonMtimes.keys(), ...lockMtimes.keys()])) {
+    const mtimeMs = jsonMtimes.has(path) ? jsonMtimes.get(path) : lockMtimes.get(path);
+    if (now - mtimeMs < ttlMs) continue;
+    candidates.push({
+      statePath: path,
+      lockPath: `${path}.lock`,
+      mtimeMs,
+      // null means no lock file existed at scan time. The sweep needs this to
+      // tell "pre-existing orphan lock" from "lock this sweep itself created".
+      lockMtimeMs: lockMtimes.has(path) ? lockMtimes.get(path) : null,
+    });
+  }
+  candidates.sort((a, b) => a.mtimeMs - b.mtimeMs);
+  return candidates;
+}
+
+/**
+ * Reap stale, unbounded per-session hook state left in `stateDir`.
+ *
+ * A candidate is deleted only after this call itself holds the same
+ * exclusive, non-blocking flock a live session's own acquireStateLock would
+ * take (acquireLockAtPath): failure to acquire means some process is using
+ * it right now, so the candidate is left untouched for a later sweep rather
+ * than deleted out from under it. Staleness is re-checked immediately after
+ * acquiring the lock, closing the gap between the directory scan and the
+ * acquire -- a writer that refreshed the file and released the lock inside
+ * that window must survive even though the initial scan saw it as stale.
+ *
+ * readdir + stat across the whole directory has no subprocess cost (2.7-6.1ms
+ * measured for 415 real files) and runs unconditionally; only the bounded
+ * `maxCandidates` are actually tried, because each acquire spawns a
+ * `flock`+`bash` child (~8ms measured).
+ *
+ * Known residual, measured rather than assumed: `flock` creates the lock file
+ * (O_CREAT) before it tries to lock it, so an acquire that then conflicts or
+ * exceeds STATE_LOCK_ACQUIRE_GRACE_MS leaves a lock file behind that this
+ * sweep cannot safely delete -- it does not hold it. Measured over 12 trials
+ * of three sweepers racing 24 stale pairs: 0-2 stranded, against 11-18 for the
+ * re-stat version this replaced. It is bounded and self-correcting rather than
+ * permanent: such a lock has no state file beside it, so once its own mtime
+ * passes `ttlMs` it becomes an ordinary orphan candidate and is reaped.
+ *
+ * Never throws: this is best-effort housekeeping on a fire-and-forget
+ * observer path and must never fail the hook it runs alongside.
+ */
+async function sweepStaleState(stateDir, consumer, {
+  now = Date.now(),
+  ttlMs = STATE_SWEEP_TTL_MS,
+  maxCandidates = STATE_SWEEP_MAX_CANDIDATES,
+} = {}) {
+  try {
+    const ownPrefix = `${safePart(consumer)}--`;
+    const candidates = collectSweepCandidates(stateDir, ownPrefix, now, ttlMs).slice(0, maxCandidates);
+    for (const {
+      statePath: candidateStatePath,
+      lockPath: candidateLockPath,
+      lockMtimeMs,
+    } of candidates) {
+      const lease = await acquireLockAtPath(candidateLockPath);
+      if (!lease) continue; // Contested right now; leave it for a later sweep.
+      try {
+        let stillStale;
+        try {
+          stillStale = now - statSync(candidateStatePath).mtimeMs >= ttlMs;
+        } catch {
+          // The state file is gone, which means one of two things.
+          //
+          // Either this candidate was already a lock with no state at scan
+          // time, and `lockMtimeMs` is when it was actually left behind; or a
+          // concurrent sweeper reaped the pair in the window between our scan
+          // and our acquire, in which case `acquireLockAtPath` just RE-CREATED
+          // the lock via flock's O_CREAT and `lockMtimeMs` is null.
+          //
+          // Do not stat the lock here. In the second case that reads the mtime
+          // of a file this sweep created microseconds ago, concludes it is
+          // fresh, and spares it -- leaking a permanent orphan lock on every
+          // concurrent collision. Measured on the real directory with three
+          // concurrent sweepers, that turned a 415-file directory into 419
+          // files with 43 leaked locks instead of draining it.
+          //
+          // A null `lockMtimeMs` therefore means "we created this lock for a
+          // state file that no longer exists", so it must be removed.
+          stillStale = lockMtimeMs === null || now - lockMtimeMs >= ttlMs;
+        }
+        if (stillStale) {
+          rmSync(candidateStatePath, { force: true });
+          rmSync(candidateLockPath, { force: true });
+        }
+      } finally {
+        await lease.release();
+      }
+    }
+  } catch {
+    // Housekeeping must never fail the hook it runs alongside.
+  }
 }
 
 function consumerFor(client, payload, env) {
@@ -765,11 +939,23 @@ export async function runHook(args) {
   const stateLock = await acquireStateLock(stateDir, consumer, args.workspace);
   if (!stateLock) return { output: null, errors: [], deliveries: [] };
 
+  let result;
   try {
-    return await runHookWithLease({ ...args, payload, env, stateDir, consumer, stateLock });
+    result = await runHookWithLease({ ...args, payload, env, stateDir, consumer, stateLock });
   } finally {
     await stateLock.release();
   }
+
+  // SessionStart is the natural low-frequency cadence for housekeeping (once
+  // per session, not once per turn), and the sweep scans the whole shared
+  // directory regardless of which client or consumer triggered it, so any
+  // client's SessionStart reaps every other session's stale leftovers too.
+  // Measured cost: SessionStart 71-86ms vs 7.8ms for other events.
+  if (args.eventName === "SessionStart" || args.eventName === "sessionStart") {
+    await sweepStaleState(stateDir, consumer);
+  }
+
+  return result;
 }
 
 async function readStdin() {

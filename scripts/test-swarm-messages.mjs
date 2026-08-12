@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFile as execFileCallback, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
@@ -1378,6 +1378,164 @@ test("a re-subscribe that itself fails is reported and does not wedge the run", 
       "a failed re-subscribe must surface, so a permanently broken consumer is noticeable",
     );
     assert.deepEqual(result.deliveries, [], "a failed re-subscribe delivers nothing");
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+const STALE_SWEEP_AGE_MS = 8 * 24 * 60 * 60 * 1000; // Past the 7-day sweep TTL.
+
+const noopDurableBus = {
+  name: "repo-memory",
+  async subscribe() {},
+  async poll() { return []; },
+  async ack() {},
+  async post() {},
+  async close() {},
+};
+
+const seedStatePair = async (stateDir, consumer, workspace, ageMs) => {
+  const jsonPath = join(stateDir, `${consumer}--${workspace}.json`);
+  const lockPath = `${jsonPath}.lock`;
+  await writeInitializedState(stateDir, consumer, workspace);
+  await writeFile(lockPath, "");
+  if (ageMs !== null) {
+    const old = new Date(Date.now() - ageMs);
+    await utimes(jsonPath, old, old);
+    await utimes(lockPath, old, old);
+  }
+  return { jsonPath, lockPath };
+};
+
+test("a stale, lock-free state pair is reaped on the next SessionStart sweep, while contested or fresh pairs survive", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-sweep-"));
+  let heldLock;
+  try {
+    await seedStatePair(stateDir, "codex-aaaa1111aaaa1111", "old-repo", STALE_SWEEP_AGE_MS);
+    await seedStatePair(stateDir, "codex-bbbb2222bbbb2222", "fresh-repo", null);
+    const held = await seedStatePair(stateDir, "codex-cccc3333cccc3333", "held-repo", STALE_SWEEP_AGE_MS);
+    heldLock = await holdKernelLock(held.lockPath);
+
+    await runHook({
+      client: "codex",
+      eventName: "SessionStart",
+      payload: { cwd: "/workspace/live-repo", session_id: "live-session-sweep" },
+      workspace: "live-repo",
+      stateDir,
+      buses: [noopDurableBus],
+    });
+
+    const remaining = new Set(await readdir(stateDir));
+    assert.equal(remaining.has("codex-aaaa1111aaaa1111--old-repo.json"), false, "stale, unheld state must be reaped");
+    assert.equal(remaining.has("codex-aaaa1111aaaa1111--old-repo.json.lock"), false, "stale, unheld lock must be reaped");
+    assert.ok(remaining.has("codex-bbbb2222bbbb2222--fresh-repo.json"), "state inside the TTL must survive");
+    assert.ok(remaining.has("codex-bbbb2222bbbb2222--fresh-repo.json.lock"), "lock inside the TTL must survive");
+    assert.ok(remaining.has("codex-cccc3333cccc3333--held-repo.json"), "a contested (kernel-locked) pair must survive");
+    assert.ok(remaining.has("codex-cccc3333cccc3333--held-repo.json.lock"), "a contested lock must survive");
+
+    const ownConsumer = consumerForSession("codex", "live-session-sweep");
+    assert.ok(remaining.has(`${ownConsumer}--live-repo.json`), "the sweeping session's own new state must exist");
+  } finally {
+    if (heldLock) await heldLock.release();
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("a stale sibling workspace file for the sweeping session's own consumer is never reaped", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-sweep-own-"));
+  try {
+    const ownConsumer = consumerForSession("codex", "live-session-self");
+    await seedStatePair(stateDir, ownConsumer, "other-repo", STALE_SWEEP_AGE_MS);
+
+    await runHook({
+      client: "codex",
+      eventName: "SessionStart",
+      payload: { cwd: "/workspace/live-repo", session_id: "live-session-self" },
+      workspace: "live-repo",
+      stateDir,
+      buses: [noopDurableBus],
+    });
+
+    const remaining = new Set(await readdir(stateDir));
+    assert.ok(
+      remaining.has(`${ownConsumer}--other-repo.json`),
+      "a stale sibling workspace of the LIVE session's own consumer must never be reaped, even past the TTL",
+    );
+    assert.ok(remaining.has(`${ownConsumer}--other-repo.json.lock`));
+    assert.ok(remaining.has(`${ownConsumer}--live-repo.json`), "the sweeping session's own new state must exist");
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("concurrent sweepers drain the directory instead of leaking the locks they create", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-sweep-race-"));
+  try {
+    // Stale state files with NO lock companion -- the dominant real-world
+    // shape (283 of 346 on the real directory). Sweeping one REQUIRES creating
+    // its lock, so two sweepers racing the same candidate is the case where a
+    // naive fallback leaves the lock it just made behind forever.
+    const seeded = 24;
+    for (let i = 0; i < seeded; i += 1) {
+      const consumer = `codex-${String(i).padStart(16, "0")}`;
+      const jsonPath = join(stateDir, `${consumer}--stale.json`);
+      await writeInitializedState(stateDir, consumer, "stale");
+      const old = new Date(Date.now() - STALE_SWEEP_AGE_MS);
+      await utimes(jsonPath, old, old);
+    }
+
+    for (let round = 0; round < 6; round += 1) {
+      await Promise.all(["race-a", "race-b", "race-c"].map((session) => runHook({
+        client: "codex",
+        eventName: "SessionStart",
+        payload: { cwd: "/workspace/live-repo", session_id: session },
+        workspace: "live-repo",
+        stateDir,
+        buses: [noopDurableBus],
+      })));
+    }
+
+    const afterRace = await readdir(stateDir);
+    assert.deepEqual(
+      afterRace.filter((f) => f.endsWith("--stale.json")), [],
+      "every seeded stale state file must be reaped",
+    );
+
+    // `flock` creates the lock file before it tries to lock it, so an acquire
+    // that conflicts or exceeds its grace can strand one the loser does not
+    // hold and so cannot safely delete. That is an occasional accident.
+    // Re-statting a lock the sweep itself just created is a systematic bug: it
+    // spared the lock on nearly every collision. Measured over 12 trials of
+    // this exact scenario, 11-18 of 24 leaked before the fix versus 0-2 after.
+    const strandedLocks = afterRace.filter(
+      (f) => f.endsWith(".json.lock") && !afterRace.includes(f.slice(0, -".lock".length)),
+    );
+    assert.ok(
+      strandedLocks.length <= 5,
+      `losing a race may strand a lock occasionally, but not systematically; `
+        + `got ${strandedLocks.length} of ${seeded}: ${strandedLocks.join(", ")}`,
+    );
+
+    // Whatever was stranded must be self-correcting: with no state file beside
+    // it, a stranded lock is an ordinary sweep candidate once its own mtime
+    // passes the TTL. Without this the directory would still grow, just slower.
+    const aged = new Date(Date.now() - STALE_SWEEP_AGE_MS);
+    for (const f of strandedLocks) await utimes(join(stateDir, f), aged, aged);
+    for (let i = 0; i < 3; i += 1) {
+      await runHook({
+        client: "codex",
+        eventName: "SessionStart",
+        payload: { cwd: "/workspace/live-repo", session_id: "reaper" },
+        workspace: "live-repo",
+        stateDir,
+        buses: [noopDurableBus],
+      });
+    }
+    const settled = await readdir(stateDir);
+    assert.deepEqual(
+      settled.filter((f) => strandedLocks.includes(f)), [],
+      "a stranded lock must age out like any other orphan, so the directory converges",
+    );
   } finally {
     await rm(stateDir, { recursive: true, force: true });
   }

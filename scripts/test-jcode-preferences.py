@@ -51,6 +51,39 @@ model_catalog = true
 
 [[providers.ollama-cloud.models]]
 id = "glm-5.2"
+
+[providers.byteplus-ark]
+type = "open-ai-compatible"
+base_url = "https://ark.ap-southeast.bytepluses.com/api/coding/v3"
+auth = "bearer"
+api_key_env = "BYTEPLUS_ARK_API_KEY"
+env_file = "byteplus-ark.env"
+default_model = "ark-code-latest"
+model_catalog = false
+
+[[providers.byteplus-ark.models]]
+id = "ark-code-latest"
+context_window = 262144
+input = ["text"]
+'''
+
+
+# J-Code's own TOML writer emits long arrays across several lines. patch_section
+# must consume the whole value, not just its first line -- including a bracket
+# that only appears inside a quoted string, and a trailing comment.
+MULTILINE_LIVE = '''[display]
+theme = "dark"
+
+[provider]
+default_provider = "old"
+model_picker_providers = [
+    "old-a",
+    "old-b]",  # a bracket inside a string, and a comment
+]
+stream_idle_timeout_secs = 180
+
+[providers.other]
+token = "keep-me"
 '''
 
 
@@ -116,6 +149,132 @@ class JcodePreferencesTest(unittest.TestCase):
 
             self.apply(source, target)
             self.assertEqual(target.read_text(), first)
+
+
+    def test_apply_rewrites_multiline_managed_array_without_stray_continuation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "shared-preferences.toml"
+            target = root / "config.toml"
+            source.write_text(SOURCE)
+            target.write_text(MULTILINE_LIVE)
+
+            self.apply(source, target)
+            rendered = target.read_text()
+            parsed = tomllib.loads(rendered)
+
+            self.assertEqual(
+                parsed["provider"]["model_picker_providers"],
+                ["llm-gateway", "kimi", "minimax-direct", "openai-oauth", "ollama-cloud"],
+            )
+            # the stale entries must be gone entirely, not left dangling
+            self.assertNotIn("old-a", rendered)
+            self.assertNotIn("old-b]", rendered)
+            # the key that followed the multi-line array survives
+            self.assertEqual(parsed["provider"]["stream_idle_timeout_secs"], 180)
+            self.assertEqual(parsed["providers"]["other"]["token"], "keep-me")
+            self.assertEqual(parsed["display"]["theme"], "dark")
+
+            self.apply(source, target)
+            self.assertEqual(target.read_text(), rendered)
+
+    def test_byteplus_ark_profile_is_managed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "shared-preferences.toml"
+            target = root / "config.toml"
+            source.write_text(SOURCE)
+            target.write_text(LIVE)
+
+            self.apply(source, target)
+            parsed = tomllib.loads(target.read_text())
+            profile = parsed["providers"]["byteplus-ark"]
+            self.assertEqual(profile["base_url"], "https://ark.ap-southeast.bytepluses.com/api/coding/v3")
+            self.assertEqual(profile["api_key_env"], "BYTEPLUS_ARK_API_KEY")
+            self.assertFalse(profile["model_catalog"])
+            self.assertEqual(profile["models"], [{"id": "ark-code-latest", "context_window": 262144, "input": ["text"]}])
+
+
+    def test_apply_consumes_multiline_string_value_of_a_managed_key(self) -> None:
+        live = (
+            "[display]\n"
+            "theme = \"dark\"\n"
+            "\n"
+            "[provider]\n"
+            "default_model = '''\n"
+            "junk\n"
+            "'''\n"
+            "stream_idle_timeout_secs = 180\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "shared-preferences.toml"
+            target = root / "config.toml"
+            source.write_text(SOURCE)
+            target.write_text(live)
+
+            self.apply(source, target)
+            rendered = target.read_text()
+            parsed = tomllib.loads(rendered)
+
+            self.assertEqual(parsed["provider"]["default_model"], "llm-gateway:auto")
+            self.assertNotIn("junk", rendered)
+            self.assertEqual(parsed["provider"]["stream_idle_timeout_secs"], 180)
+            self.assertEqual(parsed["display"]["theme"], "dark")
+
+    def test_apply_never_rewrites_a_key_inside_an_unmanaged_multiline_string(self) -> None:
+        live = (
+            "[provider]\n"
+            'note = """\n'
+            'model_picker_providers = ["POISON"]\n'
+            '"""\n'
+            'default_provider = "old"\n'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "shared-preferences.toml"
+            target = root / "config.toml"
+            source.write_text(SOURCE)
+            target.write_text(live)
+
+            self.apply(source, target)
+            parsed = tomllib.loads(target.read_text())
+
+            # the prose inside the user's string is theirs, not a managed key
+            self.assertIn('model_picker_providers = ["POISON"]', parsed["provider"]["note"])
+            self.assertEqual(
+                parsed["provider"]["model_picker_providers"],
+                ["llm-gateway", "kimi", "minimax-direct", "openai-oauth", "ollama-cloud"],
+            )
+            self.assertEqual(parsed["provider"]["default_provider"], "llm-gateway")
+
+    def test_apply_does_not_split_a_section_on_a_nested_array_line(self) -> None:
+        # `    ["c"]` matches SECTION_HEADER; chunks() must not treat it as one.
+        live = (
+            "[provider]\n"
+            "model_picker_providers = [\n"
+            '    ["a", "b"],\n'
+            '    ["c"]\n'
+            "]\n"
+            "stream_idle_timeout_secs = 180\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "shared-preferences.toml"
+            target = root / "config.toml"
+            source.write_text(SOURCE)
+            target.write_text(live)
+
+            self.apply(source, target)
+            rendered = target.read_text()
+            parsed = tomllib.loads(rendered)
+
+            self.assertEqual(
+                parsed["provider"]["model_picker_providers"],
+                ["llm-gateway", "kimi", "minimax-direct", "openai-oauth", "ollama-cloud"],
+            )
+            self.assertNotIn('["c"]', rendered)
+            self.assertEqual(parsed["provider"]["stream_idle_timeout_secs"], 180)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 # Umans routes are retired for default/session traffic.
 default_provider = "minimax-direct"
 default_model = "minimax-direct:MiniMax-M3"
-model_picker_providers = ["minimax-direct", "llm-gateway", "kimi", "openai-oauth", "ollama-cloud"]
+model_picker_providers = ["minimax-direct", "llm-gateway", "kimi", "openai-oauth", "ollama-cloud", "byteplus-ark"]
 cross_provider_failover = "countdown"
 
 # jcode's own memory agent is off. Durable agent memory belongs in the
@@ -85,3 +85,64 @@ id = "deepseek-v4-flash"
 # fails with "refusing to fall back the worker cwd onto it".
 [agents]
 swarm_lane_provisioning = true
+
+# BytePlus Ark coding plan (ap-southeast-1). OpenAI protocol: jcode only
+# supports open-ai-compatible / open-router, so this uses Ark's
+# /api/coding/v3 rather than its Anthropic-protocol /api/coding path.
+# model_catalog stays false on purpose: Ark's /models publishes 54 regional
+# models, most of which the coding-plan key is NOT entitled to, and a live
+# catalog would let the picker select one that 404s with UnsupportedModel.
+# Every id below was verified against the live endpoint on 2026-08-12.
+[providers.byteplus-ark]
+type = "open-ai-compatible"
+base_url = "https://ark.ap-southeast.bytepluses.com/api/coding/v3"
+auth = "bearer"
+api_key_env = "BYTEPLUS_ARK_API_KEY"
+env_file = "byteplus-ark.env"
+default_model = "ark-code-latest"
+requires_api_key = true
+provider_routing = false
+allow_provider_pinning = false
+model_catalog = false
+
+# ark-code-latest is the console-side Auto router; it reports model = "auto"
+# and rejects image input. Context is the conservative pool floor.
+[[providers.byteplus-ark.models]]
+id = "ark-code-latest"
+context_window = 262144
+input = ["text"]
+
+[[providers.byteplus-ark.models]]
+id = "dola-seed-2.0-pro"
+context_window = 262144
+input = ["text", "image"]
+
+[[providers.byteplus-ark.models]]
+id = "dola-seed-2.0-lite"
+context_window = 262144
+input = ["text", "image"]
+
+[[providers.byteplus-ark.models]]
+id = "dola-seed-2.0-code"
+context_window = 262144
+input = ["text", "image"]
+
+[[providers.byteplus-ark.models]]
+id = "glm-5.2"
+context_window = 1048576
+input = ["text"]
+
+[[providers.byteplus-ark.models]]
+id = "glm-5.1"
+context_window = 200000
+input = ["text"]
+
+[[providers.byteplus-ark.models]]
+id = "kimi-k2.5"
+context_window = 262144
+input = ["text"]
+
+[[providers.byteplus-ark.models]]
+id = "gpt-oss-120b"
+context_window = 131072
+input = ["text"]

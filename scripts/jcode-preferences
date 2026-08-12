@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 MANAGED_SECTIONS = ("provider", "auth", "features", "agents")
-MANAGED_PROFILES = ("llm-gateway", "minimax-direct", "ollama-cloud")
+MANAGED_PROFILES = ("llm-gateway", "minimax-direct", "ollama-cloud", "byteplus-ark")
 SECTION_HEADER = re.compile(r"^\s*(\[\[?)([^\]]+)(\]\]?)\s*(?:#.*)?$")
 KEY = re.compile(r"^\s*([A-Za-z0-9_-]+)\s*=")
 
@@ -60,30 +60,103 @@ def chunks(lines: list[str]) -> list[tuple[str | None, list[str]]]:
     result: list[tuple[str | None, list[str]]] = []
     current_name: str | None = None
     current: list[str] = []
+    # A line inside an open value can look exactly like a section header --
+    # `    ["c"]` in a nested array matches SECTION_HEADER -- so only split when
+    # no value is still open, or the section tail is torn off mid-array.
+    depth = 0
+    open_delim = ""
     for line in lines:
-        match = SECTION_HEADER.match(line)
-        if match:
-            result.append((current_name, current))
-            current_name = match.group(2).strip()
-            current = [line]
-        else:
+        if depth <= 0 and not open_delim:
+            match = SECTION_HEADER.match(line)
+            if match:
+                result.append((current_name, current))
+                current_name = match.group(2).strip()
+                current = [line]
+                continue
             current.append(line)
+            if KEY.match(line):
+                depth, open_delim = scan_value(line.split("=", 1)[1])
+            continue
+        current.append(line)
+        depth, open_delim = scan_value(line, depth, open_delim)
     result.append((current_name, current))
     return result
+
+
+def scan_value(fragment: str, depth: int = 0, open_delim: str = "") -> tuple[int, str]:
+    """Track how far through a TOML value a fragment gets.
+
+    Returns the net `[`/`{` nesting plus the multi-line string delimiter still
+    open at the end of the fragment. Brackets inside a quoted string, inside a
+    multi-line string body, or after an unquoted `#` do not count, so
+    `["a]b", "c"]  # note` closes on its own line while an opened `'''` does not.
+    """
+    index = 0
+    quote = ""
+    while index < len(fragment):
+        if open_delim:
+            end = fragment.find(open_delim, index)
+            if end == -1:
+                return depth, open_delim
+            index = end + len(open_delim)
+            open_delim = ""
+            continue
+        rest = fragment[index:]
+        if not quote and (rest[:3] == '"""' or rest[:3] == "'''"):
+            open_delim = rest[:3]
+            index += 3
+            continue
+        char = fragment[index]
+        if quote:
+            if char == "\\" and quote == '"':
+                index += 2
+                continue
+            if char == quote:
+                quote = ""
+        elif char in "\"'":
+            quote = char
+        elif char == "#":
+            break
+        elif char in "[{":
+            depth += 1
+        elif char in "]}":
+            depth -= 1
+        index += 1
+    return max(depth, 0), open_delim
 
 
 def patch_section(chunk: list[str], values: dict) -> list[str]:
     output = [chunk[0]]
     seen: set[str] = set()
+    # J-Code writes long arrays across several lines, and a user may keep a
+    # multi-line string here. A managed key must have its whole value consumed,
+    # or the continuation lines survive the replacement and the rendered file is
+    # no longer valid TOML. Conversely a line inside someone else's multi-line
+    # string is prose, never a key -- rewriting it would silently edit their text.
+    depth = 0
+    open_delim = ""
+    dropping = False
     for line in chunk[1:]:
+        if depth > 0 or open_delim:
+            depth, open_delim = scan_value(line, depth, open_delim)
+            if not dropping:
+                output.append(line)
+            continue
         match = KEY.match(line)
         key = match.group(1) if match else None
-        if key in values:
+        if key is None:
+            output.append(line)
+            continue
+        depth, open_delim = scan_value(line.split("=", 1)[1])
+        dropping = key in values
+        if dropping:
             if key not in seen:
                 output.append(f"{key} = {toml_value(values[key])}")
                 seen.add(key)
             continue
         output.append(line)
+    if depth > 0 or open_delim:
+        raise ValueError(f"unterminated value in section {chunk[0].strip()}; refusing to rewrite it")
     output.extend(f"{key} = {toml_value(values[key])}" for key in values if key not in seen)
     return output
 

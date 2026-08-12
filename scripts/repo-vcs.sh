@@ -61,17 +61,17 @@ valid_name() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid worktr
 
 command_name="${1:-}"
 shift || true
-# Resolve a worktree's task branch, tolerating the current task/ prefix and the
+# Resolve a worktree's branch, tolerating the current worktree/ prefix and the
 # legacy codex/ one. The prefix was agent-specific until 2026-08-12: every agent
 # using this facade was forced onto a codex/* branch whichever agent it was.
 task_branch_for() {
 	local name="$1"
-	if git -C "$root" show-ref --verify --quiet "refs/heads/task/$name"; then
-		printf 'task/%s' "$name"
+	if git -C "$root" show-ref --verify --quiet "refs/heads/worktree/$name"; then
+		printf 'worktree/%s' "$name"
 	elif git -C "$root" show-ref --verify --quiet "refs/heads/codex/$name"; then
 		printf 'codex/%s' "$name"
 	else
-		die "no task branch for worktree: $name (looked for task/$name and codex/$name)"
+		die "no task branch for worktree: $name (looked for worktree/$name and codex/$name)"
 	fi
 }
 
@@ -92,8 +92,8 @@ rebase)
 	[[ $# -eq 1 ]] || die 'rebase requires one revision'
 	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be rebased'
 	case "$branch" in
-	task/* | codex/*) ;;
-	*) die 'rebase requires a task/* branch (codex/* still accepted for branches created before the rename)' ;;
+	worktree/* | codex/*) ;;
+	*) die 'rebase requires a worktree/* branch (codex/* still accepted for branches created before the rename)' ;;
 	esac
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
 	git -C "$root" rebase "$1"
@@ -128,8 +128,8 @@ amend)
 	[[ $# -eq 1 ]] || die 'amend requires one message'
 	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be amended'
 	case "$branch" in
-	task/* | codex/*) ;;
-	*) die 'amend requires a task/* branch (codex/* still accepted for branches created before the rename)' ;;
+	worktree/* | codex/*) ;;
+	*) die 'amend requires a worktree/* branch (codex/* still accepted for branches created before the rename)' ;;
 	esac
 	fetch_forgejo_pruned "$root"
 	published_refs="$(git -C "$root" for-each-ref --contains HEAD --format='%(refname)' refs/remotes/origin)"
@@ -173,8 +173,8 @@ land)
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
 	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be landed'
 	case "$branch" in
-	task/* | codex/*) ;;
-	*) die 'land requires a task/* branch (codex/* still accepted for branches created before the rename)' ;;
+	worktree/* | codex/*) ;;
+	*) die 'land requires a worktree/* branch (codex/* still accepted for branches created before the rename)' ;;
 	esac
 	fetch_forgejo_main "$root"
 	git -C "$root" merge-base --is-ancestor origin/main HEAD || die 'task branch does not contain origin/main'
@@ -197,7 +197,7 @@ worktree-create)
 	valid_name "$name"
 	path="$HOME/.dotfiles-worktrees/$name"
 	[[ ! -e "$path" ]] || die "worktree path exists: $path"
-	git -C "$root" worktree add -b "task/$name" "$path" "$revision"
+	git -C "$root" worktree add -b "worktree/$name" "$path" "$revision"
 	;;
 worktree-drop)
 	[[ $# -eq 1 ]] || die 'worktree-drop requires name'
@@ -241,7 +241,7 @@ contract-test)
 	[[ $# -eq 0 ]] || die 'contract-test takes no arguments'
 	grep -q "mod vcs 'just/vcs.just'" "$root/justfile"
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
-	grep -Fq "worktree add -b \"task/\$name\"" "$root/scripts/repo-vcs.sh"
+	grep -Fq "worktree add -b \"worktree/\$name\"" "$root/scripts/repo-vcs.sh"
 	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
 	for recipe in status diff log show worktree-list fetch rebase sync-main describe amend push push-github land worktree-create worktree-drop worktree-abandon test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"

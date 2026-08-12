@@ -15,7 +15,7 @@ SCRIPT = Path(__file__).with_name("jcode-preferences")
 SOURCE = '''[provider]
 default_provider = "llm-gateway"
 default_model = "llm-gateway:auto"
-model_picker_providers = ["llm-gateway", "kimi", "minimax-direct", "openai-oauth"]
+model_picker_providers = ["llm-gateway", "kimi", "minimax-direct", "openai-oauth", "ollama-cloud"]
 cross_provider_failover = "manual"
 
 [auth]
@@ -36,6 +36,21 @@ type = "open-ai-compatible"
 base_url = "https://api.minimax.io/v1"
 api_key_env = "MINIMAX_API_KEY"
 default_model = "MiniMax-M3"
+
+[providers.ollama-cloud]
+type = "open-ai-compatible"
+base_url = "https://ollama.com/v1"
+auth = "bearer"
+api_key_env = "OLLAMA_API_KEY"
+env_file = "ollama-cloud.env"
+default_model = "glm-5.2"
+requires_api_key = true
+provider_routing = false
+allow_provider_pinning = false
+model_catalog = true
+
+[[providers.ollama-cloud.models]]
+id = "glm-5.2"
 '''
 
 

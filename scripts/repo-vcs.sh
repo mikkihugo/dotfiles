@@ -61,6 +61,20 @@ valid_name() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid worktr
 
 command_name="${1:-}"
 shift || true
+# Resolve a worktree's task branch, tolerating the current task/ prefix and the
+# legacy codex/ one. The prefix was agent-specific until 2026-08-12: every agent
+# using this facade was forced onto a codex/* branch whichever agent it was.
+task_branch_for() {
+	local name="$1"
+	if git -C "$root" show-ref --verify --quiet "refs/heads/task/$name"; then
+		printf 'task/%s' "$name"
+	elif git -C "$root" show-ref --verify --quiet "refs/heads/codex/$name"; then
+		printf 'codex/%s' "$name"
+	else
+		die "no task branch for worktree: $name (looked for task/$name and codex/$name)"
+	fi
+}
+
 case "$command_name" in
 status) git -C "$root" status "$@" ;;
 diff) git -C "$root" diff "$@" ;;
@@ -77,7 +91,10 @@ fetch)
 rebase)
 	[[ $# -eq 1 ]] || die 'rebase requires one revision'
 	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be rebased'
-	[[ "$branch" == codex/* ]] || die 'rebase requires a codex/* task branch'
+	case "$branch" in
+	task/* | codex/*) ;;
+	*) die 'rebase requires a task/* branch (codex/* still accepted for branches created before the rename)' ;;
+	esac
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
 	git -C "$root" rebase "$1"
 	;;
@@ -110,7 +127,10 @@ describe)
 amend)
 	[[ $# -eq 1 ]] || die 'amend requires one message'
 	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be amended'
-	[[ "$branch" == codex/* ]] || die 'amend requires a codex/* task branch'
+	case "$branch" in
+	task/* | codex/*) ;;
+	*) die 'amend requires a task/* branch (codex/* still accepted for branches created before the rename)' ;;
+	esac
 	fetch_forgejo_pruned "$root"
 	published_refs="$(git -C "$root" for-each-ref --contains HEAD --format='%(refname)' refs/remotes/origin)"
 	[[ -z "$published_refs" ]] || die "amend requires an unpushed task commit; present in $published_refs"
@@ -152,7 +172,10 @@ land)
 	[[ $# -eq 0 ]] || die 'land takes no arguments'
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
 	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be landed'
-	[[ "$branch" == codex/* ]] || die 'land requires a codex/* task branch'
+	case "$branch" in
+	task/* | codex/*) ;;
+	*) die 'land requires a task/* branch (codex/* still accepted for branches created before the rename)' ;;
+	esac
 	fetch_forgejo_main "$root"
 	git -C "$root" merge-base --is-ancestor origin/main HEAD || die 'task branch does not contain origin/main'
 	"$root/scripts/repo-check.sh"
@@ -174,7 +197,7 @@ worktree-create)
 	valid_name "$name"
 	path="$HOME/.dotfiles-worktrees/$name"
 	[[ ! -e "$path" ]] || die "worktree path exists: $path"
-	git -C "$root" worktree add -b "codex/$name" "$path" "$revision"
+	git -C "$root" worktree add -b "task/$name" "$path" "$revision"
 	;;
 worktree-drop)
 	[[ $# -eq 1 ]] || die 'worktree-drop requires name'
@@ -184,14 +207,14 @@ worktree-drop)
 	[[ "$(realpath "$root")" != "$(realpath "$path")" ]] || die 'cannot drop current worktree'
 	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'worktree is not registered'
 	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'worktree is dirty'
-	if ! git -C "$root" merge-base --is-ancestor "codex/$name" main; then
+	if ! git -C "$root" merge-base --is-ancestor "$(task_branch_for "$name")" main; then
 		fetch_forgejo_main "$root"
-		git -C "$root" merge-base --is-ancestor "codex/$name" origin/main || die 'worktree branch is not integrated into main'
+		git -C "$root" merge-base --is-ancestor "$(task_branch_for "$name")" origin/main || die 'worktree branch is not integrated into main'
 	fi
 	git -C "$root" worktree remove "$path"
 	# The primary checkout may intentionally lag origin/main. Integration was
 	# proven above, so delete the local task ref without re-checking stale main.
-	git -C "$root" branch -D "codex/$name"
+	git -C "$root" branch -D "$(task_branch_for "$name")"
 	;;
 worktree-abandon)
 	[[ $# -eq 2 ]] || die 'worktree-abandon requires name and discard-unintegrated'
@@ -209,16 +232,16 @@ worktree-abandon)
 		"$path" | "$path"/*) die "worktree is owned by a live process: $process_cwd -> $resolved_cwd" ;;
 		esac
 	done
-	revision="$(git -C "$root" rev-parse "codex/$name")"
+	revision="$(git -C "$root" rev-parse "$(task_branch_for "$name")")"
 	git -C "$root" worktree remove "$path"
-	git -C "$root" branch -D "codex/$name"
+	git -C "$root" branch -D "$(task_branch_for "$name")"
 	printf 'abandoned=%s revision=%s clean=true live_process=false\n' "$name" "$revision"
 	;;
 contract-test)
 	[[ $# -eq 0 ]] || die 'contract-test takes no arguments'
 	grep -q "mod vcs 'just/vcs.just'" "$root/justfile"
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
-	grep -Fq "branch -D \"codex/\$name\"" "$root/scripts/repo-vcs.sh"
+	grep -Fq "worktree add -b \"task/\$name\"" "$root/scripts/repo-vcs.sh"
 	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
 	for recipe in status diff log show worktree-list fetch rebase sync-main describe amend push push-github land worktree-create worktree-drop worktree-abandon test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"

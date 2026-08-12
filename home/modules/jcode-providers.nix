@@ -50,6 +50,10 @@
         "MINIMAX_API_KEY" \
         "${config.sops.secrets.minimax_api_key.path}"
       render_provider_env \
+        "$provider_dir/ollama-cloud.env" \
+        "OLLAMA_API_KEY" \
+        "${config.sops.secrets.ollama_api_key.path}"
+      render_provider_env \
         "$provider_dir/provider-llm-gateway.env" \
         "JCODE_PROVIDER_LLM_GATEWAY_API_KEY" \
         "${config.sops.secrets.llm_gateway_api_key.path}"

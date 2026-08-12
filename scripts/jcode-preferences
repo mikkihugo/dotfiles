@@ -10,8 +10,8 @@ import tomllib
 from pathlib import Path
 
 
-MANAGED_SECTIONS = ("provider", "auth", "features")
-MANAGED_PROFILES = ("llm-gateway", "minimax-direct")
+MANAGED_SECTIONS = ("provider", "auth", "features", "agents")
+MANAGED_PROFILES = ("llm-gateway", "minimax-direct", "ollama-cloud")
 SECTION_HEADER = re.compile(r"^\s*(\[\[?)([^\]]+)(\]\]?)\s*(?:#.*)?$")
 KEY = re.compile(r"^\s*([A-Za-z0-9_-]+)\s*=")
 

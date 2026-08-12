@@ -1,10 +1,10 @@
 [provider]
-# The server remains on the Umans GLM gateway route.  Worker routes are always
-# selected explicitly by swarm policy.
-default_provider = "llm-gateway"
-default_model = "llm-gateway:umans-ai-coding-plan/umans-glm-5.2"
-model_picker_providers = ["llm-gateway", "kimi", "minimax-direct", "openai-oauth"]
-cross_provider_failover = "manual"
+# Default workhorse: MiniMax-M3 via api.minimax.io (minimax-direct).
+# Umans routes are retired for default/session traffic.
+default_provider = "minimax-direct"
+default_model = "minimax-direct:MiniMax-M3"
+model_picker_providers = ["minimax-direct", "llm-gateway", "kimi", "openai-oauth", "ollama-cloud"]
+cross_provider_failover = "countdown"
 
 # jcode's own memory agent is off. Durable agent memory belongs in the
 # repo_memory bank reached through the CentralCloud MCP gateway; a per-client
@@ -54,3 +54,34 @@ model_catalog = true
 
 [[providers.minimax-direct.models]]
 id = "MiniMax-M3"
+
+# Direct ollama.com cloud provider — full context + reasoning, unlike the
+# llm-gateway ollama-cloud/* entries which are cataloged at 128k/no-reasoning.
+# The autonomy model-admission policy routes ollama-cloud:glm-5.2 (coordinator
+# failover) and ollama-cloud:deepseek-v4-flash (explore/worker) through this
+# provider; without it, worker spawn fails and pending effects block all
+# autonomous dispatch.
+[providers.ollama-cloud]
+type = "open-ai-compatible"
+base_url = "https://ollama.com/v1"
+auth = "bearer"
+api_key_env = "OLLAMA_API_KEY"
+env_file = "ollama-cloud.env"
+default_model = "glm-5.2"
+requires_api_key = true
+provider_routing = false
+allow_provider_pinning = false
+model_catalog = true
+
+[[providers.ollama-cloud.models]]
+id = "glm-5.2"
+
+[[providers.ollama-cloud.models]]
+id = "deepseek-v4-flash"
+
+# Enable repository lane provisioning for autonomous swarm dispatch. Without
+# this, the autonomy controller cannot create isolated writer workspaces for
+# managed canonical-primary repos (e.g. jcode selfdev), and lane provisioning
+# fails with "refusing to fall back the worker cwd onto it".
+[agents]
+swarm_lane_provisioning = true

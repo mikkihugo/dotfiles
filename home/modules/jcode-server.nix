@@ -112,6 +112,26 @@ in
         Requires=jcode-provider-config.service
         After=jcode-provider-config.service
       '';
+
+      # Client-local memory off, via ENVIRONMENT rather than config.toml, because
+      # jcode's TOML path is fail-open: load_from_file() swallows any parse error
+      # and returns None, config.rs:13 does .unwrap_or_default(), and
+      # FeatureConfig::default() has memory = true -- so ONE bad key anywhere in
+      # ~/.jcode/config.toml silently re-enables memory. That is not theoretical:
+      # it was off for 77 of the first 86 minutes after `[features] memory = false`
+      # landed, with 2005 "Failed to parse config file" lines to show for it.
+      # config.rs:14 applies env overrides AFTER unwrap_or_default(), so these
+      # survive an unparsable config; the TOML setting cannot.
+      #
+      # Both tools are required: "memory" alone does not close the store, because
+      # the "initiative" tool writes the same directory through
+      # goal.rs sync_goal_memory -> upsert_project_memory/upsert_global_memory.
+      # Durable agent memory belongs in the repo_memory bank, not a per-client store.
+      file.".config/systemd/user/jcode-server.service.d/20-memory-disable.conf".text = ''
+        [Service]
+        Environment="JCODE_DISABLED_TOOLS=memory,initiative"
+        Environment="JCODE_MEMORY_ENABLED=0"
+      '';
     };
 
     # jcode-server and jcode-webtty are declared by NixOS in

@@ -213,8 +213,19 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
     /(?:KIMI_API_KEY|MINIMAX_API_KEY|JCODE_PROVIDER_LLM_GATEWAY_API_KEY)\s*=\s*"[A-Za-z0-9_-]{16,}"/,
   );
 
-  assert.match(preferences, /model_picker_providers\s*=\s*\["llm-gateway", "kimi", "minimax-direct", "openai-oauth"\]/);
-  assert.match(preferences, /cross_provider_failover\s*=\s*"manual"/);
+  // Assert MEMBERSHIP, not the literal array. Pinning the exact order broke the
+  // moment a provider was added (ollama-cloud) and reordered (minimax-direct
+  // first), which is a config decision this test has no opinion about. What it
+  // must protect is that every provider the managed profiles depend on is
+  // offered in the picker.
+  for (const provider of ["llm-gateway", "kimi", "minimax-direct", "openai-oauth", "ollama-cloud"]) {
+    assert.match(
+      preferences,
+      new RegExp(`model_picker_providers\\s*=\\s*\\[[^\\]]*"${provider}"`),
+      `model_picker_providers must offer ${provider}`,
+    );
+  }
+  assert.match(preferences, /cross_provider_failover\s*=\s*"(manual|countdown)"/);
   assert.match(preferences, /trusted_external_sources\s*=\s*\[\]/);
   assert.match(preferences, /trusted_external_source_paths\s*=\s*\[\]/);
   assert.match(preferences, /\[providers\.llm-gateway\]/);

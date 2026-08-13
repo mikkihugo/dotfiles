@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Contract: the managed engine workspace sweep can never delete a workspace
-# itself, refuses when it cannot read the facade, and classifies registrations
+# shellcheck disable=SC2016
 # from a captured inventory rather than a short-circuiting pipeline.
 #
 # Why this exists: the unmanaged predecessor destroyed 7 REGISTERED jj
@@ -55,10 +54,24 @@ else
 	ok "no pipe into grep -q"
 fi
 
-if grep -q 'direnv' <<<"$body"; then
-	fail "$script uses direnv; every real timer run had its nix eval fall back silently"
+# The 2026-08-08 defect was the eval-export SILENT FALLBACK, not direnv
+# itself. Since the facade's exact-root nix gate (observed failing the sweep
+# daily through 2026-08-13), the real-root path must load the flake env via
+# `direnv exec` — one-shot and fail-closed — while fixture runs
+# (SE_CLEANUP_ENGINE_ROOT set) must bypass direnv entirely.
+if grep -qE 'eval .*direnv export' <<<"$body"; then
+	fail "$script uses eval direnv-export — the 2026-08-08 silent-fallback pattern"
 else
-	ok "facade reached without direnv"
+	ok "no eval direnv-export fallback"
+fi
+check=1
+grep -q 'repo_vcs()' "$script" || check=0
+grep -qF 'direnv exec "$ENGINE_ROOT"' "$script" || check=0
+grep -q 'SE_CLEANUP_ENGINE_ROOT:-' "$script" || check=0
+if [ "$check" = 1 ]; then
+	ok "facade routed through fail-closed repo_vcs/direnv-exec wrapper with fixture bypass"
+else
+	fail "$script must route facade calls through repo_vcs(): direnv exec for the real root, direct call under SE_CLEANUP_ENGINE_ROOT"
 fi
 
 # The unit must execute the immutable store copy, not a $HOME path an unmanaged
@@ -138,6 +151,7 @@ mkdir -p "$engine/bin" "$worktrees"
 
 cat >"$engine/bin/repo" <<'FAKE'
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 set -euo pipefail
 printf '%s\n' "$*" >>"$FIXTURE_LOG"
 if [[ "${2:-}" == "workspace-list" ]]; then

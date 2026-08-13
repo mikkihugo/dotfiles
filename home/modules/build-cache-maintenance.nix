@@ -70,14 +70,17 @@
             | awk 'NR>5 {print $5}' \
             | xargs --no-run-if-empty ${pkgs.home-manager}/bin/home-manager remove-generations
         '';
-        ExecStart = "${pkgs.nix}/bin/nix-collect-garbage --delete-older-than 14d";
+        ExecStart = "${pkgs.nix}/bin/nix-collect-garbage --delete-older-than 3d";
       };
     };
 
     timers.nix-gc = {
-      Unit.Description = "Collect old user Nix generations weekly";
+      Unit.Description = "Collect old user Nix generations twice daily";
       Timer = {
-        OnCalendar = "weekly";
+        OnCalendar = [
+          "04:15"
+          "16:45"
+        ];
         Persistent = true;
         RandomizedDelaySec = "2h";
       };

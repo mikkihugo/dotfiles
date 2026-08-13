@@ -35,6 +35,27 @@
 #      whatever `jj` happened to be on PATH and no facade at all. The facade is
 #      now reached by absolute path and direnv is not used.
 #
+#   4. (2026-08-13) The facade later grew an exact-root Nix-environment gate
+#      (`repo: invalid Nix environment for repository root`), so the
+#      absolute-path-only invocation from defect 3 failed closed on every
+#      timer run — journal showed "cannot read workspace-list; refusing to
+#      delete anything" daily while 50+ stale lanes accumulated. The facade is
+#      now reached through `direnv exec "$ENGINE_ROOT"`, which loads the cached
+#      dev shell and, unlike the eval-export pattern, fails LOUDLY: a failed
+#      exec exits non-zero and the sweep refuses to touch anything.
+#      `direnv export | eval` remains forbidden — silent fallback is the
+#      defect, not direnv itself.
+#
+#      Caveat found the same day: the cached shell only helps while the cache
+#      is valid. engine-default-refresh rewrites the checkout (touching
+#      .envrc/flake.nix), which invalidates the nix-direnv cache; the
+#      re-evaluation runs nix/cache/org-nix-config.sh BEFORE any dev shell
+#      exists, and that script parses the attic JSON with python3. The unit's
+#      Environment PATH therefore carries python3 too — without it the nix
+#      config renders `builders-use-substitutes = ` (empty), nix eval errors,
+#      nix-direnv falls back, and the facade refuses with exactly the defect-4
+#      message again.
+#
 # There is no pipe into a short-circuiting reader anywhere below, and no bare
 # rm -rf. Reintroducing either is how this recurs.
 set -euo pipefail
@@ -51,6 +72,18 @@ if [[ ! -x "$REPO" ]]; then
 	exit 1
 fi
 
+# The facade hard-requires the repository's flake environment. Real runs get
+# it via `direnv exec` (one-shot, cached shell, fails closed); fixture runs
+# (SE_CLEANUP_ENGINE_ROOT set by the contract test) call the fake facade
+# directly so the test stays hermetic.
+repo_vcs() {
+	if [[ -n "${SE_CLEANUP_ENGINE_ROOT:-}" ]]; then
+		"$REPO" vcs "$@"
+	else
+		direnv exec "$ENGINE_ROOT" "$REPO" vcs "$@"
+	fi
+}
+
 cd "$ENGINE_ROOT"
 
 cleaned=0
@@ -59,7 +92,7 @@ kept=0
 # Authoritative inventory, captured once with its status checked. If this cannot
 # be read we exit rather than guess — an unreadable registry previously meant
 # "everything looks like an orphan".
-if ! inventory="$("$REPO" vcs workspace-list 2>/dev/null)"; then
+if ! inventory="$(repo_vcs workspace-list 2>/dev/null)"; then
 	echo "engine-worktree-cleanup: cannot read workspace-list; refusing to delete anything" >&2
 	exit 1
 fi
@@ -100,7 +133,7 @@ while IFS= read -r line; do
 		# Registered and present: workspace-close verifies clean + integrated, then
 		# forgets and removes. If it refuses, the lane keeps its work — that refusal
 		# is the feature, so it is reported and not worked around.
-		if "$REPO" vcs workspace-close "$name" >/dev/null 2>&1; then
+		if repo_vcs workspace-close "$name" >/dev/null 2>&1; then
 			echo "engine-worktree-cleanup: closed $name (lease=$lease_state)"
 			cleaned=$((cleaned + 1))
 		else
@@ -111,7 +144,7 @@ while IFS= read -r line; do
 		# Registered but the path is gone: this is the orphan state the old script
 		# manufactured. forget-missing is the verb that proves the path is absent
 		# and clears only the registration.
-		if "$REPO" vcs workspace-forget-missing "$name" >/dev/null 2>&1; then
+		if repo_vcs workspace-forget-missing "$name" >/dev/null 2>&1; then
 			echo "engine-worktree-cleanup: forgot missing registration $name"
 			cleaned=$((cleaned + 1))
 		else
@@ -134,7 +167,7 @@ if [[ -d "$WORKTREE_ROOT" ]]; then
 			continue # registered — pass 1 owns it
 		fi
 
-		if "$REPO" vcs workspace-prune-orphan "$dir_name" >/dev/null 2>&1; then
+		if repo_vcs workspace-prune-orphan "$dir_name" >/dev/null 2>&1; then
 			echo "engine-worktree-cleanup: pruned unregistered directory $dir_name"
 			cleaned=$((cleaned + 1))
 		else

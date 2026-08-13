@@ -24,19 +24,29 @@
     exec ${pkgs.bash}/bin/bash ${./engine-worktree-cleanup.sh} "$@"
   '';
 
-  # The unit reaches the facade by absolute path with an explicit environment;
-  # it does NOT load direnv. In every real timer run before 2026-08-08 the
-  # engine's `direnv export bash` nix eval failed ("Boolean setting
-  # 'builders-use-substitutes' has invalid value ''", because
-  # nix/cache/org-nix-config.sh needs a python3 the unit's PATH lacks) and
-  # direnv silently fell back, so the sweep ran with an ambient jj and no facade
-  # at all. Verified 2026-08-08: with SE_JJ_BIN set to a jujutsu store path,
-  # `bin/repo vcs workspace-list` succeeds on a PATH of only
-  # /run/current-system/sw/bin:/usr/bin:/bin.
+  # The unit reaches the facade through `direnv exec` with an explicit PATH.
+  # History: before 2026-08-08 `eval "$(direnv export bash)"` fell back
+  # silently (org-nix-config.sh needed a python3 the PATH lacked), so the sweep
+  # ran with an ambient jj and no facade; the absolute-path replacement then
+  # failed closed on every run once the facade grew its exact-root nix gate
+  # ("invalid Nix environment for repository root", observed daily through
+  # 2026-08-13). `direnv exec` loads the cached dev shell and exits non-zero
+  # on failure, so the sweep refuses instead of guessing.
+  #
+  # python3 must be in the AMBIENT path, not only the dev shell: when
+  # engine-default-refresh rewrites the checkout it touches .envrc/flake.nix,
+  # which invalidates the nix-direnv cache; the re-evaluation runs
+  # nix/cache/org-nix-config.sh BEFORE the shell exists, and that script parses
+  # the attic JSON with python3. Without it the nix config renders
+  # `builders-use-substitutes = ` (empty), nix eval errors, nix-direnv falls
+  # back, and the facade refuses — the exact 2026-08-13 service failure.
   servicePath = lib.concatStringsSep ":" [
     "${pkgs.bash}/bin"
     "${pkgs.coreutils}/bin"
     "${pkgs.jujutsu}/bin"
+    "${pkgs.direnv}/bin"
+    "${pkgs.nix}/bin"
+    "${pkgs.python3}/bin"
     "/run/current-system/sw/bin"
     "/usr/bin"
     "/bin"

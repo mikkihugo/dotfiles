@@ -84,13 +84,13 @@
       snapshot_ref="refs/backup/$host/$slug/$branch/wip-$stamp"
       ${pkgs.git}/bin/git -C "$repo" update-ref "$ref" "$commit"
       ${pkgs.git}/bin/git -C "$repo" update-ref "$snapshot_ref" "$commit"
-      if ! git_net -C "$repo" push --quiet "$remote" "$snapshot_ref:$snapshot_ref"; then
+      if ! git_net -C "$repo" push --quiet --no-verify "$remote" "$snapshot_ref:$snapshot_ref"; then
         echo "dirty-backup-snapshot-failed $repo $remote $snapshot_ref $commit"
         rm -f "$tmp_index"
         trap - RETURN
         return 1
       fi
-      if ! git_net -C "$repo" push --quiet --force "$remote" "$ref:$ref"; then
+      if ! git_net -C "$repo" push --quiet --force --no-verify "$remote" "$ref:$ref"; then
         echo "dirty-backup-latest-failed $repo $remote $ref $commit"
         rm -f "$tmp_index"
         trap - RETURN
@@ -112,7 +112,7 @@
       # refs/backup namespace only and let jj own branch publication.
       if [ -d "$repo/.jj" ]; then
         backup_ref="refs/backup/$host/$slug/$branch/head"
-        if git_net -C "$repo" push --quiet --force "$remote" "HEAD:$backup_ref"; then
+        if git_net -C "$repo" push --quiet --force --no-verify "$remote" "HEAD:$backup_ref"; then
           echo "head-backup-jj $repo $remote $backup_ref"
         else
           echo "head-backup-jj-failed $repo $remote $backup_ref"
@@ -123,7 +123,7 @@
       upstream="$(${pkgs.git}/bin/git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
       if [ -z "$upstream" ]; then
         backup_ref="refs/backup/$host/$slug/$branch/head"
-        git_net -C "$repo" push --quiet "$remote" "HEAD:$backup_ref"
+        git_net -C "$repo" push --quiet --no-verify "$remote" "HEAD:$backup_ref"
         echo "head-backup-no-upstream $repo $remote $backup_ref"
         return 0
       fi
@@ -133,11 +133,12 @@
       remote_ahead="$(printf '%s\n' "$counts" | ${pkgs.gawk}/bin/awk '{print $2}')"
 
       if [ "$local_ahead" -gt 0 ] && [ "$remote_ahead" -eq 0 ]; then
-        git_net -C "$repo" push --quiet "$remote" "HEAD:$branch"
-        echo "branch-pushed $repo $remote $branch +$local_ahead"
+        backup_ref="refs/backup/$host/$slug/$branch/head"
+        git_net -C "$repo" push --quiet --force --no-verify "$remote" "HEAD:$backup_ref"
+        echo "head-backup-ahead $repo $remote $backup_ref +$local_ahead"
       elif [ "$local_ahead" -gt 0 ]; then
         backup_ref="refs/backup/$host/$slug/$branch/head"
-        git_net -C "$repo" push --quiet "$remote" "HEAD:$backup_ref"
+        git_net -C "$repo" push --quiet --no-verify "$remote" "HEAD:$backup_ref"
         echo "head-backup-diverged $repo $remote $backup_ref local+$local_ahead remote+$remote_ahead"
       else
         echo "branch-current $repo $upstream"
@@ -155,17 +156,13 @@
       # out of a colocated jj repo.
       if [ -d "$repo/.jj" ]; then
         backup_ref="refs/backup/$host/$slug/$branch/head"
-        git_net -C "$repo" push --quiet --force "$remote" "HEAD:$backup_ref" 2>/dev/null &&
+        git_net -C "$repo" push --quiet --force --no-verify "$remote" "HEAD:$backup_ref" 2>/dev/null &&
           echo "mirror-jj-backup $repo $remote $backup_ref" ||
           echo "mirror-jj-failed $repo $remote $backup_ref"
         return 0
       fi
-      if git_net -C "$repo" push --quiet "$remote" "HEAD:$branch" 2>/dev/null; then
-        echo "mirror-ok $repo $remote $branch"
-        return 0
-      fi
       backup_ref="refs/backup/$host/$slug/$branch/head"
-      if git_net -C "$repo" push --quiet --force "$remote" "HEAD:$backup_ref" 2>/dev/null; then
+      if git_net -C "$repo" push --quiet --force --no-verify "$remote" "HEAD:$backup_ref" 2>/dev/null; then
         echo "mirror-diverged-backup $repo $remote $backup_ref"
         return 0
       fi
@@ -285,7 +282,9 @@
     # repository per worker process for load balancing. Counters and
     # no-remote.current are derived from the aggregated worker output, since
     # anything a worker mutates dies with its process.
-    jobs=8
+    # Backups protect durability but must remain subordinate to the interactive
+    # operator workload on this shared host.
+    jobs=2
     run_out="$(${pkgs.coreutils}/bin/mktemp "$state_dir/run-output.XXXXXX")"
     trap 'rm -f "$run_out"' EXIT
 
@@ -362,72 +361,6 @@
       # A repository with no remote is a standing data-loss risk, not an event;
       # it must be visible in the last line of every run, not only the first
       # run that introduced it.
-      # Workspace debt. The SessionEnd hook reports what a session leaves
-      # behind, but it cannot fire on a crash or kill -9 -- and on 2026-07-25
-      # singularity-engine held 219 task records against 12 live leases, so the
-      # ungraceful exit is the common case, not the edge case. This sweep is
-      # already running every 15 minutes; counting the leaseless over-age
-      # workspaces here costs a directory read and closes that gap.
-      #
-      # Report only. Nothing here closes or deletes a workspace: deciding one is
-      # finished needs to know whether its work landed, which this cannot tell.
-      lease_root="''${SE_LOCK_ROOT:-/tmp/singularity-engine}/workspace-leases"
-      if [ -d "$lease_root" ]; then
-        now_epoch=$(${pkgs.coreutils}/bin/date +%s)
-        n_ws_total=0; n_ws_leased=0; n_ws_overage=0
-        for task in "$lease_root"/*.task; do
-          [ -e "$task" ] || continue
-          n_ws_total=$((n_ws_total + 1))
-          name="$(${pkgs.coreutils}/bin/basename "$task" .task)"
-          if [ -e "$lease_root/$name.lease" ]; then
-            n_ws_leased=$((n_ws_leased + 1))
-            continue
-          fi
-          # Field order fixed by scripts/se_task.sh; 6=max_hours, 7=started_epoch.
-          mh=$(${pkgs.gawk}/bin/awk -F'\t' '{print $6}' "$task" 2>/dev/null)
-          st=$(${pkgs.gawk}/bin/awk -F'\t' '{print $7}' "$task" 2>/dev/null)
-          # Both fields must be present and purely numeric. Written as two
-          # checks rather than one case with an empty-string branch, because a
-          # doubled single-quote inside a Nix indented string opens an escape
-          # sequence instead of matching the empty string.
-          [ -n "$mh" ] && [ -n "$st" ] || continue
-          case "$mh$st" in *[!0-9]*) continue;; esac
-          [ "$mh" -gt 0 ] || continue
-          [ $(( (now_epoch - st) / 3600 )) -gt "$mh" ] && n_ws_overage=$((n_ws_overage + 1))
-        done
-        echo "workspace-debt total=$n_ws_total leased=$n_ws_leased overage-no-lease=$n_ws_overage"
-
-        # Preserve the ledger. It is the ONLY record of which agent owns which
-        # workspace (task_owner_ref: cursor:/claude:/kimi:/goose:/jcode:) and it
-        # lives under /tmp, where systemd-tmpfiles-clean.timer runs daily. On
-        # 2026-07-25 the oldest surviving record was 3 days old although the
-        # workspaces themselves go back weeks -- attribution was already being
-        # deleted on a timer, silently.
-        #
-        # Deliberately NOT fixed by setting SE_LOCK_ROOT here: the engine's own
-        # contract test (scripts/tests/se_vcs_contract_test.sh) requires that
-        # root to be "one shared, env-independent path across all agents", and a
-        # home-manager session variable reaches only shell-launched clients. A
-        # partially-inherited value would split the ledger across two roots,
-        # which is worse than one volatile root. The real fix is the default in
-        # se_task.sh, which needs a leased engine workspace to change.
-        #
-        # This copy is a snapshot, never a source: nothing reads it back.
-        #
-        # ACCUMULATING, not mirroring. No --delete: the whole point is to keep
-        # records that tmpfiles has already removed from the live root. A
-        # mirroring sync would faithfully reproduce the deletion it exists to
-        # survive.
-        ledger_dir="$HOME/.local/state/workspace-ledger/records"
-        ${pkgs.coreutils}/bin/mkdir -p "$ledger_dir"
-        if ${pkgs.rsync}/bin/rsync -a "$lease_root/" "$ledger_dir/" 2>/dev/null; then
-          kept=$(${pkgs.findutils}/bin/find "$ledger_dir" -name '*.task' 2>/dev/null | ${pkgs.coreutils}/bin/wc -l)
-          echo "workspace-ledger-snapshot $ledger_dir live=$n_ws_total preserved=$kept"
-        else
-          echo "workspace-ledger-snapshot-failed $lease_root"
-        fi
-      fi
-
       echo "git-auto-backup summary no-remote=$n_skip_no_remote failures=$n_failed jj-workspaces=$n_jj_ws"
       if [ "$n_skip_no_remote" -gt 0 ]; then
         echo "git-auto-backup UNPROTECTED (no remote configured):"
@@ -436,47 +369,85 @@
       echo "git-auto-backup done $(${pkgs.coreutils}/bin/date -u +%Y%m%dT%H%M%SZ)"
     } | tee "$log_file"
   '';
-in {
-  systemd.user.services.git-auto-backup = {
-    Unit = {
-      Description = "Back up local Git repositories to their configured remotes";
-      After = ["network-online.target"];
-      Wants = ["network-online.target"];
-      # Repository sweeps are timer-owned and can take minutes. Do not start or
-      # wait for one merely because Home Manager switched generations.
-      X-SwitchMethod = "keep-old";
-    };
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${backupScript}";
-      # Backstop for anything the SSH keepalives cannot bound (a wedged local
-      # git process, a stalled HTTPS remote). A run that cannot finish inside
-      # this window is failing, not working; kill it so the next tick is clean.
-      #
-      # Raised from 20min on 2026-07-25: coverage grew from 79 to 110 git repos
-      # plus ~28 jj workspaces, and a killed run is strictly worse than a slow
-      # one -- it leaves the tail of the sweep unbacked while reporting nothing.
-      # The per-call `timeout 180s` in git_net still bounds any single hang, so
-      # this only widens the total, it does not weaken the stall protection.
-      TimeoutStartSec = "45min";
-    };
-  };
 
-  systemd.user.timers.git-auto-backup = {
-    Unit.Description = "Periodically back up local Git repositories";
-    Timer = {
-      # Wall-clock schedule, not monotonic anchors. OnBootSec/OnUnitActiveSec
-      # left this timer permanently unarmed after the 2026-07-01 reboot: the
-      # timer started 79min after boot (past the OnBootSec window), and
-      # OnUnitActiveSec had no anchor because the service never ran that boot,
-      # so next_elapse resolved to infinity and backups silently stopped for
-      # 19 days. Persistent= only ever applied to OnCalendar, so it could not
-      # rescue the monotonic form; with OnCalendar it does catch up after
-      # downtime.
-      OnCalendar = "*:0/15";
-      Persistent = true;
-      Unit = "git-auto-backup.service";
+  workspaceLedgerScript = pkgs.writeShellScript "workspace-ledger-snapshot" ''
+    set -euo pipefail
+    lease_root="''${SE_LOCK_ROOT:-/tmp/singularity-engine}/workspace-leases"
+    ledger_dir="$HOME/.local/state/workspace-ledger/records"
+    [ -d "$lease_root" ] || exit 0
+    ${pkgs.coreutils}/bin/mkdir -p "$ledger_dir"
+    ${pkgs.rsync}/bin/rsync -a "$lease_root/" "$ledger_dir/"
+  '';
+in {
+  systemd.user = {
+    services.git-auto-backup = {
+      Unit = {
+        Description = "Back up local Git repositories to their configured remotes";
+        After = ["network-online.target"];
+        Wants = ["network-online.target"];
+        # Repository sweeps are timer-owned and can take minutes. Do not start or
+        # wait for one merely because Home Manager switched generations.
+        X-SwitchMethod = "keep-old";
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${backupScript}";
+        # Backstop for anything the SSH keepalives cannot bound (a wedged local
+        # git process, a stalled HTTPS remote). A run that cannot finish inside
+        # this window is failing, not working; kill it so the next tick is clean.
+        #
+        # Raised from 20min on 2026-07-25: coverage grew from 79 to 110 git repos
+        # plus ~28 jj workspaces, and a killed run is strictly worse than a slow
+        # one -- it leaves the tail of the sweep unbacked while reporting nothing.
+        # The per-call `timeout 180s` in git_net still bounds any single hang, so
+        # this only widens the total, it does not weaken the stall protection.
+        TimeoutStartSec = "45min";
+        Nice = 19;
+        IOSchedulingClass = "idle";
+        CPUWeight = 10;
+        IOWeight = 10;
+        MemoryHigh = "8G";
+        MemoryMax = "12G";
+      };
     };
-    Install.WantedBy = ["timers.target"];
+
+    timers.git-auto-backup = {
+      Unit.Description = "Periodically back up local Git repositories";
+      Timer = {
+        # Arm relative to timer activation, not boot: OnBootSec can already be
+        # expired when Home Manager starts the timer and then provides no first
+        # service anchor. After that first run, wait a full interval after each
+        # completed sweep so long runs cannot create catch-up loops.
+        OnActiveSec = "5m";
+        OnUnitInactiveSec = "15m";
+        Unit = "git-auto-backup.service";
+      };
+      Install.WantedBy = ["timers.target"];
+    };
+
+    services.workspace-ledger-snapshot = {
+      Unit.Description = "Preserve workspace ownership ledger outside volatile storage";
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${workspaceLedgerScript}";
+        Nice = 19;
+        IOSchedulingClass = "idle";
+        CPUWeight = 10;
+        IOWeight = 10;
+      };
+    };
+
+    timers.workspace-ledger-snapshot = {
+      Unit.Description = "Hourly workspace ownership ledger preservation";
+      Timer = {
+        # Snapshot soon after activation, then one hour after each completion.
+        # A wall-clock daily run could race systemd-tmpfiles-clean and preserve
+        # an already-pruned ledger.
+        OnActiveSec = "10m";
+        OnUnitInactiveSec = "1h";
+        Unit = "workspace-ledger-snapshot.service";
+      };
+      Install.WantedBy = ["timers.target"];
+    };
   };
 }

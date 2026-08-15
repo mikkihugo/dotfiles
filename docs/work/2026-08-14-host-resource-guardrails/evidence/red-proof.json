@@ -1,0 +1,8 @@
+{
+  "schema_version": "evidence/v1",
+  "recorded_at": "2026-08-14T00:00:00Z",
+  "command": "node --test scripts/test-nix-tooling.mjs",
+  "exit_code": 1,
+  "observation": "The new git auto-backup guardrail contract failed first at the jobs=2 assertion; baseline source had jobs=8, OnCalendar=*:0/15, no named resource controls, and workspace ledger/debt processing.",
+  "classification": "baseline-shows-missing-behavior"
+}

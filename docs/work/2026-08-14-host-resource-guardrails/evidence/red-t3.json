@@ -1,0 +1,1 @@
+{"result_id":"guardrails-red-t3-result","status":"failed","requirement_id":"R3","command":"node --test scripts/test-nix-tooling.mjs","exit_code":1,"observation":"Baseline push paths could run hooks or publish branches and ledger preservation shared the backup hot path.","observed_at":"2026-08-14T00:03:00Z"}

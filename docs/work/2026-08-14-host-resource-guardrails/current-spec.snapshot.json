@@ -1,0 +1,9 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-08-14-host-resource-guardrails-current-spec",
+  "source": {
+    "uri": "repository://home/modules/git-auto-backup.nix",
+    "revision": "7cbfc0fbe1615ddec0fd2c21a92496c2aef9e2ce"
+  },
+  "requirements": []
+}

@@ -1,0 +1,1 @@
+{"result_id":"guardrails-red-t2-result","status":"failed","requirement_id":"R2","command":"node --test scripts/test-nix-tooling.mjs","exit_code":1,"observation":"Baseline used eight workers without the declared service resource bounds.","observed_at":"2026-08-14T00:02:00Z"}

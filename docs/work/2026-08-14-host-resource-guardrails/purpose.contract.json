@@ -1,0 +1,23 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-08-14-host-resource-guardrails-purpose",
+  "source": {"system":"manual","repository":".","request_id":"2026-08-14-host-resource-guardrails"},
+  "lineage": {
+    "origin":{"kind":"incident","id":"host-resource-exhaustion","revision":"2026-08-14"},
+    "objective":{"id":"2026-08-14-host-resource-guardrails-objective","statement":"Keep repository backups durable without monopolizing host resources or catch-up looping.","measure":"Backup and ledger units evaluate with bounded resources and completion-relative timers."},
+    "need":{"id":"2026-08-14-host-resource-guardrails-need","statement":"The shared devbox backup sweep used eight workers, fixed wall-clock scheduling, no cgroup limits, and unrelated ledger work.","stakeholders":["cc-se-sto-devbox-01 operator"],"baseline":"The source used jobs=8 and OnCalendar=*/15 without named service resource limits.","consequence_of_no_action":"A backup run can contend with operator access and immediately restart after overrunning its interval.","assumptions":["Home Manager owns these user units."],"alternatives_considered":["Keep fixed scheduling","Disable backups","Constrain and separate the work"]}
+  },
+  "admission":{"state":"accepted","producer":{"kind":"agent","id":"codex-root"},"accepting_authority":{"kind":"human","id":"mhugo"},"decided_at":"2026-08-14T00:00:00Z","subject_digest":{"algorithm":"sha256","canonicalization":"engine-json-v1","value":"c0563178fd58ee40532b2b9e37a0e7088f564e05430a3f949656f50e82c009d0"},"policy":{"id":"operator-directed-purpose-admission/v1","digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e"}},"validators":["purpose-contract-v2.schema.json","subject-digest","operator-authority"],"evidence_refs":["user-request:host-resource-guardrails","evidence/red-proof.json"]},
+  "purpose": "Bound backup resource consumption while retaining repository and dirty jj-workspace durability.",
+  "consumer": "The cc-se-sto-devbox-01 operator and git-auto-backup systemd user unit.",
+  "contract": "The backup runs with two workers, low CPU/I/O priority, named memory limits, starts five minutes after timer activation, waits fifteen minutes after completion, writes only refs/backup with hooks bypassed, and moves ledger preservation to a separate low-priority hourly completion-relative unit.",
+  "failure_boundary": "A constrained run may take longer, but no repository or dirty jj-workspace class may be silently removed from backup coverage.",
+  "evidence": [{"kind":"test","description":"scripts/test-nix-tooling.mjs asserts the timer, concurrency, resource properties, and removed hot-path work.","status":"expected"}],
+  "falsifier": {"claim":"The generated configuration contains every guardrail without workspace-ledger work.","executable_check":{"kind":"test","description":"Focused Node contract test","command":"node --test scripts/test-nix-tooling.mjs"}},
+  "non_goals": ["Applying Home Manager live", "Changing infra-owned alerts, watchdogs, or sshd priority", "Deleting or pruning workspaces"],
+  "invariants": ["Dirty Git state remains backed up", "Non-default jj workspaces remain backed up", "Backup writes never publish live branches", "Workspace ownership records remain preserved outside volatile storage"],
+  "assumptions": [{"statement":"Home Manager maps the named systemd service properties to the intended user unit.","status":"unverified","doubt":1,"falsifier":"Activation-package evaluation or generated-unit inspection omits or changes a property."}],
+  "run_control": {"autonomous_allowed":true,"risk":"medium","blast_radius":"service","reversibility":"easy","max_active_doubt":1},
+  "target_planes":["tool"],
+  "plane_constraints":["Home Manager owns the user units.","No live apply is authorized by this packet."]
+}

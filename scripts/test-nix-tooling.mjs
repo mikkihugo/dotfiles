@@ -76,6 +76,64 @@ test("Home Manager activation does not launch emergency backup jobs", async () =
   assert.match(gitBackup, /X-SwitchMethod\s*=\s*"keep-old"/);
 });
 
+test("git auto-backup yields host resources and waits after completion", async () => {
+  const backup = await source("home/modules/git-auto-backup.nix");
+  const backupService = backup.slice(
+    backup.indexOf("services.git-auto-backup"),
+    backup.indexOf("timers.git-auto-backup"),
+  );
+
+  assert.match(backup, /jobs=2/);
+  assert.match(backupService, /Nice\s*=\s*19/);
+  assert.match(backupService, /IOSchedulingClass\s*=\s*"idle"/);
+  assert.match(backupService, /CPUWeight\s*=\s*10/);
+  assert.match(backupService, /IOWeight\s*=\s*10/);
+  assert.match(backupService, /MemoryHigh\s*=\s*"8G"/);
+  assert.match(backupService, /MemoryMax\s*=\s*"12G"/);
+  assert.match(backup, /OnActiveSec\s*=\s*"5m"/);
+  assert.doesNotMatch(backup, /OnBootSec\s*=/);
+  assert.match(backup, /OnUnitInactiveSec\s*=\s*"15m"/);
+  assert.doesNotMatch(backup, /OnCalendar\s*=\s*"\*:0\/15"/);
+  const hotPath = backup.slice(0, backup.indexOf("workspaceLedgerScript ="));
+  assert.doesNotMatch(hotPath, /workspace-debt|workspace-ledger-snapshot|rsync -a/);
+  const pushCommands = backup
+    .split("\n")
+    .filter((line) => /git_net .*\spush\s/.test(line));
+  assert.equal(pushCommands.length, 9, "enumerate every backup network push path");
+  for (const command of pushCommands) assert.match(command, /--no-verify/);
+  for (const command of pushCommands) {
+    assert.match(command, /\$(?:snapshot_ref|ref|backup_ref)|\\$/);
+  }
+  assert.match(backup, /ref="refs\/backup\/\$host\/\$slug\/\$branch\/wip"/);
+  assert.match(backup, /snapshot_ref="refs\/backup\/\$host\/\$slug\/\$branch\/wip-\$stamp"/);
+  assert.match(backup, /backup_ref="refs\/backup\/\$host\/\$slug\/\$branch\/head"/);
+  assert.match(backup, /\$commit:refs\/backup\/\$host\/\$slug\/workspace-\$wsname\/wip/);
+  assert.doesNotMatch(backup, /"HEAD:\$branch"/);
+  assert.match(backup, /refs\/backup\/\$host\/\$slug\/\$branch\/head/);
+});
+
+test("workspace ledger preservation is a separate low-priority hourly service", async () => {
+  const backup = await source("home/modules/git-auto-backup.nix");
+  assert.match(backup, /services\.workspace-ledger-snapshot/);
+  assert.match(backup, /timers\.workspace-ledger-snapshot/);
+  const ledgerService = backup.slice(
+    backup.indexOf("services.workspace-ledger-snapshot"),
+    backup.indexOf("timers.workspace-ledger-snapshot"),
+  );
+  const ledgerTimer = backup.slice(backup.indexOf("timers.workspace-ledger-snapshot"));
+  assert.match(ledgerTimer, /OnActiveSec\s*=\s*"10m"/);
+  assert.match(ledgerTimer, /OnUnitInactiveSec\s*=\s*"1h"/);
+  assert.doesNotMatch(ledgerTimer, /OnCalendar|Persistent/);
+  assert.match(ledgerService, /ExecStart\s*=\s*"\$\{workspaceLedgerScript\}"/);
+  assert.match(ledgerService, /Nice\s*=\s*19/);
+  assert.match(ledgerService, /IOSchedulingClass\s*=\s*"idle"/);
+  const ledgerScript = backup.slice(
+    backup.indexOf("workspaceLedgerScript ="),
+    backup.indexOf("in {"),
+  );
+  assert.match(ledgerScript, /rsync -a/);
+});
+
 test("Home Manager gives every managed agent client a deterministic UTF-8 locale", async () => {
   const home = await source("home/home.nix");
   const localeEnvironment = listBody(

@@ -1,0 +1,1 @@
+{"result_id":"guardrails-red-t1-result","status":"failed","requirement_id":"R1","command":"node --test scripts/test-nix-tooling.mjs","exit_code":1,"observation":"Baseline used fixed OnCalendar scheduling without completion-relative delay.","observed_at":"2026-08-14T00:01:00Z"}

@@ -1,0 +1,35 @@
+{
+  "schema_version":"evidence-bundle/v3",
+  "evidence_bundle_id":"2026-08-14-host-resource-guardrails-evidence",
+  "workspec_id":"2026-08-14-host-resource-guardrails-work",
+  "purpose_contract_id":"2026-08-14-host-resource-guardrails-purpose",
+  "purpose_subject_digest":{"algorithm":"sha256","canonicalization":"engine-json-v1","value":"c0563178fd58ee40532b2b9e37a0e7088f564e05430a3f949656f50e82c009d0"},
+  "workspec_subject_digest":{"algorithm":"sha256","canonicalization":"engine-json-v1","value":"0c977fffabc66369803b3a5a067a6db8886129ee2f7a679a7269b329bf68c989"},
+  "workflow_run_id":"2026-08-14-host-resource-guardrails-run",
+  "execution":{"execution_id":"2026-08-14-host-resource-guardrails-execution","tool":{"id":"dotfiles-repo-check","version":"2026-08-15"},"result":{"result_id":"2026-08-14-host-resource-guardrails-result","digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"5d2e6f87e47da5a9adbd9b0be3a66354a7829d2e08c62843855e52a09c42626e"}},"artifacts":[
+    {"artifact_id":"guardrails-result","uri":"evidence/result.json","digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"5d2e6f87e47da5a9adbd9b0be3a66354a7829d2e08c62843855e52a09c42626e"}},
+    {"artifact_id":"guardrails-green","uri":"evidence/green-proof.json","digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"c666a44f8bed6033f281cc10c79dca49f90e6d5464d4e8cd019f4e0f3f66e556"}},
+    {"artifact_id":"guardrails-red","uri":"evidence/red-proof.json","digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"6c4cb6a5b80ba3a510b41716c8c3b97b10ec3d97d509e3e37ad10c1387074a48"}},
+    {"artifact_id":"guardrails-red-t1","uri":"evidence/red-t1.json","digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"ef47a01e1d01c4456486e88494c7856a8b71f35b4004ddebfce095af9a410916"}},
+    {"artifact_id":"guardrails-red-t2","uri":"evidence/red-t2.json","digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"4b85016c76d9140d6102e9835087ff8ef2102d6c3b9df488d427a06f81270e49"}},
+    {"artifact_id":"guardrails-red-t3","uri":"evidence/red-t3.json","digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"aba623a128df0234af5f7695f779f295778e80e592b6fea2ff55b3ea352289c5"}},
+    {"artifact_id":"guardrails-changed","uri":"evidence/changed-files.json","digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"db014a147a73e2e0df6703259dbf33951f5bc69065faf953a945ddfab6d78743"}}
+  ]},
+  "trace":{"trace_id":"2026-08-14-host-resource-guardrails-trace","started_at":"2026-08-14T00:00:00Z","completed_at":"2026-08-15T00:00:00Z"},
+  "tests":[
+    {"id":"T1","requirement_id":"R1","status":"passed","description":"Focused timer contract passed.","result_id":"2026-08-14-host-resource-guardrails-result","artifact_ids":["guardrails-green","guardrails-result"],"output_uri":"evidence/green-proof.json","green_observed_at":"2026-08-15T00:00:00Z","red_proof":{"result_id":"guardrails-red-t1-result","artifact_id":"guardrails-red-t1","output_uri":"evidence/red-t1.json","observed_at":"2026-08-14T00:01:00Z"}},
+    {"id":"T2","requirement_id":"R2","status":"passed","description":"Focused resource contract passed.","result_id":"2026-08-14-host-resource-guardrails-result","artifact_ids":["guardrails-green","guardrails-result"],"output_uri":"evidence/green-proof.json","green_observed_at":"2026-08-15T00:00:00Z","red_proof":{"result_id":"guardrails-red-t2-result","artifact_id":"guardrails-red-t2","output_uri":"evidence/red-t2.json","observed_at":"2026-08-14T00:02:00Z"}},
+    {"id":"T3","requirement_id":"R3","status":"passed","description":"Focused refs-only and ledger separation contract passed.","result_id":"2026-08-14-host-resource-guardrails-result","artifact_ids":["guardrails-green","guardrails-result"],"output_uri":"evidence/green-proof.json","green_observed_at":"2026-08-15T00:00:00Z","red_proof":{"result_id":"guardrails-red-t3-result","artifact_id":"guardrails-red-t3","output_uri":"evidence/red-t3.json","observed_at":"2026-08-14T00:03:00Z"}}
+  ],
+  "gates":[{"gate_id":"quality","kind":"quality","status":"passed","subject_digest":{"algorithm":"sha256","canonicalization":"engine-json-v1","value":"0c977fffabc66369803b3a5a067a6db8886129ee2f7a679a7269b329bf68c989"},"artifact_ids":["guardrails-result"],"producer":{"kind":"service","id":"dotfiles-repo-check"},"observed_at":"2026-08-15T00:00:00Z","rationale":"Focused and full repository checks passed."}],
+  "runtime":{"status":"completed","changed_file_manifest":{"source":"repository-vcs-facade","artifact_id":"guardrails-changed","digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"db014a147a73e2e0df6703259dbf33951f5bc69065faf953a945ddfab6d78743"},"files":["home/modules/git-auto-backup.nix","scripts/test-nix-tooling.mjs","docs/work/2026-08-14-host-resource-guardrails/purpose.contract.json","docs/work/2026-08-14-host-resource-guardrails/work.spec.json","docs/work/2026-08-14-host-resource-guardrails/current-spec.snapshot.json","docs/work/2026-08-14-host-resource-guardrails/evidence.bundle.json"]}},
+  "falsifier":{"executed":true,"status":"passed","evidence":"The pre-change focused contract failed and the current focused/full checks pass.","output_uri":"evidence/result.json"},
+  "contract_preserved":{"status":true,"scope_drift":false,"requirement_drift":false},
+  "reconciliation":{"status":"reconciled","snapshot_digest":{"algorithm":"sha256","canonicalization":"raw-bytes","value":"84094dde3d2f67f8774b2c7103a92e7e34756dd1da68b6b267b5bfdb5d3559f7"},"delta_digest":{"algorithm":"sha256","canonicalization":"engine-json-v1","value":"c9a649faa7026b7cdabc9be2f252de7426d45322b883441e33c58309c99fead0"},"derived_requirement_set_digest":{"algorithm":"sha256","canonicalization":"engine-json-v1","value":"643e1634363a623c561ca86f5e2a86e1aff3c6bde7123e737372a1bccc151d68"},"witness_artifact_id":"guardrails-result"},
+  "reviews":[],
+  "breaker_witnesses":[
+    {"breaker_id":"B1","requirement_id":"R1","status":"passed","witness_kind":"contract-test","observed_outcome":"rejected","artifact_id":"guardrails-red","subject_digest":{"algorithm":"sha256","canonicalization":"engine-json-v1","value":"0c977fffabc66369803b3a5a067a6db8886129ee2f7a679a7269b329bf68c989"},"observed_at":"2026-08-14T00:00:00Z","rationale":"Baseline lacked completion-relative scheduling."},
+    {"breaker_id":"B2","requirement_id":"R2","status":"passed","witness_kind":"contract-test","observed_outcome":"rejected","artifact_id":"guardrails-red","subject_digest":{"algorithm":"sha256","canonicalization":"engine-json-v1","value":"0c977fffabc66369803b3a5a067a6db8886129ee2f7a679a7269b329bf68c989"},"observed_at":"2026-08-14T00:00:00Z","rationale":"Baseline lacked resource bounds."},
+    {"breaker_id":"B3","requirement_id":"R3","status":"passed","witness_kind":"contract-test","observed_outcome":"rejected","artifact_id":"guardrails-red","subject_digest":{"algorithm":"sha256","canonicalization":"engine-json-v1","value":"0c977fffabc66369803b3a5a067a6db8886129ee2f7a679a7269b329bf68c989"},"observed_at":"2026-08-14T00:00:00Z","rationale":"Baseline ran hooks/live pushes and ledger work in the hot path."}
+  ]
+}

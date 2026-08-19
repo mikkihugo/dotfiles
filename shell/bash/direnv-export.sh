@@ -207,13 +207,24 @@ fi
 _direnv_take_slot() {
 	_direnv_slot=0
 	while [ "$_direnv_slot" -lt "$_DIRENV_MAX_PARALLEL" ]; do
-		if exec 8>>"${_direnv_cache_dir}/slot.${_direnv_slot}" 2>/dev/null &&
-			flock -n 8 2>/dev/null; then
-			return 0
+		# Create the slot in a subshell: `exec` with redirections and no command
+		# applies them to THIS shell permanently, so an `exec ... 2>/dev/null`
+		# would send every later diagnostic on this shell to /dev/null. That is
+		# not hypothetical -- it silently swallowed a wrapper's stderr until the
+		# cargo-pgrx contract test caught it. Keep suppression inside a subshell
+		# or on a real command, never on a bare exec.
+		if (
+			umask 077
+			: >>"${_direnv_cache_dir}/slot.${_direnv_slot}"
+		) 2>/dev/null; then
+			exec 8>>"${_direnv_cache_dir}/slot.${_direnv_slot}"
+			if flock -n 8 2>/dev/null; then
+				return 0
+			fi
+			exec 8>&-
 		fi
 		_direnv_slot=$((_direnv_slot + 1))
 	done
-	exec 8>&- 2>/dev/null || true
 	return 1
 }
 
@@ -250,7 +261,7 @@ if command -v flock >/dev/null 2>&1 && (
 			:
 		elif [ -n "$_direnv_key" ] && _direnv_take_slot; then
 			_direnv_fill_cache || _direnv_do_enter
-			exec 8>&- 2>/dev/null || true
+			exec 8>&-
 		else
 			_direnv_await_cache || _direnv_do_enter
 		fi

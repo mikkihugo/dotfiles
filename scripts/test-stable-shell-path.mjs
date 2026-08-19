@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -48,6 +48,9 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
   assert.match(bashEnv, /shell\/bash\/direnv-export\.sh/);
   assert.match(loader, /direnv allow \./);
   assert.match(loader, /timeout 15s direnv export bash/);
+  assert.match(loader, /flock -w 90/);
+  assert.match(loader, /agent-direnv/);
+  assert.doesNotMatch(loader, /timeout 90s direnv export/);
   assert.doesNotMatch(loader, /else[\s\S]+direnv export bash/);
   assert.doesNotMatch(
     homeModule,
@@ -67,15 +70,19 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
     { mode: 0o755 },
   );
 
+  const xdgRuntime = join(base, "runtime");
+  await mkdir(xdgRuntime);
   const env = {
     ...process.env,
     PATH: `${bin}:${process.env.PATH}`,
     DIRENV_TEST_LOG: log,
     DIRENV_DIR: `-${repoA}`,
     IN_NIX_SHELL: "impure",
+    XDG_RUNTIME_DIR: xdgRuntime,
   };
   delete env.BASH_ENV;
   delete env.ENV;
+  delete env.AGENT_DIRENV_EXPORT_TRIED;
 
   const run = (cwd) =>
     spawnSync("bash", ["-c", '. "$1"; printf "%s" "${DIRENV_TEST_LOADED:-0}"', "bash", join(process.cwd(), "shell/bash/direnv-export.sh")], {
@@ -106,15 +113,19 @@ test("BASH_ENV path hook enters direnv once for Claude/Codex bash -c", async () 
     { mode: 0o755 },
   );
 
+  const runtime = join(base, "runtime");
+  await mkdir(runtime);
   const env = {
     ...process.env,
     HOME: process.env.HOME,
     PATH: `${bin}:${process.env.PATH}`,
     DIRENV_TEST_LOG: log,
     BASH_ENV: join(process.cwd(), "shell/bash/noninteractive-path.sh"),
+    XDG_RUNTIME_DIR: runtime,
   };
   delete env.IN_NIX_SHELL;
   delete env.DIRENV_DIR;
+  delete env.AGENT_DIRENV_EXPORT_TRIED;
 
   const first = spawnSync("bash", ["-c", 'printf "%s" "${IN_NIX_SHELL:-}"'], {
     cwd: repo,
@@ -132,4 +143,93 @@ test("BASH_ENV path hook enters direnv once for Claude/Codex bash -c", async () 
   assert.equal(nested.status, 0);
   assert.equal(nested.stdout, "impure");
   assert.equal(await readFile(log, "utf8"), "allow .\nexport bash\n");
+});
+
+test("dump cache hit evals without direnv allow or export", async () => {
+  const base = await mkdtemp(join(tmpdir(), "direnv-dump-cache-"));
+  const repo = join(base, "repo");
+  const bin = join(base, "bin");
+  const runtime = join(base, "runtime");
+  const log = join(base, "direnv.log");
+  await Promise.all([mkdir(repo), mkdir(bin), mkdir(runtime)]);
+  await writeFile(join(repo, ".envrc"), "export DIRENV_TEST_REPO=1\n");
+  await writeFile(
+    join(bin, "direnv"),
+    `#!/bin/sh\nprintf '%s\\n' "$*" >> "$DIRENV_TEST_LOG"\nif [ "$1" = export ]; then printf 'export DIRENV_TEST_LOADED=1\\nexport IN_NIX_SHELL=impure\\n'; fi\n`,
+    { mode: 0o755 },
+  );
+
+  const env = {
+    ...process.env,
+    PATH: `${bin}:${process.env.PATH}`,
+    DIRENV_TEST_LOG: log,
+    XDG_RUNTIME_DIR: runtime,
+  };
+  delete env.BASH_ENV;
+  delete env.ENV;
+  delete env.IN_NIX_SHELL;
+  delete env.DIRENV_DIR;
+  delete env.NIX_DIRENV_DID_FALLBACK;
+  delete env.AGENT_DIRENV_EXPORT_TRIED;
+
+  const loader = join(process.cwd(), "shell/bash/direnv-export.sh");
+  const run = () =>
+    spawnSync("bash", ["-c", '. "$1"; printf "%s" "${DIRENV_TEST_LOADED:-0}"', "bash", loader], {
+      cwd: repo,
+      encoding: "utf8",
+      env,
+    });
+
+  const miss = run();
+  assert.equal(miss.status, 0, miss.stderr);
+  assert.equal(miss.stdout, "1");
+  assert.equal(await readFile(log, "utf8"), "allow .\nexport bash\n");
+
+  const cacheDir = join(runtime, "agent-direnv");
+  const cached = (await readdir(cacheDir)).filter((name) => name.endsWith(".bash"));
+  assert.equal(cached.length, 1, "miss must write one dump cache file");
+
+  const hit = run();
+  assert.equal(hit.status, 0, hit.stderr);
+  assert.equal(hit.stdout, "1");
+  assert.equal(
+    await readFile(log, "utf8"),
+    "allow .\nexport bash\n",
+    "hit must not run direnv allow or export",
+  );
+});
+
+test("nested export-tried sentinel does not start direnv", async () => {
+  const base = await mkdtemp(join(tmpdir(), "direnv-tried-sentinel-"));
+  const repo = join(base, "repo");
+  const bin = join(base, "bin");
+  const runtime = join(base, "runtime");
+  const log = join(base, "direnv.log");
+  await Promise.all([mkdir(repo), mkdir(bin), mkdir(runtime)]);
+  await writeFile(
+    join(bin, "direnv"),
+    `#!/bin/sh\nprintf '%s\\n' "$*" >> "$DIRENV_TEST_LOG"\n`,
+    { mode: 0o755 },
+  );
+
+  const env = {
+    ...process.env,
+    PATH: `${bin}:${process.env.PATH}`,
+    DIRENV_TEST_LOG: log,
+    XDG_RUNTIME_DIR: runtime,
+    AGENT_DIRENV_EXPORT_TRIED: "1",
+  };
+  delete env.BASH_ENV;
+  delete env.ENV;
+  delete env.IN_NIX_SHELL;
+  delete env.DIRENV_DIR;
+
+  const nested = spawnSync(
+    "bash",
+    ["-c", '. "$1"; printf ok', "bash", join(process.cwd(), "shell/bash/direnv-export.sh")],
+    { cwd: repo, encoding: "utf8", env },
+  );
+  assert.equal(nested.status, 0, nested.stderr);
+  assert.equal(nested.stdout, "ok");
+  assert.equal(await readFile(log, "utf8").catch(() => ""), "", "nested tried must not invoke direnv");
 });

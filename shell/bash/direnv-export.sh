@@ -146,12 +146,16 @@ _direnv_fill_cache() {
 	# `timeout * direnv export` and the dump never publishes. Flock max 1
 	# already serializes the fill.
 	if direnv export bash >"$_direnv_tmp" 2>/dev/null && [ -s "$_direnv_tmp" ]; then
-		# Strip direnv snapshots so a hit cannot revive ARG_MAX.
-		if grep -vE '^export DIRENV_(DIFF|WATCHES)=' "$_direnv_tmp" >"${_direnv_tmp}.strip"; then
-			mv -f -- "${_direnv_tmp}.strip" "$_direnv_tmp"
-		else
-			rm -f -- "${_direnv_tmp}.strip"
-		fi
+		# No DIRENV_DIFF/DIRENV_WATCHES strip here on purpose. `direnv export
+		# bash` emits ONE semicolon-joined line, so a line-oriented `grep -v`
+		# either drops the whole dump or changes nothing -- measured across all
+		# 14 live dumps: 10 byte-identical, 4 emptied and discarded. It has never
+		# removed a snapshot. Worse, if a dump ever spanned two lines the filter
+		# would publish only the surviving line, and the `mv` below would install
+		# a dump missing nearly every export. A no-op with a destructive edge is
+		# strictly worse than no filter, and the snapshot is already handled
+		# twice: `unset DIRENV_DIFF DIRENV_WATCHES` above runs before the export
+		# so nothing nests, and the size guard re-checks after a cache hit.
 		chmod 0600 "$_direnv_tmp" 2>/dev/null || true
 		mv -f -- "$_direnv_tmp" "${_direnv_cache_dir}/${_direnv_key}.bash"
 		_direnv_eval_hit && return 0
@@ -250,6 +254,10 @@ if command -v flock >/dev/null 2>&1 && (
 	{
 		# 20s, not 90s: this wait exists only to let a peer publish the dump, and
 		# a publish that has not landed in 20s will not land inside 90 either.
+		# That 20s is this lock only, not a per-shell bound. A shell that loses
+		# every race chains 20s here, then 20s in _direnv_await_cache, then the
+		# fail-open `timeout 15s direnv export` — 55s worst case. Better than the
+		# 90s+15s it replaces, but do not read "20s" as the ceiling.
 		# Every branch must leave the shell with an environment -- the previous
 		# timeout branch only logged, so a shell that lost the race continued
 		# with no Nix environment at all, which is what kept the queue alive.

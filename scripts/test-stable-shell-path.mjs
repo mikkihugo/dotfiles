@@ -48,7 +48,9 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
   assert.match(bashEnv, /shell\/bash\/direnv-export\.sh/);
   assert.match(loader, /direnv allow \./);
   assert.match(loader, /timeout 15s direnv export bash/);
-  assert.match(loader, /flock -w 90/);
+  assert.match(loader, /flock -w 20/);
+  assert.match(loader, /_DIRENV_MAX_PARALLEL=10/);
+  assert.match(loader, /\${#DIRENV_DIFF}" -gt 65536/);
   assert.match(loader, /agent-direnv/);
   assert.doesNotMatch(loader, /timeout 90s direnv export/);
   assert.doesNotMatch(loader, /else[\s\S]+direnv export bash/);

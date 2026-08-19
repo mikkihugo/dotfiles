@@ -108,8 +108,12 @@
             # bookmark, so none of that reaches them. Earlier 0.43 notes:
             # better change-id rebase on git fetch, immutable WC
             # snapshot, `jj run`, aarch64 corrupt-object fix. 26.05 is still 0.41.
+            #
+            # mise 2026.8.8: pull from nixpkgs-unstable for newer version
+            # (26.05 has 2026.5.12, unstable has 2026.8.8)
             (_final: _prev: {
               jujutsu = nixpkgs-unstable.legacyPackages.${sys}.jujutsu;
+              mise = nixpkgs-unstable.legacyPackages.${sys}.mise;
             })
           ];
         };

@@ -51,8 +51,15 @@ _direnv_skip_enter() {
 	return 1
 }
 
+# Ceiling on concurrent flake evaluations across the whole host, and the longest
+# a shell waits (in 0.2s ticks, so 100 = 20s) for a peer to publish a dump.
+_DIRENV_MAX_PARALLEL=10
+_DIRENV_WAIT_TICKS=100
+
 _direnv_cleanup() {
 	unset _direnv_lock _direnv_cache_dir _direnv_key _direnv_file _direnv_tmp _direnv_root
+	unset _direnv_slot _direnv_ticks _DIRENV_MAX_PARALLEL _DIRENV_WAIT_TICKS
+	unset -f _direnv_take_slot _direnv_await_cache 2>/dev/null || true
 	unset -f _direnv_skip_enter _direnv_cleanup _direnv_envrc_root \
 		_direnv_cache_key _direnv_eval_hit _direnv_fill_cache \
 		_direnv_do_enter 2>/dev/null || true
@@ -180,22 +187,72 @@ if [ -n "${AGENT_DIRENV_EXPORT_TRIED:-}" ]; then
 fi
 export AGENT_DIRENV_EXPORT_TRIED=1
 
+mkdir -p "$_direnv_cache_dir" 2>/dev/null || true
+chmod 0700 "$_direnv_cache_dir" 2>/dev/null || true
+
+# Serialize per repository root, not host-wide. One global lock made every shell
+# in every repository queue behind whichever repo happened to be evaluating, and
+# with a cache that could not publish they each burned the full wait and returned
+# with no environment. Per-root locking keeps the part that matters -- same-root
+# shells still dedupe to a single evaluation, so no flake is ever built twice --
+# and drops the part that serialized unrelated repositories against each other.
+if [ -n "$_direnv_key" ]; then
+	_direnv_lock="${_direnv_cache_dir}/${_direnv_key}.lock"
+fi
+
+# Host-wide ceiling, so N cold repositories cannot start N evaluations at once.
+# Slots are probed non-blocking: a shell that finds all of them busy learns so
+# immediately and waits for the dump instead of joining a queue. fd 8 holds the
+# slot, fd 9 below holds the per-root lock.
+_direnv_take_slot() {
+	_direnv_slot=0
+	while [ "$_direnv_slot" -lt "$_DIRENV_MAX_PARALLEL" ]; do
+		if exec 8>>"${_direnv_cache_dir}/slot.${_direnv_slot}" 2>/dev/null &&
+			flock -n 8 2>/dev/null; then
+			return 0
+		fi
+		_direnv_slot=$((_direnv_slot + 1))
+	done
+	exec 8>&- 2>/dev/null || true
+	return 1
+}
+
+# Poll for a dump a peer is filling. Re-checking beats blocking on the lock: the
+# moment any filler publishes, every waiter returns on its next tick for the
+# cost of one file read.
+_direnv_await_cache() {
+	_direnv_ticks=0
+	while [ "$_direnv_ticks" -lt "$_DIRENV_WAIT_TICKS" ]; do
+		sleep 0.2 2>/dev/null || return 1
+		if [ -n "$_direnv_key" ] && _direnv_eval_hit; then
+			return 0
+		fi
+		_direnv_ticks=$((_direnv_ticks + 1))
+	done
+	return 1
+}
+
 if command -v flock >/dev/null 2>&1 && (
 	umask 077
 	: >>"$_direnv_lock"
 ) 2>/dev/null; then
 	{
-		if ! flock -w 90 9; then
-			echo "direnv-export: queue wait timed out after 90s" >&2
+		# 20s, not 90s: this wait exists only to let a peer publish the dump, and
+		# a publish that has not landed in 20s will not land inside 90 either.
+		# Every branch must leave the shell with an environment -- the previous
+		# timeout branch only logged, so a shell that lost the race continued
+		# with no Nix environment at all, which is what kept the queue alive.
+		if ! flock -w 20 9; then
+			_direnv_await_cache || _direnv_do_enter
 		elif _direnv_skip_enter; then
 			:
 		elif [ -n "$_direnv_key" ] && _direnv_eval_hit; then
 			:
-		elif [ -n "$_direnv_key" ] && mkdir -p "$_direnv_cache_dir" 2>/dev/null; then
-			chmod 0700 "$_direnv_cache_dir" 2>/dev/null || true
+		elif [ -n "$_direnv_key" ] && _direnv_take_slot; then
 			_direnv_fill_cache || _direnv_do_enter
+			exec 8>&- 2>/dev/null || true
 		else
-			_direnv_do_enter
+			_direnv_await_cache || _direnv_do_enter
 		fi
 	} 9>>"$_direnv_lock"
 else

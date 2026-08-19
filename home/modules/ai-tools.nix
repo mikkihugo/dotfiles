@@ -572,7 +572,7 @@
     exec "$cursor_agent_bin" "$@"
   '';
 
-  # jcode — shadow the self-updater/mise binary with an exact provider allowlist:
+  # jcode — shadow the self-updater binary with an exact provider allowlist:
   # llm-gateway named profile, Claude Max OAuth, and ChatGPT OAuth.
   jcodeGatewayWrapper = pkgs.writeShellScriptBin "jcode" ''
     set -euo pipefail
@@ -677,10 +677,7 @@
 
     jcode_bin="$HOME/.jcode/builds/current/jcode"
     if [ ! -x "$jcode_bin" ]; then
-      jcode_bin="$HOME/.local/share/mise/installs/github-1jehuang-jcode/latest/jcode-linux-x86_64"
-    fi
-    if [ ! -x "$jcode_bin" ]; then
-      echo "jcode: binary not found in ~/.jcode/builds/current or the mise install" >&2
+      echo "jcode: binary not found in ~/.jcode/builds/current" >&2
       exit 127
     fi
 

@@ -493,7 +493,7 @@ test("Claude Code remains native-installer-owned outside Home Manager", async ()
 //
 // Known blind spots — a flagged duplicate needs triage, not an automatic bug
 // verdict, and a clean run is not proof that no collision exists:
-//   * computed keys (`${stableBashRel}` in cursor-stable-shell.nix) are
+//   * computed keys (`${stableBashRel}` in stable-shell.nix) are
 //     invisible to a quoted-key scan;
 //   * generated attrsets (`xdg.configFile = lib.mapAttrs' …` in
 //     home-emergency-backup.nix) are skipped whole;

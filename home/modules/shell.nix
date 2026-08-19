@@ -338,6 +338,15 @@ in {
     zsh = {
       enable = true;
       initContent = shellInit;
+      # Cursor Agent runs `zsh -c` (non-interactive). That sources .zshenv
+      # (envExtra) and skips .zshrc/initContent, so the interactive direnv
+      # hook never fires. Enter Nix once here: direnv allow + export.
+      # direnv-export.sh skips interactive shells (hook owns those) and
+      # skips when IN_NIX_SHELL is already set (impure is valid).
+      envExtra = ''
+        [ -f "$HOME/.dotfiles/shell/bash/direnv-export.sh" ] \
+          && . "$HOME/.dotfiles/shell/bash/direnv-export.sh"
+      '';
     };
 
     # direnv: auto-load nix devShell when cd-ing into a project.

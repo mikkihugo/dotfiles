@@ -41,7 +41,7 @@ in {
       ./modules/cargo-pgrx.nix
       ./modules/shell.nix
       ./modules/git.nix
-      ./modules/cursor-stable-shell.nix
+      ./modules/stable-shell.nix
       ./modules/git-auto-backup.nix
       ./modules/jcode-gc.nix
       ./modules/engine-worktree-cleanup.nix

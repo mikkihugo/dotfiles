@@ -9,8 +9,9 @@
 # binary (no llm-gateway routing, no OTEL) instead of the HM gateway wrapper.
 #
 # This is the non-interactive twin of the `export PATH="$HOME/.local/bin:$PATH"`
-# line in shell/bash/bashrc. Kept deliberately minimal + fast: PATH only, no
-# mise activate, no direnv, no SOPS — those stay in the interactive path.
+# line in shell/bash/bashrc. PATH first, then the shared direnv enter-once
+# loader (allow + export; skip when IN_NIX_SHELL already matches $PWD).
+# No mise activate, no SOPS — those stay in the interactive path.
 #
 # Idempotent: a sentinel stops re-prepend in inherited grandchild shells.
 
@@ -20,3 +21,8 @@ if [ -z "${__CC_LOCALBIN_FIRST:-}" ]; then
 	export PATH="$HOME/.local/bin:$PATH"
 	export __CC_LOCALBIN_FIRST=1
 fi
+
+# Enter Nix once for Claude/Codex/goose/kimi `bash -c` via BASH_ENV.
+# shellcheck disable=SC1091
+[ -f "$HOME/.dotfiles/shell/bash/direnv-export.sh" ] &&
+	. "$HOME/.dotfiles/shell/bash/direnv-export.sh"

@@ -73,8 +73,7 @@ unset mise_bin
 # Non-interactive/agent shells skip ~/.bashrc (HM's `[[ $- == *i* ]] || return`),
 # so they miss the wrapper-precedence restore above and run raw mise binaries
 # instead of the llm-gateway wrappers. Export BASH_ENV so every non-interactive
-# child bash sources the minimal PATH twin. Child shells inherit this, fixing
-# vtcode/goose/kimi for agents spawned from any interactive session.
+# child bash sources the shared PATH + direnv enter-once loader.
 if [ -f "$HOME/.dotfiles/shell/bash/noninteractive-path.sh" ]; then
 	export BASH_ENV="$HOME/.dotfiles/shell/bash/noninteractive-path.sh"
 fi

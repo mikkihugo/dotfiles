@@ -39,8 +39,7 @@ vultr-cli = "latest"
 # gogcli: renamed upstream from steipete/gogcli to openclaw/gogcli
 "go:github.com/openclaw/gogcli/cmd/gog" = "latest"
 "npm:@just-every/code" = "latest"
-# jcode: managed by local build (~/.jcode/builds/current/jcode), not mise.
-# The ~/.local/bin/jcode wrapper uses the local build; mise was a historical fallback.
+# jcode: managed by CI deploy + auto-deploy timer (~/.jcode/server/jcode), not mise.
 
 [env]
 # kimi-code reads this from process.env (resolveCompletionBudget) — it is NOT a

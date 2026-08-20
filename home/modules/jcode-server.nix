@@ -8,7 +8,7 @@
   ...
 }: let
   homeDir = config.home.homeDirectory;
-  jcodeRaw = "${homeDir}/.jcode/builds/current/jcode";
+  jcodeRaw = "${homeDir}/.jcode/server/jcode";
   jcodeLauncher = pkgs.writeShellApplication {
     name = "jcode";
     text = ''

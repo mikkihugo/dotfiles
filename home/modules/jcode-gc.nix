@@ -3,20 +3,14 @@
     set -u
     J="$HOME/.jcode"
 
-    # --- builds: keep the versions referenced by the *-version files ---
-    keep=""
-    for f in "$J"/builds/current-version "$J"/builds/shared-server-version \
-             "$J"/builds/stable-version "$J"/builds/canary-version; do
-        [ -f "$f" ] && keep="$keep $(${pkgs.coreutils}/bin/cat "$f" 2>/dev/null)"
-    done
+    # --- builds: keep server symlink target + 9 most recent versions; CI
+    # prunes to 10 on deploy, but run GC as a safety net for local builds ---
+    server_target="$(${pkgs.coreutils}/bin/readlink -f "$J/server/jcode" 2>/dev/null || true)"
     if [ -d "$J/builds/versions" ]; then
+        # Delete versions older than 3 days that are not the live target
         for d in "$J"/builds/versions/*; do
             [ -d "$d" ] || continue
-            name=$(${pkgs.coreutils}/bin/basename "$d")
-            case " $keep " in
-                *" $name "*) continue ;; # active build, never delete
-            esac
-            # only delete if untouched for 3 days (recent rollback window)
+            if [ "$d/jcode" = "$server_target" ]; then continue; fi
             if [ "$(${pkgs.findutils}/bin/find "$d" -maxdepth 0 -mtime +3 2>/dev/null)" ]; then
                 ${pkgs.coreutils}/bin/rm -rf "$d"
             fi

@@ -675,9 +675,9 @@
     # separately denied by [auth] in ~/.jcode/config.toml.
     export JCODE_CURSOR_CLI_PATH="/nonexistent/jcode-disabled-cursor-agent"
 
-    jcode_bin="$HOME/.jcode/builds/current/jcode"
+    jcode_bin="$HOME/.jcode/server/jcode"
     if [ ! -x "$jcode_bin" ]; then
-      echo "jcode: binary not found in ~/.jcode/builds/current" >&2
+      echo "jcode: binary not found in ~/.jcode/server/jcode" >&2
       exit 127
     fi
 

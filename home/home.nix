@@ -120,12 +120,21 @@ in {
         # and rejects CLI requests). bao appends /v1 so no trailing slash.
         BAO_ADDR = "http://vault-active.vault.svc.cluster.local:8200";
         FORGEJO_HOST = "git.centralcloud.net";
+        # Bare `bash -c` (Claude/Codex/Kimi/jcode) does not source bashrc.
+        # Export BASH_ENV so every non-interactive bash hits the shared
+        # enter-once direnv loader without inheriting a parent shell.
+        BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";
       };
   };
 
   # GUI and background clients launched as user services do not inherit a
-  # login shell. Keep their locale identical to managed interactive clients.
-  systemd.user.sessionVariables = localeEnvironment;
+  # login shell. Keep their locale identical to managed interactive clients,
+  # and export BASH_ENV so systemd-spawned `bash -c` hits the same loader.
+  systemd.user.sessionVariables =
+    localeEnvironment
+    // {
+      BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";
+    };
 
   # home-manager manages its own config file (~/.config/home-manager/).
   programs.home-manager.enable = true;

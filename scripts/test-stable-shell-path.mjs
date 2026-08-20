@@ -103,6 +103,17 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
   assert.equal(await readFile(log, "utf8"), "allow .\nexport bash\n");
 });
 
+test("Home Manager exports BASH_ENV for login and systemd user sessions", async () => {
+  const home = await readFile("home/home.nix", "utf8");
+  assert.match(
+    home,
+    /BASH_ENV = "\$HOME\/\.dotfiles\/shell\/bash\/noninteractive-path\.sh"/,
+  );
+  assert.match(home, /sessionVariables\s*=\s*localeEnvironment\s*\/\/\s*\{/);
+  assert.match(home, /systemd\.user\.sessionVariables\s*=\s*localeEnvironment\s*\/\/\s*\{/);
+  assert.doesNotMatch(home, /CURSOR_BASH_ENV|cursor-only/i);
+});
+
 test("BASH_ENV path hook enters direnv once for Claude/Codex bash -c", async () => {
   const base = await mkdtemp(join(tmpdir(), "direnv-bash-env-"));
   const repo = join(base, "repo");

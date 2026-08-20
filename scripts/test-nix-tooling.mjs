@@ -145,7 +145,11 @@ test("Home Manager gives every managed agent client a deterministic UTF-8 locale
   assert.match(localeEnvironment, /^\s*LANG\s*=\s*"C\.UTF-8";/m);
   assert.match(localeEnvironment, /^\s*LC_ALL\s*=\s*"C\.UTF-8";/m);
   assert.match(home, /sessionVariables\s*=\s*localeEnvironment\s*\/\/\s*\{/);
-  assert.match(home, /systemd\.user\.sessionVariables\s*=\s*localeEnvironment;/);
+  assert.match(home, /systemd\.user\.sessionVariables\s*=\s*localeEnvironment\s*\/\/\s*\{/);
+  assert.match(
+    home,
+    /BASH_ENV\s*=\s*"\$HOME\/\.dotfiles\/shell\/bash\/noninteractive-path\.sh"/,
+  );
 });
 
 test("NixOS owns the JCode units; Home Manager must not shadow them", async () => {

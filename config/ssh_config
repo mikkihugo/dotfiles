@@ -144,12 +144,14 @@ Host vectordrive-1-firecracker vectordrive-firecracker
 
 # Tailscale hosts
 # NOTE: headscale node layout for the bunker host:
-#   mikki-bunker             → 100.64.0.3 (WSL2 Linux, real sshd target)
-#   mikki-bunker-windows     → Windows side, no sshd
+#   mikki-bunker             → 100.64.0.3 (WSL2 Linux)
+#   mikki-bunker-windows     → 100.64.0.5 (native Windows OpenSSH)
 Host mikki-bunker-windows
-    HostName mikki-bunker-windows
-    User mhugo
-    IdentityFile ~/.ssh/id_ed25519
+    HostName 100.64.0.5
+    User mikki
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+    ProxyCommand tailscale --socket /run/tailscale/ts.sock nc %h %p
 
 Host mikki-bunker
     HostName mikki-bunker

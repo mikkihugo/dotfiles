@@ -1,0 +1,177 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-08-21-direnv-dump-strip-work",
+  "purpose_contract_id": "2026-08-21-direnv-dump-strip-purpose",
+  "handover": {
+    "state": "accepted",
+    "producer": { "kind": "agent", "id": "cursor-direnv-speed" },
+    "accepting_authority": { "kind": "human", "id": "mhugo" },
+    "decided_at": "2026-08-21T04:53:00Z",
+    "purpose_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "pending"
+    },
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "pending"
+    },
+    "policy": {
+      "id": "purpose-first-tdd-handover/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "21f4dad52f9e5f5a53ee16625c7bf75e01251002911d667e879f3e06147e7192"
+      }
+    },
+    "validators": ["workspec-v4.schema.json", "purpose-first-tdd-handover"],
+    "evidence_refs": ["purpose.contract.json#admission"]
+  },
+  "feature_tree_target": {
+    "kind": "code",
+    "name": "direnv-dump-strip",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-08-21-direnv-dump-strip-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "pending"
+    }
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "When the enter-once loader fills the agent-direnv dump cache, the written snapshot shall omit DIRENV_DIFF and DIRENV_WATCHES assignments even when direnv emits them on one semicolon-joined line.",
+      "acceptance_criteria": [
+        "A one-line dump containing export DIRENV_DIFF=$'…'; and export DIRENV_WATCHES=$'…'; is stored without those assignments",
+        "Sourcing the dump leaves DIRENV_DIFF and DIRENV_WATCHES unset",
+        "Other export assignments from the same line remain"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "direnv-export.sh dump fill",
+          "trigger": "direnv export bash emits a one-line snapshot containing DIRENV_DIFF and DIRENV_WATCHES",
+          "response": "write the dump with those two assignments removed"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "cached dump still contains DIRENV_DIFF= or DIRENV_WATCHES=",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "operator"
+    },
+    {
+      "id": "R2",
+      "statement": "When a dump's recorded envrc root no longer contains .envrc, the loader shall not reuse that dump.",
+      "acceptance_criteria": [
+        "Dump files record # agent-direnv-root:<path>",
+        "Eval hit deletes and misses a dump whose recorded root has no .envrc",
+        "A subsequent fill may recreate a dump only for a live root"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "unwanted-behavior",
+          "system": "direnv-export.sh dump hit",
+          "trigger": "a cached dump records a root that no longer has .envrc",
+          "response": "refuse the dump rather than source it"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "a dump for a deleted root is sourced on the next hit",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "operator"
+    }
+  ],
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "When the enter-once loader fills the agent-direnv dump cache, the written snapshot shall omit DIRENV_DIFF and DIRENV_WATCHES assignments even when direnv emits them on one semicolon-joined line."
+      },
+      {
+        "id": "R2",
+        "statement": "When a dump's recorded envrc root no longer contains .envrc, the loader shall not reuse that dump."
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "scope": {
+    "allowed": [
+      "shell/bash/direnv-export.sh",
+      "shell/bash/direnv-strip-snapshot.py",
+      "scripts/test-stable-shell-path.mjs",
+      "docs/work/2026-08-21-direnv-dump-strip/**"
+    ],
+    "blocked": [
+      "jcode bash_direnv.rs",
+      "live Home Manager activation unless wrapper module changes"
+    ],
+    "expected_files": [
+      "shell/bash/direnv-export.sh",
+      "shell/bash/direnv-strip-snapshot.py",
+      "scripts/test-stable-shell-path.mjs"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Fill+hit of a one-line dump with DIRENV_DIFF/WATCHES leaves them absent from file and env.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "A dump whose recorded root no longer has .envrc is not reused.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "node --test scripts/test-stable-shell-path.mjs"
+    ],
+    "evidence_required": ["test", "falsifier"]
+  },
+  "model_requirements": { "coding": 0.5, "debugging": 0.5 },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": { "kind": "agent", "id": "cursor-direnv-speed" },
+    "agent_role": "implementer",
+    "source_node_id": "2026-08-21-direnv-dump-strip",
+    "target_planes": ["tool"],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": { "kind": "local" }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "process",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

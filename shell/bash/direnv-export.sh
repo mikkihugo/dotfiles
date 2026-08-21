@@ -12,6 +12,9 @@
 # matcher kills `timeout * direnv export` and the dump never publishes).
 # Fail-open fallback remains timeout 15s direnv export bash.
 # Nested BASH_ENV after this loader already ran: dump hit only, never flock.
+# Fill strips DIRENV_DIFF / DIRENV_WATCHES from the one-line dump (python3
+# assignment scanner — not grep -v) and records # agent-direnv-root:<path>.
+# Hits refuse a dump whose recorded root no longer has .envrc.
 # IN_NIX_SHELL=impure from direnv is valid; do not recover with nix develop.
 
 # direnv keeps a gzip+base64 snapshot of the environment in DIRENV_DIFF, and the
@@ -58,11 +61,12 @@ _DIRENV_WAIT_TICKS=100
 
 _direnv_cleanup() {
 	unset _direnv_lock _direnv_cache_dir _direnv_key _direnv_file _direnv_tmp _direnv_root
+	unset _direnv_stripped _direnv_strip_helper _direnv_hdr _direnv_recorded _direnv_old
 	unset _direnv_slot _direnv_ticks _DIRENV_MAX_PARALLEL _DIRENV_WAIT_TICKS
 	unset -f _direnv_take_slot _direnv_await_cache 2>/dev/null || true
 	unset -f _direnv_skip_enter _direnv_cleanup _direnv_envrc_root \
 		_direnv_cache_key _direnv_eval_hit _direnv_fill_cache \
-		_direnv_do_enter 2>/dev/null || true
+		_direnv_prune_dead_dumps _direnv_do_enter 2>/dev/null || true
 }
 
 if _direnv_skip_enter; then
@@ -76,7 +80,8 @@ fi
 if ! command -v direnv >/dev/null 2>&1 ||
 	! command -v timeout >/dev/null 2>&1 ||
 	! command -v sha256sum >/dev/null 2>&1 ||
-	! command -v flock >/dev/null 2>&1; then
+	! command -v flock >/dev/null 2>&1 ||
+	! command -v python3 >/dev/null 2>&1; then
 	PATH="/run/current-system/sw/bin:/etc/profiles/per-user/${USER:-mhugo}/bin:${HOME}/.nix-profile/bin:/usr/bin:${PATH}"
 fi
 
@@ -123,12 +128,35 @@ _direnv_cache_key() {
 _direnv_eval_hit() {
 	_direnv_file="${_direnv_cache_dir}/${_direnv_key}.bash"
 	[ -s "$_direnv_file" ] || return 1
+	IFS= read -r _direnv_hdr <"$_direnv_file" || true
+	case "$_direnv_hdr" in
+	"# agent-direnv-envrc-root:"*)
+		_direnv_recorded=${_direnv_hdr#\# agent-direnv-envrc-root:}
+		if [ ! -f "${_direnv_recorded}/.envrc" ]; then
+			rm -f -- "$_direnv_file"
+			unset _direnv_hdr _direnv_recorded
+			return 1
+		fi
+		;;
+	"# agent-direnv-root:"*)
+		_direnv_recorded=${_direnv_hdr#\# agent-direnv-root:}
+		if [ ! -d "$_direnv_recorded" ]; then
+			rm -f -- "$_direnv_file"
+			unset _direnv_hdr _direnv_recorded
+			return 1
+		fi
+		;;
+	esac
+	unset _direnv_hdr _direnv_recorded
 	# Source the dump. eval "$(<file)" hits ARG_MAX on nix-direnv exports.
 	# Ignore source status: dumps may end on a non-zero builtin, and deleting
 	# the cache on that re-stormed every Cursor zsh -c.
 	# shellcheck disable=SC1090
 	. "$_direnv_file" 2>/dev/null || true
-	# Dumps re-export DIRENV_DIFF; past ARG_MAX every later exec is E2BIG.
+	# Strip already removed these from new dumps; always drop them after
+	# source so a stale one-line dump cannot re-poison ARG_MAX. The 64KiB
+	# guard at the top of this file remains for inherited skip paths.
+	unset DIRENV_DIFF DIRENV_WATCHES
 	if [ "${#DIRENV_DIFF}" -gt 65536 ]; then
 		unset DIRENV_DIFF
 	fi
@@ -138,29 +166,72 @@ _direnv_eval_hit() {
 	return 0
 }
 
+_direnv_prune_dead_dumps() {
+	[ -d "$_direnv_cache_dir" ] || return 0
+	# Leftover fill temps are not dumps; ignore them and drop them on miss.
+	rm -f -- "${_direnv_cache_dir}"/.*.tmp 2>/dev/null || true
+	for _direnv_old in "${_direnv_cache_dir}"/*.bash; do
+		[ -f "$_direnv_old" ] || continue
+		IFS= read -r _direnv_hdr <"$_direnv_old" || continue
+		case "$_direnv_hdr" in
+		"# agent-direnv-envrc-root:"*)
+			_direnv_recorded=${_direnv_hdr#\# agent-direnv-envrc-root:}
+			if [ ! -f "${_direnv_recorded}/.envrc" ]; then
+				rm -f -- "$_direnv_old"
+			fi
+			;;
+		"# agent-direnv-root:"*)
+			_direnv_recorded=${_direnv_hdr#\# agent-direnv-root:}
+			if [ ! -d "$_direnv_recorded" ]; then
+				rm -f -- "$_direnv_old"
+			fi
+			;;
+		esac
+	done
+	# Flock leftovers: a .lock with no matching dump is not in use.
+	for _direnv_old in "${_direnv_cache_dir}"/*.lock; do
+		[ -f "$_direnv_old" ] || continue
+		_direnv_stem=${_direnv_old%.lock}
+		if [ ! -f "${_direnv_stem}.bash" ]; then
+			rm -f -- "$_direnv_old"
+		fi
+	done
+	unset _direnv_old _direnv_hdr _direnv_recorded _direnv_stem
+}
+
 _direnv_fill_cache() {
 	direnv allow . >/dev/null 2>&1 || true
 	unset DIRENV_DIFF DIRENV_WATCHES
 	_direnv_tmp="${_direnv_cache_dir}/.${_direnv_key}.$$.tmp"
+	_direnv_stripped="${_direnv_tmp}.stripped"
+	_direnv_strip_helper="${HOME}/.dotfiles/shell/bash/direnv-strip-snapshot.py"
 	# Do not wrap this export in `timeout`: a sibling SIGTERM matcher kills
 	# `timeout * direnv export` and the dump never publishes. Flock max 1
 	# already serializes the fill.
 	if direnv export bash >"$_direnv_tmp" 2>/dev/null && [ -s "$_direnv_tmp" ]; then
-		# No DIRENV_DIFF/DIRENV_WATCHES strip here on purpose. `direnv export
-		# bash` emits ONE semicolon-joined line, so a line-oriented `grep -v`
-		# either drops the whole dump or changes nothing -- measured across all
-		# 14 live dumps: 10 byte-identical, 4 emptied and discarded. It has never
-		# removed a snapshot. Worse, if a dump ever spanned two lines the filter
-		# would publish only the surviving line, and the `mv` below would install
-		# a dump missing nearly every export. A no-op with a destructive edge is
-		# strictly worse than no filter, and the snapshot is already handled
-		# twice: `unset DIRENV_DIFF DIRENV_WATCHES` above runs before the export
-		# so nothing nests, and the size guard re-checks after a cache hit.
+		# Byte-safe assignment strip. grep -v is a no-op or a dump-killer on
+		# nix-direnv's single semicolon-joined line.
+		if ! command -v python3 >/dev/null 2>&1 ||
+			[ ! -f "$_direnv_strip_helper" ] ||
+			! python3 "$_direnv_strip_helper" <"$_direnv_tmp" >"$_direnv_stripped" ||
+			[ ! -s "$_direnv_stripped" ]; then
+			rm -f -- "$_direnv_tmp" "$_direnv_stripped"
+			return 1
+		fi
+		{
+			if [ -f "${_direnv_root}/.envrc" ]; then
+				printf '# agent-direnv-envrc-root:%s\n' "$_direnv_root"
+			else
+				printf '# agent-direnv-root:%s\n' "$_direnv_root"
+			fi
+			cat -- "$_direnv_stripped"
+		} >"$_direnv_tmp"
+		rm -f -- "$_direnv_stripped"
 		chmod 0600 "$_direnv_tmp" 2>/dev/null || true
 		mv -f -- "$_direnv_tmp" "${_direnv_cache_dir}/${_direnv_key}.bash"
 		_direnv_eval_hit && return 0
 	fi
-	rm -f -- "$_direnv_tmp"
+	rm -f -- "$_direnv_tmp" "$_direnv_stripped"
 	return 1
 }
 
@@ -180,6 +251,7 @@ if command -v sha256sum >/dev/null 2>&1; then
 		export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
 		return 0
 	fi
+	_direnv_prune_dead_dumps
 fi
 
 # zshenv already ran this loader; child bash via BASH_ENV must not wait on

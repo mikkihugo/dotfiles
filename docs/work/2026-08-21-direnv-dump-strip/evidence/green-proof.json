@@ -1,0 +1,21 @@
+{
+  "observed_at": "2026-08-21T05:00:00Z",
+  "command": "node --test scripts/test-stable-shell-path.mjs",
+  "result": "10/10 pass",
+  "live_zsh_c": {
+    "cwd": "/home/mhugo/code/jcode",
+    "sanitized": true,
+    "IN_NIX_SHELL": "impure",
+    "DIRENV_DIFF": null,
+    "DIRENV_WATCHES": null,
+    "spawn_ms": [73, 69, 64, 57]
+  },
+  "live_dump_strip": {
+    "raw_bytes": 142639,
+    "stripped_bytes": 99526,
+    "DIRENV_DIFF_present": false,
+    "DIRENV_WATCHES_present": false
+  },
+  "home_manager_switch": false,
+  "reason": "wrapper module unchanged; sourced direnv-export.sh is live"
+}

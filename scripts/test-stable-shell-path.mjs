@@ -246,3 +246,184 @@ test("nested export-tried sentinel does not start direnv", async () => {
   assert.equal(nested.stdout, "ok");
   assert.equal(await readFile(log, "utf8").catch(() => ""), "", "nested tried must not invoke direnv");
 });
+
+test("dump fill strips one-line DIRENV_DIFF and DIRENV_WATCHES", async () => {
+  const base = await mkdtemp(join(tmpdir(), "direnv-dump-strip-"));
+  const repo = join(base, "repo");
+  const bin = join(base, "bin");
+  const runtime = join(base, "runtime");
+  const log = join(base, "direnv.log");
+  await Promise.all([mkdir(repo), mkdir(bin), mkdir(runtime)]);
+  await writeFile(join(repo, ".envrc"), "export KEEP_ME=1\n");
+  await writeFile(
+    join(bin, "direnv"),
+    `#!/bin/sh
+printf '%s\\n' "$*" >> "$DIRENV_TEST_LOG"
+if [ "$1" = export ]; then
+  printf "export KEEP_ME=1;unset SCCACHE_CACHE_SIZE;export DIRENV_DIFF=$'eJzpoison';export DIRENV_WATCHES=$'eJzwatch';export IN_NIX_SHELL=impure;export DIRENV_DIR=-%s;" "$PWD"
+fi
+`,
+    { mode: 0o755 },
+  );
+
+  const env = {
+    ...process.env,
+    PATH: `${bin}:${process.env.PATH}`,
+    DIRENV_TEST_LOG: log,
+    XDG_RUNTIME_DIR: runtime,
+  };
+  delete env.BASH_ENV;
+  delete env.ENV;
+  delete env.IN_NIX_SHELL;
+  delete env.DIRENV_DIR;
+  delete env.DIRENV_DIFF;
+  delete env.DIRENV_WATCHES;
+  delete env.NIX_DIRENV_DID_FALLBACK;
+  delete env.AGENT_DIRENV_EXPORT_TRIED;
+
+  const loader = join(process.cwd(), "shell/bash/direnv-export.sh");
+  const probe =
+    '. "$1"; printf "keep=%s diff=%s watch=%s nix=%s" "${KEEP_ME:-}" "${DIRENV_DIFF:-}" "${DIRENV_WATCHES:-}" "${IN_NIX_SHELL:-}"';
+  const miss = spawnSync("bash", ["-c", probe, "bash", loader], {
+    cwd: repo,
+    encoding: "utf8",
+    env,
+  });
+  assert.equal(miss.status, 0, miss.stderr);
+  assert.equal(miss.stdout, "keep=1 diff= watch= nix=impure");
+
+  const cacheDir = join(runtime, "agent-direnv");
+  const cached = (await readdir(cacheDir)).filter((name) => name.endsWith(".bash"));
+  assert.equal(cached.length, 1, "miss must write one dump cache file");
+  const dump = await readFile(join(cacheDir, cached[0]), "utf8");
+  assert.doesNotMatch(dump, /DIRENV_DIFF=/);
+  assert.doesNotMatch(dump, /DIRENV_WATCHES=/);
+  assert.match(dump, /KEEP_ME=1/);
+  assert.match(dump, /unset SCCACHE_CACHE_SIZE;/);
+  assert.match(dump, /^# agent-direnv-(envrc-)?root:/m);
+
+  const hit = spawnSync("bash", ["-c", probe, "bash", loader], {
+    cwd: repo,
+    encoding: "utf8",
+    env,
+  });
+  assert.equal(hit.status, 0, hit.stderr);
+  assert.equal(hit.stdout, "keep=1 diff= watch= nix=impure");
+  assert.equal(
+    await readFile(log, "utf8"),
+    "allow .\nexport bash\n",
+    "hit must not run direnv allow or export",
+  );
+});
+
+test("dump whose recorded root no longer has envrc is not reused", async () => {
+  const base = await mkdtemp(join(tmpdir(), "direnv-dead-root-"));
+  const repo = join(base, "repo");
+  const bin = join(base, "bin");
+  const runtime = join(base, "runtime");
+  const log = join(base, "direnv.log");
+  await Promise.all([mkdir(repo), mkdir(bin), mkdir(runtime)]);
+  await writeFile(join(repo, ".envrc"), "export KEEP_ME=1\n");
+  await writeFile(
+    join(bin, "direnv"),
+    `#!/bin/sh
+printf '%s\\n' "$*" >> "$DIRENV_TEST_LOG"
+if [ "$1" = export ]; then
+  printf "export KEEP_ME=1;export IN_NIX_SHELL=impure;export DIRENV_DIR=-%s;" "$PWD"
+fi
+`,
+    { mode: 0o755 },
+  );
+
+  const env = {
+    ...process.env,
+    PATH: `${bin}:${process.env.PATH}`,
+    DIRENV_TEST_LOG: log,
+    XDG_RUNTIME_DIR: runtime,
+  };
+  delete env.BASH_ENV;
+  delete env.ENV;
+  delete env.IN_NIX_SHELL;
+  delete env.DIRENV_DIR;
+  delete env.NIX_DIRENV_DID_FALLBACK;
+  delete env.AGENT_DIRENV_EXPORT_TRIED;
+
+  const loader = join(process.cwd(), "shell/bash/direnv-export.sh");
+  const first = spawnSync(
+    "bash",
+    ["-c", '. "$1"; printf "%s" "${KEEP_ME:-}"', "bash", loader],
+    { cwd: repo, encoding: "utf8", env },
+  );
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(first.stdout, "1");
+
+  const cacheDir = join(runtime, "agent-direnv");
+  const cached = (await readdir(cacheDir)).filter((name) => name.endsWith(".bash"));
+  assert.equal(cached.length, 1);
+  const dumpPath = join(cacheDir, cached[0]);
+  const dump = await readFile(dumpPath, "utf8");
+  const poisoned = dump.replace(
+    /^# agent-direnv-(?:envrc-)?root:.*$/m,
+    "# agent-direnv-envrc-root:/no/such/direnv-root",
+  );
+  assert.notEqual(poisoned, dump, "fill must record an envrc root header");
+  await writeFile(dumpPath, poisoned);
+
+  const second = spawnSync(
+    "bash",
+    ["-c", '. "$1"; printf "%s" "${KEEP_ME:-}"', "bash", loader],
+    { cwd: repo, encoding: "utf8", env },
+  );
+  assert.equal(second.status, 0, second.stderr);
+  assert.equal(
+    await readFile(log, "utf8"),
+    "allow .\nexport bash\nallow .\nexport bash\n",
+    "dead recorded root must miss and refill",
+  );
+});
+
+test("dump miss drops leftover flock locks without a matching dump", async () => {
+  const base = await mkdtemp(join(tmpdir(), "direnv-orphan-lock-"));
+  const repo = join(base, "repo");
+  const bin = join(base, "bin");
+  const runtime = join(base, "runtime");
+  const cacheDir = join(runtime, "agent-direnv");
+  const log = join(base, "direnv.log");
+  await Promise.all([mkdir(repo), mkdir(bin), mkdir(runtime)]);
+  await mkdir(cacheDir);
+  await writeFile(join(repo, ".envrc"), "export KEEP_ME=1\n");
+  await writeFile(join(cacheDir, "orphan.lock"), "");
+  await writeFile(
+    join(bin, "direnv"),
+    `#!/bin/sh
+printf '%s\\n' "$*" >> "$DIRENV_TEST_LOG"
+if [ "$1" = export ]; then
+  printf "export KEEP_ME=1;export IN_NIX_SHELL=impure;export DIRENV_DIR=-%s;" "$PWD"
+fi
+`,
+    { mode: 0o755 },
+  );
+
+  const env = {
+    ...process.env,
+    PATH: `${bin}:${process.env.PATH}`,
+    DIRENV_TEST_LOG: log,
+    XDG_RUNTIME_DIR: runtime,
+  };
+  delete env.BASH_ENV;
+  delete env.ENV;
+  delete env.IN_NIX_SHELL;
+  delete env.DIRENV_DIR;
+  delete env.NIX_DIRENV_DID_FALLBACK;
+  delete env.AGENT_DIRENV_EXPORT_TRIED;
+
+  const miss = spawnSync(
+    "bash",
+    ["-c", '. "$1"; printf ok', "bash", join(process.cwd(), "shell/bash/direnv-export.sh")],
+    { cwd: repo, encoding: "utf8", env },
+  );
+  assert.equal(miss.status, 0, miss.stderr);
+  assert.equal(miss.stdout, "ok");
+  const names = await readdir(cacheDir);
+  assert.equal(names.includes("orphan.lock"), false, "orphan flock lock must be removed on miss");
+});

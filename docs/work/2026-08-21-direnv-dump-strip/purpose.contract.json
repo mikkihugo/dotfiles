@@ -1,0 +1,106 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-08-21-direnv-dump-strip-purpose",
+  "source": {
+    "system": "manual",
+    "repository": ".",
+    "request_id": "2026-08-21-direnv-dump-strip"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "incident",
+      "id": "direnv-diff-e2big",
+      "revision": "2026-08-21"
+    },
+    "objective": {
+      "id": "2026-08-21-direnv-dump-strip-objective",
+      "statement": "Cursor zsh -c cache hits must not re-export DIRENV_DIFF or DIRENV_WATCHES.",
+      "measure": "node --test scripts/test-stable-shell-path.mjs and a sanitized zsh -c in jcode leave those variables unset."
+    },
+    "need": {
+      "id": "2026-08-21-direnv-dump-strip-need",
+      "statement": "Dump caches store direnv's one-line export, including DIRENV_DIFF, so every sanitized spawn re-poisons ARG_MAX.",
+      "stakeholders": ["cc-se-sto-devbox-01 operator", "Cursor/Claude/Codex agent shells"],
+      "baseline": "2026-08-21 measurement: 504/504 dumps contain DIRENV_DIFF; max dump 142639 bytes; sanitized zsh -c DIFF_LEN=10400.",
+      "consequence_of_no_action": "Child execs hit E2BIG and fork-storm.",
+      "assumptions": ["direnv export bash emits a single semicolon-joined line using $'' quoting."],
+      "alternatives_considered": [
+        "Line-oriented grep -v (no-op on one-line dumps)",
+        "Force Cursor to use agent-shell argv0",
+        "Unset only after source when length exceeds 64KiB"
+      ]
+    }
+  },
+  "admission": {
+    "state": "accepted",
+    "producer": { "kind": "agent", "id": "cursor-direnv-speed" },
+    "accepting_authority": { "kind": "human", "id": "mhugo" },
+    "decided_at": "2026-08-21T04:53:00Z",
+    "subject_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "pending"
+    },
+    "policy": {
+      "id": "operator-directed-purpose-admission/v1",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "60a6f61da63802b1974024acf1f6667d6b07bc262aa39579fae5e2dfe24c607e"
+      }
+    },
+    "validators": ["purpose-contract-v2.schema.json", "operator-authority"],
+    "evidence_refs": ["user-request:finish-remaining-direnv-shell-cost"]
+  },
+  "purpose": "Stop dump-cache hits from re-exporting direnv snapshots that blow ARG_MAX.",
+  "consumer": "Cursor zsh -c, Claude/Codex BASH_ENV, and the host agent-shell wrapper.",
+  "contract": "A fill of the agent-direnv dump cache writes a snapshot with DIRENV_DIFF and DIRENV_WATCHES removed, records the envrc root, and refuses a dump whose recorded root no longer has .envrc.",
+  "failure_boundary": "A failed strip leaves the dump unpublished rather than caching a poisoned snapshot. The post-source 64KiB unset remains as defense in depth.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "scripts/test-stable-shell-path.mjs asserts dump strip, sourced env, and dead-root refusal.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "A sanitized zsh -c in /home/mhugo/code/jcode still has DIRENV_DIFF longer than 65536 after the loader, or still invokes direnv export on a warm cache hit.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Focused Node contract plus live zsh -c",
+      "command": "node --test scripts/test-stable-shell-path.mjs"
+    }
+  },
+  "non_goals": [
+    "Changing Cursor argv0 to agent-shell",
+    "Re-implementing jcode bash_direnv.rs",
+    "Closing skip-direnv-exec-when-in-nix",
+    "Home Manager switch unless the wrapper module changes"
+  ],
+  "invariants": [
+    "IN_NIX_SHELL=impure remains valid",
+    "Nested shells with a matching DIRENV_DIR still skip",
+    "Cache hits do not run direnv allow or export",
+    "Dump files remain 0600"
+  ],
+  "assumptions": [
+    {
+      "statement": "python3 is on PATH for agent shells that fill the cache.",
+      "status": "verified",
+      "doubt": 1,
+      "falsifier": "A fill with python3 missing caches an unstripped dump."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "low",
+    "blast_radius": "host-agent-shell",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": ["tool"],
+  "plane_constraints": [
+    "Edits stay in ~/.dotfiles shell/bash and scripts/test-stable-shell-path.mjs.",
+    "The sourced .sh is live without Home Manager switch."
+  ]
+}

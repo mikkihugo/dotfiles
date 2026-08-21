@@ -1,0 +1,14 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-08-21-direnv-dump-strip-current-spec",
+  "source": {
+    "uri": "repository://shell/bash/direnv-export.sh",
+    "revision": "live"
+  },
+  "requirements": [
+    {
+      "id": "baseline",
+      "statement": "Dump fill writes direnv export bash bytes unchanged except chmod/mv. Line-oriented grep -v is documented as a no-op. Size guard unsets DIRENV_DIFF only after it exceeds 65536."
+    }
+  ]
+}

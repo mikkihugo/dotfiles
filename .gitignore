@@ -72,6 +72,10 @@ config/goose/secrets.yaml
 .vtcode/state/
 .vtcode/terminals/
 
+# Python bytecode from direnv-strip-snapshot.py
+**/__pycache__/
+*.py[cod]
+
 # Environment files - keep plaintext env files out of git
 .env.*
 *.env

@@ -168,34 +168,36 @@ _direnv_eval_hit() {
 
 _direnv_prune_dead_dumps() {
 	[ -d "$_direnv_cache_dir" ] || return 0
-	# Leftover fill temps are not dumps; ignore them and drop them on miss.
-	rm -f -- "${_direnv_cache_dir}"/.*.tmp 2>/dev/null || true
-	for _direnv_old in "${_direnv_cache_dir}"/*.bash; do
-		[ -f "$_direnv_old" ] || continue
-		IFS= read -r _direnv_hdr <"$_direnv_old" || continue
-		case "$_direnv_hdr" in
-		"# agent-direnv-envrc-root:"*)
-			_direnv_recorded=${_direnv_hdr#\# agent-direnv-envrc-root:}
-			if [ ! -f "${_direnv_recorded}/.envrc" ]; then
+	# find, not a glob: this file is sourced from zsh, and unmatched
+	# globs abort the whole Cursor zsh -c under nomatch.
+	find "$_direnv_cache_dir" -maxdepth 1 -name '.*.tmp' -type f -delete 2>/dev/null || true
+	find "$_direnv_cache_dir" -maxdepth 1 -name '*.bash' -type f -print |
+		while IFS= read -r _direnv_old; do
+			[ -f "$_direnv_old" ] || continue
+			IFS= read -r _direnv_hdr <"$_direnv_old" || continue
+			case "$_direnv_hdr" in
+			"# agent-direnv-envrc-root:"*)
+				_direnv_recorded=${_direnv_hdr#\# agent-direnv-envrc-root:}
+				if [ ! -f "${_direnv_recorded}/.envrc" ]; then
+					rm -f -- "$_direnv_old"
+				fi
+				;;
+			"# agent-direnv-root:"*)
+				_direnv_recorded=${_direnv_hdr#\# agent-direnv-root:}
+				if [ ! -d "$_direnv_recorded" ]; then
+					rm -f -- "$_direnv_old"
+				fi
+				;;
+			esac
+		done
+	find "$_direnv_cache_dir" -maxdepth 1 -name '*.lock' -type f -print |
+		while IFS= read -r _direnv_old; do
+			[ -f "$_direnv_old" ] || continue
+			_direnv_stem=${_direnv_old%.lock}
+			if [ ! -f "${_direnv_stem}.bash" ]; then
 				rm -f -- "$_direnv_old"
 			fi
-			;;
-		"# agent-direnv-root:"*)
-			_direnv_recorded=${_direnv_hdr#\# agent-direnv-root:}
-			if [ ! -d "$_direnv_recorded" ]; then
-				rm -f -- "$_direnv_old"
-			fi
-			;;
-		esac
-	done
-	# Flock leftovers: a .lock with no matching dump is not in use.
-	for _direnv_old in "${_direnv_cache_dir}"/*.lock; do
-		[ -f "$_direnv_old" ] || continue
-		_direnv_stem=${_direnv_old%.lock}
-		if [ ! -f "${_direnv_stem}.bash" ]; then
-			rm -f -- "$_direnv_old"
-		fi
-	done
+		done
 	unset _direnv_old _direnv_hdr _direnv_recorded _direnv_stem
 }
 

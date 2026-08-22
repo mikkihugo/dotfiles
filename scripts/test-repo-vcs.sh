@@ -77,6 +77,7 @@ fi
 "$root/bin/repo" help | grep -q 'repo vcs rebase'
 "$root/bin/repo" help | grep -q 'repo vcs sync-main'
 "$root/bin/repo" help | grep -q 'repo vcs worktree-abandon'
+"$root/bin/repo" help | grep -q 'repo vcs branch-retire'
 # Leftover lanes used chore/* branches and prunable missing checkouts. Abandon
 # must resolve the live worktree HEAD and prune a vanished path.
 grep -q 'symbolic-ref --quiet --short HEAD' "$root/scripts/repo-vcs.sh" || {
@@ -95,6 +96,170 @@ if "$root/scripts/repo-vcs.sh" worktree-abandon ast-grep-sg wrong-confirmation >
 	printf 'worktree-abandon unexpectedly accepted an invalid confirmation\n' >&2
 	exit 1
 fi
+if "$root/scripts/repo-vcs.sh" branch-retire main >/dev/null 2>&1; then
+	printf 'branch-retire unexpectedly accepted main\n' >&2
+	exit 1
+fi
+if "$root/scripts/repo-vcs.sh" branch-retire leftover-unnamespaced >/dev/null 2>&1; then
+	printf 'branch-retire unexpectedly accepted an unnamespaced ref\n' >&2
+	exit 1
+fi
+
+retire_log="$tmp/branch-retire.log"
+mkdir -p "$tmp/retire"
+cat >"$tmp/retire/git" <<'RETIRE_GIT'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$RETIRE_LOG"
+if [[ "$*" == *'show-ref --verify --quiet refs/heads/chore/retire-infra-centralcloud-com'* ]]; then
+	exit 0
+fi
+if [[ "$*" == *'worktree list --porcelain'* ]]; then
+	printf '%s\n' 'worktree /tmp/dotfiles-primary' 'HEAD abc' 'branch refs/heads/main'
+	exit 0
+fi
+if [[ "$*" == *'rev-parse refs/heads/chore/retire-infra-centralcloud-com'* ]]; then
+	printf '%s\n' a9d8d39252d79d92de7445d136785cce527c7446
+	exit 0
+fi
+if [[ "$*" == *'show-ref --verify --quiet refs/remotes/origin/chore/retire-infra-centralcloud-com'* ]]; then
+	exit 0
+fi
+exit 0
+RETIRE_GIT
+chmod 0755 "$tmp/retire/git"
+if ! RETIRE_LOG="$retire_log" SE_GIT_BIN="$tmp/retire/git" "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com >"$tmp/retire-dry.out" 2>"$tmp/retire-dry.err"; then
+	printf 'branch-retire dry-run must succeed for an unused leftover ref\n' >&2
+	cat "$tmp/retire-dry.err" >&2
+	exit 1
+fi
+grep -Fq 'dry-run leftover=chore/retire-infra-centralcloud-com' "$tmp/retire-dry.out"
+grep -Fq 'apply=false' "$tmp/retire-dry.out"
+if grep -Fq 'branch -D' "$retire_log"; then
+	printf 'branch-retire dry-run deleted a leftover ref\n' >&2
+	exit 1
+fi
+if grep -Fq 'push ' "$retire_log"; then
+	printf 'branch-retire dry-run pushed a leftover delete\n' >&2
+	exit 1
+fi
+
+checked_out_log="$tmp/branch-retire-checked-out.log"
+cat >"$tmp/retire/git-checked-out" <<'RETIRE_CHECKED_OUT'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$RETIRE_CHECKED_OUT_LOG"
+if [[ "$*" == *'show-ref --verify --quiet refs/heads/chore/retire-infra-centralcloud-com'* ]]; then
+	exit 0
+fi
+if [[ "$*" == *'worktree list --porcelain'* ]]; then
+	printf '%s\n' 'worktree /tmp/dotfiles-leftover' 'HEAD abc' 'branch refs/heads/chore/retire-infra-centralcloud-com'
+	exit 0
+fi
+exit 0
+RETIRE_CHECKED_OUT
+chmod 0755 "$tmp/retire/git-checked-out"
+if RETIRE_CHECKED_OUT_LOG="$checked_out_log" SE_GIT_BIN="$tmp/retire/git-checked-out" "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com --apply >"$tmp/retire-co.out" 2>"$tmp/retire-co.err"; then
+	printf 'branch-retire must refuse a leftover ref checked out in a worktree\n' >&2
+	exit 1
+fi
+if grep -Fq 'branch -D' "$checked_out_log"; then
+	printf 'branch-retire deleted a leftover ref that is checked out\n' >&2
+	exit 1
+fi
+
+apply_log="$tmp/branch-retire-apply.log"
+cat >"$tmp/retire/git-apply" <<'RETIRE_APPLY'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$RETIRE_APPLY_LOG"
+if [[ "$*" == *'show-ref --verify --quiet refs/heads/chore/retire-infra-centralcloud-com'* ]]; then
+	if grep -Fq -- 'branch -D chore/retire-infra-centralcloud-com' "$RETIRE_APPLY_LOG"; then
+		exit 1
+	fi
+	exit 0
+fi
+if [[ "$*" == *'worktree list --porcelain'* ]]; then
+	printf '%s\n' 'worktree /tmp/dotfiles-primary' 'HEAD abc' 'branch refs/heads/main'
+	exit 0
+fi
+if [[ "$*" == *'rev-parse refs/heads/chore/retire-infra-centralcloud-com'* ]]; then
+	printf '%s\n' a9d8d39252d79d92de7445d136785cce527c7446
+	exit 0
+fi
+if [[ "$*" == *'show-ref --verify --quiet refs/remotes/origin/chore/retire-infra-centralcloud-com'* ]]; then
+	if grep -Fq -- ':refs/heads/chore/retire-infra-centralcloud-com' "$RETIRE_APPLY_LOG"; then
+		exit 1
+	fi
+	exit 0
+fi
+if [[ "$*" == *'fetch --prune '* ]]; then
+	exit 0
+fi
+if [[ "$*" == *'ls-remote '* && "$*" == *'github.com'* && "$*" == *'refs/heads/chore/retire-infra-centralcloud-com'* ]]; then
+	printf '%s\t%s\n' a9d8d39252d79d92de7445d136785cce527c7446 refs/heads/chore/retire-infra-centralcloud-com
+	exit 0
+fi
+if [[ "$*" == *'push '* && "$*" == *':refs/heads/chore/retire-infra-centralcloud-com'* ]]; then
+	exit 0
+fi
+if [[ "$*" == *'branch -D chore/retire-infra-centralcloud-com'* ]]; then
+	exit 0
+fi
+exit 0
+RETIRE_APPLY
+chmod 0755 "$tmp/retire/git-apply"
+if ! RETIRE_APPLY_LOG="$apply_log" SE_GIT_BIN="$tmp/retire/git-apply" "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com --apply >"$tmp/retire-apply.out" 2>"$tmp/retire-apply.err"; then
+	printf 'branch-retire --apply must retire an unused leftover ref\n' >&2
+	cat "$tmp/retire-apply.err" >&2
+	exit 1
+fi
+grep -Fq 'retired leftover=chore/retire-infra-centralcloud-com' "$tmp/retire-apply.out"
+grep -Fq -- 'branch -D chore/retire-infra-centralcloud-com' "$apply_log"
+grep -Fq -- ':refs/heads/chore/retire-infra-centralcloud-com' "$apply_log"
+grep -Fq -- 'fetch --prune' "$apply_log"
+
+remote_only_log="$tmp/branch-retire-remote-only.log"
+cat >"$tmp/retire/git-remote-only" <<'RETIRE_REMOTE_ONLY'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$RETIRE_REMOTE_ONLY_LOG"
+if [[ "$*" == *'show-ref --verify --quiet refs/heads/chore/retire-infra-centralcloud-com'* ]]; then
+	exit 1
+fi
+if [[ "$*" == *'show-ref --verify --quiet refs/remotes/origin/chore/retire-infra-centralcloud-com'* ]]; then
+	if grep -Fq -- ':refs/heads/chore/retire-infra-centralcloud-com' "$RETIRE_REMOTE_ONLY_LOG"; then
+		exit 1
+	fi
+	exit 0
+fi
+if [[ "$*" == *'worktree list --porcelain'* ]]; then
+	printf '%s\n' 'worktree /tmp/dotfiles-primary' 'HEAD abc' 'branch refs/heads/main'
+	exit 0
+fi
+if [[ "$*" == *'rev-parse refs/remotes/origin/chore/retire-infra-centralcloud-com'* ]]; then
+	printf '%s\n' a9d8d39252d79d92de7445d136785cce527c7446
+	exit 0
+fi
+if [[ "$*" == *'fetch --prune '* ]]; then
+	exit 0
+fi
+if [[ "$*" == *'ls-remote '* ]]; then
+	exit 0
+fi
+if [[ "$*" == *'push '* && "$*" == *':refs/heads/chore/retire-infra-centralcloud-com'* ]]; then
+	exit 0
+fi
+exit 0
+RETIRE_REMOTE_ONLY
+chmod 0755 "$tmp/retire/git-remote-only"
+if ! RETIRE_REMOTE_ONLY_LOG="$remote_only_log" SE_GIT_BIN="$tmp/retire/git-remote-only" "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com --apply >"$tmp/retire-remote-only.out" 2>"$tmp/retire-remote-only.err"; then
+	printf 'branch-retire --apply must retire a leftover that exists only on origin\n' >&2
+	cat "$tmp/retire-remote-only.err" >&2
+	exit 1
+fi
+grep -Fq 'retired leftover=chore/retire-infra-centralcloud-com' "$tmp/retire-remote-only.out"
+if grep -Fq 'branch -D' "$remote_only_log"; then
+	printf 'remote-only branch-retire deleted a missing local ref\n' >&2
+	exit 1
+fi
+grep -Fq -- ':refs/heads/chore/retire-infra-centralcloud-com' "$remote_only_log"
 [[ "$(env -u DOTFILES_GIT_PUSH_TIMEOUT "$root/scripts/repo-vcs.sh" config)" == "push_timeout=300" ]]
 [[ "$(DOTFILES_GIT_PUSH_TIMEOUT=17 "$root/scripts/repo-vcs.sh" config)" == "push_timeout=17" ]]
 # Match the literal variable references in the facade implementation.

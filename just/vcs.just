@@ -54,5 +54,8 @@ worktree-drop NAME:
 worktree-abandon NAME CONFIRMATION:
     @{{runner}} worktree-abandon "$1" "$2"
 
+branch-retire *ARGS:
+    @{{runner}} branch-retire "$@"
+
 test:
     @{{runner}} contract-test

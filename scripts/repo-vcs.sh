@@ -58,6 +58,21 @@ fetch_forgejo_pruned() {
 	run_forgejo_https git -C "$1" fetch --prune "$forgejo_https_url" '+refs/heads/*:refs/remotes/origin/*'
 }
 valid_name() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid worktree name: $1"; }
+# Leftover refs are namespaced (chore/*, fix/*, …). The slash keeps main and
+# other checkout-local short names out of this retire surface.
+valid_leftover_ref() {
+	[[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] || die "invalid leftover ref: $1"
+	case "$1" in
+	main | HEAD | origin/main) die 'branch-retire refuses main/HEAD' ;;
+	esac
+}
+leftover_ref_checked_out() {
+	local ref="$1"
+	git -C "$root" worktree list --porcelain | awk -v want="refs/heads/$ref" '
+		$1 == "branch" && $2 == want { found = 1 }
+		END { exit !found }
+	'
+}
 
 command_name="${1:-}"
 shift || true
@@ -252,13 +267,66 @@ worktree-abandon)
 	git -C "$root" branch -D "$(task_branch_for "$name")"
 	printf 'abandoned=%s revision=%s clean=true live_process=false\n' "$name" "$revision"
 	;;
+branch-retire)
+	[[ $# -ge 1 && $# -le 2 ]] || die 'branch-retire requires a leftover ref and optional --apply'
+	ref="$1"
+	apply="${2:-}"
+	valid_leftover_ref "$ref"
+	[[ -z "$apply" || "$apply" == --apply ]] || die 'branch-retire accepts only --apply after the leftover ref'
+	local_present=false
+	if git -C "$root" show-ref --verify --quiet "refs/heads/$ref"; then
+		local_present=true
+	fi
+	remote_tracking=false
+	if git -C "$root" show-ref --verify --quiet "refs/remotes/origin/$ref"; then
+		remote_tracking=true
+	fi
+	[[ "$local_present" == true || "$remote_tracking" == true ]] || die "no leftover ref: $ref"
+	leftover_ref_checked_out "$ref" && die "leftover ref is checked out: $ref"
+	if [[ "$local_present" == true ]]; then
+		revision="$(git -C "$root" rev-parse "refs/heads/$ref")"
+	else
+		revision="$(git -C "$root" rev-parse "refs/remotes/origin/$ref")"
+	fi
+	if [[ "$apply" != --apply ]]; then
+		printf 'dry-run leftover=%s revision=%s local=%s remote_tracking=%s apply=false\n' "$ref" "$revision" "$local_present" "$remote_tracking"
+		exit 0
+	fi
+	# Pruned Forgejo fetch is the live remote proof. A failed ls-remote must
+	# not look like "absent" when origin/ still names the leftover.
+	fetch_forgejo_pruned "$root"
+	forgejo_present=false
+	if git -C "$root" show-ref --verify --quiet "refs/remotes/origin/$ref"; then
+		forgejo_present=true
+	fi
+	github_present=false
+	github_probe="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" "refs/heads/$ref" || true)"
+	if printf '%s\n' "$github_probe" | grep -Fq "refs/heads/$ref"; then
+		github_present=true
+	fi
+	if [[ "$forgejo_present" == true ]]; then
+		run_forgejo_https timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_https_url" ":refs/heads/$ref"
+	fi
+	if [[ "$github_present" == true ]]; then
+		GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" ":refs/heads/$ref"
+	fi
+	if [[ "$local_present" == true ]]; then
+		git -C "$root" branch -D "$ref"
+		git -C "$root" show-ref --verify --quiet "refs/heads/$ref" && die "local leftover ref still present: $ref"
+	fi
+	if [[ "$forgejo_present" == true ]]; then
+		fetch_forgejo_pruned "$root"
+		git -C "$root" show-ref --verify --quiet "refs/remotes/origin/$ref" && die "Forgejo leftover ref still present: $ref"
+	fi
+	printf 'retired leftover=%s revision=%s local=%s forgejo=%s github=%s\n' "$ref" "$revision" "$local_present" "$forgejo_present" "$github_present"
+	;;
 contract-test)
 	[[ $# -eq 0 ]] || die 'contract-test takes no arguments'
 	grep -q "mod vcs 'just/vcs.just'" "$root/justfile"
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
 	grep -Fq "worktree add -b \"worktree/\$name\"" "$root/scripts/repo-vcs.sh"
 	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
-	for recipe in status diff log show worktree-list fetch rebase sync-main describe amend push push-github land worktree-create worktree-drop worktree-abandon test; do
+	for recipe in status diff log show worktree-list fetch rebase sync-main describe amend push push-github land worktree-create worktree-drop worktree-abandon branch-retire test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"
 	done
 	printf 'dotfiles VCS contract: ok\n'
@@ -267,5 +335,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main|describe|amend|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main|describe|amend|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|branch-retire|contract-test|config}' ;;
 esac

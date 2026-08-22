@@ -198,6 +198,17 @@
       }
     },
     {
+      "path": ["vcs", "branch-retire"],
+      "description": "Retire an unused leftover namespaced ref; dry-run unless --apply",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": ["branch-retire"],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
       "path": ["vcs", "test"],
       "description": "Verify the repository VCS facade contract",
       "class": "vcs",

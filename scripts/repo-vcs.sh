@@ -66,13 +66,21 @@ shift || true
 # using this facade was forced onto a codex/* branch whichever agent it was.
 task_branch_for() {
 	local name="$1"
+	local path="$HOME/.dotfiles-worktrees/$name"
+	local live_branch=""
 	if git -C "$root" show-ref --verify --quiet "refs/heads/worktree/$name"; then
 		printf 'worktree/%s' "$name"
-	elif git -C "$root" show-ref --verify --quiet "refs/heads/codex/$name"; then
-		printf 'codex/%s' "$name"
-	else
-		die "no task branch for worktree: $name (looked for worktree/$name and codex/$name)"
+		return
 	fi
+	if git -C "$root" show-ref --verify --quiet "refs/heads/codex/$name"; then
+		printf 'codex/%s' "$name"
+		return
+	fi
+	if [[ -d "$path" ]]; then
+		live_branch="$(git -C "$path" symbolic-ref --quiet --short HEAD || true)"
+	fi
+	[[ -n "$live_branch" ]] || die "no task branch for worktree: $name (looked for worktree/$name, codex/$name, and $path HEAD)"
+	printf '%s' "$live_branch"
 }
 
 case "$command_name" in
@@ -223,8 +231,15 @@ worktree-abandon)
 	valid_name "$name"
 	[[ "$confirmation" == discard-unintegrated ]] || die 'worktree-abandon requires exact discard-unintegrated confirmation'
 	path="$HOME/.dotfiles-worktrees/$name"
-	[[ "$(realpath "$root")" != "$(realpath "$path")" ]] || die 'cannot abandon current worktree'
+	[[ "$(realpath "$root")" != "$(realpath -m "$path")" ]] || die 'cannot abandon current worktree'
 	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'worktree is not registered'
+	if [[ ! -e "$path" ]]; then
+		git -C "$root" worktree prune
+		revision="$(git -C "$root" rev-parse "$(task_branch_for "$name")")"
+		git -C "$root" branch -D "$(task_branch_for "$name")"
+		printf 'abandoned=%s revision=%s clean=true live_process=false missing_path=true\n' "$name" "$revision"
+		exit 0
+	fi
 	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'worktree is dirty'
 	for process_cwd in /proc/[0-9]*/cwd; do
 		resolved_cwd="$(readlink "$process_cwd" 2>/dev/null || true)"

@@ -77,6 +77,16 @@ fi
 "$root/bin/repo" help | grep -q 'repo vcs rebase'
 "$root/bin/repo" help | grep -q 'repo vcs sync-main'
 "$root/bin/repo" help | grep -q 'repo vcs worktree-abandon'
+# Leftover lanes used chore/* branches and prunable missing checkouts. Abandon
+# must resolve the live worktree HEAD and prune a vanished path.
+grep -q 'symbolic-ref --quiet --short HEAD' "$root/scripts/repo-vcs.sh" || {
+	printf 'task_branch_for must resolve a registered worktree HEAD when worktree/ and codex/ refs are absent\n' >&2
+	exit 1
+}
+grep -q 'worktree prune' "$root/scripts/repo-vcs.sh" || {
+	printf 'worktree-abandon must prune a registered missing checkout\n' >&2
+	exit 1
+}
 if "$root/scripts/repo-vcs.sh" rebase >/dev/null 2>&1; then
 	printf 'rebase unexpectedly accepted a missing revision\n' >&2
 	exit 1

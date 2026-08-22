@@ -74,7 +74,7 @@
     ace-coder.url = "git+file:///home/mhugo/code/ace-coder?rev=58b7a904030dfd06e139aafc2222c1ea1331746c";
 
     inference-fabric = {
-      url = "git+ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git?ref=main";
+      url = "git+ssh://git@git.centralcloud.net:2222/singularity/inference-fabric.git?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

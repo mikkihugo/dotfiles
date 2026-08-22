@@ -159,12 +159,12 @@
         "rev": "9c4440895d343a7028237843cf4b5395518c304b",
         "revCount": 1176,
         "type": "git",
-        "url": "ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git"
+        "url": "ssh://git@git.centralcloud.net:2222/singularity/inference-fabric.git"
       },
       "original": {
         "ref": "main",
         "type": "git",
-        "url": "ssh://git@git.infra.centralcloud.com:2222/singularity/inference-fabric.git"
+        "url": "ssh://git@git.centralcloud.net:2222/singularity/inference-fabric.git"
       }
     },
     "lefthook": {

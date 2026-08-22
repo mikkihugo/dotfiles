@@ -13,7 +13,7 @@
     text = ''
       set -uo pipefail
       TOKEN=$(cat "$HOME/.config/forgejo/token" 2>/dev/null) || exit 0
-      API=https://git.infra.centralcloud.com/api/v1/repos/centralcloud/infra
+      API=https://git.centralcloud.net/api/v1/repos/centralcloud/infra
       LOG="$HOME/.local/state/forgejo-pr-autofix.log"
       mkdir -p "$HOME/.local/state"
       log() { echo "$(date -u +%FT%TZ) $*" >> "$LOG"; }

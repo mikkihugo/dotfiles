@@ -161,19 +161,9 @@ Host mikki-laptop
     User mhugo
     IdentityFile ~/.ssh/id_ed25519
 
-Host git.infra.centralcloud.com
-    HostName git.infra.centralcloud.com
-    Port 2222
-    User git
-    IdentityFile ~/.ssh/personal_admin_id_ed25519
-    IdentitiesOnly yes
-
-# git.centralcloud.net is the same Forgejo backend as git.infra.centralcloud.com
-# (confirmed: both resolve to the same repo state), on the FQDN the
-# chore/retire-infra-centralcloud-com migration is moving to. Kept as a
-# separate Host block, not merged with the one above, so retiring the old
-# name later doesn't also need to touch this one.
-Host git.centralcloud.net
+# git.infra.centralcloud.com is retired. Keep the Host alias so leftover
+# remotes still reach Forgejo; the destination is git.centralcloud.net.
+Host git.infra.centralcloud.com git.centralcloud.net
     HostName git.centralcloud.net
     Port 2222
     User git

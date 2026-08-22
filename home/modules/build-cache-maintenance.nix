@@ -5,8 +5,7 @@
 }: {
   # Fleet hosts run system sccache.service (nix-cache.nix): one daemon, one L0
   # disk cache (/var/cache/sccache), one FlakeCache /host bucket. Point every
-  # client at the system socket so jcode, engine, and other repos share hits for
-  # the same dependency + rustc version.
+  # client at the system socket so jcode, engine, and CI runner jobs share hits.
   home.sessionVariables = {
     SCCACHE_DIR = lib.mkForce "/var/cache/sccache";
     SCCACHE_SERVER_UDS = lib.mkForce "/run/sccache/server.sock";
@@ -23,7 +22,6 @@
       };
       Service = {
         Type = "oneshot";
-        # Keep only the 5 most recent home-manager generations, then GC
         ExecStartPre = pkgs.writeShellScript "hm-prune-generations" ''
           set -euo pipefail
           ${pkgs.home-manager}/bin/home-manager generations \
@@ -47,4 +45,14 @@
       Install.WantedBy = ["timers.target"];
     };
   };
+
+  home.activation.retireLegacyUserSccache = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    if systemctl --user is-active --quiet sccache.service 2>/dev/null; then
+      systemctl --user stop sccache.service >/dev/null 2>&1 || true
+      systemctl --user disable sccache.service >/dev/null 2>&1 || true
+    fi
+    if [ -d "$HOME/.cache/sccache" ]; then
+      rm -rf "$HOME/.cache/sccache"
+    fi
+  '';
 }

@@ -63,7 +63,8 @@ main() {
 			scripts/test-swarm-messages.mjs \
 			scripts/test-swarm-hook-config.mjs \
 			scripts/test-nix-tooling.mjs \
-			scripts/test-retired-infra-hosts.mjs
+			scripts/test-retired-infra-hosts.mjs \
+			scripts/test-ssh-sto-core.mjs
 	)
 	if ! nix_gate_needs_build; then
 		printf 'skipped home-manager build gate (no nix-relevant changes vs origin/main)\n'

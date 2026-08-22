@@ -80,6 +80,14 @@ Host tl.centralcloud.net tl.hugo.dk cc-se-sto-devbox-01 cc-se-sto-devbox-01.cent
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
+# Stockholm core node (not the sto-devbox). Keep short + FQDN aliases; do not
+# fold this into a FQDN-only rewrite that would drop working short names.
+Host cc-se-sto-core-01 cc-se-sto-core-01.centralcloud.com
+    HostName 207.2.123.59
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
 Host nue3 nue03 cc-de-nue-k3s-02 cc-de-nue-k3s-02.centralcloud.com cc-de-nue-k3s-03
     HostName 159.195.138.16
     User root

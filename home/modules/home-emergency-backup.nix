@@ -55,12 +55,47 @@
       "${homeDir}/**/coverage"
       "${homeDir}/**/result"
       "${homeDir}/**/result-*"
+      "${homeDir}/**/.git"
       "${homeDir}/.antigravity-ide-server/data/logs"
+      "${homeDir}/vendors"
+      "${homeDir}/Downloads"
+      "${homeDir}/.local/share/containers"
+      "${homeDir}/.local/share/jcode"
+      "${homeDir}/.jcode"
+      "${homeDir}/.local/share/Steam"
+      "${homeDir}/.local/share/lutris"
+      "${homeDir}/.config/*/Cache"
+      "${homeDir}/.config/*/CachedData"
+      "${homeDir}/.config/*/blob_storage"
+      "${homeDir}/.mozilla/firefox/*/cache2"
+      "${homeDir}/.local/share/zed"
+      "${homeDir}/.local/share/nvim/swap"
+      "${homeDir}/.local/share/nvim/backup"
+      "${homeDir}/.local/share/nvim/view"
+      "${homeDir}/.local/share/recently-used.xbel"
+      "${homeDir}/.local/share/mc"
+      "${homeDir}/.local/share/nano"
+      "${homeDir}/.local/share/wget-hsts"
+      "${homeDir}/.bash_history"
+      "${homeDir}/.zsh_history"
+      "${homeDir}/.python_history"
+      "${homeDir}/.lesshst"
+      "${homeDir}/.viminfo"
+      "${homeDir}/.wget-hsts"
+      "${homeDir}/.codex"
+      "${homeDir}/.cursor"
+      "${homeDir}/.claude"
+      "${homeDir}/.vscode-server"
+      "${homeDir}/.gemini"
+      "${homeDir}/.kimi-code"
+      "${homeDir}/.copilot"
+      "${homeDir}/.qoder"
+      "${homeDir}/store2-nixos-image"
     ];
     exclude_if_present = [".nobackup"];
     bootstrap.store_config_files = false;
     ssh_command = sshCommand;
-    compression = "none";
+    compression = "lz4";
     extra_borg_options.create = "--upload-buffer 1024 --upload-ratelimit 0";
     borg_exit_codes = [
       {
@@ -68,7 +103,6 @@
         treat_as = "warning";
       }
     ];
-    keep_hourly = 24;
     keep_daily = 7;
     keep_weekly = 4;
     keep_monthly = 12;
@@ -86,12 +120,12 @@
   targets = {
     hel1 = {
       description = "HEL1";
-      onBootSec = "5min";
+      schedule = "*-*-* 00:00:00";
       path = "ssh://u579183-sub5@u579183-sub5.your-storagebox.de:23/./borg/${backupHost}";
     };
     fsn1 = {
       description = "FSN1";
-      onBootSec = "35min";
+      schedule = "*-*-* 12:00:00";
       path = "ssh://u602823-sub5@u602823-sub5.your-storagebox.de:23/./borg/${backupHost}";
     };
   };
@@ -179,10 +213,10 @@ in {
 
   systemd.user.timers = lib.mapAttrs' (name: target:
     lib.nameValuePair "home-emergency-backup-${name}" {
-      Unit.Description = "Hourly /home/mhugo emergency backup to ${name}";
+      Unit.Description = "Daily /home/mhugo emergency backup to ${name} (${target.schedule} with 30min jitter)";
       Timer = {
-        OnBootSec = target.onBootSec;
-        OnUnitActiveSec = "1h";
+        OnCalendar = target.schedule;
+        RandomizedDelaySec = "30min";
         Persistent = true;
         Unit = "home-emergency-backup-${name}.service";
       };

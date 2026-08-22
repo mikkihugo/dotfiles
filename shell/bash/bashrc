@@ -226,22 +226,19 @@ _load_sops_secrets() {
 	val=$(_sops_val llm_gateway bearer_key)
 	[ -n "$val" ] && export LLM_GATEWAY_BEARER_KEY="$val"
 
-	# FlakeCache WebDAV action token (sccache remote backend). Same host as the
-	# Nix substituter in config/nix/local-build.nix.conf — one fleet cache URL.
-	# Endpoint + multilevel chain only when the token loaded; otherwise clear
-	# inherited Home Manager / parent-shell WebDAV state so sccache can start
-	# on local disk instead of 401ing `.sccache_check`.
+	# FlakeCache WebDAV token for system sccache.service (nix-cache.nix).
+	# WebDAV endpoint and multilevel chain live on the supervised daemon at
+	# /host — do not override SCCACHE_WEBDAV_ENDPOINT in shells; per-project
+	# buckets split cache hits across repos on the same box.
 	val=$(_sops_val flakecache sccache_action_token)
 	if [ -n "$val" ]; then
 		export SCCACHE_WEBDAV_TOKEN="$val"
-		export SCCACHE_WEBDAV_ENDPOINT="https://cache.flakecache.com/default/sccache/project/singularity-engine"
-		export SCCACHE_MULTILEVEL_CHAIN="disk,webdav"
-		export SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY="l0"
 	else
-		unset SCCACHE_WEBDAV_TOKEN SCCACHE_WEBDAV_ENDPOINT
-		unset SCCACHE_WEBDAV_USERNAME SCCACHE_WEBDAV_PASSWORD
-		unset SCCACHE_MULTILEVEL_CHAIN SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY
+		unset SCCACHE_WEBDAV_TOKEN
 	fi
+	unset SCCACHE_WEBDAV_USERNAME SCCACHE_WEBDAV_PASSWORD
+	unset SCCACHE_MULTILEVEL_CHAIN SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY
+	unset SCCACHE_WEBDAV_ENDPOINT
 
 	unset -f _sops_val _sops_sf_val
 }

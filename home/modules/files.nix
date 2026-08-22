@@ -12,12 +12,12 @@
 
     ".config/bat/config".source = ../../config/bat/config;
 
-    # Cargo: use sccache for all Rust builds launched by this user.
+    # Cargo: fleet rustc-sccache-shim (degrades when sccache is down).
     ".cargo/config.toml" = {
       force = true;
       text = ''
         [build]
-        rustc-wrapper = "sccache"
+        rustc-wrapper = "rustc-sccache-shim"
       '';
     };
 

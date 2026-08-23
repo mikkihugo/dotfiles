@@ -3,6 +3,10 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 profile="${HOME_MANAGER_PROFILE:-cc-se-sto-devbox-01}"
+lock_root="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+mkdir -p "$lock_root"
+exec 9>"${lock_root}/dotfiles-ast-grep-shim-${profile}.lock"
+flock 9
 activation_path="$(
 	nix build --no-link --print-out-paths \
 		"path:${repo_root}#homeConfigurations.${profile}.activationPackage"

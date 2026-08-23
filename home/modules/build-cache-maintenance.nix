@@ -15,8 +15,17 @@
       systemctl --user stop sccache.service >/dev/null 2>&1 || true
       systemctl --user disable sccache.service >/dev/null 2>&1 || true
     fi
-    if [ -d "$HOME/.cache/sccache" ]; then
-      rm -rf "$HOME/.cache/sccache"
-    fi
+    # Deliberately NOT removing $HOME/.cache/sccache. It looked like a leftover
+    # of the retired user unit, but it is live: 800M+ with a server.sock that
+    # multiple running sccache daemons are listening on. home.sessionVariables
+    # only reaches login shells and the systemd user environment, so anything
+    # started without it -- agent `bash -lc` jobs, non-login ssh, containers --
+    # falls back to sccache's default SCCACHE_DIR and daemonises there. An
+    # unguarded rm -rf here therefore deleted a live cache out from under
+    # running compilers on every activation, and it simply regrew.
+    #
+    # The real fix is to make SCCACHE_SERVER_UDS reach non-login environments so
+    # those processes join the shared daemon instead of starting their own.
+    # Until then, leaving the directory alone is strictly safer than wiping it.
   '';
 }

@@ -171,6 +171,7 @@
       {
         path = "${lib.removeSuffix "/${backupHost}" target.path}/hot-source/${backupHost}";
         label = "hot-source-${name}";
+        make_parent_directories = true;
       }
     ];
     archive_name_format = "${backupHost}-hot-source-${name}-{now:%Y-%m-%dT%H:%M:%SZ}";
@@ -189,7 +190,15 @@
   hotSourceRunner = name:
     pkgs.writeShellScript "borgmatic-hot-source-${name}" ''
       set -euo pipefail
-      exec ${pkgs.util-linux}/bin/flock -n -E 75 "$XDG_RUNTIME_DIR/borgmatic-hot-source.lock" ${pkgs.borgmatic}/bin/borgmatic --config ${hotConfigPath name} create --verbosity 1
+      lock="$XDG_RUNTIME_DIR/borgmatic-hot-source.lock"
+      exec ${pkgs.util-linux}/bin/flock -n -E 75 "$lock" ${pkgs.bash}/bin/bash -c '
+        set -euo pipefail
+        config="$1"
+        borgmatic="$2"
+        "$borgmatic" --config "$config" repo-info --verbosity -1 >/dev/null 2>&1 ||
+          "$borgmatic" --config "$config" repo-create --encryption none --verbosity 1
+        exec "$borgmatic" --config "$config" create prune compact --verbosity 1
+      ' _ ${hotConfigPath name} ${pkgs.borgmatic}/bin/borgmatic
     '';
   restoreKeyPackage = pkgs.writeShellScriptBin "storagebox-backup-key-restore" ''
     set -euo pipefail

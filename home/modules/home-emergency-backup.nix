@@ -141,6 +141,56 @@
       archive_name_format = "${backupHost}-${name}-{now:%Y-%m-%dT%H:%M:%SZ}";
     };
   configPath = name: "${homeDir}/.config/borgmatic.d/home-emergency-${name}.yaml";
+  hotSourceDirectories = [
+    "${homeDir}/.dotfiles"
+    "${homeDir}/.dotfiles-worktrees"
+    "${homeDir}/code"
+    "${homeDir}/workspaces"
+    "${homeDir}/backups"
+    "/srv/infra"
+  ];
+  hotSourceExcludes = [
+    "**/.cache"
+    "**/.direnv"
+    "**/node_modules"
+    "**/target"
+    "**/dist"
+    "**/build"
+    "**/.venv"
+    "**/__pycache__"
+    "**/.pytest_cache"
+    "**/.mypy_cache"
+    "**/.ruff_cache"
+    "**/.terraform"
+    "**/result"
+    "**/result-*"
+  ];
+  hotSourceConfig = name: target: {
+    source_directories = hotSourceDirectories;
+    repositories = [
+      {
+        path = "${lib.removeSuffix "/${backupHost}" target.path}/hot-source/${backupHost}";
+        label = "hot-source-${name}";
+      }
+    ];
+    archive_name_format = "${backupHost}-hot-source-${name}-{now:%Y-%m-%dT%H:%M:%SZ}";
+    exclude_patterns = hotSourceExcludes;
+    exclude_if_present = [".nobackup"];
+    bootstrap.store_config_files = false;
+    ssh_command = sshCommand;
+    compression = "lz4";
+    extra_borg_options.create = "--upload-buffer 1024 --upload-ratelimit 0";
+    keep_hourly = 96;
+    keep_daily = 14;
+    keep_weekly = 8;
+    keep_monthly = 12;
+  };
+  hotConfigPath = name: "${homeDir}/.config/borgmatic.d/hot-source-${name}.yaml";
+  hotSourceRunner = name:
+    pkgs.writeShellScript "borgmatic-hot-source-${name}" ''
+      set -euo pipefail
+      exec ${pkgs.util-linux}/bin/flock -n -E 75 "$XDG_RUNTIME_DIR/borgmatic-hot-source.lock" ${pkgs.borgmatic}/bin/borgmatic --config ${hotConfigPath name} create --verbosity 1
+    '';
   restoreKeyPackage = pkgs.writeShellScriptBin "storagebox-backup-key-restore" ''
     set -euo pipefail
 
@@ -187,51 +237,108 @@
       exit "$status"
     }
   '';
-in {
-  home.packages = [
-    pkgs.borgbackup
-    pkgs.borgmatic
-    pkgs.openssh
-    restoreKeyPackage
-  ];
+in
+  lib.mkMerge [
+    {
+      home.packages = [
+        pkgs.borgbackup
+        pkgs.borgmatic
+        pkgs.openssh
+        restoreKeyPackage
+      ];
 
-  xdg.configFile = lib.mapAttrs' (name: target:
-    lib.nameValuePair "borgmatic.d/home-emergency-${name}.yaml" {
-      text = builtins.toJSON (borgmaticConfig name target);
-    })
-  targets;
+      xdg.configFile = lib.mapAttrs' (name: target:
+        lib.nameValuePair "borgmatic.d/home-emergency-${name}.yaml" {
+          text = builtins.toJSON (borgmaticConfig name target);
+        })
+      targets;
 
-  systemd.user.services = lib.mapAttrs' (name: target:
-    lib.nameValuePair "home-emergency-backup-${name}" {
-      Unit = {
-        Description = "Back up /home/mhugo to Hetzner Storage Box sub5 ${target.description}";
-        After = ["network-online.target"];
-        Wants = ["network-online.target"];
-        # A Home Manager generation switch must not launch or wait for a
-        # full-home backup. The timer remains the sole start authority.
-        X-SwitchMethod = "keep-old";
-      };
-      Service = {
-        Type = "oneshot";
-        ExecStart = "${serializedBackupScript name}";
-        Environment = [
-          "HOME=${homeDir}"
-          "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
-        ];
-      };
-    })
-  targets;
+      systemd.user.services = lib.mapAttrs' (name: target:
+        lib.nameValuePair "home-emergency-backup-${name}" {
+          Unit = {
+            Description = "Back up /home/mhugo to Hetzner Storage Box sub5 ${target.description}";
+            After = ["network-online.target"];
+            Wants = ["network-online.target"];
+            # A Home Manager generation switch must not launch or wait for a
+            # full-home backup. The timer remains the sole start authority.
+            X-SwitchMethod = "keep-old";
+          };
+          Service = {
+            Type = "oneshot";
+            ExecStart = "${serializedBackupScript name}";
+            Environment = [
+              "HOME=${homeDir}"
+              "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
+            ];
+          };
+        })
+      targets;
 
-  systemd.user.timers = lib.mapAttrs' (name: target:
-    lib.nameValuePair "home-emergency-backup-${name}" {
-      Unit.Description = "Daily /home/mhugo emergency backup to ${name} (${target.schedule} with 30min jitter)";
-      Timer = {
-        OnCalendar = target.schedule;
-        RandomizedDelaySec = "30min";
-        Persistent = true;
-        Unit = "home-emergency-backup-${name}.service";
+      systemd.user.timers = lib.mapAttrs' (name: target:
+        lib.nameValuePair "home-emergency-backup-${name}" {
+          Unit.Description = "Daily /home/mhugo emergency backup to ${name} (${target.schedule} with 30min jitter)";
+          Timer = {
+            OnCalendar = target.schedule;
+            RandomizedDelaySec = "30min";
+            Persistent = true;
+            Unit = "home-emergency-backup-${name}.service";
+          };
+          Install.WantedBy = ["timers.target"];
+        })
+      targets;
+    }
+    (lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
+      xdg.configFile = lib.mapAttrs' (name: target:
+        lib.nameValuePair "borgmatic.d/hot-source-${name}.yaml" {
+          text = builtins.toJSON (hotSourceConfig name target);
+        })
+      targets;
+
+      systemd.user.services = lib.mapAttrs' (name: target:
+        lib.nameValuePair "hot-source-${name}" {
+          Unit = {
+            Description = "Back up hot source trees to Hetzner Storage Box ${target.description}";
+            After = ["network-online.target"];
+            Wants = ["network-online.target"];
+            X-SwitchMethod = "keep-old";
+          };
+          Service = {
+            Type = "oneshot";
+            ExecStartPre = "${restoreKeyPackage}/bin/storagebox-backup-key-restore";
+            ExecStart = "${hotSourceRunner name}";
+            SuccessExitStatus = [75];
+            RuntimeMaxSec = "25min";
+            Nice = 19;
+            IOSchedulingClass = "idle";
+            CPUWeight = 10;
+            IOWeight = 10;
+            Environment = [
+              "HOME=${homeDir}"
+              "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
+            ];
+          };
+        })
+      targets;
+
+      systemd.user.timers = {
+        hot-source-hel1 = {
+          Unit.Description = "Hot-source backup to HEL1 every 30 minutes";
+          Timer = {
+            OnCalendar = "*-*-* *:00/30:00";
+            RandomizedDelaySec = "2min";
+            Persistent = true;
+            Unit = "hot-source-hel1.service";
+          };
+        };
+        hot-source-fsn1 = {
+          Unit.Description = "Hot-source backup to FSN1 every 30 minutes, staggered by 15 minutes";
+          Timer = {
+            OnCalendar = "*-*-* *:15/30:00";
+            RandomizedDelaySec = "2min";
+            Persistent = true;
+            Unit = "hot-source-fsn1.service";
+          };
+        };
       };
-      Install.WantedBy = ["timers.target"];
     })
-  targets;
-}
+  ]

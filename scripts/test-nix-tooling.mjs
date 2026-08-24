@@ -88,6 +88,41 @@ test("mutable home sweeps serialize and report bounded lock failures", async () 
   assert.match(gitBackup, /TimeoutStartSec\s*=\s*"7h"/);
 });
 
+test("borgmatic hot-source backup replaces mutating git snapshots safely", async () => {
+  const backup = await source("home/modules/home-emergency-backup.nix");
+  const home = await source("home/home.nix");
+
+  assert.match(home, /\.\/modules\/home-emergency-backup\.nix/);
+  assert.match(
+    home,
+    /\.\/modules\/git-auto-backup\.nix/,
+    "keep the old timer until a real Borg create-and-restore proof exists",
+  );
+  for (const root of [".dotfiles", ".dotfiles-worktrees", "code", "workspaces", "backups"]) {
+    assert.match(backup, new RegExp(`\\$\\{homeDir\\}\\/${root.replaceAll(".", "\\.")}`));
+  }
+  assert.match(backup, /"\/srv\/infra"/);
+  assert.match(backup, /hot-source-hel1/);
+  assert.match(backup, /hot-source-fsn1/);
+  assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* \*:00\/30:00"/);
+  assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* \*:15\/30:00"/);
+  assert.match(backup, /RandomizedDelaySec\s*=\s*"2min"/);
+  assert.match(backup, /RuntimeMaxSec\s*=\s*"25min"/);
+  assert.match(backup, /Nice\s*=\s*19/);
+  assert.match(backup, /IOSchedulingClass\s*=\s*"idle"/);
+  assert.match(backup, /flock[^\n]*hot-source\.lock/);
+  assert.match(backup, /borgmatic[^\n]*create/);
+  assert.doesNotMatch(
+    backup,
+    /hot-source-(?:hel1|fsn1)[\s\S]*?Install\.WantedBy\s*=\s*\["timers\.target"\]/,
+    "hot-source timers must remain staged until restore proof",
+  );
+  assert.doesNotMatch(backup, /GIT_INDEX_FILE|git\s+add|update-ref|refs\/backup/);
+  for (const excluded of ["**/target", "**/node_modules", "**/.direnv", "**/.cache"]) {
+    assert.match(backup, new RegExp(excluded.replaceAll("*", "\\*").replaceAll("/", "\\/")));
+  }
+});
+
 test("git auto-backup yields host resources and waits after completion", async () => {
   const backup = await source("home/modules/git-auto-backup.nix");
   const backupService = backup.slice(

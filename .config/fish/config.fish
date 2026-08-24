@@ -8,7 +8,7 @@
 set -x PATH /usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin $HOME/.local/bin $HOME/bin
 set -x PATH $HOME/.npm-global/bin $PATH
 set -x PATH $HOME/.scripts $PATH
-set -x PATH $HOME/.cargo/bin $PATH
+
 
 # Basic environment
 set -x EDITOR (command -v nano)

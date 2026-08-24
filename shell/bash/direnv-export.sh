@@ -28,12 +28,20 @@
 # This runs before every early return below, including DIRENV_DISABLE and the
 # interactive and skip paths, because a poisoned value is inherited by children
 # and has to be cleared wherever it is seen.
-if [ "${#DIRENV_DIFF}" -gt 65536 ]; then
+# Read through a defaulted temporary: ${#VAR} on an unset VAR aborts a shell
+# running under `set -u`, and ${#VAR:-} is not valid bash. Callers include
+# non-interactive shells spawned per just recipe line, so aborting here failed
+# every gated push with "DIRENV_DIFF: unbound variable" while the checks
+# themselves passed.
+_direnv_diff_snapshot="${DIRENV_DIFF:-}"
+if [ "${#_direnv_diff_snapshot}" -gt 65536 ]; then
 	unset DIRENV_DIFF
 fi
-if [ "${#DIRENV_WATCHES}" -gt 65536 ]; then
+_direnv_watches_snapshot="${DIRENV_WATCHES:-}"
+if [ "${#_direnv_watches_snapshot}" -gt 65536 ]; then
 	unset DIRENV_WATCHES
 fi
+unset _direnv_diff_snapshot _direnv_watches_snapshot
 
 if [ -n "${DIRENV_DISABLE:-}" ] || [ "${-#*i}" != "$-" ]; then
 	return 0
@@ -157,12 +165,14 @@ _direnv_eval_hit() {
 	# source so a stale one-line dump cannot re-poison ARG_MAX. The 64KiB
 	# guard at the top of this file remains for inherited skip paths.
 	unset DIRENV_DIFF DIRENV_WATCHES
-	if [ "${#DIRENV_DIFF}" -gt 65536 ]; then
-		unset DIRENV_DIFF
-	fi
-	if [ "${#DIRENV_WATCHES}" -gt 65536 ]; then
-		unset DIRENV_WATCHES
-	fi
+	# The two size guards that used to sit here measured ${#DIRENV_DIFF} and
+	# ${#DIRENV_WATCHES} on the line after that unconditional unset, so their
+	# length could never exceed the threshold and the unsets they guarded could
+	# never run. Dead either way -- but under `set -u` measuring an unset
+	# variable aborts the shell, so on this path the dead code was the only
+	# thing the guards reliably did. The 64KiB guard at the top of this file
+	# still covers inherited skip paths, which is where a poisoned value can
+	# actually arrive.
 	return 0
 }
 

@@ -25,3 +25,7 @@ ue = "ue"
 # "ba" is a hex hash fragment appearing in Purpose Tool instruction block
 # hashes in config/codex/AGENTS.md, not a misspelling of "by"/"be".
 ba = "ba"
+
+# "pn" is a shell alias for `pnpm` (alongside `nd`/`nb`/`ns`), not a
+# misspelling of "on". Defined in .config/fish/config.fish.
+pn = "pn"

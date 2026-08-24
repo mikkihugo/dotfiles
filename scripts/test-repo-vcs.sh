@@ -75,6 +75,14 @@ fi
 "$root/scripts/repo-vcs.sh" contract-test
 "$root/bin/repo" help | grep -q 'repo vcs land'
 "$root/bin/repo" help | grep -q 'repo vcs rebase'
+grep -q 'rebase --continue requires at least one resolved path' "$root/scripts/repo-vcs.sh" || {
+	printf 'rebase continuation must require explicit resolved paths\n' >&2
+	exit 1
+}
+grep -q 'conflict markers remain in' "$root/scripts/repo-vcs.sh" || {
+	printf 'rebase continuation must reject unresolved conflict markers\n' >&2
+	exit 1
+}
 "$root/bin/repo" help | grep -q 'repo vcs sync-main'
 "$root/bin/repo" help | grep -q 'repo vcs worktree-abandon'
 "$root/bin/repo" help | grep -q 'repo vcs branch-retire'

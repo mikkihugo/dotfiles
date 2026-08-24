@@ -349,6 +349,17 @@ in {
       '';
     };
 
+    fish = {
+      enable = true;
+    };
+
+    direnv-instant = {
+      enable = true;
+      enableBashIntegration = true;
+      enableZshIntegration = true;
+      enableFishIntegration = true;
+    };
+
     # direnv: auto-load nix devShell when cd-ing into a project.
     # nix-direnv caches the nix eval so `cd` is instant after the first load.
     # Pin 3.2.0 (nix-direnv#753): log with `>&2` instead of `>/dev/stderr`.

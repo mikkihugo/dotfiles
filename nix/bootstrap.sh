@@ -19,47 +19,47 @@ NC='\033[0m' # No Color
 
 # Function to print colored output
 print_status() {
-    echo -e "${GREEN}✅${NC} $1"
+	echo -e "${GREEN}✅${NC} $1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️${NC} $1"
+	echo -e "${YELLOW}⚠️${NC} $1"
 }
 
 print_error() {
-    echo -e "${RED}❌${NC} $1"
+	echo -e "${RED}❌${NC} $1"
 }
 
 print_info() {
-    echo -e "${BLUE}ℹ️${NC} $1"
+	echo -e "${BLUE}ℹ️${NC} $1"
 }
 
 # Check if running as root
 if [ "$EUID" -eq 0 ]; then
-    print_error "Please don't run this script as root"
-    exit 1
+	print_error "Please don't run this script as root"
+	exit 1
 fi
 
 # Detect OS
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    OS="linux"
+	OS="linux"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    OS="macos"
+	OS="macos"
 else
-    print_error "Unsupported OS: $OSTYPE"
-    exit 1
+	print_error "Unsupported OS: $OSTYPE"
+	exit 1
 fi
 
 print_info "Detected OS: $OS"
 
 # Check if Nix is available
-if command -v nix &> /dev/null; then
-    print_status "Nix is available: $(nix --version)"
+if command -v nix &>/dev/null; then
+	print_status "Nix is available: $(nix --version)"
 else
-    print_error "Nix is not available. Please install Nix first:"
-    print_info "Linux: sh <(curl -L https://nixos.org/nix/install) --no-daemon"
-    print_info "macOS: sh <(curl -L https://nixos.org/nix/install)"
-    exit 1
+	print_error "Nix is not available. Please install Nix first:"
+	print_info "Linux: sh <(curl -L https://nixos.org/nix/install) --no-daemon"
+	print_info "macOS: sh <(curl -L https://nixos.org/nix/install)"
+	exit 1
 fi
 
 # Create necessary directories
@@ -70,12 +70,12 @@ mkdir -p ~/.npm-global/bin
 
 # Clone or update dotfiles
 if [ -d ~/.dotfiles ]; then
-    print_info "Updating existing dotfiles..."
-    cd ~/.dotfiles
-    git pull origin main
+	print_info "Updating existing dotfiles..."
+	cd ~/.dotfiles
+	git pull origin main
 else
-    print_info "Cloning dotfiles repository..."
-    git clone https://github.com/mhugo/.dotfiles.git ~/.dotfiles
+	print_info "Cloning dotfiles repository..."
+	git clone https://github.com/mhugo/.dotfiles.git ~/.dotfiles
 fi
 
 # Set up Nix configuration
@@ -104,57 +104,98 @@ chmod +x ~/.local/bin/nix-daily-update.sh
 
 # Set up cron job for daily updates
 print_info "Setting up automated daily updates..."
-(crontab -l 2>/dev/null; echo "0 9 * * * ~/.local/bin/nix-daily-update.sh >> ~/.local/logs/nix-updates.log 2>&1") | crontab -
+(
+	crontab -l 2>/dev/null
+	echo "0 9 * * * ~/.local/bin/nix-daily-update.sh >> ~/.local/logs/nix-updates.log 2>&1"
+) | crontab -
 
 # Create logs directory
 mkdir -p ~/.local/logs
 
 # Set up shell configuration
 print_info "Setting up shell configuration..."
-SHELL_CONFIG=""
-
-if [ -f ~/.bashrc ]; then
-    SHELL_CONFIG="~/.bashrc"
-elif [ -f ~/.zshrc ]; then
-    SHELL_CONFIG="~/.zshrc"
-elif [ -f ~/.profile ]; then
-    SHELL_CONFIG="~/.profile"
-fi
+case "${SHELL##*/}" in
+zsh)
+	SHELL_KIND="zsh"
+	SHELL_CONFIG="$HOME/.zshrc"
+	# Keep command substitution literal until it is written to the shell rc.
+	# shellcheck disable=SC2016
+	DIRENV_INSTANT_HOOK='eval "$(direnv-instant hook zsh)"'
+	;;
+fish)
+	SHELL_KIND="fish"
+	SHELL_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish"
+	DIRENV_INSTANT_HOOK='direnv-instant hook fish | source'
+	mkdir -p "$(dirname "$SHELL_CONFIG")"
+	;;
+*)
+	SHELL_KIND="bash"
+	SHELL_CONFIG="$HOME/.bashrc"
+	# Keep command substitution literal until it is written to the shell rc.
+	# shellcheck disable=SC2016
+	DIRENV_INSTANT_HOOK='eval "$(direnv-instant hook bash)"'
+	;;
+esac
 
 if [ -n "$SHELL_CONFIG" ]; then
-    # Add Nix to PATH if not already present
-    if ! grep -q "nix-profile" "$SHELL_CONFIG"; then
-        echo "" >> "$SHELL_CONFIG"
-        echo "# Nix package manager" >> "$SHELL_CONFIG"
-        echo 'export PATH="$HOME/.nix-profile/bin:$PATH"' >> "$SHELL_CONFIG"
-    fi
-    
-    # Add local bin to PATH if not already present
-    if ! grep -q "\.local/bin" "$SHELL_CONFIG"; then
-        echo "" >> "$SHELL_CONFIG"
-        echo "# Local binaries" >> "$SHELL_CONFIG"
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_CONFIG"
-    fi
+	# Add Nix to PATH if not already present
+	if ! grep -q "nix-profile" "$SHELL_CONFIG"; then
+		echo "" >>"$SHELL_CONFIG"
+		echo "# Nix package manager" >>"$SHELL_CONFIG"
+		if [ "$SHELL_KIND" = "fish" ]; then
+			# shellcheck disable=SC2016
+			echo 'fish_add_path --prepend "$HOME/.nix-profile/bin"' >>"$SHELL_CONFIG"
+		else
+			# shellcheck disable=SC2016
+			echo 'export PATH="$HOME/.nix-profile/bin:$PATH"' >>"$SHELL_CONFIG"
+		fi
+	fi
+
+	# Add local bin to PATH if not already present
+	if ! grep -q "\.local/bin" "$SHELL_CONFIG"; then
+		echo "" >>"$SHELL_CONFIG"
+		echo "# Local binaries" >>"$SHELL_CONFIG"
+		if [ "$SHELL_KIND" = "fish" ]; then
+			# shellcheck disable=SC2016
+			echo 'fish_add_path --prepend "$HOME/.local/bin"' >>"$SHELL_CONFIG"
+		else
+			# shellcheck disable=SC2016
+			echo 'export PATH="$HOME/.local/bin:$PATH"' >>"$SHELL_CONFIG"
+		fi
+	fi
 fi
 
 # Install direnv
 print_info "Installing direnv..."
-if ! command -v direnv &> /dev/null; then
-    nix profile install nixpkgs#direnv
+if ! command -v direnv &>/dev/null; then
+	nix profile install nixpkgs#direnv
+fi
+if ! command -v direnv-instant &>/dev/null; then
+	nix profile install github:Mic92/direnv-instant/1.3.0
 fi
 
 # Set up direnv hook
 if [ -n "$SHELL_CONFIG" ]; then
-    if ! grep -q "direnv hook" "$SHELL_CONFIG"; then
-        echo "" >> "$SHELL_CONFIG"
-        echo "# Direnv hook" >> "$SHELL_CONFIG"
-        echo 'eval "$(direnv hook bash)"' >> "$SHELL_CONFIG"
-    fi
+	# Replace only the exact classic hooks previously written by this bootstrap.
+	# Preserve permissions by rewriting through the existing file descriptor.
+	if grep -Eq 'direnv hook (bash|zsh)|direnv hook fish' "$SHELL_CONFIG"; then
+		HOOK_TMP="${SHELL_CONFIG}.direnv-instant.$$"
+		awk '!/^[[:space:]]*eval "\$\(direnv hook (bash|zsh)\)"[[:space:]]*$/ && !/^[[:space:]]*direnv hook fish \| source[[:space:]]*$/' "$SHELL_CONFIG" >"$HOOK_TMP"
+		cat "$HOOK_TMP" >"$SHELL_CONFIG"
+		rm -f "$HOOK_TMP"
+	fi
+	if ! grep -q "direnv-instant hook" "$SHELL_CONFIG"; then
+		{
+			echo ""
+			echo "# Async direnv hook"
+			echo "$DIRENV_INSTANT_HOOK"
+		} >>"$SHELL_CONFIG"
+	fi
 fi
 
 # Create Claude wrapper
 print_info "Setting up Claude OAuth wrapper..."
-cat > ~/.local/bin/claude << 'EOF'
+cat >~/.local/bin/claude <<'EOF'
 #!/bin/bash
 # Claude Wrapper Script - Forces OAuth token usage
 

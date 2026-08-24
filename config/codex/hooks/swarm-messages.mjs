@@ -354,6 +354,11 @@ async function acquireLockAtPath(lockPath) {
     if (error?.code !== "ENOENT") return null;
   }
 
+  // This private handshake shell must not inherit the caller's BASH_ENV.
+  // Agent shells use it to enter direnv, which can exceed the 500 ms lock
+  // readiness deadline before this helper executes its first command.
+  const lockHelperEnv = { ...process.env };
+  delete lockHelperEnv.BASH_ENV;
   const child = spawn(
     configuredBinary(FLOCK_BIN, "flock"),
     [
@@ -371,7 +376,7 @@ async function acquireLockAtPath(lockPath) {
       "-c",
       `printf '${STATE_LOCK_READY}\\n'; IFS= read -r _ || true`,
     ],
-    { stdio: ["pipe", "pipe", "ignore"] },
+    { env: lockHelperEnv, stdio: ["pipe", "pipe", "ignore"] },
   );
   let active = false;
   let stdout = "";

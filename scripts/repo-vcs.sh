@@ -112,6 +112,25 @@ fetch)
 	fetch_forgejo_pruned "$root"
 	;;
 rebase)
+	if [[ "${1:-}" == '--continue' ]]; then
+		[[ $# -ge 2 ]] || die 'rebase --continue requires at least one resolved path'
+		rebase_dir="$(git -C "$root" rev-parse --git-path rebase-merge)"
+		[[ -d "$rebase_dir" ]] || die 'no rebase is in progress'
+		shift
+		for resolved_path in "$@"; do
+			case "$resolved_path" in
+			/* | *'..'*) die 'rebase --continue requires repository-relative paths' ;;
+			esac
+			[[ -f "$root/$resolved_path" ]] || die "resolved path is not a file: $resolved_path"
+			if grep -Eq '^(<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|)' "$root/$resolved_path"; then
+				die "conflict markers remain in: $resolved_path"
+			fi
+		done
+		git -C "$root" add -- "$@"
+		[[ -z "$(git -C "$root" diff --name-only --diff-filter=U)" ]] || die 'other unresolved rebase conflicts remain'
+		GIT_EDITOR=true git -C "$root" rebase --continue
+		exit 0
+	fi
 	[[ $# -eq 1 ]] || die 'rebase requires one revision'
 	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be rebased'
 	case "$branch" in

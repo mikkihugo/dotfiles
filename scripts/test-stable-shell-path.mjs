@@ -50,7 +50,8 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
   assert.match(loader, /timeout 15s direnv export bash/);
   assert.match(loader, /flock -w 20/);
   assert.match(loader, /_DIRENV_MAX_PARALLEL=10/);
-  assert.match(loader, /\${#DIRENV_DIFF}" -gt 65536/);
+  assert.match(loader, /_direnv_diff_snapshot="\${DIRENV_DIFF:-}"/);
+  assert.match(loader, /\${#_direnv_diff_snapshot}" -gt 65536/);
   assert.match(loader, /agent-direnv/);
   assert.doesNotMatch(loader, /timeout 90s direnv export/);
   assert.doesNotMatch(loader, /else[\s\S]+direnv export bash/);
@@ -101,6 +102,27 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
   assert.equal(otherRepo.status, 0);
   assert.equal(otherRepo.stdout, "1", "cross-repo shell must load the new environment");
   assert.equal(await readFile(log, "utf8"), "allow .\nexport bash\n");
+});
+
+test("Home Manager uses direnv-instant for interactive shells", async () => {
+  const shellModule = await readFile("home/modules/shell.nix", "utf8");
+  const flake = await readFile("flake.nix", "utf8");
+  const bootstrap = await readFile("nix/bootstrap.sh", "utf8");
+  const swarmHook = await readFile("config/codex/hooks/swarm-messages.mjs", "utf8");
+
+  assert.match(flake, /direnv-instant\.homeModules\.direnv-instant/);
+  assert.match(shellModule, /direnv-instant = \{/);
+  assert.match(shellModule, /enableBashIntegration = true/);
+  assert.match(shellModule, /enableZshIntegration = true/);
+  assert.match(shellModule, /enableFishIntegration = true/);
+  assert.match(bootstrap, /SHELL_CONFIG="\$HOME\/\.bashrc"/);
+  assert.match(bootstrap, /direnv-instant hook zsh/);
+  assert.match(bootstrap, /direnv-instant hook fish \| source/);
+  assert.match(bootstrap, /fish_add_path --prepend "\$HOME\/\.nix-profile\/bin"/);
+  assert.match(bootstrap, /fish_add_path --prepend "\$HOME\/\.local\/bin"/);
+  assert.match(bootstrap, /if ! grep -q "direnv-instant hook"/);
+  assert.doesNotMatch(bootstrap, /grep -Eq "direnv\(-instant\)\? hook"/);
+  assert.match(swarmHook, /delete lockHelperEnv\.BASH_ENV/);
 });
 
 test("Home Manager exports BASH_ENV for login and systemd user sessions", async () => {

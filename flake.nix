@@ -63,6 +63,13 @@
     # store paths numtide built; overriding nixpkgs invalidates all of them.
     llm-agents.url = "github:numtide/llm-agents.nix";
 
+    # Non-blocking interactive direnv hooks. Keep this as an explicit input
+    # until the pinned nixpkgs release exports the package.
+    direnv-instant = {
+      url = "github:Mic92/direnv-instant/1.3.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # ace-coder: pinned clean source for the CUDA worker package and HM module.
     # Use a committed git revision from the local repo, not the live dirty tree,
     # so worker builds remain cacheable and reproducible.
@@ -87,6 +94,7 @@
     flake-utils,
     ace-coder,
     llm-agents,
+    direnv-instant,
     inference-fabric,
     ...
   }: let
@@ -123,7 +131,10 @@
             targetSystem = sys;
             inherit hostname;
           };
-        modules = [./home/home.nix];
+        modules = [
+          direnv-instant.homeModules.direnv-instant
+          ./home/home.nix
+        ];
       };
   in
     {

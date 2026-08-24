@@ -329,6 +329,7 @@ in
             Persistent = true;
             Unit = "hot-source-hel1.service";
           };
+          Install.WantedBy = ["timers.target"];
         };
         hot-source-fsn1 = {
           Unit.Description = "Hot-source backup to FSN1 every 30 minutes, staggered by 15 minutes";
@@ -338,6 +339,7 @@ in
             Persistent = true;
             Unit = "hot-source-fsn1.service";
           };
+          Install.WantedBy = ["timers.target"];
         };
       };
     })

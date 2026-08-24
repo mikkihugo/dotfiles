@@ -42,7 +42,6 @@ in {
       ./modules/shell.nix
       ./modules/git.nix
       ./modules/stable-shell.nix
-      ./modules/git-auto-backup.nix
       ./modules/jcode-gc.nix
       ./modules/reap-abandoned-searches.nix
       ./modules/engine-worktree-cleanup.nix

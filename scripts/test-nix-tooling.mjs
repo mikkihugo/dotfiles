@@ -93,10 +93,10 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   const home = await source("home/home.nix");
 
   assert.match(home, /\.\/modules\/home-emergency-backup\.nix/);
-  assert.match(
+  assert.doesNotMatch(
     home,
     /\.\/modules\/git-auto-backup\.nix/,
-    "keep the old timer until a real Borg create-and-restore proof exists",
+    "legacy mutating git snapshots must be retired when Borgmatic is enabled",
   );
   for (const root of [".dotfiles", ".dotfiles-worktrees", "code", "workspaces", "backups"]) {
     assert.match(backup, new RegExp(`\\$\\{homeDir\\}\\/${root.replaceAll(".", "\\.")}`));
@@ -112,10 +112,10 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   assert.match(backup, /IOSchedulingClass\s*=\s*"idle"/);
   assert.match(backup, /flock[^\n]*hot-source\.lock/);
   assert.match(backup, /borgmatic[^\n]*create/);
-  assert.doesNotMatch(
+  assert.match(
     backup,
     /hot-source-(?:hel1|fsn1)[\s\S]*?Install\.WantedBy\s*=\s*\["timers\.target"\]/,
-    "hot-source timers must remain staged until restore proof",
+    "hot-source timers must activate through timers.target",
   );
   assert.doesNotMatch(backup, /GIT_INDEX_FILE|git\s+add|update-ref|refs\/backup/);
   for (const excluded of ["**/target", "**/node_modules", "**/.direnv", "**/.cache"]) {

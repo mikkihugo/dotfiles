@@ -98,7 +98,7 @@
     inference-fabric,
     ...
   }: let
-    specialArgs = {inherit sops-nix ace-coder llm-agents inference-fabric;};
+    specialArgs = {inherit sops-nix ace-coder llm-agents direnv-instant inference-fabric;};
 
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.
     # targetSystem is passed as specialArgs so imports can branch without

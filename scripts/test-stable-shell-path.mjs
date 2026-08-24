@@ -107,11 +107,21 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
 test("Home Manager uses direnv-instant for interactive shells", async () => {
   const shellModule = await readFile("home/modules/shell.nix", "utf8");
   const flake = await readFile("flake.nix", "utf8");
+  const plainTerminalPatch = await readFile(
+    "patches/direnv-instant-async-without-multiplexer.patch",
+    "utf8",
+  );
   const bootstrap = await readFile("nix/bootstrap.sh", "utf8");
   const swarmHook = await readFile("config/codex/hooks/swarm-messages.mjs", "utf8");
 
   assert.match(flake, /direnv-instant\.homeModules\.direnv-instant/);
+  assert.match(flake, /inherit sops-nix ace-coder llm-agents direnv-instant inference-fabric/);
   assert.match(shellModule, /direnv-instant = \{/);
+  assert.match(shellModule, /package = direnv-instant\.packages\.\$\{pkgs\.system\}\.default\.overrideAttrs/);
+  assert.match(shellModule, /direnv-instant-async-without-multiplexer\.patch/);
+  assert.match(plainTerminalPatch, /If not in a multiplexer, just run direnv synchronously/);
+  assert.match(plainTerminalPatch, /^\+\s+if Multiplexer::detect\(\)\.is_none\(\) && shell == Shell::Fish/m);
+  assert.match(plainTerminalPatch, /start_is_async_in_non_mux_mode/);
   assert.match(shellModule, /enableBashIntegration = true/);
   assert.match(shellModule, /enableZshIntegration = true/);
   assert.match(shellModule, /enableFishIntegration = true/);

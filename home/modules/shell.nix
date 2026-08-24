@@ -3,7 +3,11 @@
 # Covers: bash, zsh, aliases, direnv, starship prompt, zoxide.
 # The shared `shellInit` string is injected into both bash and zsh so
 # there's a single source of truth for the runtime init sequence.
-{pkgs, ...}: let
+{
+  pkgs,
+  direnv-instant,
+  ...
+}: let
   dotfilesRoot = "$HOME/.dotfiles";
 
   # Injected into both bash initExtra and zsh initContent.
@@ -355,6 +359,14 @@ in {
 
     direnv-instant = {
       enable = true;
+      # Upstream 1.3.0 falls back to synchronous direnv outside tmux and other
+      # supported multiplexers. This host also uses plain terminals, where that
+      # fallback recreates the prompt stall this integration exists to remove.
+      package = direnv-instant.packages.${pkgs.system}.default.overrideAttrs (old: {
+        patches =
+          (old.patches or [])
+          ++ [../../patches/direnv-instant-async-without-multiplexer.patch];
+      });
       enableBashIntegration = true;
       enableZshIntegration = true;
       enableFishIntegration = true;

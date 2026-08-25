@@ -4,11 +4,28 @@
 # The shared `shellInit` string is injected into both bash and zsh so
 # there's a single source of truth for the runtime init sequence.
 {
+  lib,
   pkgs,
   direnv-instant,
   ...
 }: let
   dotfilesRoot = "$HOME/.dotfiles";
+
+  # NixOS `programs.direnv-instant` puts `eval "$(direnv-instant hook bash)"` in
+  # /etc/bashrc, which bash sources BEFORE ~/.bashrc. The hook arms a SIGUSR1
+  # trap and starts the daemon straight away, so the repository environment is
+  # computed from a PATH that has no home.sessionPath entries yet — ~/.bashrc
+  # only re-sources hm-session-vars.sh afterwards. `direnv export` emits an
+  # absolute PATH snapshot, so when the daemon's signal lands mid-startup the
+  # handler replaces the freshly repaired PATH with the truncated one and
+  # ~/.npm-global/bin is gone. Source the guard twice: once from bashrcExtra,
+  # the earliest point this module owns, and once after direnv-instant's own
+  # initExtra chunk, which redefines both hook functions. Only mkAfter orders
+  # that second one — the upstream module uses a plain (order 1000) initExtra.
+  direnvInstantGuard = ''
+    [ -f "${dotfilesRoot}/shell/bash/direnv-instant-guard.sh" ] \
+      && . "${dotfilesRoot}/shell/bash/direnv-instant-guard.sh"
+  '';
 
   # Injected into both bash initExtra and zsh initContent.
   # Activates mise/SOPS/direnv at shell startup; reads Letta API key from file.
@@ -307,7 +324,10 @@ in {
   programs = {
     bash = {
       enable = true;
-      initExtra = shellInit;
+      initExtra = lib.mkMerge [
+        shellInit
+        (lib.mkAfter direnvInstantGuard)
+      ];
 
       # home-manager's own .bashrc template puts a bare
       # `[[ $- == *i* ]] || return` right after bashrcExtra, so
@@ -335,6 +355,8 @@ in {
           [ -f "$DOTFILES_ROOT/shell/bash/bashrc" ] && . "$DOTFILES_ROOT/shell/bash/bashrc"
           return 0
         fi
+
+        ${direnvInstantGuard}
       '';
     };
 

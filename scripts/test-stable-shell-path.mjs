@@ -555,3 +555,57 @@ test("a dump that froze a truncated PATH cannot strip the caller's tool dirs", a
     `caller PATH entry was dropped by the applied environment: ${run.stdout}`,
   );
 });
+
+test("an interactive direnv-instant apply cannot strip the caller's tool dirs", async () => {
+  const guard = join(process.cwd(), "shell/bash/direnv-instant-guard.sh");
+  const base = await mkdtemp(join(tmpdir(), "direnv-instant-guard-"));
+  const bin = join(base, "bin");
+  const caller = join(base, "caller-only");
+  const repoBin = join(base, "repo-bin");
+  await Promise.all([mkdir(bin), mkdir(caller), mkdir(repoBin)]);
+
+  const envFile = join(base, "env");
+  await writeFile(envFile, `export GUARD_TEST_APPLIED=1;export PATH=$'${repoBin}:/usr/bin';\n`);
+
+  const hook = spawnSync("direnv-instant", ["hook", "bash"], { encoding: "utf8" });
+  assert.equal(hook.status, 0, "direnv-instant must resolve for this test");
+  await writeFile(join(bin, "direnv-instant"),
+    '#!/bin/sh\nif [ "$1" = hook ]; then cat "$0.hook"; fi\nexit 0\n', { mode: 0o755 });
+  await writeFile(join(bin, "direnv-instant.hook"), hook.stdout);
+
+  const startup = (apply) => [
+    'eval "$(direnv-instant hook bash)"',
+    `. "${guard}"`,
+    'eval "$(direnv-instant hook bash)"',
+    `. "${guard}"`,
+    '__DIRENV_INSTANT_ENV_FILE="$GUARD_TEST_ENV_FILE"',
+    apply,
+    'printf "%s\\n" "$PATH"',
+    'printf "applied=%s\\n" "${GUARD_TEST_APPLIED:-0}"',
+  ].join("\n");
+
+  const run = (apply) => spawnSync("bash", ["--norc", "--noprofile", "-i", "-c", startup(apply)], {
+    encoding: "utf8",
+    env: { HOME: process.env.HOME, TERM: "dumb",
+           PATH: `${bin}:${caller}:${process.env.PATH}`, GUARD_TEST_ENV_FILE: envFile },
+  });
+
+  for (const [label, apply] of [
+    ["SIGUSR1", "kill -USR1 $$"],
+    ["prompt-time", "DIRENV_INSTANT_USE_CACHE=1 _direnv_instant_guard_hook"],
+  ]) {
+    const out = run(apply).stdout.trim().split("\n");
+    assert.equal(out.at(-1), "applied=1", `${label}: the repository environment must still be applied`);
+    assert.ok(out.at(-2).split(":").includes(caller),
+      `${label} apply dropped a caller PATH entry: ${out.at(-2)}`);
+  }
+});
+
+test("the interactive and non-interactive PATH restores stay one rule", async () => {
+  const guard = await readFile("shell/bash/direnv-instant-guard.sh", "utf8");
+  const loader = await readFile("shell/bash/direnv-export.sh", "utf8");
+  assert.match(guard, /PATH="\$\{PATH:\+\$PATH:\}\$entry"/);
+  assert.match(loader, /PATH="\$\{PATH:\+\$PATH:\}\$_direnv_restore_entry"/);
+  assert.doesNotMatch(guard, /__HM_SESS_VARS_SOURCED/);
+});
+

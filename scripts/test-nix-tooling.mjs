@@ -400,6 +400,15 @@ test("Home Manager uses the nixpkgs mise package without a private overlay", asy
   assert.doesNotMatch(updater, /nix develop|just mise-upgrade/);
 });
 
+test("Home Manager activation uses the non-deprecated nix profile command", async () => {
+  const flake = await source("flake.nix");
+  assert.match(flake, /activationPackage = home\.activationPackage\.overrideAttrs/);
+  assert.match(flake, /substituteInPlace \$out\/activate/);
+  assert.match(flake, /--replace-fail "profile install" "profile add"/);
+  assert.match(flake, /nix-index = prev\.nix-index\.overrideAttrs/);
+  assert.match(flake, /command-not-found\.sh/);
+});
+
 test("just check delegates to the single repository check implementation", async () => {
   const justfile = await source("justfile");
   assert.match(justfile, /(?:^|\n)check:\n\s+bash scripts\/repo-check\.sh(?:\n|$)/);

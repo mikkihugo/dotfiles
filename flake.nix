@@ -103,8 +103,8 @@
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.
     # targetSystem is passed as specialArgs so imports can branch without
     # referencing pkgs (which would cause infinite recursion in imports).
-    mkHome = sys: hostname:
-      home-manager.lib.homeManagerConfiguration {
+    mkHome = sys: hostname: let
+      home = home-manager.lib.homeManagerConfiguration {
         pkgs = import nixpkgs {
           system = sys;
           config.allowUnfree = true;
@@ -119,9 +119,22 @@
             #
             # mise 2026.8.8: pull from nixpkgs-unstable for newer version
             # (26.05 has 2026.5.12, unstable has 2026.8.8)
-            (_final: _prev: {
+            (_final: prev: {
               jujutsu = nixpkgs-unstable.legacyPackages.${sys}.jujutsu;
               mise = nixpkgs-unstable.legacyPackages.${sys}.mise;
+              nix-index = prev.nix-index.overrideAttrs (old: {
+                buildCommand =
+                  old.buildCommand
+                  + ''
+                    command_not_found=$out/etc/profile.d/command-not-found.sh
+                    command_not_found_source=$(readlink -f "$command_not_found")
+                    rm -f "$command_not_found"
+                    cp "$command_not_found_source" "$command_not_found"
+                    chmod u+w "$command_not_found"
+                    substituteInPlace "$command_not_found" \
+                      --replace-fail "nix profile install" "nix profile add"
+                  '';
+              });
             })
           ];
         };
@@ -135,6 +148,21 @@
           direnv-instant.homeModules.direnv-instant
           ./home/home.nix
         ];
+      };
+    in
+      home
+      // {
+        # Home Manager upstream still emits the deprecated Nix 2.34 alias.
+        # Patch only the generated activation entrypoint until upstream #9598
+        # replaces `profile install` with `profile add`.
+        activationPackage = home.activationPackage.overrideAttrs (old: {
+          buildCommand =
+            old.buildCommand
+            + ''
+              substituteInPlace $out/activate \
+                --replace-fail "profile install" "profile add"
+            '';
+        });
       };
   in
     {

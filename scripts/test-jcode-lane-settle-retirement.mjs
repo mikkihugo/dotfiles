@@ -20,14 +20,15 @@ test("Home Manager retires only the unsafe JCode lane-settle artifacts", () => {
 
   assert.match(
     hook,
-    /\$\{pkgs\.systemd\}\/bin\/systemctl --user disable --now jcode-lane-settle\.timer \|\| true/,
+    /systemctl --user show --property=LoadState --value jcode-lane-settle\.timer/,
   );
 
   assert.match(
     hook,
-    /\$\{pkgs\.systemd\}\/bin\/systemctl --user stop jcode-lane-settle\.service \|\| true/,
+    /systemctl --user show --property=LoadState --value jcode-lane-settle\.service/,
     "retirement must stop an already-running legacy service",
   );
+  assert.doesNotMatch(hook, /jcode-lane-settle\.(?:timer|service).*\|\| true/);
 
   const exactTargets = [
     "$HOME/.config/systemd/user/jcode-lane-settle.timer",

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -28,10 +28,10 @@ test("SHELL points directly at an immutable store wrapper", async () => {
   assert.doesNotMatch(source, /sessionVariables\.SHELL = stableBash/);
 });
 
-test("stable-shell sources the shared direnv-export loader", async () => {
+test("stable-shell delegates non-interactive direnv loading to BASH_ENV", async () => {
   const source = await readFile("home/modules/stable-shell.nix", "utf8");
-  assert.match(source, /shell\/bash\/direnv-export\.sh/);
-  assert.match(source, /IN_NIX_SHELL/);
+  assert.equal(source.match(/export BASH_ENV=/g)?.length, 3);
+  assert.doesNotMatch(source, /&& \. "\$HOME\/\.dotfiles\/shell\/bash\/direnv-export\.sh"/);
   assert.match(source, /name = "agent-shell"/);
   assert.doesNotMatch(source, /cursor-agent-shell/);
 });
@@ -67,6 +67,10 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
   const bin = join(base, "bin");
   const log = join(base, "direnv.log");
   await Promise.all([mkdir(repoA), mkdir(repoB), mkdir(bin)]);
+  await Promise.all([
+    writeFile(join(repoA, ".envrc"), "export REPO=A\n"),
+    writeFile(join(repoB, ".envrc"), "export REPO=B\n"),
+  ]);
   await writeFile(
     join(bin, "direnv"),
     `#!/bin/sh\nprintf '%s\\n' "$*" >> "$DIRENV_TEST_LOG"\nif [ "$1" = export ]; then printf 'export DIRENV_TEST_LOADED=1\\n'; fi\n`,
@@ -77,7 +81,7 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
   await mkdir(xdgRuntime);
   const env = {
     ...process.env,
-    PATH: `${bin}:${process.env.PATH}`,
+    PATH: `${bin}:/run/current-system/sw/bin:${process.env.PATH}`,
     DIRENV_TEST_LOG: log,
     DIRENV_DIR: `-${repoA}`,
     IN_NIX_SHELL: "impure",
@@ -150,8 +154,11 @@ test("BASH_ENV path hook enters direnv once for Claude/Codex bash -c", async () 
   const base = await mkdtemp(join(tmpdir(), "direnv-bash-env-"));
   const repo = join(base, "repo");
   const bin = join(base, "bin");
+  const home = join(base, "home");
   const log = join(base, "direnv.log");
-  await Promise.all([mkdir(repo), mkdir(bin)]);
+  await Promise.all([mkdir(repo), mkdir(bin), mkdir(home)]);
+  await writeFile(join(repo, ".envrc"), "export DIRENV_TEST_REPO=1\n");
+  await symlink(process.cwd(), join(home, ".dotfiles"));
   await writeFile(
     join(bin, "direnv"),
     `#!/bin/sh\nprintf '%s\\n' "$*" >> "$DIRENV_TEST_LOG"\nif [ "$1" = export ]; then printf 'export IN_NIX_SHELL=impure\\nexport DIRENV_DIR=-${repo}\\n'; fi\n`,
@@ -162,7 +169,7 @@ test("BASH_ENV path hook enters direnv once for Claude/Codex bash -c", async () 
   await mkdir(runtime);
   const env = {
     ...process.env,
-    HOME: process.env.HOME,
+    HOME: home,
     PATH: `${bin}:${process.env.PATH}`,
     DIRENV_TEST_LOG: log,
     BASH_ENV: join(process.cwd(), "shell/bash/noninteractive-path.sh"),
@@ -244,13 +251,18 @@ test("dump cache hit evals without direnv allow or export", async () => {
   );
 });
 
-test("nested export-tried sentinel does not start direnv", async () => {
+test("enter-once sentinel is scoped to the repository root", async () => {
   const base = await mkdtemp(join(tmpdir(), "direnv-tried-sentinel-"));
-  const repo = join(base, "repo");
+  const repo = join(base, "repo-a");
+  const otherRepo = join(base, "repo-b");
   const bin = join(base, "bin");
   const runtime = join(base, "runtime");
   const log = join(base, "direnv.log");
-  await Promise.all([mkdir(repo), mkdir(bin), mkdir(runtime)]);
+  await Promise.all([mkdir(repo), mkdir(otherRepo), mkdir(bin), mkdir(runtime)]);
+  await Promise.all([
+    writeFile(join(repo, ".envrc"), "export REPO=A\n"),
+    writeFile(join(otherRepo, ".envrc"), "export REPO=B\n"),
+  ]);
   await writeFile(
     join(bin, "direnv"),
     `#!/bin/sh\nprintf '%s\\n' "$*" >> "$DIRENV_TEST_LOG"\n`,
@@ -263,6 +275,7 @@ test("nested export-tried sentinel does not start direnv", async () => {
     DIRENV_TEST_LOG: log,
     XDG_RUNTIME_DIR: runtime,
     AGENT_DIRENV_EXPORT_TRIED: "1",
+    AGENT_DIRENV_EXPORT_TRIED_ROOT: repo,
   };
   delete env.BASH_ENV;
   delete env.ENV;
@@ -277,6 +290,42 @@ test("nested export-tried sentinel does not start direnv", async () => {
   assert.equal(nested.status, 0, nested.stderr);
   assert.equal(nested.stdout, "ok");
   assert.equal(await readFile(log, "utf8").catch(() => ""), "", "nested tried must not invoke direnv");
+
+  const crossRoot = spawnSync(
+    "bash",
+    ["-c", '. "$1"; printf ok', "bash", join(process.cwd(), "shell/bash/direnv-export.sh")],
+    { cwd: otherRepo, encoding: "utf8", env },
+  );
+  assert.equal(crossRoot.status, 0, crossRoot.stderr);
+  assert.match(await readFile(log, "utf8"), /export bash/, "a different repository must load its own environment");
+});
+
+test("directories without an envrc skip direnv entirely", async () => {
+  const base = await mkdtemp(join(tmpdir(), "direnv-no-envrc-"));
+  const bin = join(base, "bin");
+  const log = join(base, "direnv.log");
+  await mkdir(bin);
+  await writeFile(
+    join(bin, "direnv"),
+    `#!/bin/sh\nprintf '%s\n' "$*" >> "$DIRENV_TEST_LOG"\n`,
+    { mode: 0o755 },
+  );
+  const env = {
+    ...process.env,
+    PATH: `${bin}:/run/current-system/sw/bin:${process.env.PATH}`,
+    DIRENV_TEST_LOG: log,
+  };
+  for (const key of ["BASH_ENV", "ENV", "IN_NIX_SHELL", "DIRENV_DIR", "AGENT_DIRENV_EXPORT_TRIED", "AGENT_DIRENV_EXPORT_TRIED_ROOT"]) {
+    delete env[key];
+  }
+  const result = spawnSync(
+    "bash",
+    ["-c", '. "$1"; printf ok', "bash", join(process.cwd(), "shell/bash/direnv-export.sh")],
+    { cwd: base, encoding: "utf8", env },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, "ok");
+  assert.equal(await readFile(log, "utf8").catch(() => ""), "");
 });
 
 test("dump fill strips one-line DIRENV_DIFF and DIRENV_WATCHES", async () => {

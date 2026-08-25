@@ -247,13 +247,24 @@ _direnv_fill_cache() {
 	return 1
 }
 
-_direnv_root=$(_direnv_envrc_root) ||
-	_direnv_root=$(CDPATH='' cd -P -- "${PWD:-.}" 2>/dev/null && pwd -P) ||
-	_direnv_root=$PWD
+if ! _direnv_root=$(_direnv_envrc_root); then
+	_direnv_cleanup
+	export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
+	return 0
+fi
 
 _direnv_cache_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv"
 _direnv_lock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv-export.lock"
 _direnv_key=
+
+# A wrapper and its exec'd bash share one repository root. Skip the second
+# entry before hashing or reading the dump, but do not let a parent shell from
+# another repository suppress this root's environment.
+if [ "${AGENT_DIRENV_EXPORT_TRIED_ROOT:-}" = "$_direnv_root" ]; then
+	_direnv_cleanup
+	export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
+	return 0
+fi
 
 if command -v sha256sum >/dev/null 2>&1; then
 	_direnv_key=$(_direnv_cache_key "$_direnv_root")
@@ -266,14 +277,8 @@ if command -v sha256sum >/dev/null 2>&1; then
 	_direnv_prune_dead_dumps
 fi
 
-# zshenv already ran this loader; child bash via BASH_ENV must not wait on
-# the same flock (that doubled every Cursor tool shell to 180s of queue).
-if [ -n "${AGENT_DIRENV_EXPORT_TRIED:-}" ]; then
-	_direnv_cleanup
-	export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
-	return 0
-fi
 export AGENT_DIRENV_EXPORT_TRIED=1
+export AGENT_DIRENV_EXPORT_TRIED_ROOT="$_direnv_root"
 
 mkdir -p "$_direnv_cache_dir" 2>/dev/null || true
 chmod 0700 "$_direnv_cache_dir" 2>/dev/null || true

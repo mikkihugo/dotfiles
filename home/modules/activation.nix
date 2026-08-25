@@ -18,11 +18,17 @@ in {
     # JCode terminal cleanup owns normal lease release, so activation must only
     # remove this legacy timer and never mutate a workspace itself.
     retireUnsafeJcodeLaneSettle = lib.hm.dag.entryBefore ["reloadSystemd"] ''
-      ${pkgs.systemd}/bin/systemctl --user disable --now jcode-lane-settle.timer || true
+      timer_load_state="$(${pkgs.systemd}/bin/systemctl --user show --property=LoadState --value jcode-lane-settle.timer)"
+      if [ "$timer_load_state" != "not-found" ]; then
+        ${pkgs.systemd}/bin/systemctl --user disable --now jcode-lane-settle.timer
+      fi
       # A timer stop does not stop a currently running oneshot service. Stop it
       # explicitly before removing its unit file so it cannot recover a lease
       # concurrently with this activation.
-      ${pkgs.systemd}/bin/systemctl --user stop jcode-lane-settle.service || true
+      service_load_state="$(${pkgs.systemd}/bin/systemctl --user show --property=LoadState --value jcode-lane-settle.service)"
+      if [ "$service_load_state" != "not-found" ]; then
+        ${pkgs.systemd}/bin/systemctl --user stop jcode-lane-settle.service
+      fi
       ${pkgs.coreutils}/bin/rm -f \
         "$HOME/.config/systemd/user/jcode-lane-settle.timer" \
         "$HOME/.config/systemd/user/jcode-lane-settle.service" \

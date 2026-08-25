@@ -569,7 +569,12 @@
     fi
     if [ "$command_name" = "login" ]; then
       case "$command_arg1" in
-        claude|openai) ;;
+        claude|openai)
+          if [ "$provider_arg_count" -ne 0 ]; then
+            echo "jcode: login accepts either a positional OAuth provider or one --provider flag, not both" >&2
+            exit 64
+          fi
+          ;;
         "")
           echo "jcode: specify the allowed OAuth provider: jcode login --provider claude|openai" >&2
           exit 64

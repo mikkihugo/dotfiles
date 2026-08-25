@@ -328,6 +328,11 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
     "login must reject duplicate flags and keep every spelling OAuth-only",
   );
   assert.equal(aiTools.match(/provider_arg_count=\$\(\(provider_arg_count \+ 1\)\)/g)?.length, 3);
+  assert.match(
+    aiTools,
+    /claude\|openai\)[\s\S]*?provider_arg_count" -ne 0[\s\S]*?not both/,
+    "positional OAuth login must reject every additional provider flag",
+  );
 
   assert.match(
     providers,

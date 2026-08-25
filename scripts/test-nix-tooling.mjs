@@ -604,12 +604,28 @@ const collectPackageEntries = (modules) => {
   const entries = [];
   for (const { name, lines } of modules) {
     let inList = false;
+    // Armed = we have seen `packages =` but not yet the `[` that opens its
+    // value. alejandra reformats `packages = [ … ] ++ lib.optionals … [ … ]`
+    // onto separate lines, leaving `packages =` alone with the opener below
+    // it. Matching only the single-line form made the scanner skip such a
+    // module entirely, which does not fail loudly -- every ownership
+    // assertion built on the result just turns vacuous. Stay armed until the
+    // `;` that ends the binding so the `++ … [` segments are scanned too.
+    let armed = false;
     let depth = 0;
     lines.forEach((line, index) => {
       const code = line.split("#")[0];
       let scanFrom = code;
       if (!inList) {
-        if (!/^\s*(?:home\.packages|packages)\s*=\s*(?:with pkgs;\s*)?\[/.test(code)) return;
+        if (/^\s*(?:home\.packages|packages)\s*=\s*(?:with pkgs;\s*)?\[/.test(code)) {
+          armed = true;
+        } else if (/^\s*(?:home\.packages|packages)\s*=\s*$/.test(code)) {
+          armed = true;
+          return;
+        } else if (!armed || !code.includes("[")) {
+          if (armed && code.includes(";")) armed = false;
+          return;
+        }
         inList = true;
         depth = 1;
         scanFrom = code.slice(code.indexOf("[") + 1);
@@ -618,7 +634,12 @@ const collectPackageEntries = (modules) => {
         entries.push({ token, where: `${name}:${index + 1}` });
       }
       depth += (scanFrom.match(/\[/g) ?? []).length - (scanFrom.match(/\]/g) ?? []).length;
-      if (depth <= 0) inList = false;
+      if (depth <= 0) {
+        inList = false;
+        // Keep `armed` so a following `++ lib.optionals … [` segment of the
+        // same binding is still scanned; the `;` above disarms at its end.
+        if (code.includes(";")) armed = false;
+      }
     });
   }
   return entries;
@@ -655,6 +676,13 @@ test("Home Manager modules keep single ownership of every managed path and bin n
   assert.ok(
     listedVariables.has("jcodeGatewayWrapper"),
     "packages scan no longer sees multi-line home.packages entries",
+  );
+  // Sentinel: the scanner also reaches a `++ lib.optionals … [ … ]` segment.
+  // Without this, an arch-guarded package is invisible to the bin-ownership
+  // assertions below and a duplicate bin there would ship unnoticed.
+  assert.ok(
+    listedVariables.has("llm-pkgs.codex"),
+    "packages scan no longer sees ++ lib.optionals package segments",
   );
 
   const binOwners = new Map();

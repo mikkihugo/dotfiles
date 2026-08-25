@@ -845,41 +845,67 @@ in {
 
   # Single `home` attrset — repeated `home.*` keys trip statix.
   home = {
-    packages = [
-      # API-key-injecting wrappers (shadow the raw Nix binaries for these tools).
-      # kimi is managed by mise (npm:@moonshot-ai/kimi-code) and wrapped in
-      # ~/.local/bin/kimi to route through the CentralCloud llm-gateway.
-      # vtcode: llm-gateway.svc only (see wrappers + ~/.local/bin/vtcode).
-      vtcodeWrapper
-      vtcodeGlmWrapper # binary: vtcode-glm -> auto-glm via llm-gateway.svc
-      vtcodeKimiWrapper # binary: vtcode-kimi -> auto-kimi via llm-gateway.svc
-      vtcodeMinimaxGatewayWrapper # binary: vtcode-minimax -> auto-minimax via llm-gateway.svc
-      # Raw llm-agents packages — no key injection needed.      # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
-      # these packages compile from source — disable per-host as needed.
-      # Claude Code is owned by its native installer outside Home Manager.
-      # Cursor Agent is resolved by the wrapper below without a raw profile bin.
-      # llm-pkgs.codex # disabled — Rust rebuild on aarch64
-      # opencode is managed globally by mise.
-      # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
-      # droid is managed globally by mise (wrapped below for OTEL).
-      copilotKimiWrapper # binary: copilot-kimi -> auto-kimi (Kimi Code K3) via llm-gateway
-      copilotGlmWrapper # binary: copilot-glm -> auto-glm (Ollama Cloud GLM-5.2) via llm-gateway
-      copilotMinimaxWrapper # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 (auto-minimax) via llm-gateway
-      copilotAllWrapper # binary: copilot-all -> routes mise GitHub Copilot CLI through canonical llm-gateway auto aliases
-      claudeMinimaxWrapper # binary: claude-minimax -> routes Claude Code CLI to MiniMax-M3 via llm-gateway's Anthropic-Messages endpoint
-      gooseGatewayWrapper # binary: goose -> resolves provider; openai uses llm-gateway
-      gooseModels # binary: goose-models -> list llm-gateway /v1/models
-      gooseClaude # binary: goose-claude -> claude-acp
-      gooseGateway # binary: goose-gateway -> openai via llm-gateway
-      gooseKimi # binary: goose-kimi -> kimi-code/k3 (1M ctx)
-      gooseDeepseek # binary: goose-deepseek -> auto-deepseek (Ollama Cloud DeepSeek V4 Pro)
-      gooseGlm # binary: goose-glm -> auto-glm (Ollama Cloud GLM-5.2)
-      gooseQwenFast # binary: goose-qwen-fast -> auto-qwen-fast (Ollama Cloud Qwen 3.5 397B)
-      codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
-      jcodeGatewayWrapper # binary: jcode -> llm-gateway.svc /v1 (+ strip ambient provider keys)
-      llm-pkgs.mistral-vibe # binary: vibe
-      # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
-    ];
+    packages =
+      [
+        # API-key-injecting wrappers (shadow the raw Nix binaries for these tools).
+        # kimi is managed by mise (npm:@moonshot-ai/kimi-code) and wrapped in
+        # ~/.local/bin/kimi to route through the CentralCloud llm-gateway.
+        # vtcode: llm-gateway.svc only (see wrappers + ~/.local/bin/vtcode).
+        vtcodeWrapper
+        vtcodeGlmWrapper # binary: vtcode-glm -> auto-glm via llm-gateway.svc
+        vtcodeKimiWrapper # binary: vtcode-kimi -> auto-kimi via llm-gateway.svc
+        vtcodeMinimaxGatewayWrapper # binary: vtcode-minimax -> auto-minimax via llm-gateway.svc
+        # Raw llm-agents packages — no key injection needed.      # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
+        # these packages compile from source — disable per-host as needed.
+        # Claude Code is owned by its native installer outside Home Manager.
+        # Cursor Agent is resolved by the wrapper below without a raw profile bin.
+        # llm-pkgs.codex is enabled per-arch below, outside this list.
+        # opencode is managed globally by mise.
+        # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
+        # droid is managed globally by mise (wrapped below for OTEL).
+        copilotKimiWrapper # binary: copilot-kimi -> auto-kimi (Kimi Code K3) via llm-gateway
+        copilotGlmWrapper # binary: copilot-glm -> auto-glm (Ollama Cloud GLM-5.2) via llm-gateway
+        copilotMinimaxWrapper # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 (auto-minimax) via llm-gateway
+        copilotAllWrapper # binary: copilot-all -> routes mise GitHub Copilot CLI through canonical llm-gateway auto aliases
+        claudeMinimaxWrapper # binary: claude-minimax -> routes Claude Code CLI to MiniMax-M3 via llm-gateway's Anthropic-Messages endpoint
+        gooseGatewayWrapper # binary: goose -> resolves provider; openai uses llm-gateway
+        gooseModels # binary: goose-models -> list llm-gateway /v1/models
+        gooseClaude # binary: goose-claude -> claude-acp
+        gooseGateway # binary: goose-gateway -> openai via llm-gateway
+        gooseKimi # binary: goose-kimi -> kimi-code/k3 (1M ctx)
+        gooseDeepseek # binary: goose-deepseek -> auto-deepseek (Ollama Cloud DeepSeek V4 Pro)
+        gooseGlm # binary: goose-glm -> auto-glm (Ollama Cloud GLM-5.2)
+        gooseQwenFast # binary: goose-qwen-fast -> auto-qwen-fast (Ollama Cloud Qwen 3.5 397B)
+        codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
+        jcodeGatewayWrapper # binary: jcode -> llm-gateway.svc /v1 (+ strip ambient provider keys)
+        llm-pkgs.mistral-vibe # binary: vibe
+        # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
+      ]
+      # codex from llm-agents, x86_64-linux only.
+      #
+      # Two reasons, not one. The aarch64 laptop still has to rebuild this from
+      # source (numtide's prebuilt cache is x86_64-only), so it stays off there.
+      # On x86_64 it also puts codex in ~/.nix-profile/bin, and that directory
+      # survives entering a repository devShell where ~/.npm-global/bin does not:
+      # an interactive shell in ~/code/jcode resolves direnv-instant (nix-profile)
+      # but not codex (npm-global), because the environment direnv applies there
+      # drops the Home Manager session PATH entries. Owning codex here makes it
+      # resolve in those shells regardless.
+      #
+      # Version skew, measured not assumed: the derivation is named codex-0.149.1
+      # but `codex --version` from it reports codex-cli 0.148.0, while the npm
+      # package reports 0.149.1. So the two are NOT identical builds. On a healthy
+      # PATH ~/.npm-global/bin still precedes ~/.nix-profile/bin, so ordinary
+      # shells keep getting the npm 0.149.1; only shells that lost the session
+      # PATH entries fall through to this 0.148.0. Bump llm-agents when that skew
+      # matters. Verified this package ships the codex-code-mode-host sidecar, so
+      # it does not reproduce the aqua-registry breakage noted in mise config.
+      #
+      # This is deliberately NOT a fix for that PATH drop -- the root cause is
+      # still open. It removes codex from the blast radius, nothing more.
+      ++ pkgs.lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
+        llm-pkgs.codex # binary: codex (+ codex-code-mode-host sidecar)
+      ];
 
     file = {
       # jcode: shadow update/mise install so llm-gateway SOPS wrapper wins.

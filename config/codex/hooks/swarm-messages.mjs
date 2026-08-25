@@ -376,7 +376,19 @@ async function acquireLockAtPath(lockPath) {
       "-c",
       `printf '${STATE_LOCK_READY}\\n'; IFS= read -r _ || true`,
     ],
-    { env: lockHelperEnv, stdio: ["pipe", "pipe", "ignore"] },
+    {
+      stdio: ["pipe", "pipe", "ignore"],
+      // The lock holder is a machine primitive, not a user session: it must
+      // never run shell initialisation. On this host PATH resolves `bash` to
+      // the home-manager stable-shell wrapper, which runs direnv on startup and
+      // takes ~1500ms -- three times STATE_LOCK_ACQUIRE_GRACE_MS. Every lease
+      // therefore timed out, acquireStateLock returned null, and runHook exited
+      // as a silent no-op, so the swarm hook delivered nothing at all. The
+      // wrapper documents DIRENV_DISABLE as its escape; with it the same spawn
+      // completes in ~118ms. Strip BASH_ENV (lockHelperEnv) and disable
+      // direnv so the handshake stays inside the acquire grace window.
+      env: { ...lockHelperEnv, DIRENV_DISABLE: "1" },
+    },
   );
   let active = false;
   let stdout = "";

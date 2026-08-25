@@ -27,6 +27,14 @@ _cc_otel_resolve() {
 }
 
 _cc_otel_env_load() {
+	# Never trace this function: it expands a Bao-fetched OTLP password and the
+	# base64 Authorization header built from it, and it is invoked bare (no
+	# redirection) from shell/bash/bashrc. Same rule and same zsh caveat as
+	# _load_sops_secrets -- see the long note there.
+	[ -n "${BASH_VERSION:-}" ] && local -
+	[ -n "${ZSH_VERSION:-}" ] && setopt localoptions
+	set +x
+
 	# Respect an explicit operator override.
 	if [ -n "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" ] || [ -n "${CENTRALCLOUD_OTEL_SKIP:-}" ]; then
 		return 0

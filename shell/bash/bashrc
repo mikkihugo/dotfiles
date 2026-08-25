@@ -83,6 +83,25 @@ fi
 # Called eagerly below (silent, non-fatal) so keys are available to child
 # processes without a manual `load-ai-keys` invocation.
 _load_sops_secrets() {
+	# Never trace this function. xtrace prints every command with its arguments
+	# already expanded, so a caller's `set -x` writes out both every exported key
+	# and -- via the `echo "$decrypted"` helpers below, which pipe the WHOLE
+	# decrypted file -- the entire api-keys.yaml, once per lookup. That is how a
+	# debugging session leaked ~20 API keys and 33 private-key blocks at once.
+	#
+	# `local -` (bash) and `setopt localoptions` (zsh) restore the caller's option
+	# set on return, including the early `return 1` paths, so this cannot leave
+	# xtrace off behind our back. Do NOT drop the BASH_VERSION guard: in zsh a
+	# bare `local -` is `typeset -` with no names, which DUMPS EVERY PARAMETER
+	# WITH ITS VALUE -- that exact mistake leaked live keys while this fix was
+	# being written. Both files are also sourced from programs.zsh.initContent.
+	# In a shell that is neither bash nor zsh only `set +x` runs and the caller's
+	# xtrace stays off; that is the safe direction, and this file is only ever
+	# sourced from the bash and zsh init paths.
+	[ -n "${BASH_VERSION:-}" ] && local -
+	[ -n "${ZSH_VERSION:-}" ] && setopt localoptions
+	set +x
+
 	local secrets_file="$HOME/.dotfiles/secrets/api-keys.yaml"
 
 	if [[ ! -f "$secrets_file" ]]; then

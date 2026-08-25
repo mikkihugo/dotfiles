@@ -59,6 +59,7 @@ main() {
 			scripts/test-codex-external-run.mjs \
 			scripts/test-detect-secrets-work-packet-filter.mjs \
 			scripts/test-jcode-lane-settle-retirement.mjs \
+			scripts/test-sops-trace-guard.mjs \
 			scripts/test-stable-shell-path.mjs \
 			scripts/test-swarm-messages.mjs \
 			scripts/test-swarm-hook-config.mjs \

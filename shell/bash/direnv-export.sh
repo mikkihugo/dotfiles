@@ -140,6 +140,21 @@ if ! command -v direnv >/dev/null 2>&1 || ! command -v timeout >/dev/null 2>&1; 
 fi
 
 _direnv_do_enter() {
+	# Never trace this function: xtrace prints the eval argument already
+	# expanded, so a traced agent shell writes out the whole `export DIRENV_DIFF=`
+	# blob, which decodes to the previous environment -- including the live
+	# SCCACHE_WEBDAV_TOKEN, because the jcode devShell unsets it on entry and
+	# direnv therefore has to remember it to restore on exit. This matters more
+	# than the interactive loaders: zsh's envExtra sources ONLY this file, so for
+	# `zsh -c` agent shells it is the single dotfiles file in play.
+	# Same rule and same zsh caveat as _load_sops_secrets in shell/bash/bashrc.
+	# SC3043: this file carries a POSIX sh shebang, and `local` is not POSIX --
+	# but the guard means it is only ever reached under bash, where it is valid.
+	# shellcheck disable=SC3043
+	[ -n "${BASH_VERSION:-}" ] && local -
+	[ -n "${ZSH_VERSION:-}" ] && setopt localoptions
+	set +x
+
 	direnv allow . >/dev/null 2>&1 || true
 	unset DIRENV_DIFF DIRENV_WATCHES
 	eval "$(timeout 15s direnv export bash 2>/dev/null)" || true

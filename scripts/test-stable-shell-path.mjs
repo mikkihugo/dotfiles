@@ -508,3 +508,50 @@ fi
   const names = await readdir(cacheDir);
   assert.equal(names.includes("orphan.lock"), false, "orphan flock lock must be removed on miss");
 });
+
+test("a dump that froze a truncated PATH cannot strip the caller's tool dirs", async () => {
+  // `direnv export` emits an absolute PATH snapshot of whichever shell filled
+  // the dump, and the dump cache key has no PATH component -- so a filler that
+  // never sourced hm-session-vars.sh used to overwrite healthy shells and make
+  // `codex` (~/.npm-global/bin) and `direnv-instant` (~/.nix-profile/bin) stop
+  // resolving mid-session. The applied environment may add entries; it must
+  // never remove one the caller had.
+  const base = await mkdtemp(join(tmpdir(), "direnv-path-restore-"));
+  const repo = join(base, "repo");
+  const bin = join(base, "bin");
+  const caller = join(base, "caller-only");
+  const runtime = join(base, "runtime");
+  await Promise.all([mkdir(repo), mkdir(bin), mkdir(caller), mkdir(runtime)]);
+  await writeFile(join(repo, ".envrc"), "# test\n");
+
+  // Stand-in direnv: its export replaces PATH wholesale and drops `caller`.
+  await writeFile(
+    join(bin, "direnv"),
+    `#!/bin/sh\nif [ "$1" = export ]; then printf "export PATH='%s'\\n" "${bin}:/usr/bin"; fi\n`,
+    { mode: 0o755 },
+  );
+
+  const env = {
+    ...process.env,
+    HOME: process.env.HOME,
+    PATH: `${caller}:${bin}:${process.env.PATH}`,
+    XDG_RUNTIME_DIR: runtime,
+  };
+  delete env.BASH_ENV;
+  delete env.ENV;
+  delete env.IN_NIX_SHELL;
+  delete env.DIRENV_DIR;
+  delete env.AGENT_DIRENV_EXPORT_TRIED;
+  delete env.AGENT_DIRENV_EXPORT_TRIED_ROOT;
+
+  const run = spawnSync(
+    "bash",
+    ["-c", '. "$1"; printf "%s" "$PATH"', "bash", join(process.cwd(), "shell/bash/direnv-export.sh")],
+    { cwd: repo, encoding: "utf8", env },
+  );
+  assert.equal(run.status, 0);
+  assert.ok(
+    run.stdout.split(":").includes(caller),
+    `caller PATH entry was dropped by the applied environment: ${run.stdout}`,
+  );
+});

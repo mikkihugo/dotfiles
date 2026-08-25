@@ -43,9 +43,24 @@ if [ "${#_direnv_watches_snapshot}" -gt 65536 ]; then
 fi
 unset _direnv_diff_snapshot _direnv_watches_snapshot
 
+# `direnv export` emits an absolute `export PATH=...` snapshot of whichever shell
+# produced it, never a delta, and _direnv_cache_key hashes only cwd + .envrc +
+# flake bytes -- no PATH component. So the first shell to fill a dump freezes its
+# own PATH for every later shell, applying a dump overwrites PATH instead of
+# merging it, and nothing invalidates that until the flake changes. A filler that
+# never sourced hm-session-vars.sh (nested agent shell, service unit) therefore
+# strips ~/.npm-global/bin and ~/.nix-profile/bin out of healthy shells: `codex`
+# and `direnv-instant` stop resolving mid-session. It also spreads, because the
+# downgraded shell goes on to fill other repositories' dumps -- the .dotfiles dump
+# on this host was observed carrying jcode's PATH.
 if [ -n "${DIRENV_DISABLE:-}" ] || [ "${-#*i}" != "$-" ]; then
 	return 0
 fi
+
+# Snapshot the caller PATH before any dump or enter can replace it. Below the
+# early return: an interactive shell exits above without _direnv_cleanup, so a
+# snapshot taken earlier would linger as a stray variable in every such shell.
+_direnv_caller_path="$PATH"
 
 _direnv_skip_enter() {
 	[ -n "${IN_NIX_SHELL:-}" ] || return 1
@@ -71,10 +86,34 @@ _direnv_cleanup() {
 	unset _direnv_lock _direnv_cache_dir _direnv_key _direnv_file _direnv_tmp _direnv_root
 	unset _direnv_stripped _direnv_strip_helper _direnv_hdr _direnv_recorded _direnv_old
 	unset _direnv_slot _direnv_ticks _DIRENV_MAX_PARALLEL _DIRENV_WAIT_TICKS
+	unset _direnv_caller_path _direnv_restore_rest _direnv_restore_entry
 	unset -f _direnv_take_slot _direnv_await_cache 2>/dev/null || true
+	unset -f _direnv_restore_caller_path 2>/dev/null || true
 	unset -f _direnv_skip_enter _direnv_cleanup _direnv_envrc_root \
 		_direnv_cache_key _direnv_eval_hit _direnv_fill_cache \
 		_direnv_prune_dead_dumps _direnv_do_enter 2>/dev/null || true
+}
+
+# Re-append every caller PATH entry the applied environment dropped. Append and
+# never prepend: the repository environment must keep winning for anything it
+# actually provides; this only restores what a frozen snapshot removed.
+_direnv_restore_caller_path() {
+	[ -n "${_direnv_caller_path:-}" ] || return 0
+	_direnv_restore_rest="$_direnv_caller_path"
+	while [ -n "$_direnv_restore_rest" ]; do
+		_direnv_restore_entry="${_direnv_restore_rest%%:*}"
+		case "$_direnv_restore_rest" in
+		*:*) _direnv_restore_rest="${_direnv_restore_rest#*:}" ;;
+		*) _direnv_restore_rest= ;;
+		esac
+		[ -n "$_direnv_restore_entry" ] || continue
+		case ":$PATH:" in
+		*":$_direnv_restore_entry:"*) ;;
+		*) PATH="${PATH:+$PATH:}$_direnv_restore_entry" ;;
+		esac
+	done
+	export PATH
+	unset _direnv_restore_rest _direnv_restore_entry
 }
 
 if _direnv_skip_enter; then
@@ -104,6 +143,7 @@ _direnv_do_enter() {
 	direnv allow . >/dev/null 2>&1 || true
 	unset DIRENV_DIFF DIRENV_WATCHES
 	eval "$(timeout 15s direnv export bash 2>/dev/null)" || true
+	_direnv_restore_caller_path
 }
 
 _direnv_envrc_root() {
@@ -165,6 +205,7 @@ _direnv_eval_hit() {
 	# source so a stale one-line dump cannot re-poison ARG_MAX. The 64KiB
 	# guard at the top of this file remains for inherited skip paths.
 	unset DIRENV_DIFF DIRENV_WATCHES
+	_direnv_restore_caller_path
 	# The two size guards that used to sit here measured ${#DIRENV_DIFF} and
 	# ${#DIRENV_WATCHES} on the line after that unconditional unset, so their
 	# length could never exceed the threshold and the unsets they guarded could

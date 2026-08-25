@@ -362,7 +362,7 @@ in {
       # Upstream 1.3.0 falls back to synchronous direnv outside tmux and other
       # supported multiplexers. This host also uses plain terminals, where that
       # fallback recreates the prompt stall this integration exists to remove.
-      package = direnv-instant.packages.${pkgs.system}.default.overrideAttrs (old: {
+      package = direnv-instant.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: {
         patches =
           (old.patches or [])
           ++ [../../patches/direnv-instant-async-without-multiplexer.patch];

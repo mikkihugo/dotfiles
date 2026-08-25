@@ -117,7 +117,7 @@ test("Home Manager uses direnv-instant for interactive shells", async () => {
   assert.match(flake, /direnv-instant\.homeModules\.direnv-instant/);
   assert.match(flake, /inherit sops-nix ace-coder llm-agents direnv-instant inference-fabric/);
   assert.match(shellModule, /direnv-instant = \{/);
-  assert.match(shellModule, /package = direnv-instant\.packages\.\$\{pkgs\.system\}\.default\.overrideAttrs/);
+  assert.match(shellModule, /package = direnv-instant\.packages\.\$\{pkgs\.stdenv\.hostPlatform\.system\}\.default\.overrideAttrs/);
   assert.match(shellModule, /direnv-instant-async-without-multiplexer\.patch/);
   assert.match(plainTerminalPatch, /If not in a multiplexer, just run direnv synchronously/);
   assert.match(plainTerminalPatch, /^\+\s+if Multiplexer::detect\(\)\.is_none\(\) && shell == Shell::Fish/m);

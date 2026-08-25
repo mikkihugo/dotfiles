@@ -110,6 +110,7 @@ test("Goose uses Kimi K3 as main and MiniMax M3 as planner", async () => {
   const mise = await readFile("config/mise/config.toml", "utf8");
   assert.match(mise, /^"github:aaif-goose\/goose" = "latest"$/m);
   assert.doesNotMatch(mise, /aqua:aaif-goose\/goose/);
+  assert.doesNotMatch(mise, /^"npm:@openai\/codex"/m);
 });
 
 test("activation merge preserves unrelated Claude settings and Kimi provider content", async () => {

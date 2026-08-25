@@ -83,8 +83,8 @@ in {
     sessionPath = [
       "$HOME/.bun/bin"
       "$HOME/.local/bin" # pip/pipx, claude CLI, local tools
-      "$HOME/.local/share/mise/shims" # mise-managed tools such as codex and copilot
-      "$HOME/.npm-global/bin" # opencode and other npm globals
+      "$HOME/.local/share/mise/shims" # mise-managed tools such as kimi and copilot
+      "$HOME/.npm-global/bin" # codex, opencode, and other npm globals
 
       "$HOME/.amp/bin"
       # ~/.kimi-code/bin removed — kimi is managed by mise (npm:@moonshot-ai/kimi-code)

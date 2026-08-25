@@ -478,10 +478,18 @@
       esac
     }
 
+    oauth_login_provider() {
+      case "$1" in
+        claude|openai) return 0 ;;
+        *) return 1 ;;
+      esac
+    }
+
     # Fail closed for explicit provider/profile requests, even if credentials
     # for another compiled-in integration later appear on disk.
     args=("$@")
     provider_arg_seen=0
+    provider_requested=""
     for ((i = 0; i < ''${#args[@]}; i++)); do
       case "''${args[$i]}" in
         -p|--provider)
@@ -491,6 +499,7 @@
             echo "jcode: provider is not allowed (allowed: claude, openai, minimax-direct, ollama-cloud, byteplus-ark)" >&2
             exit 64
           fi
+          provider_requested="''${args[$i]}"
           ;;
         --provider=*)
           provider_arg_seen=1
@@ -499,6 +508,7 @@
             echo "jcode: provider '$provider' is not allowed (allowed: claude, openai, minimax-direct, ollama-cloud, byteplus-ark)" >&2
             exit 64
           fi
+          provider_requested="$provider"
           ;;
         -p?*)
           provider_arg_seen=1
@@ -507,6 +517,7 @@
             echo "jcode: provider '$provider' is not allowed (allowed: claude, openai, minimax-direct, ollama-cloud, byteplus-ark)" >&2
             exit 64
           fi
+          provider_requested="$provider"
           ;;
         --provider-profile)
           i=$((i + 1))
@@ -560,7 +571,7 @@
           exit 64
           ;;
         -*)
-          if [ "$provider_arg_seen" -ne 1 ]; then
+          if [ "$provider_arg_seen" -ne 1 ] || ! oauth_login_provider "$provider_requested"; then
             echo "jcode: login requires --provider claude or --provider openai" >&2
             exit 64
           fi

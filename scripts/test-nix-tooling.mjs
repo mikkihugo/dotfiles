@@ -318,6 +318,15 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
     );
   }
   assert.match(aiTools, /\*\) return 1 ;;/, "unknown providers must remain denied");
+  assert.match(aiTools, /oauth_login_provider\(\)/);
+  assert.match(aiTools, /claude\|openai\) return 0 ;;/);
+  assert.match(aiTools, /provider_requested="''\$\{args\[\$i\]\}"/);
+  assert.match(aiTools, /provider_requested="\$provider"/);
+  assert.match(
+    aiTools,
+    /provider_arg_seen" -ne 1 \] \|\| ! oauth_login_provider "\$provider_requested"/,
+    "all flag spellings must keep login restricted to OAuth providers",
+  );
 
   assert.match(
     providers,

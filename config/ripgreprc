@@ -9,6 +9,12 @@
 --smart-case
 --hidden
 --follow
+# Do not full-text scan the nix store. Unscoped `rg /nix/store` ran for 30s+
+# without finishing and drove the devbox to load 70 (PSI io full=40%); with this
+# line it prunes in ~43ms. --follow is KEPT deliberately: home-manager symlinks
+# ~/.config/* into the store, and dropping --follow silently hides those configs.
+# To search the store on purpose, re-include it: rg --glob='**/nix/store/**' ...
+--glob=!**/nix/store/**
 --glob=!.git/
 --glob=!node_modules/
 --glob=!target/

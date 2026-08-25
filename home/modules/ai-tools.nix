@@ -683,7 +683,7 @@
 
     allowed_provider() {
       case "$1" in
-        claude|openai) return 0 ;;
+        claude|openai|minimax-direct|ollama-cloud|byteplus-ark) return 0 ;;
         *) return 1 ;;
       esac
     }
@@ -698,7 +698,7 @@
           provider_arg_seen=1
           i=$((i + 1))
           if [ "$i" -ge "''${#args[@]}" ] || ! allowed_provider "''${args[$i]}"; then
-            echo "jcode: provider is not allowed (use llm-gateway, claude, or openai)" >&2
+            echo "jcode: provider is not allowed (allowed: claude, openai, minimax-direct, ollama-cloud, byteplus-ark)" >&2
             exit 64
           fi
           ;;
@@ -706,7 +706,7 @@
           provider_arg_seen=1
           provider="''${args[$i]#--provider=}"
           if ! allowed_provider "$provider"; then
-            echo "jcode: provider '$provider' is not allowed (use llm-gateway, claude, or openai)" >&2
+            echo "jcode: provider '$provider' is not allowed (allowed: claude, openai, minimax-direct, ollama-cloud, byteplus-ark)" >&2
             exit 64
           fi
           ;;
@@ -714,7 +714,7 @@
           provider_arg_seen=1
           provider="''${args[$i]#-p}"
           if ! allowed_provider "$provider"; then
-            echo "jcode: provider '$provider' is not allowed (use llm-gateway, claude, or openai)" >&2
+            echo "jcode: provider '$provider' is not allowed (allowed: claude, openai, minimax-direct, ollama-cloud, byteplus-ark)" >&2
             exit 64
           fi
           ;;
@@ -786,6 +786,9 @@
     # than the effective allowlist, so expose the wrapper contract instead.
     if [ "$command_name" = "provider" ] && [ "$command_arg1" = "list" ]; then
       printf '%s\n' \
+        "minimax-direct	OpenAI-compatible	https://api.minimax.io/v1 (MiniMax-M3)" \
+        "ollama-cloud	OpenAI-compatible	https://ollama.com/v1 (glm-5.2, deepseek-v4-flash)" \
+        "byteplus-ark	OpenAI-compatible	https://ark.ap-southeast.bytepluses.com/api/coding/v3 (ark-code-latest)" \
         "llm-gateway	OpenAI-compatible	internal CentralCloud LLM gateway" \
         "claude	Anthropic/Claude	Claude Pro or Max OAuth subscription" \
         "openai	OpenAI	ChatGPT Plus or Pro OAuth subscription"

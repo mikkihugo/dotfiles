@@ -324,9 +324,10 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   assert.match(aiTools, /provider_requested="\$provider"/);
   assert.match(
     aiTools,
-    /provider_arg_seen" -ne 1 \] \|\| ! oauth_login_provider "\$provider_requested"/,
-    "all flag spellings must keep login restricted to OAuth providers",
+    /provider_arg_count" -ne 1 \] \|\| ! oauth_login_provider "\$provider_requested"/,
+    "login must reject duplicate flags and keep every spelling OAuth-only",
   );
+  assert.equal(aiTools.match(/provider_arg_count=\$\(\(provider_arg_count \+ 1\)\)/g)?.length, 3);
 
   assert.match(
     providers,

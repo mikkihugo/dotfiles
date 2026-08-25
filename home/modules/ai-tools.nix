@@ -489,11 +489,13 @@
     # for another compiled-in integration later appear on disk.
     args=("$@")
     provider_arg_seen=0
+    provider_arg_count=0
     provider_requested=""
     for ((i = 0; i < ''${#args[@]}; i++)); do
       case "''${args[$i]}" in
         -p|--provider)
           provider_arg_seen=1
+          provider_arg_count=$((provider_arg_count + 1))
           i=$((i + 1))
           if [ "$i" -ge "''${#args[@]}" ] || ! allowed_provider "''${args[$i]}"; then
             echo "jcode: provider is not allowed (allowed: claude, openai, minimax-direct, ollama-cloud, byteplus-ark)" >&2
@@ -503,6 +505,7 @@
           ;;
         --provider=*)
           provider_arg_seen=1
+          provider_arg_count=$((provider_arg_count + 1))
           provider="''${args[$i]#--provider=}"
           if ! allowed_provider "$provider"; then
             echo "jcode: provider '$provider' is not allowed (allowed: claude, openai, minimax-direct, ollama-cloud, byteplus-ark)" >&2
@@ -512,6 +515,7 @@
           ;;
         -p?*)
           provider_arg_seen=1
+          provider_arg_count=$((provider_arg_count + 1))
           provider="''${args[$i]#-p}"
           if ! allowed_provider "$provider"; then
             echo "jcode: provider '$provider' is not allowed (allowed: claude, openai, minimax-direct, ollama-cloud, byteplus-ark)" >&2
@@ -571,7 +575,7 @@
           exit 64
           ;;
         -*)
-          if [ "$provider_arg_seen" -ne 1 ] || ! oauth_login_provider "$provider_requested"; then
+          if [ "$provider_arg_count" -ne 1 ] || ! oauth_login_provider "$provider_requested"; then
             echo "jcode: login requires --provider claude or --provider openai" >&2
             exit 64
           fi

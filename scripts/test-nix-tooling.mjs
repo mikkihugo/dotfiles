@@ -259,6 +259,7 @@ test("NixOS owns the JCode units; Home Manager must not shadow them", async () =
 
 test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gateway fallbacks", async () => {
   const home = await source("home/home.nix");
+  const aiTools = await source("home/modules/ai-tools.nix");
   const service = await source("home/modules/jcode-server.nix");
   const aiTools = await source("home/modules/ai-tools.nix");
   const providers = await source("home/modules/jcode-providers.nix");
@@ -303,6 +304,20 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
     /paneStartCommand=.*pane_start_command[\s\S]*\$\{jcodeLauncher\}\/bin\/jcode[\s\S]*kill-session -t jcode-ui/,
   );
   assert.doesNotMatch(service, /JCODE_RUNTIME_DIR|runtime-allowlisted/);
+
+  for (const provider of ["minimax-direct", "ollama-cloud", "byteplus-ark"]) {
+    assert.match(
+      aiTools,
+      new RegExp(`claude\\|openai[^\\n]*${provider}`),
+      `the JCode wrapper must allow the managed ${provider} profile`,
+    );
+    assert.match(
+      aiTools,
+      new RegExp(`"${provider}\\tOpenAI-compatible`),
+      `jcode provider list must expose ${provider}`,
+    );
+  }
+  assert.match(aiTools, /\*\) return 1 ;;/, "unknown providers must remain denied");
 
   assert.match(
     providers,

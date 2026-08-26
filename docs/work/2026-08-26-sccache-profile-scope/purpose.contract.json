@@ -1,0 +1,23 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "dotfiles-sccache-profile-scope-20260826",
+  "source": {"system": "manual", "repository": ".", "request_id": "2026-08-26-sccache-profile-scope"},
+  "lineage": {
+    "origin": {"kind": "request", "id": "2026-08-26-sccache-profile-scope", "revision": "initial"},
+    "objective": {"id": "2026-08-26-sccache-profile-scope-objective", "statement": "Prevent fleet-only sccache configuration from leaking into portable Home Manager profiles.", "measure": "All four profiles evaluate; only cc-se-sto-devbox-01 emits the fleet wrapper and /run/sccache environment."},
+    "need": {"id": "2026-08-26-sccache-profile-scope-need", "statement": "Portable profiles currently inherit a fleet-only wrapper and socket that do not exist on those hosts.", "stakeholders": ["Rust builds on cc-se-sto-devbox-01, mikki-laptop, mikki-bunker, and generic mhugo"], "baseline": "home/modules/files.nix and build-cache-maintenance.nix are imported by the common module graph and unconditionally emit fleet sccache settings.", "consequence_of_no_action": "Laptop, bunker, and generic profiles can activate invalid Cargo wrapper and Unix-socket paths.", "assumptions": ["The devbox profile is the sole Home Manager consumer of the fleet host daemon; falsified if a declared non-devbox host documents that daemon contract."], "alternatives_considered": ["Keep fleet settings common", "Teach every portable host to run the fleet daemon"]}
+  },
+  "admission": {"state": "proposed", "producer": {"kind": "agent", "id": "codex:dotfiles-sccache-profiles-20260826"}},
+  "purpose": "Keep fleet-only sccache wrapper and Unix-socket settings off portable Home Manager profiles.",
+  "consumer": "The four Home Manager profile evaluations and Rust builds run from each profile.",
+  "contract": "Only cc-se-sto-devbox-01 emits the fleet rustc wrapper plus /run/sccache SCCACHE_DIR and SCCACHE_SERVER_UDS; mikki-laptop, mikki-bunker, and mhugo emit none of those fleet-only settings.",
+  "failure_boundary": "A failed profile evaluation or leaked fleet setting blocks integration; no live Home Manager activation is part of this lane.",
+  "evidence": [{"kind": "test", "description": "Evaluate the relevant activation/config attributes for all four profiles and assert the exact profile matrix.", "status": "expected"}],
+  "falsifier": {"claim": "Fleet-only sccache settings are devbox-only.", "executable_check": {"kind": "test", "description": "Evaluate all four Home Manager outputs and reject any wrong-profile setting.", "command": "repo check"}},
+  "non_goals": ["Changing the fleet system sccache daemon", "Changing runner-container cache daemons", "Activating Home Manager profiles", "Publishing this lane"],
+  "invariants": ["The devbox retains rustc-sccache-shim and /run/sccache/server.sock", "All four declared homeConfigurations continue evaluating", "Portable profiles retain ordinary Cargo configuration without fleet-only paths"],
+  "assumptions": [{"statement": "Profile-specific module composition can express this split without imperative activation logic.", "status": "verified", "doubt": 0, "falsifier": "flake evaluation shows no profile-specific module boundary."}],
+  "run_control": {"autonomous_allowed": true, "risk": "low", "blast_radius": "repo", "reversibility": "easy", "max_active_doubt": 1},
+  "target_planes": ["home-manager"],
+  "plane_constraints": ["Do not activate or publish from this implementation lane."]
+}

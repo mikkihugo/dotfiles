@@ -1,4 +1,9 @@
-{lib, ...}: {
+{
+  hostname ? "",
+  lib,
+  ...
+}:
+lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
   # Fleet hosts run system sccache.service (nix-cache.nix): one daemon, one L0
   # disk cache (/var/cache/sccache), one FlakeCache /host bucket. Point every
   # client at the system socket so jcode, engine, and CI runner jobs share hits.

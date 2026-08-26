@@ -1,0 +1,26 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "dotfiles-sccache-profile-scope-workspec-20260826",
+  "purpose_contract_id": "dotfiles-sccache-profile-scope-20260826",
+  "handover": {"state": "proposed", "producer": {"kind": "agent", "id": "codex:dotfiles-sccache-profiles-20260826"}},
+  "feature_tree_target": {"kind": "component", "name": "home-manager-sccache-profile-scope", "status": "planned"},
+  "current_spec": {"snapshot_id": "2026-08-26-sccache-profile-scope-current-spec", "uri": "current-spec.snapshot.json", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "c56ad3f82bb0c7d48b1767297eed18a4fead15c7e05161d280a7a69628bfdd4b"}},
+  "requirement_delta": {"added": [
+    {"id": "R1", "statement": "Scope the fleet Cargo wrapper and sccache environment to cc-se-sto-devbox-01.", "acceptance_criteria": ["cc-se-sto-devbox-01 emits rustc-sccache-shim", "cc-se-sto-devbox-01 emits /var/cache/sccache and /run/sccache/server.sock", "mikki-laptop, mikki-bunker, and mhugo emit none of those fleet-only settings"], "requirement_form": {"ears": {"pattern": "ubiquitous", "system": "Home Manager profile composition", "response": "emit fleet sccache settings only for cc-se-sto-devbox-01"}}, "breaker": {"breaker_id": "B1", "condition": "a portable profile emits any fleet-only sccache setting", "witness_kind": "contract-test", "expected": "rejected"}, "risk": "medium", "source": "purpose_contract"},
+    {"id": "R2", "statement": "Keep all four Home Manager profiles evaluable after the module split.", "acceptance_criteria": ["Each declared homeConfigurations activation package evaluates"], "requirement_form": {"ears": {"pattern": "unwanted-behavior", "system": "Home Manager profile composition", "trigger": "a profile is evaluated after the sccache split", "response": "evaluate without missing-option or module conflicts"}}, "breaker": {"breaker_id": "B2", "condition": "any profile fails evaluation", "witness_kind": "contract-test", "expected": "rejected"}, "risk": "medium", "source": "purpose_contract"}
+  ], "modified": [], "removed": [], "renamed": []},
+  "requirements": [
+    {"id": "R1", "statement": "Scope the fleet Cargo wrapper and sccache environment to cc-se-sto-devbox-01.", "acceptance_criteria": ["cc-se-sto-devbox-01 emits rustc-sccache-shim", "cc-se-sto-devbox-01 emits /var/cache/sccache and /run/sccache/server.sock", "mikki-laptop, mikki-bunker, and mhugo emit none of those fleet-only settings"], "requirement_form": {"ears": {"pattern": "ubiquitous", "system": "Home Manager profile composition", "response": "emit fleet sccache settings only for cc-se-sto-devbox-01"}}, "breaker": {"breaker_id": "B1", "condition": "a portable profile emits any fleet-only sccache setting", "witness_kind": "contract-test", "expected": "rejected"}, "risk": "medium", "source": "purpose_contract"},
+    {"id": "R2", "statement": "Keep all four Home Manager profiles evaluable after the module split.", "acceptance_criteria": ["Each declared homeConfigurations activation package evaluates"], "requirement_form": {"ears": {"pattern": "unwanted-behavior", "system": "Home Manager profile composition", "trigger": "a profile is evaluated after the sccache split", "response": "evaluate without missing-option or module conflicts"}}, "breaker": {"breaker_id": "B2", "condition": "any profile fails evaluation", "witness_kind": "contract-test", "expected": "rejected"}, "risk": "medium", "source": "purpose_contract"}
+  ],
+  "scope": {"allowed": ["home/modules/**", "flake.nix", "tests/**", "scripts/**", "docs/work/2026-08-26-sccache-profile-scope/**"], "blocked": ["secrets/**", "config/codex/**"], "expected_files": ["home/modules/files.nix", "home/modules/build-cache-maintenance.nix"]},
+  "test_plan": [
+    {"id": "T1", "requirement_id": "R1", "kind": "contract", "description": "Evaluate the exact fleet-setting matrix for all four profiles.", "must_fail_first": true},
+    {"id": "T2", "requirement_id": "R2", "kind": "integration", "description": "Evaluate activation packages for all four profiles.", "must_fail_first": false}
+  ],
+  "verification_plan": {"commands": ["repo check", "nix eval profile matrix contract"], "evidence_required": ["test", "quality", "falsifier"]},
+  "model_requirements": {"coding": 0.5, "debugging": 0.5},
+  "run_control": {"autonomous_allowed": true, "approval_required": false, "max_doubt_to_proceed": 1},
+  "traceability": {"owner": {"kind": "agent", "id": "codex:dotfiles-sccache-profiles-20260826"}, "agent_role": "implementer", "source_node_id": "2026-08-26-sccache-profile-scope", "target_planes": ["home-manager"], "dependencies": [], "retry_policy": {"max_attempts": 2, "backoff": "none", "retryable_terminal_reasons": ["transient-nix-fetch"]}, "dispatch_scope": {"kind": "local"}},
+  "execution_constraints": {"required_capabilities": ["nix-eval"], "requested_isolation": "process", "side_effect_policy": "fenced", "expected_artifact_schemas": [], "deterministic_replay_required": true}
+}

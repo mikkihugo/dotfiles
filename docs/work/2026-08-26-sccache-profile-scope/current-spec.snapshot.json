@@ -1,0 +1,6 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-08-26-sccache-profile-scope-current-spec",
+  "source": {"uri": "repository://home/modules/files.nix+home/modules/build-cache-maintenance.nix", "revision": "d61183394294bbe77cf2cf7a6f8c545ff6feb753"},
+  "requirements": []
+}

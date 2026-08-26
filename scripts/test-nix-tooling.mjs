@@ -76,6 +76,18 @@ test("Home Manager activation does not launch emergency backup jobs", async () =
   assert.match(gitBackup, /X-SwitchMethod\s*=\s*"keep-old"/);
 });
 
+test("mutable home sweeps serialize and report bounded lock failures", async () => {
+  const gitBackup = await source("home/modules/git-auto-backup.nix");
+  const emergencyBackup = await source("home/modules/home-emergency-backup.nix");
+  for (const module of [gitBackup, emergencyBackup]) {
+    assert.match(module, /home-mutable-workspace-sweep\.lock/);
+    assert.match(module, /flock --exclusive --wait/);
+    assert.match(module, /mutable sweep lock unavailable/);
+  }
+  assert.match(gitBackup, /timeout --kill-after=10s 45m/);
+  assert.match(gitBackup, /TimeoutStartSec\s*=\s*"7h"/);
+});
+
 test("git auto-backup yields host resources and waits after completion", async () => {
   const backup = await source("home/modules/git-auto-backup.nix");
   const backupService = backup.slice(

@@ -370,6 +370,18 @@
     } | tee "$log_file"
   '';
 
+  serializedBackupScript = pkgs.writeShellScript "git-auto-backup-serialized" ''
+    set -euo pipefail
+    lock="''${XDG_RUNTIME_DIR:-/run/user/$UID}/home-mutable-workspace-sweep.lock"
+    echo "git-auto-backup waiting for mutable sweep lock: $lock"
+    ${pkgs.util-linux}/bin/flock --exclusive --wait 6h --conflict-exit-code 75 \
+      "$lock" ${pkgs.coreutils}/bin/timeout --kill-after=10s 45m ${backupScript} || {
+      status=$?
+      echo "git-auto-backup mutable sweep lock unavailable or backup failed: status=$status lock=$lock" >&2
+      exit "$status"
+    }
+  '';
+
   workspaceLedgerScript = pkgs.writeShellScript "workspace-ledger-snapshot" ''
     set -euo pipefail
     lease_root="''${SE_LOCK_ROOT:-/tmp/singularity-engine}/workspace-leases"
@@ -391,7 +403,7 @@ in {
       };
       Service = {
         Type = "oneshot";
-        ExecStart = "${backupScript}";
+        ExecStart = "${serializedBackupScript}";
         # Backstop for anything the SSH keepalives cannot bound (a wedged local
         # git process, a stalled HTTPS remote). A run that cannot finish inside
         # this window is failing, not working; kill it so the next tick is clean.
@@ -401,7 +413,9 @@ in {
         # one -- it leaves the tail of the sweep unbacked while reporting nothing.
         # The per-call `timeout 180s` in git_net still bounds any single hang, so
         # this only widens the total, it does not weaken the stall protection.
-        TimeoutStartSec = "45min";
+        # The lock may be held by a full-home Borg sweep. Bound that wait in
+        # the wrapper, then independently bound the actual Git backup to 45m.
+        TimeoutStartSec = "7h";
         Nice = 19;
         IOSchedulingClass = "idle";
         CPUWeight = 10;

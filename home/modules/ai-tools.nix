@@ -95,7 +95,6 @@
 
   vtcodeWrapper = pkgs.writeShellScriptBin "vtcode" (vtcodeGatewayEnv "vtcode" "auto-glm");
   # Model aliases — still llm-gateway.svc only (no other providers).
-  vtcodeMinimaxGatewayWrapper = pkgs.writeShellScriptBin "vtcode-minimax" (vtcodeGatewayEnv "vtcode-minimax" "auto-minimax");
   vtcodeKimiWrapper = pkgs.writeShellScriptBin "vtcode-kimi" (vtcodeGatewayEnv "vtcode-kimi" "auto-kimi");
   vtcodeGlmWrapper = pkgs.writeShellScriptBin "vtcode-glm" (vtcodeGatewayEnv "vtcode-glm" "auto-glm");
 
@@ -176,72 +175,6 @@
       exec node "$copilot_app" "$@"
     fi
     exec "$copilot_bin" "$@"
-  '';
-
-  # copilot-minimax — GitHub Copilot CLI routed to MiniMax-M3
-  # (auto-minimax/MiniMax-M3) through the centralcloud-ai-proxy gateway at
-  # llm-gateway.centralcloud.com via BYOK. MiniMax-M3 has a 512K token context
-  # window and 131K max output tokens.
-  copilotMinimaxWrapper = pkgs.writeShellScriptBin "copilot-minimax" ''
-    set -euo pipefail
-    ${clientSessionIdentity "copilot"}
-    # shellcheck source=/dev/null
-    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="copilot-minimax"
-    copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
-    if [ ! -x "$copilot_bin" ]; then
-      echo "copilot-minimax: expected mise GitHub Copilot CLI at $copilot_bin" >&2
-      exit 127
-    fi
-    if [ -z "$edge_token" ]; then
-      echo "copilot-minimax: failed to read llm_gateway_api_key SOPS secret" >&2
-      exit 1
-    fi
-    ${gatewayUrlResolver "copilot-minimax"}
-    export RUST_LOG=warn
-    export COPILOT_PROVIDER_TYPE=openai
-    export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
-    export COPILOT_PROVIDER_API_KEY="$edge_token"
-    export COPILOT_MODEL=auto-minimax
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=512000
-    export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
-
-    node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
-
-    copilot_app="$HOME/.local/share/mise/installs/npm-github-copilot/latest/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/app.js"
-    if [ -f "$copilot_app" ]; then
-      exec node "$copilot_app" "$@"
-    fi
-    exec "$copilot_bin" "$@"
-  '';
-
-  # claude-minimax — Claude Code CLI routed to MiniMax-M3 through the
-  # centralcloud-ai-proxy gateway's Anthropic-Messages-compatible endpoint
-  # (llm-gateway.centralcloud.com/v1/messages) via BYOK. Generic aliases
-  # currently hang on this route (only wired through the
-  # OpenAI-compatible /v1/chat/completions path) — minimax-m3 is confirmed
-  # working, so it's pinned explicitly rather than left to alias resolution.
-  claudeMinimaxWrapper = pkgs.writeShellScriptBin "claude-minimax" ''
-    set -euo pipefail
-    # shellcheck source=/dev/null
-    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="claude-minimax"
-    claude_bin="$HOME/.local/bin/claude"
-    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
-    if [ ! -x "$claude_bin" ]; then
-      echo "claude-minimax: expected Claude Code CLI at $claude_bin" >&2
-      exit 127
-    fi
-    if [ -z "$edge_token" ]; then
-      echo "claude-minimax: failed to read llm_gateway_api_key SOPS secret" >&2
-      exit 1
-    fi
-    ${gatewayUrlResolver "claude-minimax"}
-    export ANTHROPIC_BASE_URL="$gateway_url"
-    export ANTHROPIC_API_KEY="$edge_token"
-    export API_TIMEOUT_MS=120000
-    exec "$claude_bin" --model minimax-m3 "$@"
   '';
 
   # copilot-all — GitHub Copilot CLI routed through the centralcloud-ai-proxy
@@ -857,7 +790,6 @@ in {
         vtcodeWrapper
         vtcodeGlmWrapper # binary: vtcode-glm -> auto-glm via llm-gateway.svc
         vtcodeKimiWrapper # binary: vtcode-kimi -> auto-kimi via llm-gateway.svc
-        vtcodeMinimaxGatewayWrapper # binary: vtcode-minimax -> auto-minimax via llm-gateway.svc
         # Raw llm-agents packages — no key injection needed.      # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
         # these packages compile from source — disable per-host as needed.
         # Claude Code is owned by its native installer outside Home Manager.
@@ -868,9 +800,7 @@ in {
         # droid is managed globally by mise (wrapped below for OTEL).
         copilotKimiWrapper # binary: copilot-kimi -> auto-kimi (Kimi Code K3) via llm-gateway
         copilotGlmWrapper # binary: copilot-glm -> auto-glm (Ollama Cloud GLM-5.2) via llm-gateway
-        copilotMinimaxWrapper # binary: copilot-minimax -> routes mise GitHub Copilot CLI to MiniMax-M3 (auto-minimax) via llm-gateway
         copilotAllWrapper # binary: copilot-all -> routes mise GitHub Copilot CLI through canonical llm-gateway auto aliases
-        claudeMinimaxWrapper # binary: claude-minimax -> routes Claude Code CLI to MiniMax-M3 via llm-gateway's Anthropic-Messages endpoint
         gooseGatewayWrapper # binary: goose -> resolves provider; openai uses llm-gateway
         gooseModels # binary: goose-models -> list llm-gateway /v1/models
         gooseClaude # binary: goose-claude -> claude-acp
@@ -1034,7 +964,7 @@ in {
       };
 
       # Bare GitHub Copilot CLI (mise) — inject OTEL; model routing stays on
-      # copilot-kimi / copilot-glm / copilot-minimax / copilot-all.
+      # copilot-kimi / copilot-glm / copilot-all.
       ".local/bin/copilot" = {
         executable = true;
         force = true;

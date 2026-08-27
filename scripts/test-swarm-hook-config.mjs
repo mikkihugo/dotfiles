@@ -53,23 +53,14 @@ test("Home Manager installs every managed hook surface", async () => {
   }
 });
 
-test("Copilot wrapper exposes the Nix bash runtime required by native hooks", async () => {
-  const tools = await readFile("home/modules/ai-tools.nix", "utf8");
-  const wrapper = tools.slice(
-    tools.indexOf('copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all"'),
-    tools.indexOf("in {", tools.indexOf('copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all"')),
-  );
-  assert.match(wrapper, /export PATH="\$\{pkgs\.bash\}\/bin:/);
-});
-
-test("Goose and Copilot wrappers export one inherited session identity", async () => {
+test("Goose and JCode wrappers export one inherited session identity", async () => {
   const tools = await readFile("home/modules/ai-tools.nix", "utf8");
 
   assert.match(tools, /clientSessionIdentity = client:/);
   assert.match(tools, /export SE_WORKSPACE_OWNER="\$\{client\}:\$client_session_id"/);
   assert.match(tools, /agent\.client=\$\{client\},agent\.session\.id=\$client_session_id/);
   assert.match(tools, /clientSessionIdentity "goose"/);
-  assert.match(tools, /clientSessionIdentity "copilot"/);
+  assert.match(tools, /clientSessionIdentity "jcode"/);
 });
 
 test("Home Manager enables only Summon delegation with ten background tasks", async () => {

@@ -130,7 +130,6 @@ _load_sops_secrets() {
 	if [ -n "$val" ] && [ -n "$url" ]; then
 		export LLM_MUX_API_KEY="$val"
 		export LLM_MUX_BASE_URL="$url"
-		export ACE_WORKER_API_KEY="$val"
 	fi
 
 	# OpenAI Gateway (ACE Coder / Goose CLI)
@@ -224,8 +223,6 @@ _load_sops_secrets() {
 	[ -n "$val" ] && export ALIBABA_API_KEY="$val"
 	val=$(_sops_sf_val ALIBABA_CODING_PLAN_API_KEY)
 	[ -n "$val" ] && export ALIBABA_CODING_PLAN_API_KEY="$val"
-	val=$(_sops_sf_val ALIBABA_TOKEN_PLAN_API_KEY)
-	[ -n "$val" ] && export ALIBABA_TOKEN_PLAN_API_KEY="$val"
 	val=$(_sops_sf_val GOOGLE_GENERATIVE_AI_API_KEY)
 	if [ -n "$val" ]; then
 		export GOOGLE_GENERATIVE_AI_API_KEY="$val" # opencode google provider (AI Studio, free Flash tier)
@@ -273,8 +270,6 @@ alias cs-minimax='claude-squad -p "opencode -m minimax/MiniMax-M3"'
 alias cs-opencode='claude-squad -p opencode'
 # codex
 alias cs-codex='claude-squad -p "/home/mhugo/.local/share/mise/installs/codex/latest/codex"'
-# opencode + Qwen3.7 Max (bailian-token-plan, flat-rate)
-alias cs-qwen='claude-squad -p "opencode -m bailian-token-plan/qwen3.7-max"'
 # opencode + Xiaomi MiMo v2.5 Pro
 alias cs-mimo='claude-squad -p "opencode -m xiaomi/mimo-v2.5-pro"'
 

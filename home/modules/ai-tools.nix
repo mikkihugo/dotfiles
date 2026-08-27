@@ -94,157 +94,7 @@
   '';
 
   vtcodeWrapper = pkgs.writeShellScriptBin "vtcode" (vtcodeGatewayEnv "vtcode" "auto-glm");
-  # Model aliases — still llm-gateway.svc only (no other providers).
-  vtcodeKimiWrapper = pkgs.writeShellScriptBin "vtcode-kimi" (vtcodeGatewayEnv "vtcode-kimi" "auto-kimi");
-  vtcodeGlmWrapper = pkgs.writeShellScriptBin "vtcode-glm" (vtcodeGatewayEnv "vtcode-glm" "auto-glm");
 
-  # copilot-kimi — GitHub Copilot CLI routed to the Kimi Code platform via BYOK.
-  # Kimi /coding/v1 allowlists User-Agent (KimiCLI/*, Claude Code, etc.) and
-  # rejects Copilot's default UA with 403, so we override it via
-  # COPILOT_AGENT_REQUEST_HEADERS.
-  # copilot-kimi — GitHub Copilot CLI routed to Kimi K3 (`auto-kimi`)
-  # through the centralcloud-ai-proxy gateway at llm-gateway.centralcloud.com
-  # via BYOK. The gateway owns the concrete Kimi Code model and limits.
-  copilotKimiWrapper = pkgs.writeShellScriptBin "copilot-kimi" ''
-    set -euo pipefail
-    ${clientSessionIdentity "copilot"}
-    # shellcheck source=/dev/null
-    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="copilot-kimi"
-    copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
-    if [ ! -x "$copilot_bin" ]; then
-      echo "copilot-kimi: expected mise GitHub Copilot CLI at $copilot_bin" >&2
-      exit 127
-    fi
-    if [ -z "$edge_token" ]; then
-      echo "copilot-kimi: failed to read llm_gateway_api_key SOPS secret" >&2
-      exit 1
-    fi
-    ${gatewayUrlResolver "copilot-kimi"}
-    export RUST_LOG=warn
-    export COPILOT_PROVIDER_TYPE=openai
-    export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
-    export COPILOT_PROVIDER_API_KEY="$edge_token"
-    export COPILOT_MODEL=auto-kimi
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=1048576
-    export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=32768
-
-    node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
-
-    copilot_app="$HOME/.local/share/mise/installs/npm-github-copilot/latest/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/app.js"
-    if [ -f "$copilot_app" ]; then
-      exec node "$copilot_app" "$@"
-    fi
-    exec "$copilot_bin" "$@"
-  '';
-
-  # copilot-glm — GitHub Copilot CLI routed to Ollama Cloud GLM-5.2 (`auto-glm`) through
-  # the centralcloud-ai-proxy gateway at llm-gateway.centralcloud.com via BYOK.
-  # The gateway catalog exposes this Ollama Cloud route with a 128K context.
-  # Top open-weight coding model: 62.1% SWE-bench Pro, 81.0% Terminal-Bench 2.1.
-  copilotGlmWrapper = pkgs.writeShellScriptBin "copilot-glm" ''
-    set -euo pipefail
-    ${clientSessionIdentity "copilot"}
-    # shellcheck source=/dev/null
-    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="copilot-glm"
-    copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
-    if [ ! -x "$copilot_bin" ]; then
-      echo "copilot-glm: expected mise GitHub Copilot CLI at $copilot_bin" >&2
-      exit 127
-    fi
-    if [ -z "$edge_token" ]; then
-      echo "copilot-glm: failed to read llm_gateway_api_key SOPS secret" >&2
-      exit 1
-    fi
-    ${gatewayUrlResolver "copilot-glm"}
-    export RUST_LOG=warn
-    export COPILOT_PROVIDER_TYPE=openai
-    export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
-    export COPILOT_PROVIDER_API_KEY="$edge_token"
-    export COPILOT_MODEL=auto-glm
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=131072
-    export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=32768
-
-    node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
-
-    copilot_app="$HOME/.local/share/mise/installs/npm-github-copilot/latest/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/app.js"
-    if [ -f "$copilot_app" ]; then
-      exec node "$copilot_app" "$@"
-    fi
-    exec "$copilot_bin" "$@"
-  '';
-
-  # copilot-all — GitHub Copilot CLI routed through the centralcloud-ai-proxy
-  # at llm-gateway.centralcloud.com (the external DNS name for the
-  # inference-fabric-edge service). No port-forward needed.
-  copilotAllWrapper = pkgs.writeShellScriptBin "copilot-all" ''
-    set -euo pipefail
-    ${clientSessionIdentity "copilot"}
-    # shellcheck source=/dev/null
-    [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-    export OTEL_SERVICE_NAME="copilot-all"
-    # Copilot's native hook processor launches the configured POSIX command
-    # through the literal executable name `bash`.  Keep that runtime and the
-    # shared Node hook deterministic even when the caller has a minimal PATH.
-    export PATH="${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.nodejs}/bin:$PATH"
-    copilot_bin="$HOME/.local/share/mise/shims/copilot"
-    edge_token="$(cat "${sopsSecrets.llm_gateway_api_key.path}" 2>/dev/null || echo "")"
-    if [ ! -x "$copilot_bin" ]; then
-      echo "copilot-all: expected mise GitHub Copilot CLI at $copilot_bin" >&2
-      exit 127
-    fi
-    if [ -z "$edge_token" ]; then
-      echo "copilot-all: failed to read llm_gateway_api_key SOPS secret" >&2
-      exit 1
-    fi
-    ${gatewayUrlResolver "copilot-all"}
-
-    # Keep @github/copilot on the newest npm release. The copilot CLI's own
-    # self-updater does not work when we disable the native binary in favour
-    # of the patched JS bundle, and mise's `latest` pin is only refreshed on
-    # `mise upgrade`. Throttle to once per hour so every invocation is not a
-    # round-trip to the npm registry.
-    upgrade_stamp="$HOME/.cache/copilot-all-last-upgrade"
-    mkdir -p "$(dirname "$upgrade_stamp")"
-    if [ ! -f "$upgrade_stamp" ] || [ "$(find "$upgrade_stamp" -mmin +60 2>/dev/null)" ]; then
-      if mise upgrade --yes "npm:@github/copilot" >/dev/null 2>&1; then
-        touch "$upgrade_stamp"
-      else
-        # Upgrade failure is non-fatal; the installed version may still work.
-        touch "$upgrade_stamp"
-        echo "copilot-all: mise upgrade failed (will retry in 1 hour)" >&2
-      fi
-    fi
-
-    export RUST_LOG=warn
-    export COPILOT_PROVIDER_TYPE=openai
-    export COPILOT_PROVIDER_BASE_URL="$gateway_url/v1"
-    export COPILOT_PROVIDER_API_KEY="$edge_token"
-    export COPILOT_MODEL=auto
-    export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=405504
-    export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=131072
-
-    # Patch the Copilot JS bundle so BYOK mode shows every model from the
-    # provider's /v1/models endpoint instead of only COPILOT_MODEL. The npm
-    # package layout changed in 1.0.64: app.js lives in the optional platform
-    # package, and the `copilot` shim tries the native binary first, so we run
-    # the patched node bundle directly.
-    node "$HOME/.copilot/byok-models-patch.cjs" 2>/dev/null || true
-
-    copilot_app="$HOME/.local/share/mise/installs/npm-github-copilot/latest/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/app.js"
-    if [ -f "$copilot_app" ]; then
-      exec node "$copilot_app" "$@"
-    fi
-    # Fallback for pre-1.0.64 layout where app.js was in the root package.
-    fallback_app="$HOME/.local/share/mise/installs/npm-github-copilot/latest/lib/node_modules/@github/copilot/app.js"
-    if [ -f "$fallback_app" ]; then
-      exec node "$fallback_app" "$@"
-    fi
-    exec "$copilot_bin" "$@"
-  '';
   # goose — upstream GitHub releases via mise.
   # Default: openai → llm-gateway.svc /v1 (SOPS/bao token), model kimi-code/k3 (1M ctx, tools+reasoning+vision).
   # Planner: minimax-coding-plan/MiniMax-M3; swarm alternative: auto-deepseek.
@@ -788,8 +638,6 @@ in {
         # ~/.local/bin/kimi to route through the CentralCloud llm-gateway.
         # vtcode: llm-gateway.svc only (see wrappers + ~/.local/bin/vtcode).
         vtcodeWrapper
-        vtcodeGlmWrapper # binary: vtcode-glm -> auto-glm via llm-gateway.svc
-        vtcodeKimiWrapper # binary: vtcode-kimi -> auto-kimi via llm-gateway.svc
         # Raw llm-agents packages — no key injection needed.      # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
         # these packages compile from source — disable per-host as needed.
         # Claude Code is owned by its native installer outside Home Manager.
@@ -798,9 +646,6 @@ in {
         # opencode is managed globally by mise.
         # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
         # droid is managed globally by mise (wrapped below for OTEL).
-        copilotKimiWrapper # binary: copilot-kimi -> auto-kimi (Kimi Code K3) via llm-gateway
-        copilotGlmWrapper # binary: copilot-glm -> auto-glm (Ollama Cloud GLM-5.2) via llm-gateway
-        copilotAllWrapper # binary: copilot-all -> routes mise GitHub Copilot CLI through canonical llm-gateway auto aliases
         gooseGatewayWrapper # binary: goose -> resolves provider; openai uses llm-gateway
         gooseModels # binary: goose-models -> list llm-gateway /v1/models
         gooseClaude # binary: goose-claude -> claude-acp
@@ -963,8 +808,8 @@ in {
         '';
       };
 
-      # Bare GitHub Copilot CLI (mise) — inject OTEL; model routing stays on
-      # copilot-kimi / copilot-glm / copilot-all.
+      # Bare GitHub Copilot CLI (mise) — inject OTEL. The gateway-routed
+      # model wrappers were removed; this is the only copilot entry point.
       ".local/bin/copilot" = {
         executable = true;
         force = true;

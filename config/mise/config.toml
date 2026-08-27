@@ -39,6 +39,7 @@ vultr-cli = "latest"
 # gogcli: renamed upstream from steipete/gogcli to openclaw/gogcli
 "go:github.com/openclaw/gogcli/cmd/gog" = "latest"
 "npm:@just-every/code" = "latest"
+ollama = "0.32.14"
 # jcode: managed by CI deploy + auto-deploy timer (~/.jcode/server/jcode), not mise.
 
 [env]

@@ -808,22 +808,6 @@ in {
         '';
       };
 
-      # Bare GitHub Copilot CLI (mise) — inject OTEL. The gateway-routed
-      # model wrappers were removed; this is the only copilot entry point.
-      ".local/bin/copilot" = {
-        executable = true;
-        force = true;
-        text = ''
-          #!/usr/bin/env bash
-          set -euo pipefail
-          ${clientSessionIdentity "copilot"}
-          # shellcheck source=/dev/null
-          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="copilot"
-          exec "$HOME/.local/share/mise/shims/copilot" "$@"
-        '';
-      };
-
       # Codex CLI is npm-managed (`npm i -g @openai/codex`) and needs no wrapper:
       # ~/.npm-global/bin is already on PATH via home.sessionPath.
       #

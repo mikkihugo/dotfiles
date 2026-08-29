@@ -217,6 +217,7 @@ test("NixOS owns the JCode units; Home Manager must not shadow them", async () =
 test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gateway fallbacks", async () => {
   const home = await source("home/home.nix");
   const service = await source("home/modules/jcode-server.nix");
+  const aiTools = await source("home/modules/ai-tools.nix");
   const providers = await source("home/modules/jcode-providers.nix");
   const preferences = await source("config/jcode/shared-preferences.toml");
   const prompt = await source("config/jcode/swarm-prompt.md");
@@ -227,11 +228,20 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   assert.match(service, /name\s*=\s*"jcode"/);
   // jcodeLauncher must stay OUT of home.packages: it is a writeShellApplication
   // named "jcode", so listing it collides in pkgs.buildEnv with ai-tools.nix's
-  // jcodeGatewayWrapper, which owns bin/jcode and enforces the provider
-  // allowlist. The service consumes the launcher by store path in ExecStart.
+  // jcodeGatewayWrapper on non-swarm hosts. The swarm CLI launcher is jcode's
+  // install_release wrapper; the watchdog reaches castle via store-path PATH.
   assert.match(service, /packages\s*=\s*\[jcodeTui\]/);
   assert.doesNotMatch(service, /packages\s*=\s*\[[^\]]*jcodeLauncher/);
   assert.doesNotMatch(service, /file\."\.local\/bin\/jcode"/);
+  assert.match(service, /jcode-swarm-fleet-watchdog\.service\.d\/50-server-jcode/);
+  assert.match(service, /jcode-swarm-fleet-watchdog\.timer\.d\/10-calendar/);
+  assert.match(service, /OnCalendar=\*:0\/5/);
+  assert.match(
+    aiTools,
+    /isSwarmDevbox\s*=\s*lib\.toLower hostname == "cc-se-sto-devbox-01"/,
+  );
+  assert.match(aiTools, /mkIf\s*\(!isSwarmDevbox\)/);
+  assert.match(aiTools, /install_release/);
   assert.match(
     service,
     /unset[\s\S]*JCODE_PROVIDER_LLM_GATEWAY_API_KEY[\s\S]*KIMI_API_KEY/,
@@ -278,7 +288,7 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   // the dependency without redefining (and therefore shadowing) the unit.
   assert.match(
     service,
-    /file\.".config\/systemd\/user\/jcode-server\.service\.d\/10-provider-config\.conf"/,
+    /jcode-server\.service\.d\/10-provider-config\.conf/,
   );
   assert.match(service, /Requires=jcode-provider-config\.service/);
   assert.match(service, /After=jcode-provider-config\.service/);

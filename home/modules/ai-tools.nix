@@ -16,12 +16,19 @@
 # that need key injection where the SOPS loader is not available.
 {
   config,
+  hostname ? "",
+  lib,
   pkgs,
   llm-agents,
   ...
 }: let
   sopsSecrets = config.sops.secrets;
   llm-pkgs = llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
+  # The swarm devbox CLI launcher is jcode's install_release wrapper
+  # (~/.local/bin/jcode -> ~/.jcode/builds/current/jcode). Do not force-shadow
+  # it with the laptop allowlist wrapper, which isolates JCODE_RUNTIME_DIR and
+  # would detach PATH `jcode` from castle.
+  isSwarmDevbox = lib.toLower hostname == "cc-se-sto-devbox-01";
 
   # Prefer in-cluster Service (https then http on .svc), then public edge.
   # Note: llm-gateway.svc currently answers on http; https probe fails fast.
@@ -655,9 +662,11 @@ in {
         gooseGlm # binary: goose-glm -> auto-glm (Ollama Cloud GLM-5.2)
         gooseQwenFast # binary: goose-qwen-fast -> auto-qwen-fast (Ollama Cloud Qwen 3.5 397B)
         codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
-        jcodeGatewayWrapper # binary: jcode -> llm-gateway.svc /v1 (+ strip ambient provider keys)
         llm-pkgs.mistral-vibe # binary: vibe
         # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
+      ]
+      ++ lib.optionals (!isSwarmDevbox) [
+        jcodeGatewayWrapper # binary: jcode -> llm-gateway.svc /v1 (+ strip ambient provider keys)
       ]
       # codex from llm-agents, x86_64-linux only.
       #
@@ -686,8 +695,11 @@ in {
       ];
 
     file = {
-      # jcode: shadow update/mise install so llm-gateway SOPS wrapper wins.
-      ".local/bin/jcode" = {
+      # Laptop/generic hosts: shadow update/mise install so llm-gateway SOPS
+      # wrapper wins. On cc-se-sto-devbox-01, jcode install_release owns
+      # ~/.local/bin/jcode (metadata-aware wrapper -> builds/current) and
+      # jcode-providers.nix owns ~/.jcode/config.toml via shared-preferences.
+      ".local/bin/jcode" = lib.mkIf (!isSwarmDevbox) {
         executable = true;
         force = true;
         source = "${jcodeGatewayWrapper}/bin/jcode";
@@ -696,7 +708,7 @@ in {
       # Managed OpenAI-compatible profile for the same fabric exposed internally
       # as http://llm-gateway.svc/v1. jcode rejects plain HTTP hostnames other
       # than localhost/private IPs, so the profile uses the public HTTPS edge.
-      ".jcode/config.toml" = {
+      ".jcode/config.toml" = lib.mkIf (!isSwarmDevbox) {
         force = true;
         text = ''
           # Managed by Home Manager (ai-tools.nix). Default traffic → llm-gateway.

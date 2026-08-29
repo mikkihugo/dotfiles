@@ -92,46 +92,62 @@ in
     home = {
       # jcodeLauncher is deliberately NOT in home.packages: it is a
       # writeShellApplication named "jcode", so it collides in buildEnv with
-      # ai-tools.nix's jcodeGatewayWrapper (also bin/jcode, and the module that
-      # enforces the provider allowlist). The service reaches it by store path in
-      # ExecStart, so it needs no PATH entry.
+      # ai-tools.nix's jcodeGatewayWrapper on non-swarm hosts. Interactive PATH
+      # on this host is jcode's install_release wrapper
+      # (~/.local/bin/jcode -> ~/.jcode/builds/current). The fleet watchdog
+      # must talk to castle via ~/.jcode/server/jcode, reached below by store
+      # path, not by overwriting that launcher.
       packages = [jcodeTui];
-      # The shadowed jcode entry under ~/.local/bin is owned by ai-tools.nix
-      # (jcodeGatewayWrapper), which enforces the llm-gateway + OAuth provider
-      # allowlist. Declaring it here too produced a conflicting home-manager
-      # definition and broke evaluation. The allowlist wrapper wins; this service
-      # reaches its launcher through the store path in ExecStart instead.
 
-      # The NixOS jcode-server unit does not know about jcode-provider-config,
-      # which is a Home Manager service rendering the provider env files. A
-      # systemd DROP-IN adds that ordering without redefining the unit, so NixOS
-      # keeps sole ownership of ExecStart and there is still exactly one unit.
-      # Replacing the whole unit here is what caused the shadowing bug below.
-      file.".config/systemd/user/jcode-server.service.d/10-provider-config.conf".text = ''
-        [Unit]
-        Requires=jcode-provider-config.service
-        After=jcode-provider-config.service
-      '';
+      file = {
+        # The NixOS jcode-server unit does not know about jcode-provider-config,
+        # which is a Home Manager service rendering the provider env files. A
+        # systemd DROP-IN adds that ordering without redefining the unit, so NixOS
+        # keeps sole ownership of ExecStart and there is still exactly one unit.
+        # Replacing the whole unit here is what caused the shadowing bug below.
+        ".config/systemd/user/jcode-server.service.d/10-provider-config.conf".text = ''
+          [Unit]
+          Requires=jcode-provider-config.service
+          After=jcode-provider-config.service
+        '';
 
-      # Client-local memory off, via ENVIRONMENT rather than config.toml, because
-      # jcode's TOML path is fail-open: load_from_file() swallows any parse error
-      # and returns None, config.rs:13 does .unwrap_or_default(), and
-      # FeatureConfig::default() has memory = true -- so ONE bad key anywhere in
-      # ~/.jcode/config.toml silently re-enables memory. That is not theoretical:
-      # it was off for 77 of the first 86 minutes after `[features] memory = false`
-      # landed, with 2005 "Failed to parse config file" lines to show for it.
-      # config.rs:14 applies env overrides AFTER unwrap_or_default(), so these
-      # survive an unparsable config; the TOML setting cannot.
-      #
-      # Both tools are required: "memory" alone does not close the store, because
-      # the "initiative" tool writes the same directory through
-      # goal.rs sync_goal_memory -> upsert_project_memory/upsert_global_memory.
-      # Durable agent memory belongs in the repo_memory bank, not a per-client store.
-      file.".config/systemd/user/jcode-server.service.d/20-memory-disable.conf".text = ''
-        [Service]
-        Environment="JCODE_DISABLED_TOOLS=memory,initiative"
-        Environment="JCODE_MEMORY_ENABLED=0"
-      '';
+        # Client-local memory off, via ENVIRONMENT rather than config.toml, because
+        # jcode's TOML path is fail-open: load_from_file() swallows any parse error
+        # and returns None, config.rs:13 does .unwrap_or_default(), and
+        # FeatureConfig::default() has memory = true -- so ONE bad key anywhere in
+        # ~/.jcode/config.toml silently re-enables memory. That is not theoretical:
+        # it was off for 77 of the first 86 minutes after `[features] memory = false`
+        # landed, with 2005 "Failed to parse config file" lines to show for it.
+        # config.rs:14 applies env overrides AFTER unwrap_or_default(), so these
+        # survive an unparsable config; the TOML setting cannot.
+        #
+        # Both tools are required: "memory" alone does not close the store, because
+        # the "initiative" tool writes the same directory through
+        # goal.rs sync_goal_memory -> upsert_project_memory/upsert_global_memory.
+        # Durable agent memory belongs in the repo_memory bank, not a per-client store.
+        ".config/systemd/user/jcode-server.service.d/20-memory-disable.conf".text = ''
+          [Service]
+          Environment="JCODE_DISABLED_TOOLS=memory,initiative"
+          Environment="JCODE_MEMORY_ENABLED=0"
+        '';
+
+        # Watchdog `dbg()` calls PATH `jcode`. Put the castle-attached launcher
+        # first so a lagged CLI current (install_release) cannot fail debug
+        # against the live server, and so the laptop allowlist wrapper cannot
+        # isolate the client from %t/jcode.sock.
+        ".config/systemd/user/jcode-swarm-fleet-watchdog.service.d/50-server-jcode.conf".text = ''
+          [Service]
+          Environment=PATH=${jcodeLauncher}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
+        '';
+
+        # OnUnitActiveSec alone leaves NEXT=- after a failed oneshot across a
+        # user-session restart. Calendar catch-up keeps heal running.
+        ".config/systemd/user/jcode-swarm-fleet-watchdog.timer.d/10-calendar.conf".text = ''
+          [Timer]
+          OnCalendar=*:0/5
+          Persistent=true
+        '';
+      };
     };
 
     # jcode-server and jcode-webtty are declared by NixOS in

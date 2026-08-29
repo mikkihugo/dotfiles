@@ -107,13 +107,17 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* \*:00\/30:00"/);
   assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* \*:15\/30:00"/);
   assert.match(backup, /RandomizedDelaySec\s*=\s*"2min"/);
+  assert.match(backup, /Type\s*=\s*"exec"/);
   assert.match(backup, /RuntimeMaxSec\s*=\s*"25min"/);
   assert.match(backup, /Nice\s*=\s*19/);
   assert.match(backup, /IOSchedulingClass\s*=\s*"idle"/);
   assert.match(backup, /lock="\$XDG_RUNTIME_DIR\/borgmatic-hot-source\.lock"/);
   assert.match(backup, /flock -n -E 75 "\$lock"/);
   assert.match(backup, /borgmatic[^\n]*create/);
-  assert.match(backup, /repo-info[\s\S]*repo-create --encryption none/);
+  assert.match(backup, /borg_hot_source_passphrase/);
+  assert.match(backup, /BORG_PASSPHRASE/);
+  assert.match(backup, /repo-info[\s\S]*repo-create --encryption repokey/);
+  assert.doesNotMatch(backup, /repo-create --encryption none/);
   assert.match(backup, /create prune compact/);
   assert.match(backup, /make_parent_directories\s*=\s*true/);
   assert.match(

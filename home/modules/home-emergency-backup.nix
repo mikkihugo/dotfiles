@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   hostname ? "",
@@ -15,6 +16,7 @@
   homeDir = "/home/mhugo";
   keyPath = "${homeDir}/.ssh/storagebox-backup";
   sshCommand = "${pkgs.openssh}/bin/ssh -i ${keyPath} -p 23 -o BatchMode=yes -o StrictHostKeyChecking=yes";
+  hotSourcePassphrasePath = config.sops.secrets.borg_hot_source_passphrase.path;
   commonConfig = {
     source_directories = [homeDir];
     exclude_patterns = [
@@ -169,7 +171,7 @@
     source_directories = hotSourceDirectories;
     repositories = [
       {
-        path = "${lib.removeSuffix "/${backupHost}" target.path}/hot-source/${backupHost}";
+        path = "${lib.removeSuffix "/${backupHost}" target.path}/hot-source-v2/${backupHost}";
         label = "hot-source-${name}";
         make_parent_directories = true;
       }
@@ -195,10 +197,13 @@
         set -euo pipefail
         config="$1"
         borgmatic="$2"
+        passphrase_file="$3"
+        test -s "$passphrase_file"
+        export BORG_PASSPHRASE="$(< "$passphrase_file")"
         "$borgmatic" --config "$config" repo-info --verbosity -1 >/dev/null 2>&1 ||
-          "$borgmatic" --config "$config" repo-create --encryption none --verbosity 1
+          "$borgmatic" --config "$config" repo-create --encryption repokey --verbosity 1
         exec "$borgmatic" --config "$config" create prune compact --verbosity 1
-      ' _ ${hotConfigPath name} ${pkgs.borgmatic}/bin/borgmatic
+      ' _ ${hotConfigPath name} ${pkgs.borgmatic}/bin/borgmatic ${hotSourcePassphrasePath}
     '';
   restoreKeyPackage = pkgs.writeShellScriptBin "storagebox-backup-key-restore" ''
     set -euo pipefail
@@ -297,6 +302,12 @@ in
       targets;
     }
     (lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
+      sops.secrets.borg_hot_source_passphrase = {
+        key = "borg/hot_source_passphrase";
+        mode = "0600";
+        sopsFile = ../../secrets/api-keys.yaml;
+      };
+
       xdg.configFile = lib.mapAttrs' (name: target:
         lib.nameValuePair "borgmatic.d/hot-source-${name}.yaml" {
           text = builtins.toJSON (hotSourceConfig name target);
@@ -312,7 +323,7 @@ in
             X-SwitchMethod = "keep-old";
           };
           Service = {
-            Type = "oneshot";
+            Type = "exec";
             ExecStartPre = "${restoreKeyPackage}/bin/storagebox-backup-key-restore";
             ExecStart = "${hotSourceRunner name}";
             SuccessExitStatus = [75];
@@ -323,7 +334,6 @@ in
             IOWeight = 10;
             Environment = [
               "HOME=${homeDir}"
-              "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
             ];
           };
         })

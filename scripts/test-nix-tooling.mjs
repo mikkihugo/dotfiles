@@ -607,6 +607,7 @@ const collectFileKeys = (modules) => {
   };
   for (const { name, lines } of modules) {
     let inBlock = false;
+    let armed = false;
     let depth = 0;
     lines.forEach((line, index) => {
       const code = line.split("#")[0];
@@ -618,8 +619,21 @@ const collectFileKeys = (modules) => {
       if (!inBlock) {
         if (/^\s*(?:home\.file|file|xdg\.configFile|configFile)\s*=\s*\{/.test(code)) {
           inBlock = true;
+          armed = false;
           depth = 0;
+          return;
         }
+        if (/^\s*(?:home\.file|file|xdg\.configFile|configFile)\s*=\s*$/.test(code)) {
+          armed = true;
+          return;
+        }
+        if (armed && code.includes("{")) {
+          inBlock = true;
+          armed = false;
+          depth = 0;
+          return;
+        }
+        if (armed && code.includes(";")) armed = false;
         return;
       }
       if (depth === 0) {

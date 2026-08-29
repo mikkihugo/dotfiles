@@ -1,5 +1,27 @@
 # SSH host aliases and the exact key file configured for each block.
 # IdentitiesOnly=yes ensures only the listed key is used for authentication.
+#
+# OpenSSH uses the first obtained value per directive. Forgejo/GitHub mux
+# disable must precede Host *; a later host block cannot override ControlPersist.
+
+Host git.infra.centralcloud.com git.centralcloud.net
+    HostName git.centralcloud.net
+    Port 2222
+    User git
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+    ControlMaster no
+    ControlPath none
+    ControlPersist no
+
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/github_mikkihugo
+    IdentitiesOnly yes
+    ControlMaster no
+    ControlPath none
+    ControlPersist no
 
 Host *
     ServerAliveInterval 60
@@ -172,18 +194,3 @@ Host mikki-laptop
     HostName mikki-laptop
     User mhugo
     IdentityFile ~/.ssh/id_ed25519
-
-# git.infra.centralcloud.com is retired. Keep the Host alias so leftover
-# remotes still reach Forgejo; the destination is git.centralcloud.net.
-Host git.infra.centralcloud.com git.centralcloud.net
-    HostName git.centralcloud.net
-    Port 2222
-    User git
-    IdentityFile ~/.ssh/personal_admin_id_ed25519
-    IdentitiesOnly yes
-
-Host github.com
-    HostName github.com
-    User git
-    IdentityFile ~/.ssh/github_mikkihugo
-    IdentitiesOnly yes

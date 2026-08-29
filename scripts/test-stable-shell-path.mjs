@@ -157,7 +157,10 @@ test("the NixOS devbox is the sole interactive direnv hook authority", {
 
   for (const [profile, expected] of [
     ["cc-se-sto-devbox-01", false],
-    ["mhugo", true],
+    // direnv-instant disables programs.direnv bash/zsh hooks on every profile
+    // so it can own the interactive path. The generic mhugo fallback is not
+    // a second hook authority.
+    ["mhugo", false],
   ]) {
     for (const integration of ["enableBashIntegration", "enableZshIntegration"]) {
       const evaluated = spawnSync(

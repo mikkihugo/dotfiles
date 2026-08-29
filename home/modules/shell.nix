@@ -6,10 +6,12 @@
 {
   lib,
   pkgs,
+  hostname ? "",
   direnv-instant,
   ...
 }: let
   dotfilesRoot = "$HOME/.dotfiles";
+  nixosOwnsInteractiveDirenv = lib.toLower hostname == "cc-se-sto-devbox-01";
 
   # NixOS `programs.direnv-instant` puts `eval "$(direnv-instant hook bash)"` in
   # /etc/bashrc, which bash sources BEFORE ~/.bashrc. The hook arms a SIGUSR1
@@ -401,6 +403,12 @@ in {
     # Plain install (no resholve): ambient coreutils from the flake shell PATH.
     direnv = {
       enable = true;
+      # The devbox installs direnv-instant from its NixOS host module. A second
+      # Home Manager hook would synchronously evaluate the same .envrc after
+      # the instant hook, defeating non-blocking activation. Other Home Manager
+      # targets retain their existing integrations.
+      enableBashIntegration = !nixosOwnsInteractiveDirenv;
+      enableZshIntegration = !nixosOwnsInteractiveDirenv;
       nix-direnv = {
         enable = true;
         package = pkgs.stdenvNoCC.mkDerivation {
@@ -446,8 +454,10 @@ in {
     # directory matching "foo". Enabled for both shells.
     zoxide = {
       enable = true;
-      enableBashIntegration = true;
-      enableZshIntegration = true;
+      # NixOS owns the interactive hook. Home Manager keeps the user package
+      # declaration but must not install a second Bash or Zsh hook.
+      enableBashIntegration = false;
+      enableZshIntegration = false;
     };
   };
 }

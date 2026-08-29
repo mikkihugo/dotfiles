@@ -69,6 +69,15 @@ main() {
 			scripts/test-ssh-sto-core.mjs \
 			scripts/test-ssh-bunker-windows.mjs
 	)
+	# Keep the NixOS ownership evaluation out of the nominal Node-only suite: it
+	# evaluates the homeConfigurations attrset and is intentionally a separate
+	# slow gate.
+	(
+		cd "$root"
+		RUN_NIX_EVAL_TESTS=1 node --test \
+			--test-name-pattern='the NixOS devbox is the sole interactive direnv hook authority' \
+			scripts/test-stable-shell-path.mjs
+	)
 	if ! nix_gate_needs_build; then
 		printf 'skipped home-manager build gate (no nix-relevant changes vs origin/main)\n'
 		return 0

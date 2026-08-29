@@ -259,7 +259,6 @@ test("NixOS owns the JCode units; Home Manager must not shadow them", async () =
 
 test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gateway fallbacks", async () => {
   const home = await source("home/home.nix");
-  const aiTools = await source("home/modules/ai-tools.nix");
   const service = await source("home/modules/jcode-server.nix");
   const aiTools = await source("home/modules/ai-tools.nix");
   const providers = await source("home/modules/jcode-providers.nix");

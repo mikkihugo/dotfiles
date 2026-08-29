@@ -126,9 +126,13 @@ test("Home Manager uses direnv-instant for interactive shells", async () => {
   assert.match(plainTerminalPatch, /If not in a multiplexer, just run direnv synchronously/);
   assert.match(plainTerminalPatch, /^\+\s+if Multiplexer::detect\(\)\.is_none\(\) && shell == Shell::Fish/m);
   assert.match(plainTerminalPatch, /start_is_async_in_non_mux_mode/);
-  assert.match(shellModule, /enableBashIntegration = true/);
-  assert.match(shellModule, /enableZshIntegration = true/);
   assert.match(shellModule, /enableFishIntegration = true/);
+  assert.match(
+    shellModule,
+    /nixosOwnsInteractiveDirenv = lib\.toLower hostname == "cc-se-sto-devbox-01"/,
+  );
+  assert.match(shellModule, /enableBashIntegration = !nixosOwnsInteractiveDirenv/);
+  assert.match(shellModule, /enableZshIntegration = !nixosOwnsInteractiveDirenv/);
   assert.match(bootstrap, /SHELL_CONFIG="\$HOME\/\.bashrc"/);
   assert.match(bootstrap, /direnv-instant hook zsh/);
   assert.match(bootstrap, /direnv-instant hook fish \| source/);
@@ -137,6 +141,38 @@ test("Home Manager uses direnv-instant for interactive shells", async () => {
   assert.match(bootstrap, /if ! grep -q "direnv-instant hook"/);
   assert.doesNotMatch(bootstrap, /grep -Eq "direnv\(-instant\)\? hook"/);
   assert.match(swarmHook, /delete lockHelperEnv\.BASH_ENV/);
+});
+
+test("the NixOS devbox is the sole interactive direnv hook authority", {
+  skip: process.env.RUN_NIX_EVAL_TESTS !== "1",
+}, async () => {
+  const homeModule = await readFile("home/modules/shell.nix", "utf8");
+
+  assert.match(
+    homeModule,
+    /nixosOwnsInteractiveDirenv = lib\.toLower hostname == "cc-se-sto-devbox-01"/,
+  );
+  assert.match(homeModule, /enableBashIntegration = !nixosOwnsInteractiveDirenv/);
+  assert.match(homeModule, /enableZshIntegration = !nixosOwnsInteractiveDirenv/);
+
+  for (const [profile, expected] of [
+    ["cc-se-sto-devbox-01", false],
+    ["mhugo", true],
+  ]) {
+    for (const integration of ["enableBashIntegration", "enableZshIntegration"]) {
+      const evaluated = spawnSync(
+        "nix",
+        [
+          "eval",
+          "--json",
+          `.#homeConfigurations.${profile}.config.programs.direnv.${integration}`,
+        ],
+        { encoding: "utf8" },
+      );
+      assert.equal(evaluated.status, 0, evaluated.stderr);
+      assert.equal(JSON.parse(evaluated.stdout), expected, `${profile} ${integration}`);
+    }
+  }
 });
 
 test("Home Manager exports BASH_ENV for login and systemd user sessions", async () => {

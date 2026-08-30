@@ -33,12 +33,18 @@ claude-squad = "latest"
 azure-cli = { version = "latest", uvx_args = "--prerelease=allow" }
 "pipx:nanobot-ai" = "latest"
 "npm:wrangler" = "latest"
-oci = "latest"
+# oci: pinned — both registry backends are broken on mise 2026.8.6 (asdf plugin
+# lacks bin/list-all; vfox:jdx/vfox-oci crashes in post_install.lua). 3.90.3 is
+# installed and working; bump manually after checking the plugin is fixed.
+oci = "3.90.3"
 vultr-cli = "latest"
 "pipx:b2" = "latest"
 # gogcli: renamed upstream from steipete/gogcli to openclaw/gogcli
 "go:github.com/openclaw/gogcli/cmd/gog" = "latest"
-"npm:@just-every/code" = "latest"
+# just-every/code: 422 weekly downloads < aube's 1000 threshold; the approval
+# prompt auto-aborts in headless runs and fails mise-auto-update. Documented
+# scoped exemption (mise npm backend docs, tool option allow_low_downloads).
+"npm:@just-every/code" = { version = "latest", allow_low_downloads = true }
 ollama = "0.32.14"
 # jcode: managed by CI deploy + auto-deploy timer (~/.jcode/server/jcode), not mise.
 

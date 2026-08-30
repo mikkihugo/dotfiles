@@ -105,6 +105,15 @@ in {
         NPM_CONFIG_PREFIX = "$HOME/.npm-global";
         SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
         MINIMAX_API_HOST = "https://api.minimax.io";
+        # kimi-code: enable the experimental [secondary_model] subagent pool.
+        # config.toml binds it to minimax-coding-plan/MiniMax-M3 (api.minimax.io);
+        # the pool stays inert without this flag.
+        KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL = "1";
+        # kimi-code: master experiment gate — enables every experimental
+        # feature (the specific flag above is then redundant, kept to document
+        # the intent). Side effect: update rollout gating is skipped, so new
+        # kimi versions are always offered immediately (rollout.ts).
+        KIMI_CODE_EXPERIMENTAL_FLAG = "1";
         MISE_YES = "1";
         COLORTERM = "truecolor";
         RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";

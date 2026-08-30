@@ -178,6 +178,24 @@
         # host cannot accidentally enable the bunker GPU role.
         "mhugo" = mkHome "x86_64-linux" "";
       };
+
+      # `nix fmt` runs alejandra on every .nix file in the repo.
+      formatter =
+        nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"]
+        (sys:
+          (import nixpkgs {
+            system = sys;
+            config.allowUnfree = true;
+          }).alejandra);
+
+      # `nix flake check` would run the same lint chain the pre-commit
+      # hook enforces (alejandra + statix + deadnix), but nix flake check's
+      # per-system validator trips on the runCommand derivation shape on
+      # this flake's flake-utils version. The pre-commit hook already
+      # enforces these checks at commit time; `nix flake check` stays
+      # here for flake-level evaluation correctness, not for the lint pass.
+      # See https://github.com/numtide/flake-utils/issues/114 for the
+      # related eachDefaultSystem validation; this is a sibling issue.
     }
     // flake-utils.lib.eachDefaultSystem (sys: let
       maintenance-pkgs = import nixpkgs {

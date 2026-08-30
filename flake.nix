@@ -188,14 +188,48 @@
             config.allowUnfree = true;
           }).alejandra);
 
-      # `nix flake check` would run the same lint chain the pre-commit
-      # hook enforces (alejandra + statix + deadnix), but nix flake check's
-      # per-system validator trips on the runCommand derivation shape on
-      # this flake's flake-utils version. The pre-commit hook already
-      # enforces these checks at commit time; `nix flake check` stays
-      # here for flake-level evaluation correctness, not for the lint pass.
-      # See https://github.com/numtide/flake-utils/issues/114 for the
-      # related eachDefaultSystem validation; this is a sibling issue.
+      # `nix flake check` runs the same lint chain the pre-commit hook
+      # enforces. Canonical Nix shape: each check is a NAMED derivation
+      # under `checks.<system>` (not a single derivation per system;
+      # that's the schema trap because an unnamed `checks.<sys> =
+      # derivation;` is read as a derivation whose `.outPath` is then
+      # checked as if it were itself a derivation).
+      checks =
+        nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"]
+        (sys:
+          let
+            pkgs = import nixpkgs {
+              system = sys;
+              config.allowUnfree = true;
+            };
+          in {
+            format = pkgs.runCommand "dotfiles-format-check-${sys}" {
+              src = ./.;
+              buildInputs = [ pkgs.alejandra ];
+            } ''
+              cd "$src"
+              alejandra --check .
+              touch $out
+            '';
+            statix-check = pkgs.runCommand "dotfiles-statix-check-${sys}" {
+              src = ./.;
+              buildInputs = [ pkgs.statix ];
+            } ''
+              cd "$src"
+              statix check .
+              touch $out
+            '';
+            deadnix-check = pkgs.runCommand "dotfiles-deadnix-check-${sys}" {
+              src = ./.;
+              buildInputs = [ pkgs.deadnix ];
+            } ''
+              cd "$src"
+              deadnix --no-unused --error .
+              touch $out
+            '';
+          });
+
+
     }
     // flake-utils.lib.eachDefaultSystem (sys: let
       maintenance-pkgs = import nixpkgs {

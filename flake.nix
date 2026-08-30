@@ -100,6 +100,17 @@
   }: let
     specialArgs = {inherit sops-nix ace-coder llm-agents direnv-instant inference-fabric;};
 
+    # Single nixpkgs per system, shared across the outputs below. Re-using
+    # this binding instead of re-importing inside the `formatter` and
+    # `checks` blocks keeps the closure shareable (substituters cache the
+    # same store path for the same args) and avoids the per-system evaluation
+    # cost of two `import nixpkgs` calls.
+    pkgsFor = system:
+      import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
+
     # Single home.nix works on all arches — GPU service is gated by lib.optionals.
     # targetSystem is passed as specialArgs so imports can branch without
     # referencing pkgs (which would cause infinite recursion in imports).
@@ -182,11 +193,7 @@
       # `nix fmt` runs alejandra on every .nix file in the repo.
       formatter =
         nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"]
-        (sys:
-          (import nixpkgs {
-            system = sys;
-            config.allowUnfree = true;
-          }).alejandra);
+        (sys: (pkgsFor sys).alejandra);
 
       # `nix flake check` runs the same lint chain the pre-commit hook
       # enforces. Canonical Nix shape: each check is a NAMED derivation
@@ -196,46 +203,45 @@
       # checked as if it were itself a derivation).
       checks =
         nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"]
-        (sys:
-          let
-            pkgs = import nixpkgs {
-              system = sys;
-              config.allowUnfree = true;
-            };
-          in {
-            format = pkgs.runCommand "dotfiles-format-check-${sys}" {
+        (sys: let
+          pkgs = pkgsFor sys;
+        in {
+          format =
+            pkgs.runCommand "dotfiles-format-check-${sys}" {
               src = ./.;
-              buildInputs = [ pkgs.alejandra ];
+              buildInputs = [pkgs.alejandra];
             } ''
               cd "$src"
               alejandra --check .
               touch $out
             '';
-            statix-check = pkgs.runCommand "dotfiles-statix-check-${sys}" {
+          statix-check =
+            pkgs.runCommand "dotfiles-statix-check-${sys}" {
               src = ./.;
-              buildInputs = [ pkgs.statix ];
+              buildInputs = [pkgs.statix];
             } ''
               cd "$src"
               statix check .
               touch $out
             '';
-            deadnix-check = pkgs.runCommand "dotfiles-deadnix-check-${sys}" {
+          deadnix-check =
+            pkgs.runCommand "dotfiles-deadnix-check-${sys}" {
               src = ./.;
-              buildInputs = [ pkgs.deadnix ];
+              buildInputs = [pkgs.deadnix];
             } ''
               cd "$src"
               deadnix --no-unused --error .
               touch $out
             '';
-          });
-
-
+        });
     }
     // flake-utils.lib.eachDefaultSystem (sys: let
-      maintenance-pkgs = import nixpkgs {
-        system = sys;
-        config.allowUnfree = true;
-      };
+      # Re-use the shared `pkgsFor` binding so this block's derivations
+      # are path-equal to the `formatter` / `checks` ones above. Without
+      # this, each system would have two nixpkgs instances differing only
+      # by file id, which breaks `nix path-info --requisites` deduplication
+      # for any consumer of multiple outputs.
+      maintenance-pkgs = pkgsFor sys;
     in {
       # Bootstrap runner from the same locked Home Manager input used to build
       # the profiles. `nix run path:.#home-manager -- switch ...` therefore

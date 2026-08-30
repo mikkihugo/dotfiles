@@ -43,6 +43,7 @@ in {
       ./modules/git.nix
       ./modules/stable-shell.nix
       ./modules/jcode-gc.nix
+      ./modules/nix-gc-sweep.nix
       ./modules/reap-abandoned-searches.nix
       ./modules/engine-worktree-cleanup.nix
       ./modules/home-emergency-backup.nix

@@ -84,6 +84,7 @@
     nix-diff # explains why two derivations differ
     nurl # generates fetcher calls with hashes for dependency updates
     nix-du # identifies which garbage-collector roots consume the store
+    nix-bloat # ranks closures by size, surfaces unexpectedly-large ones
     nix-fast-build # parallel evaluation/build, used by the repository check
     nh # builds, shows the generation diff, then activates Home Manager
     kubectl # Kubernetes CLI for Flux/k3s validation and ops

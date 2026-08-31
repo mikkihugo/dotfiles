@@ -406,6 +406,8 @@ in {
     # Pin 3.2.0 (nix-direnv#753): log with `>&2` instead of `>/dev/stderr`.
     # Agent/non-tty shells often ENXIO on /dev/stderr ("No such device or address").
     # Plain install (no resholve): ambient coreutils from the flake shell PATH.
+    # Overlay: do not GC-root every `nix flake archive` input. The flake-profile
+    # already keeps the built shell; per-input roots fan out across worktrees.
     direnv = {
       enable = true;
       # The devbox installs direnv-instant from its NixOS host module. A second
@@ -426,6 +428,9 @@ in {
             # Public nixpkgs SRI source hash, not a credential.
             hash = "sha256-dNJeSRuuqA2avtLpTse7mTTmnYdVnC5BxRsofuLXiqE="; # pragma: allowlist secret
           };
+          patches = [
+            ../patches/nix-direnv-3.2.0-no-flake-input-gcroots.patch
+          ];
           dontConfigure = true;
           dontBuild = true;
           installPhase = ''

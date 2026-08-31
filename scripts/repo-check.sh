@@ -65,6 +65,7 @@ main() {
 			scripts/test-swarm-messages.mjs \
 			scripts/test-swarm-hook-config.mjs \
 			scripts/test-nix-tooling.mjs \
+			scripts/test-nix-direnv-no-flake-input-gcroots.mjs \
 			scripts/test-retired-infra-hosts.mjs \
 			scripts/test-ssh-sto-core.mjs \
 			scripts/test-ssh-bunker-windows.mjs

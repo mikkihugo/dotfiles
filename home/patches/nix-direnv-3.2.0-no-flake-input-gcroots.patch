@@ -1,0 +1,43 @@
+--- a/direnvrc	2026-08-31 03:52:10.421351602 +0000
++++ b/direnvrc	2026-08-31 03:52:10.526353678 +0000
+@@ -214,10 +214,14 @@
+ _nix_refresh_gcroots() {
+   # Use touch to update all symlinks' timestamps to prevent nh
+   # from garbage collecting the frequently used direnv environment.
++  # Do not touch flake-inputs: this overlay does not GC-root flake sources.
++  # The flake-profile already keeps the built shell; substituters refill inputs.
+   local layout_dir
+   layout_dir=$(direnv_layout_dir)
+-
+-  if ! touch -h "${layout_dir}"/flake-profile-* "${layout_dir}"/flake-inputs/* "${layout_dir}"/nix-profile-* 2>/dev/null; then
++  shopt -s nullglob
++  local roots=( "${layout_dir}"/flake-profile-* "${layout_dir}"/nix-profile-* )
++  shopt -u nullglob
++  if ((${#roots[@]})) && ! touch -h "${roots[@]}" 2>/dev/null; then
+     _nix_direnv_warning "could not refresh gcroots; layout directory may be read-only"
+   fi
+ }
+@@ -372,18 +376,11 @@
+         _nix_add_gcroot "$tmp_profile" "$profile"
+         rm -f "$tmp_profile" "$tmp_profile"*
+ 
+-        # also add garbage collection root for source
+-        local flake_input_paths
+-        mkdir -p "$flake_inputs"
+-        flake_input_paths=$(_nix flake archive \
+-          --json --no-write-lock-file \
+-          -- "$flake_uri")
+-
+-        while [[ $flake_input_paths =~ /nix/store/[^\"]+ ]]; do
+-          local store_path="${BASH_REMATCH[0]}"
+-          _nix_add_gcroot "${store_path}" "${flake_inputs}/${store_path##*/}"
+-          flake_input_paths="${flake_input_paths/${store_path}/}"
+-        done
++        # Skip flake-input GC roots. Each worktree used to pin every
++        # `nix flake archive` source, which fans out to thousands of auto-roots
++        # on a multi-lane host. flake.lock is still watched above; substituters
++        # refill sources on reload. _nix_clean_old_gcroots already removes any
++        # leftover flake-inputs directory on cache renewal.
+ 
+         _nix_direnv_info "Renewed cache"
+       else

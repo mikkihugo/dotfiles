@@ -6,9 +6,13 @@
 # ~/.local/bin by `cargo install --path .` from that checkout.
 #
 # Three steps run on every sweep:
-#   1. nix-direnv-gc --apply                    (worktree .direnv, jcode-cache, direnv layouts)
+#   1. nix-direnv-gc --apply                    (worktree .direnv including leftover flake-inputs, jcode-cache, direnv layouts)
 #   2. nix-direnv-gc --apply --deep-scan        (filesystem-wide sweep, 7d floor)
 #   3. nix-collect-garbage --delete-older-than 1d  (reclaim store space)
+#
+# Leftover `.direnv/flake-inputs/` dirs are always prune candidates: the
+# flake-profile already keeps the built shell. Recursing into those dirs is
+# still skipped (they are Nix store copies, not nested worktrees).
 #
 # The 7d floor in step 2 protects active primaries (canonical jcode, active
 # singularity-engine / infra worktrees) — anything younger than 7d is left
@@ -18,10 +22,7 @@
 # Recovery: if a live agent loses its cache, the next `direnv exec` triggers a
 # ~15s re-eval and nix-direnv rebuilds the gc root symlink. Nothing is
 # permanently lost.
-{
-  pkgs,
-  ...
-}: let
+{pkgs, ...}: let
   sweepScript = pkgs.writeShellScript "nix-gc-sweep" ''
     set -euo pipefail
 

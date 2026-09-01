@@ -20,6 +20,13 @@
   "stream": true,
   "streamerMode": false,
   "toolSearch": true,
+  "dynamicRetrieval": {
+    "skills": true,
+    "mcp": true
+  },
+  "skillDirectories": [
+    "~/.agents/skills"
+  ],
   "subagents": {
     "agents": {
       "explore": {

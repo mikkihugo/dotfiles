@@ -6,7 +6,10 @@
 # wrapper.
 # Matching Nix (impure OK, fallback != 1, DIRENV_DIR prefix of PWD): skip.
 # Else eval a content-addressed dump from $XDG_RUNTIME_DIR/agent-direnv/.
-# Miss: flock max 1, re-check cache, one direnv allow + export, atomic mv, eval.
+# Miss: flock max 1, re-check cache, export, atomic mv, eval. `direnv allow`
+# runs only when the export proves the RC blocked: allow rewrites the
+# watch-listed allow stamp even when already valid, and every rewrite forces a
+# full unload/load on the next prompt of each interactive shell on that root.
 # Waiters queue on the lock and hit the cache; they do not start another export.
 # Fill is a bare `direnv export bash` (do not wrap in `timeout` — a SIGTERM
 # matcher kills `timeout * direnv export` and the dump never publishes).
@@ -84,7 +87,7 @@ _DIRENV_WAIT_TICKS=100
 
 _direnv_cleanup() {
 	unset _direnv_lock _direnv_cache_dir _direnv_key _direnv_file _direnv_tmp _direnv_root
-	unset _direnv_stripped _direnv_strip_helper _direnv_hdr _direnv_recorded _direnv_old
+	unset _direnv_stripped _direnv_strip_helper _direnv_hdr _direnv_recorded _direnv_old _direnv_export
 	unset _direnv_slot _direnv_ticks _DIRENV_MAX_PARALLEL _DIRENV_WAIT_TICKS
 	unset _direnv_caller_path _direnv_restore_rest _direnv_restore_entry
 	unset -f _direnv_take_slot _direnv_await_cache 2>/dev/null || true
@@ -155,9 +158,17 @@ _direnv_do_enter() {
 	[ -n "${ZSH_VERSION:-}" ] && setopt localoptions
 	set +x
 
-	direnv allow . >/dev/null 2>&1 || true
 	unset DIRENV_DIFF DIRENV_WATCHES
-	eval "$(timeout 15s direnv export bash 2>/dev/null)" || true
+	# Allow only when the export proves the RC blocked: `direnv allow` rewrites
+	# the allow stamp even when it is already valid, the stamp sits in every
+	# loaded shell's watch list, and each rewrite forces a full unload/load on
+	# the next prompt of every interactive shell holding this root.
+	_direnv_export="$(timeout 15s direnv export bash 2>/dev/null)" || {
+		direnv allow . >/dev/null 2>&1 || true
+		_direnv_export="$(timeout 15s direnv export bash 2>/dev/null)" || true
+	}
+	eval "$_direnv_export" || true
+	unset _direnv_export
 	_direnv_restore_caller_path
 }
 
@@ -268,7 +279,6 @@ _direnv_prune_dead_dumps() {
 }
 
 _direnv_fill_cache() {
-	direnv allow . >/dev/null 2>&1 || true
 	unset DIRENV_DIFF DIRENV_WATCHES
 	_direnv_tmp="${_direnv_cache_dir}/.${_direnv_key}.$$.tmp"
 	_direnv_stripped="${_direnv_tmp}.stripped"
@@ -276,7 +286,14 @@ _direnv_fill_cache() {
 	# Do not wrap this export in `timeout`: a sibling SIGTERM matcher kills
 	# `timeout * direnv export` and the dump never publishes. Flock max 1
 	# already serializes the fill.
-	if direnv export bash >"$_direnv_tmp" 2>/dev/null && [ -s "$_direnv_tmp" ]; then
+	# `direnv allow` only after a failed export (blocked RC) -- an unconditional
+	# allow rewrites the watch-listed stamp and forces a reload on the next
+	# prompt of every interactive shell holding this root (see _direnv_do_enter).
+	if ! direnv export bash >"$_direnv_tmp" 2>/dev/null; then
+		direnv allow . >/dev/null 2>&1 || true
+		direnv export bash >"$_direnv_tmp" 2>/dev/null || true
+	fi
+	if [ -s "$_direnv_tmp" ]; then
 		# Byte-safe assignment strip. grep -v is a no-op or a dump-killer on
 		# nix-direnv's single semicolon-joined line.
 		if ! command -v python3 >/dev/null 2>&1 ||

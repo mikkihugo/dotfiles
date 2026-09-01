@@ -11,7 +11,10 @@ before making non-trivial changes.
   (x86_64 WSL2 GPU host), `cc-se-sto-devbox-01` (x86_64 fleet devbox), and
   `mhugo` (generic x86_64 fallback) — see `homeConfigurations` in `flake.nix`,
   which is authoritative if this list drifts.
-- Enter the managed toolchain first: `nix develop` (or `direnv allow`).
+- Enter the managed toolchain first: `nix develop` (or
+  `eval "$(direnv export bash)"` — this repo's `.envrc` is whitelist-exact, so
+  run `direnv allow` only if the export reports it blocked; a redundant allow
+  rewrites the watch-listed stamp and reloads every open shell here).
 - Bump tool versions by editing `flake.nix` and committing the updated
   `flake.lock` (`nix flake update`).
 

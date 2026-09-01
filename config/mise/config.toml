@@ -41,10 +41,6 @@ vultr-cli = "latest"
 "pipx:b2" = "latest"
 # gogcli: renamed upstream from steipete/gogcli to openclaw/gogcli
 "go:github.com/openclaw/gogcli/cmd/gog" = "latest"
-# just-every/code: 422 weekly downloads < aube's 1000 threshold; the approval
-# prompt auto-aborts in headless runs and fails mise-auto-update. Documented
-# scoped exemption (mise npm backend docs, tool option allow_low_downloads).
-"npm:@just-every/code" = { version = "latest", allow_low_downloads = true }
 ollama = "0.32.14"
 # jcode: managed by CI deploy + auto-deploy timer (~/.jcode/server/jcode), not mise.
 
@@ -64,3 +60,4 @@ yes = true
 # otherwise prompt per-path on every new worktree).
 trusted_config_paths = ["/home/mhugo/code", "/home/mhugo/.dotfiles"]
 minimum_release_age = "1h"
+all_compile = false

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readdir, readFile, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -105,7 +105,7 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
   const otherRepo = run(repoB);
   assert.equal(otherRepo.status, 0);
   assert.equal(otherRepo.stdout, "1", "cross-repo shell must load the new environment");
-  assert.equal(await readFile(log, "utf8"), "allow .\nexport bash\n");
+  assert.equal(await readFile(log, "utf8"), "export bash\n");
 });
 
 test("Home Manager uses direnv-instant for interactive shells", async () => {
@@ -233,7 +233,7 @@ test("BASH_ENV path hook enters direnv once for Claude/Codex bash -c", async () 
   });
   assert.equal(nested.status, 0);
   assert.equal(nested.stdout, "impure");
-  assert.equal(await readFile(log, "utf8"), "allow .\nexport bash\n");
+  assert.equal(await readFile(log, "utf8"), "export bash\n");
 });
 
 test("dump cache hit evals without direnv allow or export", async () => {
@@ -274,7 +274,7 @@ test("dump cache hit evals without direnv allow or export", async () => {
   const miss = run();
   assert.equal(miss.status, 0, miss.stderr);
   assert.equal(miss.stdout, "1");
-  assert.equal(await readFile(log, "utf8"), "allow .\nexport bash\n");
+  assert.equal(await readFile(log, "utf8"), "export bash\n");
 
   const cacheDir = join(runtime, "agent-direnv");
   const cached = (await readdir(cacheDir)).filter((name) => name.endsWith(".bash"));
@@ -285,8 +285,83 @@ test("dump cache hit evals without direnv allow or export", async () => {
   assert.equal(hit.stdout, "1");
   assert.equal(
     await readFile(log, "utf8"),
-    "allow .\nexport bash\n",
+    "export bash\n",
     "hit must not run direnv allow or export",
+  );
+});
+
+test("fill runs direnv allow only when the envrc proves blocked", async () => {
+  // `direnv allow` rewrites the allow stamp even when it is already valid, and
+  // the stamp sits in every loaded shell's watch list -- each rewrite forced a
+  // full unload/load on the next prompt of every interactive shell holding
+  // that root (the 2026-08-30 per-prompt reload storm). Fill must export first
+  // and reach for allow only when the export actually fails.
+  const base = await mkdtemp(join(tmpdir(), "direnv-allow-gate-"));
+  const repo = join(base, "repo");
+  const bin = join(base, "bin");
+  const runtime = join(base, "runtime");
+  const log = join(base, "direnv.log");
+  await Promise.all([mkdir(repo), mkdir(bin), mkdir(runtime)]);
+  await writeFile(join(repo, ".envrc"), "export DIRENV_TEST_REPO=1\n");
+  // Stand-in direnv modeling the real gate: export fails while blocked (no
+  // stamp) and succeeds after `direnv allow`.
+  await writeFile(
+    join(bin, "direnv"),
+    `#!/bin/sh
+printf '%s\\n' "$*" >> "$DIRENV_TEST_LOG"
+if [ "$1" = allow ]; then : > "$DIRENV_TEST_STAMP"; fi
+if [ "$1" = export ]; then
+  [ -f "$DIRENV_TEST_STAMP" ] || exit 1
+  printf 'export DIRENV_TEST_LOADED=1\\nexport IN_NIX_SHELL=impure\\n'
+fi
+`,
+    { mode: 0o755 },
+  );
+
+  const env = {
+    ...process.env,
+    PATH: `${bin}:${process.env.PATH}`,
+    DIRENV_TEST_LOG: log,
+    DIRENV_TEST_STAMP: join(base, "stamp"),
+    XDG_RUNTIME_DIR: runtime,
+  };
+  delete env.BASH_ENV;
+  delete env.ENV;
+  delete env.IN_NIX_SHELL;
+  delete env.DIRENV_DIR;
+  delete env.NIX_DIRENV_DID_FALLBACK;
+  delete env.AGENT_DIRENV_EXPORT_TRIED;
+
+  const loader = join(process.cwd(), "shell/bash/direnv-export.sh");
+  const run = () =>
+    spawnSync("bash", ["-c", '. "$1"; printf "%s" "${DIRENV_TEST_LOADED:-0}"', "bash", loader], {
+      cwd: repo,
+      encoding: "utf8",
+      env,
+    });
+
+  const blocked = run();
+  assert.equal(blocked.status, 0, blocked.stderr);
+  assert.equal(blocked.stdout, "1");
+  assert.equal(
+    await readFile(log, "utf8"),
+    "export bash\nallow .\nexport bash\n",
+    "blocked RC: export fails, one allow, then the export that fills the dump",
+  );
+
+  // A root whose RC already loads must be refilled without touching the stamp.
+  const cacheDir = join(runtime, "agent-direnv");
+  for (const name of await readdir(cacheDir)) {
+    await rm(join(cacheDir, name), { force: true });
+  }
+  await writeFile(log, "");
+  const refill = run();
+  assert.equal(refill.status, 0, refill.stderr);
+  assert.equal(refill.stdout, "1");
+  assert.equal(
+    await readFile(log, "utf8"),
+    "export bash\n",
+    "already-allowed RC: fill must not rewrite the allow stamp",
   );
 });
 
@@ -431,7 +506,7 @@ fi
   assert.equal(hit.stdout, "keep=1 diff= watch= nix=impure");
   assert.equal(
     await readFile(log, "utf8"),
-    "allow .\nexport bash\n",
+    "export bash\n",
     "hit must not run direnv allow or export",
   );
 });
@@ -497,8 +572,8 @@ fi
   assert.equal(second.status, 0, second.stderr);
   assert.equal(
     await readFile(log, "utf8"),
-    "allow .\nexport bash\nallow .\nexport bash\n",
-    "dead recorded root must miss and refill",
+    "export bash\nexport bash\n",
+    "dead recorded root must miss and refill without touching the allow stamp",
   );
 });
 

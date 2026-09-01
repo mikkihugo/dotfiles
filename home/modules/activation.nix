@@ -234,6 +234,8 @@ in {
               "type": "http",
               "url": gateway_url,
               "tools": ["*"],
+              "deferTools": "auto",
+              "headers": {"X-Request-Id": "copilot-cli"},
           }
       }
       factory = {

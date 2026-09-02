@@ -130,7 +130,24 @@ _load_sops_secrets() {
 	if [ -n "$val" ] && [ -n "$url" ]; then
 		export LLM_MUX_API_KEY="$val"
 		export LLM_MUX_BASE_URL="$url"
+
+		# Copilot CLI BYOK: point it at the same gateway. Without these,
+		# copilot only offers GitHub-native models and every gateway alias
+		# (auto-minimax, auto-glm, auto-kimi, ollama-*) is unresolvable --
+		# including the ones ~/.copilot/settings.json assigns to subagents.
+		export COPILOT_PROVIDER_BASE_URL="$url"
+		export COPILOT_PROVIDER_API_KEY="$val"
 	fi
+
+	# Copilot BYOK is single-model by design in >=1.0.82: it never fetches the
+	# provider catalogue (no /v1/models call exists in the bundle), so /model
+	# cannot enumerate the gateway's aliases no matter what is configured. Its
+	# own help says so: "A model is required for BYOK. Set COPILOT_MODEL,
+	# COPILOT_PROVIDER_MODEL_ID, or --model."  Pick per invocation instead.
+	copilot-minimax() { COPILOT_MODEL=auto-minimax command copilot "$@"; }
+	copilot-glm() { COPILOT_MODEL=auto-glm command copilot "$@"; }
+	copilot-kimi() { COPILOT_MODEL=auto-kimi command copilot "$@"; }
+	copilot-fast() { COPILOT_MODEL=auto-fast command copilot "$@"; }
 
 	# OpenAI Gateway (ACE Coder / Goose CLI)
 	val=$(_sops_val openai_gateway api_key)

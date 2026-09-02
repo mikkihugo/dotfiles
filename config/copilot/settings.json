@@ -37,7 +37,7 @@
         "model": "auto-kimi"
       },
       "general-purpose": {
-        "model": "auto-glm"
+        "model": "auto-minimax"
       },
       "code-review": {
         "model": "ollama-deepseek-v4-pro"

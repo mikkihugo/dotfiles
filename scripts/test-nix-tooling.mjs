@@ -503,6 +503,14 @@ test("Home Manager activation uses the non-deprecated nix profile command", asyn
   assert.match(flake, /command-not-found\.sh/);
 });
 
+test("sccache profile scope skips mikki-bunker without a local ace-coder checkout", async () => {
+  const script = await source("scripts/test-sccache-profile-scope.sh");
+  assert.match(script, /ACE_REPO/);
+  assert.match(script, /DOTFILES_TEST_INSPECT_BUNKER/);
+  assert.match(script, /skipped mikki-bunker \(ace-coder checkout absent/);
+  assert.match(script, /git\+file/);
+});
+
 test("just check delegates to the single repository check implementation", async () => {
   const justfile = await source("justfile");
   assert.match(justfile, /(?:^|\n)check:\n\s+bash scripts\/repo-check\.sh(?:\n|$)/);

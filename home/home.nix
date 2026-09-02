@@ -17,7 +17,6 @@
   pkgs,
   lib,
   sops-nix,
-  targetSystem ? pkgs.stdenv.hostPlatform.system,
   hostname ? "",
   ...
 }: let
@@ -31,41 +30,34 @@ in {
     then "bunker"
     else null;
 
-  imports =
-    [
-      sops-nix.homeManagerModules.sops
-      ./modules/machine-role.nix
-      ./modules/activation.nix
-      ./modules/packages.nix
-      ./modules/ast-grep.nix
-      ./modules/cargo-pgrx.nix
-      ./modules/shell.nix
-      ./modules/git.nix
-      ./modules/stable-shell.nix
-      ./modules/jcode-gc.nix
-      ./modules/nix-gc-sweep.nix
-      ./modules/reap-abandoned-searches.nix
-      ./modules/engine-worktree-cleanup.nix
-      ./modules/home-emergency-backup.nix
-      ./modules/files.nix
-      ./modules/build-cache-maintenance.nix
-      ./modules/ai-tools.nix
-      ./modules/jcode-providers.nix
-      ./modules/jcode-server.nix
-      ./modules/ops-tools.nix
-      ./modules/nix-index.nix
-      ./modules/dotfiles-auto-update.nix
-      ./modules/sshid-key-sync.nix
-      ./modules/mise-auto-update.nix
-      ./modules/tailscale.nix
-      ./modules/wezterm.nix
-    ]
-    # GPU/CUDA workers — Bunker only (x86_64 + explicit hostname guard).
-    # targetSystem comes from extraSpecialArgs (not pkgs.stdenv) to avoid
-    # infinite recursion when evaluating the imports list.
-    ++ lib.optionals (targetSystem == "x86_64-linux" && lib.toLower hostname == "mikki-bunker") [
-      ../services/remote-gpu-worker
-    ];
+  imports = [
+    sops-nix.homeManagerModules.sops
+    ./modules/machine-role.nix
+    ./modules/activation.nix
+    ./modules/packages.nix
+    ./modules/ast-grep.nix
+    ./modules/cargo-pgrx.nix
+    ./modules/shell.nix
+    ./modules/git.nix
+    ./modules/stable-shell.nix
+    ./modules/jcode-gc.nix
+    ./modules/nix-gc-sweep.nix
+    ./modules/reap-abandoned-searches.nix
+    ./modules/engine-worktree-cleanup.nix
+    ./modules/home-emergency-backup.nix
+    ./modules/files.nix
+    ./modules/build-cache-maintenance.nix
+    ./modules/ai-tools.nix
+    ./modules/jcode-providers.nix
+    ./modules/jcode-server.nix
+    ./modules/ops-tools.nix
+    ./modules/nix-index.nix
+    ./modules/dotfiles-auto-update.nix
+    ./modules/sshid-key-sync.nix
+    ./modules/mise-auto-update.nix
+    ./modules/tailscale.nix
+    ./modules/wezterm.nix
+  ];
 
   # Top-level SOPS key source so every managed host can decrypt its secrets.
   sops.age.keyFile = "/home/mhugo/.config/sops/age/keys.txt";

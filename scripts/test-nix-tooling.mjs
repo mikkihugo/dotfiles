@@ -503,12 +503,14 @@ test("Home Manager activation uses the non-deprecated nix profile command", asyn
   assert.match(flake, /command-not-found\.sh/);
 });
 
-test("sccache profile scope skips mikki-bunker without a local ace-coder checkout", async () => {
-  const script = await source("scripts/test-sccache-profile-scope.sh");
-  assert.match(script, /ACE_REPO/);
-  assert.match(script, /DOTFILES_TEST_INSPECT_BUNKER/);
-  assert.match(script, /skipped mikki-bunker \(ace-coder checkout absent/);
-  assert.match(script, /git\+file/);
+test("dotfiles flake does not import ace-coder or the GPU worker", async () => {
+  const flake = await source("flake.nix");
+  const home = await source("home/home.nix");
+  const shell = await source("home/modules/shell.nix");
+  assert.doesNotMatch(flake, /ace-coder/);
+  assert.doesNotMatch(flake, /inference-fabric/);
+  assert.doesNotMatch(home, /remote-gpu-worker/);
+  assert.doesNotMatch(shell, /promote-ace-coder/);
 });
 
 test("just check delegates to the single repository check implementation", async () => {

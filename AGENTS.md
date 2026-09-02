@@ -71,6 +71,6 @@ instruction plane despite its path. Disabling memory never means deleting them.
 
 ## LLM fabric
 
-Embedding-worker / inference-fabric workloads belong on mikki-bunker
-(GPU) only — mikki-laptop is aarch64 with no GPU. Don't propose running
-them there.
+This repository does not ship a GPU worker Home Manager module. Do not
+propose embedding-worker / inference-fabric workloads on mikki-laptop
+(aarch64, no GPU).

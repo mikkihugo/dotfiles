@@ -119,7 +119,9 @@ test("Home Manager uses direnv-instant for interactive shells", async () => {
   const swarmHook = await readFile("config/codex/hooks/swarm-messages.mjs", "utf8");
 
   assert.match(flake, /direnv-instant\.homeModules\.direnv-instant/);
-  assert.match(flake, /inherit sops-nix ace-coder llm-agents direnv-instant inference-fabric/);
+  assert.match(flake, /inherit sops-nix llm-agents direnv-instant/);
+  assert.doesNotMatch(flake, /ace-coder/);
+  assert.doesNotMatch(flake, /inference-fabric/);
   assert.match(shellModule, /direnv-instant = \{/);
   assert.match(shellModule, /package = direnv-instant\.packages\.\$\{pkgs\.stdenv\.hostPlatform\.system\}\.default\.overrideAttrs/);
   assert.match(shellModule, /direnv-instant-async-without-multiplexer\.patch/);

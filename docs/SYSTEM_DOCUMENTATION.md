@@ -19,7 +19,7 @@ The system architecture is centered on:
 
 The flake defines the following home profiles in `flake.nix`:
 
-- `mikki-bunker` — x86_64 WSL2 desktop with GPU worker capability.
+- `mikki-bunker` — x86_64 WSL2 desktop.
 - `mikki-laptop` — aarch64 portable laptop.
 - `mhugo` — hostname alias to the current machine, evaluated at runtime.
 

@@ -300,9 +300,6 @@ in {
     nd = "nom develop";
     ns = "nom shell";
 
-    # Promote the currently committed ACE revision into the dotfiles flake input.
-    promote-ace-coder = "~/.dotfiles/scripts/promote-ace-coder-input";
-
     # Secrets management
     secrets = "~/.dotfiles/scripts/secrets-edit";
 

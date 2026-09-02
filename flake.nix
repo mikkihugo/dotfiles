@@ -3,10 +3,10 @@
 # Purpose:
 #   Single source of truth for the entire user environment. Profiles:
 #
-#   homeConfigurations."mikki-bunker"  — x86_64 WSL2 desktop (GPU worker, CUDA)
-#   homeConfigurations."mikki-laptop"  — aarch64 laptop (no GPU, no CUDA)
-#   homeConfigurations."cc-se-sto-devbox-01" — x86_64 fleet devbox (no GPU role)
-#   homeConfigurations."mhugo"         — generic x86_64 fallback (no GPU role)
+#   homeConfigurations."mikki-bunker"  — x86_64 WSL2 desktop
+#   homeConfigurations."mikki-laptop"  — aarch64 laptop
+#   homeConfigurations."cc-se-sto-devbox-01" — x86_64 fleet devbox
+#   homeConfigurations."mhugo"         — generic x86_64 fallback
 #
 #   devShells.default  — lightweight shell for dotfiles maintenance.
 #
@@ -69,21 +69,6 @@
       url = "github:Mic92/direnv-instant/1.3.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # ace-coder: pinned clean source for the CUDA worker package and HM module.
-    # Use a committed git revision from the local repo, not the live dirty tree,
-    # so worker builds remain cacheable and reproducible.
-    # Pinned to 9b6e50329 — last rev that builds cleanly under -D dead_code.
-    # HEAD of main (017e53d44) orphaned 5 load_* functions in remote-worker
-    # without cfg-gating them, failing the Nix build. The running worker
-    # self-updates via WSS from llm-gateway, so the Nix-built binary is only
-    # a first-boot seed — pinning an older rev does not affect runtime.
-    ace-coder.url = "git+file:///home/mhugo/code/ace-coder?rev=58b7a904030dfd06e139aafc2222c1ea1331746c";
-
-    inference-fabric = {
-      url = "git+ssh://git@git.centralcloud.net:2222/singularity/inference-fabric.git?ref=main";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = {
@@ -92,13 +77,11 @@
     home-manager,
     sops-nix,
     flake-utils,
-    ace-coder,
     llm-agents,
     direnv-instant,
-    inference-fabric,
     ...
   }: let
-    specialArgs = {inherit sops-nix ace-coder llm-agents direnv-instant inference-fabric;};
+    specialArgs = {inherit sops-nix llm-agents direnv-instant;};
 
     # Single nixpkgs per system, shared across the outputs below. Re-using
     # this binding instead of re-importing inside the `formatter` and
@@ -111,9 +94,8 @@
         config.allowUnfree = true;
       };
 
-    # Single home.nix works on all arches — GPU service is gated by lib.optionals.
-    # targetSystem is passed as specialArgs so imports can branch without
-    # referencing pkgs (which would cause infinite recursion in imports).
+    # Single home.nix works on all arches. targetSystem is passed as
+    # specialArgs so imports can branch without referencing pkgs.
     mkHome = sys: hostname: let
       home = home-manager.lib.homeManagerConfiguration {
         pkgs = import nixpkgs {
@@ -178,9 +160,9 @@
   in
     {
       homeConfigurations = {
-        # mikki-bunker: x86_64 WSL2 desktop (GPU + embedding worker enabled).
+        # mikki-bunker: x86_64 WSL2 desktop.
         "mikki-bunker" = mkHome "x86_64-linux" "mikki-bunker";
-        # mikki-laptop: aarch64 portable machine (GPU worker skipped automatically).
+        # mikki-laptop: aarch64 portable machine.
         "mikki-laptop" = mkHome "aarch64-linux" "mikki-laptop";
         # CentralCloud development host: x86_64 without the bunker GPU role.
         "cc-se-sto-devbox-01" = mkHome "x86_64-linux" "cc-se-sto-devbox-01";

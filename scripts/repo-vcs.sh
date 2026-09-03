@@ -155,6 +155,29 @@ sync-main)
 	[[ "$(git -C "$primary" rev-parse main)" == "$(git -C "$primary" rev-parse origin/main)" ]] || die 'primary main did not converge'
 	printf 'synced=main revision=%s patch_equivalent=true\n' "$(git -C "$primary" rev-parse main)"
 	;;
+converge-main)
+	# A diverged main -- local commits AND remote commits -- has no other route
+	# here: `rebase` refuses anything but a worktree/* branch, and `sync-main`
+	# is a hard reset that deliberately dies rather than discard local work.
+	# This rebases main onto origin/main, keeping the local commits.
+	[[ $# -eq 0 ]] || die 'converge-main takes no arguments'
+	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be converged'
+	[[ "$branch" == main ]] || die "converge-main requires the main branch (on: $branch)"
+	[[ -z "$(git -C "$root" status --porcelain)" ]] || die "working tree is not clean; commit first: repo vcs describe '<message>'"
+	fetch_forgejo_main "$root"
+	before="$(git -C "$root" rev-parse main)"
+	if [[ "$before" == "$(git -C "$root" rev-parse origin/main)" ]]; then
+		printf 'converged=main revision=%s already_current=true\n' "$before"
+		exit 0
+	fi
+	if ! git -C "$root" cherry origin/main main | grep -q '^+'; then
+		die 'main has no local-only commits; fast-forward instead: repo vcs sync-main'
+	fi
+	if ! git -C "$root" rebase origin/main; then
+		die "rebase stopped on conflicts; resolve each file then: repo vcs rebase --continue <paths>  (abandon with: git -C $root rebase --abort, recover tip with: git -C $root reset --hard $before)"
+	fi
+	printf 'converged=main before=%s after=%s onto=%s\n' "$before" "$(git -C "$root" rev-parse main)" "$(git -C "$root" rev-parse origin/main)"
+	;;
 describe)
 	if [[ "${1:-}" == '--help' ]]; then
 		[[ $# -eq 1 ]] || die 'describe --help takes no arguments'
@@ -370,5 +393,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main|describe|amend|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|branch-retire|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main|converge-main|describe|amend|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|branch-retire|contract-test|config}' ;;
 esac

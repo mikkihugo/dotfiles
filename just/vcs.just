@@ -30,6 +30,9 @@ rebase REVISION:
 sync-main:
     @{{runner}} sync-main
 
+converge-main:
+    @{{runner}} converge-main
+
 describe MESSAGE:
     @{{runner}} describe "$1"
 

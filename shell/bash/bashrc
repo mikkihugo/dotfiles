@@ -137,17 +137,50 @@ _load_sops_secrets() {
 		# including the ones ~/.copilot/settings.json assigns to subagents.
 		export COPILOT_PROVIDER_BASE_URL="$url"
 		export COPILOT_PROVIDER_API_KEY="$val"
+
+		# BYOK also needs an explicit model or copilot refuses to start:
+		# "BYOK providers require an explicit model." The "model" key in
+		# ~/.copilot/settings.json is NOT consulted on the BYOK path
+		# (verified against 1.0.82 -- settings.json says "auto" and bare
+		# copilot still errored). Default it here so plain `copilot` runs;
+		# an inherited COPILOT_MODEL or --model still wins.
+		#
+		# Deliberately not "auto": the gateway's auto/auto-code aliases
+		# currently resolve to a Kimi upstream that answers HTTP 403
+		# "weekly (7-day) usage limit" -- which copilot misreports as
+		# "Authentication failed ... check your COPILOT_PROVIDER_API_KEY".
+		# auto-minimax is verified working end to end.
+		export COPILOT_MODEL="${COPILOT_MODEL:-auto-minimax}"
+
+		# Pin the token budget. Copilot resolves limits as: manual env vars ->
+		# built-in catalog -> defaults (see `copilot help providers`). Gateway
+		# aliases are never in GitHub's built-in catalog, so without these it
+		# warns "not in the built-in catalog" and silently uses generic
+		# defaults -- throwing away most of the window.
+		#
+		# auto-minimax resolves to MiniMax-M3 (gateway-config named_models);
+		# the fabric catalogue advertises context_length 524288. Prompt and
+		# output share that one window, so these two must sum to <= 524288:
+		#   448K prompt + 64K output = 524288 exactly.
+		# Verified 2026-09-03: an 11001-token completion returned
+		# finish_reason=stop, so output well past the 16384 default works.
+		# Deliberately not the catalogue's max_out=512000: that is 97% of the
+		# whole window and leaves no room for a prompt.
+		export COPILOT_PROVIDER_MAX_PROMPT_TOKENS="${COPILOT_PROVIDER_MAX_PROMPT_TOKENS:-458752}"
+		export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS="${COPILOT_PROVIDER_MAX_OUTPUT_TOKENS:-65536}"
 	fi
 
 	# Copilot BYOK is single-model by design in >=1.0.82: it never fetches the
 	# provider catalogue (no /v1/models call exists in the bundle), so /model
 	# cannot enumerate the gateway's aliases no matter what is configured. Its
 	# own help says so: "A model is required for BYOK. Set COPILOT_MODEL,
-	# COPILOT_PROVIDER_MODEL_ID, or --model."  Pick per invocation instead.
+	# COPILOT_PROVIDER_MODEL_ID, or --model."  A default is exported above;
+	# these switch model per invocation.
 	copilot-minimax() { COPILOT_MODEL=auto-minimax command copilot "$@"; }
 	copilot-glm() { COPILOT_MODEL=auto-glm command copilot "$@"; }
 	copilot-kimi() { COPILOT_MODEL=auto-kimi command copilot "$@"; }
 	copilot-fast() { COPILOT_MODEL=auto-fast command copilot "$@"; }
+	copilot-auto() { COPILOT_MODEL=auto command copilot "$@"; }
 
 	# OpenAI Gateway (ACE Coder / Goose CLI)
 	val=$(_sops_val openai_gateway api_key)

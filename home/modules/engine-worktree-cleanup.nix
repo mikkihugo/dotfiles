@@ -81,7 +81,10 @@ in
         ];
         Nice = 19;
         IOSchedulingClass = "idle";
-        TimeoutStartSec = "5min";
+        # 103+ engine lanes: each workspace-close attempt costs ~3–4s via direnv;
+        # most are refused (dirty/unintegrated/owned) but must still be probed.
+        # 5min timed out mid-scan on 2026-09-02 without deleting anything.
+        TimeoutStartSec = "30min";
       };
     };
 

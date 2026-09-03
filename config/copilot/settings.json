@@ -40,16 +40,16 @@
         "model": "auto-minimax"
       },
       "code-review": {
-        "model": "ollama-deepseek-v4-pro"
+        "model": "ollama-cloud/deepseek-v4-pro"
       },
       "research": {
         "model": "auto-minimax"
       },
       "security-review": {
-        "model": "ollama-deepseek-v4-pro"
+        "model": "ollama-cloud/deepseek-v4-pro"
       },
       "refactor": {
-        "model": "ollama-qwen3-coder"
+        "model": "deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo"
       },
       "architect": {
         "model": "auto-glm"

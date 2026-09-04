@@ -98,6 +98,15 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   const home = await source("home/home.nix");
 
   assert.match(home, /\.\/modules\/home-emergency-backup\.nix/);
+  // Per-workspace cache directories under ~/.local/{share,state}/singularity-engine
+  // workspaces must be excluded. On 2026-09-04 the home emergency backup failed
+  // because mode 0700 mix/hex/rebar3 dirs inside durable-lease-recover-recovery-*
+  // paths rejected traversal with EACCES and borgmatic aborted with exit status 80.
+  assert.match(
+    backup,
+    /workspaces\/\*\/root-\*\/(?:mix|hex|rebar3|erlang|python|node|direnv)/,
+    "singularity-engine per-workspace cache dirs must be excluded",
+  );
   assert.doesNotMatch(
     home,
     /\.\/modules\/git-auto-backup\.nix/,

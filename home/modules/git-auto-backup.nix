@@ -374,7 +374,7 @@
     set -euo pipefail
     lock="''${XDG_RUNTIME_DIR:-/run/user/$UID}/home-mutable-workspace-sweep.lock"
     echo "git-auto-backup waiting for mutable sweep lock: $lock"
-    ${pkgs.util-linux}/bin/flock --exclusive --wait 6h --conflict-exit-code 75 \
+    ${pkgs.util-linux}/bin/flock --exclusive --wait 21600 --conflict-exit-code 75 \
       "$lock" ${pkgs.coreutils}/bin/timeout --kill-after=10s 45m ${backupScript} || {
       status=$?
       echo "git-auto-backup mutable sweep lock unavailable or backup failed: status=$status lock=$lock" >&2

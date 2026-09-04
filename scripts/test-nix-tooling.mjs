@@ -82,6 +82,11 @@ test("mutable home sweeps serialize and report bounded lock failures", async () 
   for (const module of [gitBackup, emergencyBackup]) {
     assert.match(module, /home-mutable-workspace-sweep\.lock/);
     assert.match(module, /flock --exclusive --wait/);
+    assert.doesNotMatch(
+      module,
+      /--wait\s+\d+[hms]/,
+      "flock --wait only accepts integer seconds; time suffixes like 12h are invalid and silently break service startup",
+    );
     assert.match(module, /mutable sweep lock unavailable/);
   }
   assert.match(gitBackup, /timeout --kill-after=10s 45m/);
@@ -108,7 +113,7 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* \*:15\/30:00"/);
   assert.match(backup, /RandomizedDelaySec\s*=\s*"2min"/);
   assert.match(backup, /Type\s*=\s*"exec"/);
-  assert.match(backup, /RuntimeMaxSec\s*=\s*"25min"/);
+  assert.match(backup, /RuntimeMaxSec\s*=\s*"60min"/);
   assert.match(backup, /Nice\s*=\s*19/);
   assert.match(backup, /IOSchedulingClass\s*=\s*"idle"/);
   assert.match(backup, /lock="\$XDG_RUNTIME_DIR\/borgmatic-hot-source\.lock"/);

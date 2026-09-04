@@ -239,18 +239,19 @@
       chmod 644 "$HOME/.ssh/known_hosts"
     fi
   '';
-  serializedBackupScript = name: pkgs.writeShellScript "home-emergency-backup-${name}-serialized" ''
-    set -euo pipefail
-    lock="''${XDG_RUNTIME_DIR:-/run/user/$UID}/home-mutable-workspace-sweep.lock"
-    echo "home-emergency-backup-${name} waiting for mutable sweep lock: $lock"
-    ${pkgs.util-linux}/bin/flock --exclusive --wait 12h --conflict-exit-code 75 \
-      "$lock" ${pkgs.bash}/bin/bash -c \
-      '${restoreKeyPackage}/bin/storagebox-backup-key-restore && exec ${pkgs.borgmatic}/bin/borgmatic --config ${configPath name} --verbosity 1' || {
-      status=$?
-      echo "home-emergency-backup-${name} mutable sweep lock unavailable or backup failed: status=$status lock=$lock" >&2
-      exit "$status"
-    }
-  '';
+  serializedBackupScript = name:
+    pkgs.writeShellScript "home-emergency-backup-${name}-serialized" ''
+      set -euo pipefail
+      lock="''${XDG_RUNTIME_DIR:-/run/user/$UID}/home-mutable-workspace-sweep.lock"
+      echo "home-emergency-backup-${name} waiting for mutable sweep lock: $lock"
+      ${pkgs.util-linux}/bin/flock --exclusive --wait 43200 --conflict-exit-code 75 \
+        "$lock" ${pkgs.bash}/bin/bash -c \
+        '${restoreKeyPackage}/bin/storagebox-backup-key-restore && exec ${pkgs.borgmatic}/bin/borgmatic --config ${configPath name} --verbosity 1' || {
+        status=$?
+        echo "home-emergency-backup-${name} mutable sweep lock unavailable or backup failed: status=$status lock=$lock" >&2
+        exit "$status"
+      }
+    '';
 in
   lib.mkMerge [
     {
@@ -327,7 +328,7 @@ in
             ExecStartPre = "${restoreKeyPackage}/bin/storagebox-backup-key-restore";
             ExecStart = "${hotSourceRunner name}";
             SuccessExitStatus = [75];
-            RuntimeMaxSec = "25min";
+            RuntimeMaxSec = "60min";
             Nice = 19;
             IOSchedulingClass = "idle";
             CPUWeight = 10;

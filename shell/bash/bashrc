@@ -135,8 +135,29 @@ _load_sops_secrets() {
 		# copilot only offers GitHub-native models and every gateway alias
 		# (auto-minimax, auto-glm, auto-kimi, ollama-*) is unresolvable --
 		# including the ones ~/.copilot/settings.json assigns to subagents.
-		export COPILOT_PROVIDER_BASE_URL="$url"
+		# Trailing /v1 stripped: the Anthropic client appends "/v1/messages"
+		# itself, so passing the OpenAI-shaped base (which already ends in /v1)
+		# produces /v1/v1/messages. Measured 2026-09-04 against the gateway:
+		#   POST /v1/v1/messages -> 404   (the "Model not found (HTTP 404)" error)
+		#   POST /v1/messages    -> 200
+		#   GET  /v1/models      -> 200   (catalog probe still resolves)
+		# This matches gatewayUrlResolver in home/modules/ai-tools.nix, which
+		# hands ANTHROPIC_BASE_URL a bare root for the same reason.
+		# LLM_MUX_BASE_URL above deliberately keeps /v1 for OpenAI consumers.
+		export COPILOT_PROVIDER_BASE_URL="${url%/v1}"
 		export COPILOT_PROVIDER_API_KEY="$val"
+
+		# Anthropic wire, not the "openai" default: auto-minimax's only gateway
+		# deployment is protocol: anthropic_messages (MiniMax's native Anthropic
+		# Messages endpoint). With the openai default, every request gets a real
+		# OpenAI-chat -> Anthropic-Messages payload conversion
+		# (chat_request_to_anthropic_messages in gateway-protocol-anthropic)
+		# before it reaches MiniMax -- avoidable, since MiniMax also natively
+		# supports OpenAI chat completions, but the gateway doesn't yet expose a
+		# second protocol:openai_chat_completions deployment for it (tracked
+		# separately). Anthropic wire matches what's actually configured, so it
+		# skips that conversion.
+		export COPILOT_PROVIDER_TYPE="anthropic"
 
 		# BYOK also needs an explicit model or copilot refuses to start:
 		# "BYOK providers require an explicit model." The "model" key in
@@ -160,12 +181,25 @@ _load_sops_secrets() {
 		#
 		# auto-minimax resolves to MiniMax-M3 (gateway-config named_models);
 		# the fabric catalogue advertises context_length 524288. Prompt and
-		# output share that one window, so these two must sum to <= 524288:
-		#   448K prompt + 64K output = 524288 exactly.
+		# Speak Anthropic Messages to the gateway, not OpenAI chat completions.
+		# auto-minimax resolves to minimax-coding-plan/MiniMax-M3, whose upstream
+		# declares protocol: anthropic_messages at api.minimax.io/anthropic/v1.
+		# An OpenAI-shaped request is therefore CONVERTED, and the converter
+		# (chat_request_to_anthropic_messages) never reads "tools" or
+		# "tool_choice" - so the model arrives with no tools and says so, while
+		# emitting improvised text markers where tool calls belong.
+		# Anthropic ingress matches the upstream and passes through natively.
+		# Measured 2026-09-04, same model, same tool definition:
+		#   POST /v1/chat/completions -> tool_calls: None
+		#   POST /v1/messages         -> tool_use: get_weather {"city":"Paris"}
+		export COPILOT_PROVIDER_TYPE="${COPILOT_PROVIDER_TYPE:-anthropic}"
+		# MiniMax publishes a 1M context but guarantees only 512K of it, so the
+		# prompt cap stays inside the guarantee rather than the ceiling.
+		# An earlier revision of this comment claimed prompt+output had to sum to
+		# 524288. That constraint is imaginary - Copilot does not share one window
+		# between them - but 448K remains a sound conservative choice.
 		# Verified 2026-09-03: an 11001-token completion returned
 		# finish_reason=stop, so output well past the 16384 default works.
-		# Deliberately not the catalogue's max_out=512000: that is 97% of the
-		# whole window and leaves no room for a prompt.
 		export COPILOT_PROVIDER_MAX_PROMPT_TOKENS="${COPILOT_PROVIDER_MAX_PROMPT_TOKENS:-458752}"
 		export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS="${COPILOT_PROVIDER_MAX_OUTPUT_TOKENS:-65536}"
 	fi

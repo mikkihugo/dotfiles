@@ -24,22 +24,16 @@ matrix="$(DOTFILES_TEST_ROOT="$root" nix eval --json --impure --expr '
   ])
 ')"
 
-jq -e '
-  .["cc-se-sto-devbox-01"] == {
-    cargoConfig: "[build]\nrustc-wrapper = \"rustc-sccache-shim\"\n",
-    sccacheDir: "/var/cache/sccache",
-    sccacheSocket: "/run/sccache/server.sock"
-  }
-  and all([.["mikki-laptop"], .["mikki-bunker"], .mhugo][];
-    . == {cargoConfig: null, sccacheDir: null, sccacheSocket: null})
-' <<<"$matrix" >/dev/null || {
+# sccache is infra-owned (srv/infra hosts/_shared/nix-cache.nix: supervised
+# daemon + OS-wide environment.variables). HM must not set any of it.
+jq -e 'all(.[]; . == {cargoConfig: null, sccacheDir: null, sccacheSocket: null})' <<<"$matrix" >/dev/null || {
 	jq '{
     "cc-se-sto-devbox-01": .["cc-se-sto-devbox-01"],
     "mikki-laptop": .["mikki-laptop"],
     "mikki-bunker": .["mikki-bunker"],
     "mhugo": .mhugo
   }' <<<"$matrix" >&2
-	printf 'sccache profile scope contract failed\n' >&2
+	printf 'sccache must not be configured by home-manager\n' >&2
 	exit 1
 }
 

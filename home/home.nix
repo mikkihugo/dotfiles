@@ -46,7 +46,6 @@ in {
     ./modules/engine-worktree-cleanup.nix
     ./modules/home-emergency-backup.nix
     ./modules/files.nix
-    ./modules/build-cache-maintenance.nix
     ./modules/ai-tools.nix
     ./modules/jcode-providers.nix
     ./modules/jcode-server.nix

@@ -3,251 +3,234 @@
 # Files that tools expect at specific $HOME paths, kept in version control
 # and updated atomically on every `hms`. force=true overwrites any manually
 # edited copy so the repo stays the source of truth.
-{
-  hostname ? "",
-  lib,
-  pkgs,
-  ...
-}: {
-  home.file =
-    {
-      ".config/ripgrep/config" = {
-        source = ../../config/ripgreprc;
-        force = true;
-      };
-
-      ".config/bat/config".source = ../../config/bat/config;
-
-      # VSCode: terminal font (Nerd Font), shell (zsh), editor defaults.
-      # WSL2: also install the font on the Windows side for VSCode Remote:
-      #   winget install -e --id DEVCOM.JetBrainsMonoNerdFont
-      ".config/Code/User/settings.json" = {
-        source = ../../config/vscode/settings.json;
-        force = true;
-      };
-
-      # Codex CLI config is seeded by activation.nix as a mutable file. The Codex
-      # client owns model/reasoning choices, approvals, notices, and feature
-      # toggles at runtime, so this path must not be a Home Manager symlink.
-      ".codex/rules/default.rules" = {
-        source = ../../config/codex/default.rules;
-        force = true;
-      };
-
-      ".codex/AGENTS.md" = {
-        source = ../../config/codex/AGENTS.md;
-        force = true;
-      };
-
-      ".codex/hooks.json" = {
-        source = ../../config/codex/hooks.json;
-        force = true;
-      };
-
-      ".codex/hooks/swarm-messages.mjs" = {
-        source = pkgs.replaceVars ../../config/codex/hooks/swarm-messages.mjs {
-          node = "${pkgs.nodejs}/bin/node";
-          flock = "${pkgs.util-linux}/bin/flock";
-          bash = "${pkgs.bash}/bin/bash";
-        };
-        executable = true;
-        force = true;
-      };
-
-      ".claude/hooks/swarm-messages.sh" = {
-        source = pkgs.replaceVars ../../config/claude/hooks/swarm-messages.sh {
-          bash = "${pkgs.bash}/bin/bash";
-          node = "${pkgs.nodejs}/bin/node";
-        };
-        executable = true;
-        force = true;
-      };
-
-      # Claude Code status line for Jujutsu-backed repos. Those repos replace `jj`
-      # on PATH with a refuse shim and expose reads only through their own `repo
-      # vcs` facade, so the usual git-branch status line has nothing to read.
-      ".claude/statusline-jj.sh" = {
-        source = pkgs.replaceVars ../../config/claude/statusline-jj.sh {
-          bash = "${pkgs.bash}/bin/bash";
-          jq = "${pkgs.jq}/bin/jq";
-        };
-        executable = true;
-        force = true;
-      };
-
-      ".kimi-code/hooks/swarm-messages.sh" = {
-        source = pkgs.replaceVars ../../config/kimi-code/hooks/swarm-messages.sh {
-          bash = "${pkgs.bash}/bin/bash";
-          node = "${pkgs.nodejs}/bin/node";
-        };
-        executable = true;
-        force = true;
-      };
-
-      ".copilot/hooks/swarm-messages.json" = {
-        source = ../../config/copilot/hooks/swarm-messages.json;
-        force = true;
-      };
-
-      ".cursor/hooks.json" = {
-        source = ../../config/cursor/hooks.json;
-        force = true;
-      };
-
-      # goose config.yaml is intentionally NOT HM-symlinked: goose writes
-      # telemetry consent and other prefs into it. Seeded/merged in activation.nix.
-
-      ".config/goose/moim-guardrails.md" = {
-        source = ../../config/goose/moim-guardrails.md;
-        force = true;
-      };
-
-      ".codex/agents/default.toml" = {
-        source = ../../config/codex/agents/default.toml;
-        force = true;
-      };
-
-      ".codex/agents/taxonomy-worker.toml" = {
-        source = ../../config/codex/agents/taxonomy-worker.toml;
-        force = true;
-      };
-
-      ".codex/agents/taxonomy-validator.toml" = {
-        source = ../../config/codex/agents/taxonomy-validator.toml;
-        force = true;
-      };
-
-      ".codex/agents/singularity-engine-harvester.toml" = {
-        source = ../../config/codex/agents/singularity-engine-harvester.toml;
-        force = true;
-      };
-
-      # Gateway-backed profiles are deliberately outside ~/.codex/agents. They
-      # are only for codex exec --ephemeral --profile external-<role>.
-      ".codex/external-explorer.config.toml" = {
-        source = ../../config/codex/external-profiles/external-explorer.config.toml;
-        force = true;
-      };
-
-      ".codex/external-reasoner.config.toml" = {
-        source = ../../config/codex/external-profiles/external-reasoner.config.toml;
-        force = true;
-      };
-
-      ".codex/external-reviewer.config.toml" = {
-        source = ../../config/codex/external-profiles/external-reviewer.config.toml;
-        force = true;
-      };
-
-      ".codex/external-verifier.config.toml" = {
-        source = ../../config/codex/external-profiles/external-verifier.config.toml;
-        force = true;
-      };
-
-      ".codex/external-worker.config.toml" = {
-        source = ../../config/codex/external-profiles/external-worker.config.toml;
-        force = true;
-      };
-
-      # Agent skills are installed from the Engine-owned Purpose Tool MCP/plugin via
-      # install_skills. Dotfiles keeps only archived legacy copies; Home Manager
-      # must not republish them as live ~/.agents, ~/.claude, or ~/.copilot skills.
-      # One Codex-only user skill is managed here; do not mirror .agents/skills,
-      # .system, or unrelated skill trees.
-      # Codex-only external-harness launcher with run provenance; installed only
-      # under ~/.codex/bin (never ~/.agents or global PATH). See
-      # config/codex/skills/external-harness-orchestration.
-      ".codex/bin/codex-external-run" = {
-        source = pkgs.replaceVars ../../config/codex/bin/codex-external-run.mjs {
-          node = "${pkgs.nodejs}/bin/node";
-        };
-        executable = true;
-        force = true;
-      };
-
-      ".codex/skills/external-harness-orchestration" = {
-        source = ../../config/codex/skills/external-harness-orchestration;
-        recursive = true;
-        force = true;
-      };
-
-      # SSH client config: host aliases for all servers (mail.hugo.dk, aidev, llm-gateway).
-      # hetzner_id_ed25519 is rendered from SOPS by the renderHetznerSshKey activation hook.
-      ".ssh/config" = {
-        source = ../../config/ssh_config;
-        force = true;
-      };
-
-      # Nix user config: build locally, consume shared binary caches.
-      ".config/nix/nix.conf" = {
-        source = ../../config/nix/local-build.nix.conf;
-        force = true;
-      };
-
-      ".copilot/settings.json" = {
-        source = ../../config/copilot/settings.json;
-        force = true;
-      };
-
-      ".factory/settings.json" = {
-        source = ../../config/factory/settings.json;
-        force = true;
-      };
-
-      ".factory/droids/worker.md" = {
-        source = ../../config/factory/droids/worker.md;
-        force = true;
-      };
-
-      ".factory/droids/scrutiny-feature-reviewer.md" = {
-        source = ../../config/factory/droids/scrutiny-feature-reviewer.md;
-        force = true;
-      };
-
-      ".factory/droids/user-testing-flow-validator.md" = {
-        source = ../../config/factory/droids/user-testing-flow-validator.md;
-        force = true;
-      };
-
-      ".local/share/applications/mynt-receipts.desktop" = {
-        executable = true;
-        force = true;
-        text = ''
-          [Desktop Entry]
-          Type=Application
-          Name=Mynt Receipts
-          Comment=Open Mynt in the dedicated receipts browser profile
-          Exec=/home/mhugo/.local/bin/mynt-receipts
-          Terminal=false
-          Categories=Office;Finance;
-          StartupWMClass=ReceiptsBrowser
-        '';
-      };
-
-      ".local/share/applications/mynt-receipts-api.desktop" = {
-        executable = true;
-        force = true;
-        text = ''
-          [Desktop Entry]
-          Type=Application
-          Name=Mynt Receipts API
-          Comment=Open Mynt with local-only CDP for receipt API discovery
-          Exec=/home/mhugo/.local/bin/mynt-receipts-api
-          Terminal=false
-          Categories=Office;Finance;
-          StartupWMClass=ReceiptsBrowserApi
-        '';
-      };
-    }
-    // lib.optionalAttrs (lib.toLower hostname == "cc-se-sto-devbox-01") {
-      # Cargo: the fleet devbox has the host-supervised sccache daemon and shim.
-      # Portable profiles must not name those host-only paths.
-      ".cargo/config.toml" = {
-        force = true;
-        text = ''
-          [build]
-          rustc-wrapper = "rustc-sccache-shim"
-        '';
-      };
+{pkgs, ...}: {
+  home.file = {
+    ".config/ripgrep/config" = {
+      source = ../../config/ripgreprc;
+      force = true;
     };
+
+    ".config/bat/config".source = ../../config/bat/config;
+
+    # VSCode: terminal font (Nerd Font), shell (zsh), editor defaults.
+    # WSL2: also install the font on the Windows side for VSCode Remote:
+    #   winget install -e --id DEVCOM.JetBrainsMonoNerdFont
+    ".config/Code/User/settings.json" = {
+      source = ../../config/vscode/settings.json;
+      force = true;
+    };
+
+    # Codex CLI config is seeded by activation.nix as a mutable file. The Codex
+    # client owns model/reasoning choices, approvals, notices, and feature
+    # toggles at runtime, so this path must not be a Home Manager symlink.
+    ".codex/rules/default.rules" = {
+      source = ../../config/codex/default.rules;
+      force = true;
+    };
+
+    ".codex/AGENTS.md" = {
+      source = ../../config/codex/AGENTS.md;
+      force = true;
+    };
+
+    ".codex/hooks.json" = {
+      source = ../../config/codex/hooks.json;
+      force = true;
+    };
+
+    ".codex/hooks/swarm-messages.mjs" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/swarm-messages.mjs {
+        node = "${pkgs.nodejs}/bin/node";
+        flock = "${pkgs.util-linux}/bin/flock";
+        bash = "${pkgs.bash}/bin/bash";
+      };
+      executable = true;
+      force = true;
+    };
+
+    ".claude/hooks/swarm-messages.sh" = {
+      source = pkgs.replaceVars ../../config/claude/hooks/swarm-messages.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
+    # Claude Code status line for Jujutsu-backed repos. Those repos replace `jj`
+    # on PATH with a refuse shim and expose reads only through their own `repo
+    # vcs` facade, so the usual git-branch status line has nothing to read.
+    ".claude/statusline-jj.sh" = {
+      source = pkgs.replaceVars ../../config/claude/statusline-jj.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        jq = "${pkgs.jq}/bin/jq";
+      };
+      executable = true;
+      force = true;
+    };
+
+    ".kimi-code/hooks/swarm-messages.sh" = {
+      source = pkgs.replaceVars ../../config/kimi-code/hooks/swarm-messages.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
+    ".copilot/hooks/swarm-messages.json" = {
+      source = ../../config/copilot/hooks/swarm-messages.json;
+      force = true;
+    };
+
+    ".cursor/hooks.json" = {
+      source = ../../config/cursor/hooks.json;
+      force = true;
+    };
+
+    # goose config.yaml is intentionally NOT HM-symlinked: goose writes
+    # telemetry consent and other prefs into it. Seeded/merged in activation.nix.
+
+    ".config/goose/moim-guardrails.md" = {
+      source = ../../config/goose/moim-guardrails.md;
+      force = true;
+    };
+
+    ".codex/agents/default.toml" = {
+      source = ../../config/codex/agents/default.toml;
+      force = true;
+    };
+
+    ".codex/agents/taxonomy-worker.toml" = {
+      source = ../../config/codex/agents/taxonomy-worker.toml;
+      force = true;
+    };
+
+    ".codex/agents/taxonomy-validator.toml" = {
+      source = ../../config/codex/agents/taxonomy-validator.toml;
+      force = true;
+    };
+
+    ".codex/agents/singularity-engine-harvester.toml" = {
+      source = ../../config/codex/agents/singularity-engine-harvester.toml;
+      force = true;
+    };
+
+    # Gateway-backed profiles are deliberately outside ~/.codex/agents. They
+    # are only for codex exec --ephemeral --profile external-<role>.
+    ".codex/external-explorer.config.toml" = {
+      source = ../../config/codex/external-profiles/external-explorer.config.toml;
+      force = true;
+    };
+
+    ".codex/external-reasoner.config.toml" = {
+      source = ../../config/codex/external-profiles/external-reasoner.config.toml;
+      force = true;
+    };
+
+    ".codex/external-reviewer.config.toml" = {
+      source = ../../config/codex/external-profiles/external-reviewer.config.toml;
+      force = true;
+    };
+
+    ".codex/external-verifier.config.toml" = {
+      source = ../../config/codex/external-profiles/external-verifier.config.toml;
+      force = true;
+    };
+
+    ".codex/external-worker.config.toml" = {
+      source = ../../config/codex/external-profiles/external-worker.config.toml;
+      force = true;
+    };
+
+    # Agent skills are installed from the Engine-owned Purpose Tool MCP/plugin via
+    # install_skills. Dotfiles keeps only archived legacy copies; Home Manager
+    # must not republish them as live ~/.agents, ~/.claude, or ~/.copilot skills.
+    # One Codex-only user skill is managed here; do not mirror .agents/skills,
+    # .system, or unrelated skill trees.
+    # Codex-only external-harness launcher with run provenance; installed only
+    # under ~/.codex/bin (never ~/.agents or global PATH). See
+    # config/codex/skills/external-harness-orchestration.
+    ".codex/bin/codex-external-run" = {
+      source = pkgs.replaceVars ../../config/codex/bin/codex-external-run.mjs {
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
+    ".codex/skills/external-harness-orchestration" = {
+      source = ../../config/codex/skills/external-harness-orchestration;
+      recursive = true;
+      force = true;
+    };
+
+    # SSH client config: host aliases for all servers (mail.hugo.dk, aidev, llm-gateway).
+    # hetzner_id_ed25519 is rendered from SOPS by the renderHetznerSshKey activation hook.
+    ".ssh/config" = {
+      source = ../../config/ssh_config;
+      force = true;
+    };
+
+    # Nix user config: build locally, consume shared binary caches.
+    ".config/nix/nix.conf" = {
+      source = ../../config/nix/local-build.nix.conf;
+      force = true;
+    };
+
+    ".copilot/settings.json" = {
+      source = ../../config/copilot/settings.json;
+      force = true;
+    };
+
+    ".factory/settings.json" = {
+      source = ../../config/factory/settings.json;
+      force = true;
+    };
+
+    ".factory/droids/worker.md" = {
+      source = ../../config/factory/droids/worker.md;
+      force = true;
+    };
+
+    ".factory/droids/scrutiny-feature-reviewer.md" = {
+      source = ../../config/factory/droids/scrutiny-feature-reviewer.md;
+      force = true;
+    };
+
+    ".factory/droids/user-testing-flow-validator.md" = {
+      source = ../../config/factory/droids/user-testing-flow-validator.md;
+      force = true;
+    };
+
+    ".local/share/applications/mynt-receipts.desktop" = {
+      executable = true;
+      force = true;
+      text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=Mynt Receipts
+        Comment=Open Mynt in the dedicated receipts browser profile
+        Exec=/home/mhugo/.local/bin/mynt-receipts
+        Terminal=false
+        Categories=Office;Finance;
+        StartupWMClass=ReceiptsBrowser
+      '';
+    };
+
+    ".local/share/applications/mynt-receipts-api.desktop" = {
+      executable = true;
+      force = true;
+      text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=Mynt Receipts API
+        Comment=Open Mynt with local-only CDP for receipt API discovery
+        Exec=/home/mhugo/.local/bin/mynt-receipts-api
+        Terminal=false
+        Categories=Office;Finance;
+        StartupWMClass=ReceiptsBrowserApi
+      '';
+    };
+  };
 }

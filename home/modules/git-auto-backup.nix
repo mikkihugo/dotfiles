@@ -384,11 +384,29 @@
 
   workspaceLedgerScript = pkgs.writeShellScript "workspace-ledger-snapshot" ''
     set -euo pipefail
-    lease_root="''${SE_LOCK_ROOT:-/tmp/singularity-engine}/workspace-leases"
+    # Must track the Engine operator's SE_LOCK_ROOT default exactly (see
+    # tools/repository-operator/src/env.rs::resolve_lease_root /
+    # lib/se_vcs.sh:255 in singularity-engine): SE_LOCK_ROOT override, else
+    # XDG_STATE_HOME, else $HOME/.local/state. Also back up the pre-migration
+    # /tmp/singularity-engine root while it can still exist, so the ledger
+    # keeps protecting whichever root the live lease data is actually under
+    # during the transition.
+    lease_root="''${SE_LOCK_ROOT:-''${XDG_STATE_HOME:-$HOME/.local/state}/singularity-engine}/workspace-leases"
+    legacy_lease_root="/tmp/singularity-engine/workspace-leases"
     ledger_dir="$HOME/.local/state/workspace-ledger/records"
-    [ -d "$lease_root" ] || exit 0
-    ${pkgs.coreutils}/bin/mkdir -p "$ledger_dir"
-    ${pkgs.rsync}/bin/rsync -a "$lease_root/" "$ledger_dir/"
+    synced=false
+    if [ -d "$lease_root" ] || [ -d "$legacy_lease_root" ]; then
+      ${pkgs.coreutils}/bin/mkdir -p "$ledger_dir"
+    fi
+    if [ -d "$lease_root" ]; then
+      ${pkgs.rsync}/bin/rsync -a "$lease_root/" "$ledger_dir/"
+      synced=true
+    fi
+    if [ -d "$legacy_lease_root" ]; then
+      ${pkgs.rsync}/bin/rsync -a "$legacy_lease_root/" "$ledger_dir/"
+      synced=true
+    fi
+    [ "$synced" = true ] || exit 0
   '';
 in {
   systemd.user = {

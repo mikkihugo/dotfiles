@@ -184,6 +184,14 @@ test("abort at the internal deadline yields partial output and exit 0", async (t
       response.setHeader("Content-Type", "application/json");
       const args = rpc.params?.arguments?.arguments ?? {};
       const tool = rpc.params?.arguments?.tool;
+      if (tool === "swarm_bus_subscribe") {
+        response.end(JSON.stringify({
+          jsonrpc: "2.0",
+          id: rpc.id,
+          result: { content: [{ type: "text", text: JSON.stringify({ ack_watermark: 0, created: true }) }] },
+        }));
+        return;
+      }
       if (tool === "swarm_bus_poll" && args.workspace === "engine-primary") {
         response.end(JSON.stringify({
           jsonrpc: "2.0",
@@ -256,7 +264,16 @@ test("a successful sweep writes the cursor file (regression: it was never reache
       for await (const chunk of request) body += chunk;
       const rpc = body ? JSON.parse(body) : {};
       const args = rpc.params?.arguments?.arguments ?? {};
+      const tool = rpc.params?.arguments?.tool;
       response.setHeader("Content-Type", "application/json");
+      if (tool === "swarm_bus_subscribe") {
+        response.end(JSON.stringify({
+          jsonrpc: "2.0",
+          id: rpc.id,
+          result: { content: [{ type: "text", text: JSON.stringify({ ack_watermark: 0, created: true }) }] },
+        }));
+        return;
+      }
       response.end(JSON.stringify({
         jsonrpc: "2.0",
         id: rpc.id,
@@ -264,7 +281,7 @@ test("a successful sweep writes the cursor file (regression: it was never reache
           content: [{
             type: "text",
             text: JSON.stringify({
-              messages: args.workspace === "cursor-write-test" ? [{
+              messages: tool === "swarm_bus_poll" && args.workspace === "cursor-write-test" ? [{
                 id: "cursor-write-1",
                 sequence: 5,
                 sender: "codex-11112222",
@@ -316,11 +333,12 @@ test("COORDINATION_MAILBOX_DEBUG=1 prints identity, request URL, HTTP status, an
       let body = "";
       for await (const chunk of request) body += chunk;
       const rpc = body ? JSON.parse(body) : {};
+      const tool = rpc.params?.arguments?.tool;
       response.setHeader("Content-Type", "application/json");
       response.end(JSON.stringify({
         jsonrpc: "2.0",
         id: rpc.id,
-        result: { content: [{ type: "text", text: JSON.stringify({ messages: [], next_cursor: 0 }) }] },
+        result: { content: [{ type: "text", text: JSON.stringify(tool === "swarm_bus_subscribe" ? { ack_watermark: 0, created: true } : { messages: [], next_cursor: 0 }) }] },
       }));
     });
     await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
@@ -365,11 +383,12 @@ test("a cwd outside any .git/.jj checkout falls back to the global mailbox inste
       const rpc = body ? JSON.parse(body) : {};
       const args = rpc.params?.arguments?.arguments ?? {};
       if (args.workspace) seenWorkspaces.push(args.workspace);
+      const tool = rpc.params?.arguments?.tool;
       response.setHeader("Content-Type", "application/json");
       response.end(JSON.stringify({
         jsonrpc: "2.0",
         id: rpc.id,
-        result: { content: [{ type: "text", text: JSON.stringify({ messages: [], next_cursor: 0 }) }] },
+        result: { content: [{ type: "text", text: JSON.stringify(tool === "swarm_bus_subscribe" ? { ack_watermark: 0, created: true } : { messages: [], next_cursor: 0 }) }] },
       }));
     });
     await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
@@ -395,6 +414,214 @@ test("a cwd outside any .git/.jj checkout falls back to the global mailbox inste
 
     const cursorPath = join(stateHome, "coordination-mailbox", "codex-abcd1234.cursor.json");
     await readFile(cursorPath, "utf8"); // throws if the cursor file was never written
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+// --- subscribe-at-head guard (2026-09-05 from-zero replay incident) ---------
+//
+// Regression contract for bus seq 25864: a fresh per-session identity has no
+// local cursor and no server watermark, and a poll in that state replays the
+// ENTIRE mailbox from sequence zero (six weeks, ~17KB per prompt, one batch
+// per turn). The sweep must subscribe first — a fresh consumer starts at the
+// current head — and must never render a batch the server answered with
+// known_consumer=false.
+
+function mockGateway(t, seen, handler) {
+  const server = createServer(async (request, response) => {
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    const rpc = body ? JSON.parse(body) : {};
+    const tool = rpc.params?.arguments?.tool;
+    const args = rpc.params?.arguments?.arguments ?? {};
+    seen.push({ tool, args });
+    const payload = handler(tool, args);
+    response.setHeader("Content-Type", "application/json");
+    response.end(JSON.stringify({
+      jsonrpc: "2.0",
+      id: rpc.id,
+      result: { content: [{ type: "text", text: JSON.stringify(payload ?? {}) }] },
+    }));
+  });
+  return new Promise((resolveListen) => {
+    server.listen(0, "127.0.0.1", () => {
+      t.after(() => server.close());
+      resolveListen(server);
+    });
+  });
+}
+
+function hookOptions(base, port, workspace, extra = {}) {
+  return {
+    cwd: base,
+    env: {
+      ...process.env,
+      MCP_GATEWAY_URL: `http://127.0.0.1:${port}/mcp`,
+      REPO_MEMORY_MCP_TIMEOUT_MS: "4000",
+      REPO_MEMORY_SWARM_WORKSPACE: workspace,
+      REPO_MEMORY_SWARM_CONSUMER: "codex-abcd1234",
+      XDG_STATE_HOME: join(base, "state"),
+      ...extra,
+    },
+    timeout: 5_000,
+  };
+}
+
+test("a fresh identity subscribes at head and never renders the backlog", async (t) => {
+  const base = await mkdtemp(join(tmpdir(), "coordination-mailbox-fresh-head-"));
+  try {
+    const target = await materializeExecutable(base, "coordination-mailbox-sweep.mjs");
+    const seen = [];
+    const server = await mockGateway(t, seen, (tool, args) => {
+      if (tool === "swarm_bus_subscribe") return { ack_watermark: 900, created: true };
+      if (tool === "swarm_bus_poll" && !Number.isInteger(args.after_sequence)) {
+        // What the server would answer to a watermark-less poll: from zero.
+        return {
+          messages: [{ id: "ancient-1", sequence: 1, sender: "codex-11112222", recipient: "all", type: "status", body: "ancient backlog" }],
+          known_consumer: false,
+        };
+      }
+      if (tool === "swarm_bus_poll" && args.workspace === "fresh-head-test") {
+        return {
+          messages: [{ id: "fresh-1", sequence: 901, sender: "codex-11112222", recipient: "all", type: "status", body: "fresh news" }],
+          known_consumer: true,
+        };
+      }
+      if (tool === "swarm_bus_poll") return { messages: [], known_consumer: true };
+      return {};
+    });
+    const port = server.address().port;
+
+    const result = await runHookProcess(target, ["codex", "UserPromptSubmit"], hookOptions(base, port, "fresh-head-test"));
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /fresh news/);
+    assert.doesNotMatch(result.stdout, /ancient backlog/);
+
+    // Subscribe ran before the first poll of each mailbox, and every poll
+    // carried an explicit after_sequence.
+    const firstPollIndex = seen.findIndex((call) => call.tool === "swarm_bus_poll");
+    const firstSubscribeIndex = seen.findIndex((call) => call.tool === "swarm_bus_subscribe");
+    assert.ok(firstSubscribeIndex !== -1, "subscribe must be called");
+    assert.ok(firstSubscribeIndex < firstPollIndex, "subscribe must precede the first poll");
+    for (const call of seen.filter((entry) => entry.tool === "swarm_bus_poll")) {
+      assert.ok(Number.isInteger(call.args.after_sequence), `poll of ${call.args.workspace} must carry after_sequence`);
+    }
+
+    const cursor = JSON.parse(await readFile(join(base, "state", "coordination-mailbox", "codex-abcd1234.cursor.json"), "utf8"));
+    assert.equal(cursor.sequences["fresh-head-test"], 901, "message advanced the cursor past the subscribed head");
+    assert.equal(cursor.sequences["global"], 900, "quiet mailbox sits at its subscribed head");
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test("known_consumer=false discards the replayed batch and resubscribes at head", async (t) => {
+  const base = await mkdtemp(join(tmpdir(), "coordination-mailbox-reaped-"));
+  try {
+    const target = await materializeExecutable(base, "coordination-mailbox-sweep.mjs");
+    // A low existing local cursor — the server then reports our consumer as
+    // gone (reaped) and answers from zero.
+    const stateDir = join(base, "state", "coordination-mailbox");
+    await (await import("node:fs/promises")).mkdir(stateDir, { recursive: true });
+    await writeFile(
+      join(stateDir, "codex-abcd1234.cursor.json"),
+      JSON.stringify({ schema: "coordination-mailbox-cursor/v1", sequences: { "reaped-test": 50, global: 895 } }),
+    );
+    const seen = [];
+    const server = await mockGateway(t, seen, (tool, args) => {
+      if (tool === "swarm_bus_subscribe") return { ack_watermark: 900, created: false };
+      if (tool === "swarm_bus_poll" && args.workspace === "reaped-test") {
+        return {
+          messages: [{ id: "replay-1", sequence: 1, sender: "codex-11112222", recipient: "all", type: "status", body: "from-zero replay" }],
+          known_consumer: false,
+        };
+      }
+      if (tool === "swarm_bus_poll") return { messages: [], known_consumer: true };
+      return {};
+    });
+    const port = server.address().port;
+
+    const result = await runHookProcess(target, ["codex", "UserPromptSubmit"], hookOptions(base, port, "reaped-test"));
+    assert.equal(result.code, 0);
+    assert.doesNotMatch(result.stdout, /from-zero replay/);
+
+    const resubscribed = seen.filter((call) => call.tool === "swarm_bus_subscribe" && call.args.workspace === "reaped-test");
+    assert.equal(resubscribed.length, 1, "the reaped mailbox is resubscribed exactly once");
+
+    const cursor = JSON.parse(await readFile(join(stateDir, "codex-abcd1234.cursor.json"), "utf8"));
+    assert.equal(cursor.sequences["reaped-test"], 900, "cursor moved to the resubscribed head");
+    assert.equal(cursor.sequences["global"], 895, "unaffected mailbox cursor untouched");
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test("an existing local cursor polls from it directly without subscribing", async (t) => {
+  const base = await mkdtemp(join(tmpdir(), "coordination-mailbox-held-cursor-"));
+  try {
+    const target = await materializeExecutable(base, "coordination-mailbox-sweep.mjs");
+    const stateDir = join(base, "state", "coordination-mailbox");
+    await (await import("node:fs/promises")).mkdir(stateDir, { recursive: true });
+    await writeFile(
+      join(stateDir, "codex-abcd1234.cursor.json"),
+      JSON.stringify({ schema: "coordination-mailbox-cursor/v1", sequences: { "held-test": 800, global: 800 } }),
+    );
+    const seen = [];
+    const server = await mockGateway(t, seen, (tool, args) => {
+      if (tool === "swarm_bus_poll" && args.workspace === "held-test") {
+        return {
+          messages: [{ id: "held-1", sequence: 801, sender: "codex-11112222", recipient: "all", type: "status", body: "live update" }],
+          known_consumer: true,
+        };
+      }
+      if (tool === "swarm_bus_poll") return { messages: [], known_consumer: true };
+      return {};
+    });
+    const port = server.address().port;
+
+    const result = await runHookProcess(target, ["codex", "UserPromptSubmit"], hookOptions(base, port, "held-test"));
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /live update/);
+    assert.equal(
+      seen.filter((call) => call.tool === "swarm_bus_subscribe").length,
+      0,
+      "no mailbox may be re-subscribed while a local cursor covers it",
+    );
+
+    const cursor = JSON.parse(await readFile(join(stateDir, "codex-abcd1234.cursor.json"), "utf8"));
+    assert.equal(cursor.sequences["held-test"], 801);
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test("subscribe without an ack_watermark fails closed — mailbox skipped, never polled from zero", async (t) => {
+  const base = await mkdtemp(join(tmpdir(), "coordination-mailbox-no-watermark-"));
+  try {
+    const target = await materializeExecutable(base, "coordination-mailbox-sweep.mjs");
+    const seen = [];
+    const server = await mockGateway(t, seen, (tool) => {
+      if (tool === "swarm_bus_subscribe") return {}; // contract violation: no ack_watermark
+      if (tool === "swarm_bus_poll") {
+        return {
+          messages: [{ id: "zero-1", sequence: 1, sender: "codex-11112222", recipient: "all", type: "status", body: "should never render" }],
+          known_consumer: false,
+        };
+      }
+      return {};
+    });
+    const port = server.address().port;
+
+    const result = await runHookProcess(target, ["codex", "UserPromptSubmit"], hookOptions(base, port, "no-watermark-test"));
+    assert.equal(result.code, 0);
+    assert.doesNotMatch(result.stdout, /should never render/);
+    assert.equal(
+      seen.filter((call) => call.tool === "swarm_bus_poll").length,
+      0,
+      "no poll may be issued for a mailbox we hold no position in",
+    );
+    assert.match(result.stderr, /ack_watermark/);
   } finally {
     await rm(base, { recursive: true, force: true });
   }

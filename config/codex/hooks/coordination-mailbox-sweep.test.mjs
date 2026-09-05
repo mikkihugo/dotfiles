@@ -147,6 +147,13 @@ test("a presence heartbeat is recognized and counted, a coordination message is 
   assert.equal(isHeartbeat({ type: "presence", body: "no detail field here" }), false, "presence alone is not enough");
 });
 
+test("a status-type heartbeat (the live jcode coordinator shape) is recognized", () => {
+  // coord-dragon/coord-fox post type "status" with "detail":"heartbeat" —
+  // observed live 2026-09-05; the presence-only check never matched them.
+  assert.equal(isHeartbeat({ type: "status", body: '{"consumer":"coord-dragon-x","detail":"heartbeat","kind":"status"}' }), true);
+  assert.equal(isHeartbeat({ type: "status", body: '{"detail":"real status"}' }), false, "a real status is coordination");
+});
+
 test("own messages (sender === identity) are recognized for dropping", () => {
   assert.equal(isOwnMessage({ sender: "claude-abcd1234" }, "claude-abcd1234"), true);
   assert.equal(isOwnMessage({ sender: "codex-11112222" }, "claude-abcd1234"), false);

@@ -549,13 +549,14 @@ export function renderClientOutput(client, eventName, context, payload) {
 // --- bounded filtering (DELIVER 2 + 3) --------------------------------------
 
 /**
- * A heartbeat is presence noise, not coordination: type "presence" with a
- * body whose JSON carries `"detail":"heartbeat"`. jcode coordinators post
- * one roughly every 2.5 minutes; VERIFIED (c) found these were the bulk of
- * sweep volume.
+ * A heartbeat is presence noise, not coordination: `"detail":"heartbeat"` in
+ * the body's JSON. jcode coordinators post one roughly every 2.5 minutes;
+ * VERIFIED (c) found these were the bulk of sweep volume. Live coordinators
+ * post them as type "status" (coord-dragon/coord-fox, observed 2026-09-05);
+ * type "presence" is kept for older senders.
  */
 export function isHeartbeat(message) {
-  return message?.type === "presence"
+  return (message?.type === "presence" || message?.type === "status")
     && typeof message?.body === "string"
     && message.body.includes('"detail":"heartbeat"');
 }
@@ -682,11 +683,44 @@ export async function runSweep({
       for (const pollWorkspace of pollWorkspaces) {
         if (controller.signal.aborted) break;
         try {
-          const afterSequence = cursor.sequences[pollWorkspace];
+          let afterSequence = cursor.sequences[pollWorkspace];
+          if (!Number.isInteger(afterSequence)) {
+            // No local cursor for this mailbox: subscribe before the first
+            // poll. A fresh per-session identity starts at the current head;
+            // an existing consumer (local cursor file lost) gets its durable
+            // watermark back unchanged. Without this guard a watermark-less
+            // poll replays the ENTIRE mailbox from sequence zero — observed
+            // 2026-09-05: six weeks of backlog, ~17KB injected per prompt,
+            // crawling forward one batch per turn (bus seq 25864).
+            const subscription = await bus.subscribe(pollWorkspace, identity, controller.signal);
+            const watermark = subscription?.ack_watermark;
+            if (!Number.isInteger(watermark)) {
+              // Fail closed: never poll a mailbox we have no position in.
+              pollErrors.push({ workspace: pollWorkspace, operation: "subscribe", error: "subscribe returned no ack_watermark; skipping this mailbox rather than replaying from zero" });
+              continue;
+            }
+            afterSequence = watermark;
+            nextCursor[pollWorkspace] = watermark;
+          }
           const polled = await bus.poll(pollWorkspace, identity, {
-            afterSequence: Number.isInteger(afterSequence) ? afterSequence : undefined,
+            afterSequence,
             signal: controller.signal,
           });
+          if (polled.knownConsumer === false) {
+            // The server lost our cursor (reaped, or never registered) and
+            // answered from sequence zero. Discard the batch and re-subscribe
+            // at head: a session-scoped identity has no returning reader whose
+            // place we could keep (settled decision — see swarm-messages.mjs).
+            try {
+              const subscription = await bus.subscribe(pollWorkspace, identity, controller.signal);
+              const watermark = subscription?.ack_watermark;
+              if (Number.isInteger(watermark)) nextCursor[pollWorkspace] = watermark;
+            } catch (error) {
+              if (isAbortError(error)) break;
+              pollErrors.push({ workspace: pollWorkspace, operation: "subscribe", error: String(error?.message ?? error) });
+            }
+            continue;
+          }
           for (const item of polled) allPolled.push({ ...item, _workspace: pollWorkspace });
         } catch (error) {
           if (isAbortError(error)) break;

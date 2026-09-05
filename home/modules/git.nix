@@ -70,6 +70,20 @@ _: {
           default-command = "log"; # `jj` alone shows the commit graph
           diff-formatter = "difft";
         };
+        "revset-aliases" = {
+          "trunk()" = "main";
+        };
+        "--scope" = [
+          {
+            "--when".repositories = [
+              "/home/mhugo/code/singularity-engine"
+              "/home/mhugo/code/worktrees/jj/singularity-engine"
+            ];
+            # engine's only remote is `forgejo`; jj's default trunk() ignores it and
+            # resolves to root(), leaving main@forgejo mutable at the jj level.
+            "revset-aliases"."trunk()" = "main@forgejo";
+          }
+        ];
       };
     };
 

@@ -36,22 +36,22 @@ async function installClaude() {
   const install = (event, group) => {
     const existing = Array.isArray(settings.hooks[event]) ? settings.hooks[event] : [];
     settings.hooks[event] = existing
-      .filter((item) => !JSON.stringify(item).includes("swarm-messages.sh"))
+      .filter((item) => !/swarm-messages\.sh|coordination-mailbox-sweep\.sh/.test(JSON.stringify(item)))
       .concat(group);
   };
   install("SessionStart", {
     matcher: "startup|resume|clear|compact",
     hooks: [{
       type: "command",
-      command: "/home/mhugo/.claude/hooks/swarm-messages.sh SessionStart",
-      timeout: 10,
+      command: "/home/mhugo/.claude/hooks/coordination-mailbox-sweep.sh SessionStart",
+      timeout: 30,
     }],
   });
   install("UserPromptSubmit", {
     hooks: [{
       type: "command",
-      command: "/home/mhugo/.claude/hooks/swarm-messages.sh",
-      timeout: 10,
+      command: "/home/mhugo/.claude/hooks/coordination-mailbox-sweep.sh",
+      timeout: 30,
     }],
   });
   await atomicWrite(claudePath, `${JSON.stringify(settings, null, 2)}\n`);

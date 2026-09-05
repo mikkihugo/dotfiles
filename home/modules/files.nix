@@ -78,6 +78,40 @@
       force = true;
     };
 
+    # coordination-mailbox-sweep is the renamed, bounded, cursor-based
+    # successor to the swarm-messages hook above. The swarm-messages.* paths
+    # above stay in place unmodified as compatibility shims for one release
+    # (codex/hooks.json, copilot, cursor, and factory hook registrations still
+    # name them directly and keep working); new hook registrations (Claude's
+    # settings.json, via install-swarm-hooks.mjs) point at the names below.
+    ".codex/hooks/coordination-mailbox-sweep.mjs" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.mjs {
+        node = "${pkgs.nodejs}/bin/node";
+        flock = "${pkgs.util-linux}/bin/flock";
+        bash = "${pkgs.bash}/bin/bash";
+      };
+      executable = true;
+      force = true;
+    };
+
+    ".claude/hooks/coordination-mailbox-sweep.sh" = {
+      source = pkgs.replaceVars ../../config/claude/hooks/coordination-mailbox-sweep.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
+    ".kimi-code/hooks/coordination-mailbox-sweep.sh" = {
+      source = pkgs.replaceVars ../../config/kimi-code/hooks/coordination-mailbox-sweep.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
     ".copilot/hooks/swarm-messages.json" = {
       source = ../../config/copilot/hooks/swarm-messages.json;
       force = true;

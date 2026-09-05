@@ -120,8 +120,10 @@ test("activation merge preserves unrelated Claude settings and Kimi provider con
     const claude = await readJSON(join(home, "claude.json"));
     assert.equal(claude.language, "English");
     assert.equal(claude.hooks.PreToolUse[0].matcher, "Bash");
-    assert.match(JSON.stringify(claude.hooks.SessionStart), /swarm-messages\.sh SessionStart/);
-    assert.match(JSON.stringify(claude.hooks.UserPromptSubmit), /swarm-messages\.sh/);
+    assert.match(JSON.stringify(claude.hooks.SessionStart), /coordination-mailbox-sweep\.sh SessionStart/);
+    assert.match(JSON.stringify(claude.hooks.UserPromptSubmit), /coordination-mailbox-sweep\.sh/);
+    assert.match(JSON.stringify(claude.hooks.SessionStart), /"timeout":30/);
+    assert.match(JSON.stringify(claude.hooks.UserPromptSubmit), /"timeout":30/);
 
     const updatedKimi = await readFile(join(home, "kimi.toml"), "utf8");
     assert.match(updatedKimi, /api_key = \"do-not-touch\"/);

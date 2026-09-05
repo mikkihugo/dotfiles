@@ -4,12 +4,11 @@
 set -euo pipefail
 
 tool="${1:?missing Rust entrypoint name}"
-shift
-cargo_home="${CARGO_HOME:-$HOME/.cargo}"
-proxy="$cargo_home/bin/$tool"
+rustup_bin="${2:?missing Rustup executable}"
+shift 2
 
-if [[ ! -x "$proxy" ]]; then
-	echo "managed-rustup-toolchain: Rustup proxy missing: $proxy" >&2
+if [[ ! -x "$rustup_bin" ]]; then
+	echo "managed-rustup-toolchain: Rustup executable missing: $rustup_bin" >&2
 	exit 127
 fi
 
@@ -18,4 +17,4 @@ fi
 # environments cannot select a newer compiler. Explicit `cargo +toolchain`
 # remains Rustup's intentional per-command override.
 export RUSTUP_TOOLCHAIN="1.95.0"
-exec "$proxy" "$@"
+exec "$rustup_bin" run "$RUSTUP_TOOLCHAIN" "$tool" "$@"

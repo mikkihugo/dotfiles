@@ -32,7 +32,7 @@ class CheckEntryTest(unittest.TestCase):
                 ("pure", "", str(root), True),
             ]:
                 with self.subTest(shell=shell, fallback=fallback, directory=directory):
-                    result = subprocess.run([str(root / "bin/repo"), "check", "nix"],
+                    result = subprocess.run([str(root / "bin/repo"), "check", "nix"], cwd=root,
                         env=dict(env, IN_NIX_SHELL=shell, NIX_DIRENV_DID_FALLBACK=fallback,
                                  DIRENV_DIR="-" + directory), capture_output=True, text=True)
                     self.assertEqual(result.returncode == 0, expected, result.stderr)

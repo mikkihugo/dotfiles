@@ -12,6 +12,7 @@ import {
   McpGatewayClient,
   RepoMemoryBus,
   createContext,
+  isNoiseDelivery,
   renderClientOutput,
   runHook,
   selectWorkspace,
@@ -1569,6 +1570,135 @@ test("concurrent sweepers drain the directory instead of leaking the locks they 
       settled.filter((f) => strandedLocks.includes(f)), [],
       "a stranded lock must age out like any other orphan, so the directory converges",
     );
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+// Noise suppression: coordinator heartbeats and bare availability pings are
+// liveness, not content. They must never render into a prompt, but they MUST
+// still be acked — a suppressed message that never reaches newlyPending would
+// re-deliver on every hook call and pin the consumer's cursor forever.
+test("coordinator heartbeats and availability pings are acked without being rendered", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-noise-"));
+  const payload = { cwd: "/workspace", session_id: "noise-filter-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const heartbeat = {
+    ...message, id: "hb-1", sender: "coord-crab-test", recipient: "all", type: "status",
+    body: JSON.stringify({ kind: "status", detail: "heartbeat" }),
+  };
+  const available = {
+    ...message, id: "av-1", sender: "claude-peer", recipient: "all",
+    type: "available", body: "peer session is available",
+  };
+  const signal = { ...message, id: "sig-1", recipient: "all", body: "Ship the frobnicate." };
+  const acks = [];
+  let served = false;
+  const durable = {
+    name: "repo-memory",
+    async subscribe() {},
+    async poll(workspace) {
+      if (workspace === "global" || served) return [];
+      served = true;
+      return [heartbeat, available, signal];
+    },
+    async ack(_w, _c, delivery) { acks.push(delivery.id); },
+    async post() {},
+    async close() {},
+  };
+
+  try {
+    await writeInitializedState(stateDir, consumer);
+    const first = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [durable],
+    });
+    const rendered = JSON.stringify(first.output);
+    assert.match(rendered, /Ship the frobnicate/);
+    assert.ok(!rendered.includes("heartbeat"), "a coord heartbeat must not render");
+    assert.ok(!rendered.includes("peer session is available"), "a bare available must not render");
+
+    const second = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [durable],
+    });
+    assert.equal(second.output, null);
+    assert.deepEqual(acks.sort(), ["av-1", "hb-1", "sig-1"],
+      "noise and signal are all acked at the next observed boundary");
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("an all-noise batch emits nothing and is still acked", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-all-noise-"));
+  const payload = { cwd: "/workspace", session_id: "all-noise-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const heartbeat = {
+    ...message, id: "hb-2", sender: "coord-dragon-test", recipient: "all", type: "status",
+    body: JSON.stringify({ kind: "status", detail: "heartbeat" }),
+  };
+  const acks = [];
+  let served = false;
+  const durable = {
+    name: "repo-memory",
+    async subscribe() {},
+    async poll(workspace) {
+      if (workspace === "global" || served) return [];
+      served = true;
+      return [heartbeat];
+    },
+    async ack(_w, _c, delivery) { acks.push(delivery.id); },
+    async post() {},
+    async close() {},
+  };
+
+  try {
+    await writeInitializedState(stateDir, consumer);
+    const first = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [durable],
+    });
+    assert.equal(first.output, null, "an all-noise batch renders nothing");
+    const state = JSON.parse(await readFile(join(stateDir, `${consumer}--singularity-engine.json`), "utf8"));
+    assert.deepEqual(state.pending.map((entry) => entry.message_id), ["hb-2"],
+      "suppressed noise is still queued for acknowledgement");
+
+    await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [durable],
+    });
+    assert.deepEqual(acks, ["hb-2"], "noise is acked at the next boundary despite never rendering");
+  } finally {
+    await rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("a directly-addressed availability note is rendered, not suppressed", async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), "repo-memory-hook-direct-noise-"));
+  const payload = { cwd: "/workspace", session_id: "direct-noise-session" };
+  const consumer = consumerForSession("codex", payload.session_id);
+  const direct = {
+    ...message, id: "av-direct", sender: "coord-crab-test", recipient: consumer,
+    type: "available", body: "direct orders for this consumer",
+  };
+  const durable = {
+    name: "repo-memory",
+    async subscribe() {},
+    async poll(workspace) { return workspace === "global" ? [] : [direct]; },
+    async ack() {},
+    async post() {},
+    async close() {},
+  };
+
+  try {
+    await writeInitializedState(stateDir, consumer);
+    const result = await runHook({
+      client: "codex", eventName: "UserPromptSubmit", payload,
+      workspace: "singularity-engine", stateDir, buses: [durable],
+    });
+    assert.match(JSON.stringify(result.output), /direct orders for this consumer/,
+      "a message addressed to this consumer is never noise, whatever its type");
   } finally {
     await rm(stateDir, { recursive: true, force: true });
   }

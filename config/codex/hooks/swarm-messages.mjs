@@ -279,6 +279,29 @@ export function createContext(messages) {
   ].join("\n");
 }
 
+// Heartbeats and bare availability pings are liveness, not content: rendered
+// into a prompt, every turn pays the context cost of a message that says only
+// "still alive". They are suppressed from the injected context — but still
+// acked, unconditionally: newlyPending is [] whenever output is null, which is
+// correct for signal (an unrendered message must not be acked) but wrong for
+// noise, because suppressed noise is never rendered by design and would
+// otherwise accumulate unacked and redeliver on every hook call, pinning the
+// consumer's cursor. A message addressed directly to the consumer
+// (recipient != "all") is never noise, whatever its type or sender.
+export function isNoiseDelivery(item) {
+  if ((item.recipient ?? "all") !== "all") return false;
+  const kind = item.type ?? item.message_type;
+  if (kind === "available") return true;
+  if (kind !== "status") return false;
+  if (!String(item.sender ?? "").startsWith("coord-")) return false;
+  try {
+    const body = JSON.parse(item.body);
+    return body?.kind === "status" && body?.detail === "heartbeat";
+  } catch {
+    return false;
+  }
+}
+
 // Whether renderClientOutput can produce anything at all for this client.
 //
 // A client with no branch below can never receive a message and therefore never
@@ -934,18 +957,21 @@ async function runHookWithLease({
   const availabilityPosted = await postAvailability(availabilityRequired);
 
   const publicDeliveries = deliveries.map(({ _bus, _workspace, ...item }) => item);
-  const context = publicDeliveries.length ? createContext(publicDeliveries) : "";
+  const visible = publicDeliveries.filter((item) => !isNoiseDelivery(item));
+  const context = visible.length ? createContext(visible) : "";
   const output = renderClientOutput(client, eventName, context, payload);
   if (!stateLock.held()) return { output: null, errors, deliveries: [] };
   if (output !== null) await emitOutput(output);
 
-  const newlyPending = output === null
-    ? []
-    : deliveries.map((item) => ({
-        bus: item._bus,
-        workspace: item._workspace,
-        message_id: item.id,
-      }));
+  // Noise is acked unconditionally (never rendered by design); signal keeps
+  // the existing rule: acknowledged only when actually emitted.
+  const newlyPending = deliveries
+    .filter((item) => output !== null || isNoiseDelivery(item))
+    .map((item) => ({
+      bus: item._bus,
+      workspace: item._workspace,
+      message_id: item.id,
+    }));
   if (!stateLock.held()) return { output: null, errors, deliveries: [] };
   writeState(
     stateDir,

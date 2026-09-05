@@ -22,7 +22,11 @@ python = "latest"
 java = "latest"
 crush = "latest"
 opencode = "latest"
-rust = "latest"
+# Keep host Rust aligned with JCode's pinned Nix Rust 1.95. Bare cargo/rustfmt
+# otherwise can format source differently from JCode's guarded publish checks.
+# Reload after `repo sync mise-upgrade`: start a new shell and verify
+# `mise current rust`, `cargo --version`, and `rustfmt --version`.
+rust = "1.95.0"
 "github:contabo/cntb" = "latest"
 "github:ovh/ovhcloud-cli" = "latest"
 awscli = { version = "latest", symlink_bins = "true" }

@@ -70,9 +70,6 @@ _: {
           default-command = "log"; # `jj` alone shows the commit graph
           diff-formatter = "difft";
         };
-        "revset-aliases" = {
-          "trunk()" = "main";
-        };
         "--scope" = [
           {
             "--when".repositories = [

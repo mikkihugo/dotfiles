@@ -82,6 +82,7 @@ main() {
 		cd "$root"
 		node --test \
 			scripts/test-cargo-pgrx-wrapper.mjs \
+			scripts/test-rustup-toolchain-wrappers.mjs \
 			scripts/test-codex-hosted-search.mjs \
 			scripts/test-codex-external-harness-skill.mjs \
 			scripts/test-codex-external-run.mjs \

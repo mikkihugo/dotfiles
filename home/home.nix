@@ -37,6 +37,7 @@ in {
     ./modules/packages.nix
     ./modules/ast-grep.nix
     ./modules/cargo-pgrx.nix
+    ./modules/rustup-toolchain-wrappers.nix
     ./modules/shell.nix
     ./modules/git.nix
     ./modules/stable-shell.nix

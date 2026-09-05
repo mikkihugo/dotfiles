@@ -1,0 +1,10 @@
+{
+  "result_id": "2026-09-05-codex-gpt6-settings-red",
+  "status": "failed",
+  "observed_at": "2026-09-05T04:40:02.318611+00:00",
+  "command": "repo check",
+  "exit_code": 1,
+  "log": "takeover-entry-fixture-red.txt",
+  "failure": "Two intended-valid fixture environments fail because inherited BASH_ENV resets PATH; documented full gate failure before fixture fix.",
+  "log_excerpt": true
+}

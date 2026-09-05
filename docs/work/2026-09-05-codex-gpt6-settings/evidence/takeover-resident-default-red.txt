@@ -1,0 +1,374 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+dotfiles VCS contract: ok
+these 15 derivations will be built:
+  /nix/store/6dv07w5r4cl2a8088x2yhm1kwk2b7a4h-hm-session-vars.sh.drv
+  /nix/store/bsj81sj3d1higx30zqiy8izllx2bvq8f-hm-session-vars.sh-fish-completions.drv
+  /nix/store/33pmpnaxgm8y146488k5xllxjrwrw1b5-profile.drv
+  /nix/store/424vd5jn75dlz1v2ir0pjww1awxp1gq8-hm_..zshenv.drv
+  /nix/store/vssckg4j2f8abxjdrw69mzcx701l25d8-hm-session-vars.fish.drv
+  /nix/store/yf3mi8rbfinsdcz56p4lfb9hxdfng82s-man-paths.drv
+  /nix/store/p8hg8aa0s294qj64wzc5i1aym6w7gkfp-man-cache.drv
+  /nix/store/61m51fy2dx4789jjmigh2a2pfg09mhvv-hm_.manpath.drv
+  /nix/store/6il2slpy64x4fbbm61dlmnjgg9l1qkb0-config.fish.drv
+  /nix/store/p29w818xp7032ym3hvgc01ga3m0bxzxd-hm-session-vars.fish-fish-completions.drv
+  /nix/store/853nbylqzxkwns4a2y4z6i35a3qaz6lk-mhugo-fish-completions.drv
+  /nix/store/kgix09yp9dbrzx9k6y0l5xkvv7rajl6r-home-manager-files.drv
+  /nix/store/x3mfdilbgwkwqh9piqr1qcdk3sgz1iyn-home-manager-path.drv
+  /nix/store/p26vk5l092h8cr1sqpnbzp5nwr0cd62m-activation-script.drv
+  /nix/store/0d1xlp3nwscvz1smgmxfzwi1jh94nz2p-home-manager-generation.drv
+building '/nix/store/6dv07w5r4cl2a8088x2yhm1kwk2b7a4h-hm-session-vars.sh.drv'...
+building '/nix/store/vssckg4j2f8abxjdrw69mzcx701l25d8-hm-session-vars.fish.drv'...
+building '/nix/store/bsj81sj3d1higx30zqiy8izllx2bvq8f-hm-session-vars.sh-fish-completions.drv'...
+building '/nix/store/424vd5jn75dlz1v2ir0pjww1awxp1gq8-hm_..zshenv.drv'...
+building '/nix/store/33pmpnaxgm8y146488k5xllxjrwrw1b5-profile.drv'...
+building '/nix/store/6il2slpy64x4fbbm61dlmnjgg9l1qkb0-config.fish.drv' on 'ssh-ng://root@159.195.138.16'...
+building '/nix/store/p29w818xp7032ym3hvgc01ga3m0bxzxd-hm-session-vars.fish-fish-completions.drv'...
+building '/nix/store/x3mfdilbgwkwqh9piqr1qcdk3sgz1iyn-home-manager-path.drv'...
+building '/nix/store/yf3mi8rbfinsdcz56p4lfb9hxdfng82s-man-paths.drv'...
+building '/nix/store/853nbylqzxkwns4a2y4z6i35a3qaz6lk-mhugo-fish-completions.drv'...
+building '/nix/store/p8hg8aa0s294qj64wzc5i1aym6w7gkfp-man-cache.drv'...
+building '/nix/store/p26vk5l092h8cr1sqpnbzp5nwr0cd62m-activation-script.drv'...
+copying 1 paths...
+copying path '/nix/store/ffijq1hf2w42l1rbnq2bn263lhdkdwn6-hm-session-vars.fish' to 'ssh-ng://root@159.195.138.16'...
+building '/nix/store/6il2slpy64x4fbbm61dlmnjgg9l1qkb0-config.fish.drv'...
+copying 1 paths...
+copying path '/nix/store/8sg2a8jz5fg9f9sdw1717r8zyaqf2l3z-config.fish' from 'ssh-ng://root@159.195.138.16'...
+building '/nix/store/61m51fy2dx4789jjmigh2a2pfg09mhvv-hm_.manpath.drv'...
+building '/nix/store/kgix09yp9dbrzx9k6y0l5xkvv7rajl6r-home-manager-files.drv'...
+building '/nix/store/0d1xlp3nwscvz1smgmxfzwi1jh94nz2p-home-manager-generation.drv'...
+ast-grep 0.42.1
+ast-grep 0.42.1
+/tmp/tmp.zpdEhmDsey/sample.js:1:const answer = 42;
+export LANG="C.UTF-8"
+export LC_ALL="C.UTF-8"
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.267s
+
+OK
+..saved model, model_reasoning_effort, features.memories, features.context_management, features.step_model_switching, features.mcp_2026_07_28 to /tmp/tmp4zgmvt9z/shared.toml
+.
+----------------------------------------------------------------------
+Ran 3 tests in 0.265s
+
+OK
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.623s
+
+OK
+ok   exit 0 on add
+ok   adds only the missing declared key (2 -> 3)
+ok   declared key now present
+ok   undeclared pre-existing key kept
+ok   exit 0 on rerun
+ok   second run is a no-op (byte-identical)
+ok   no duplicate lines after rerun
+ok   comment difference does not create a duplicate
+ok   hardware sk key preserved
+ok   options-prefixed key preserved
+ok   declared key appended alongside (2 -> 3)
+ok   options-prefixed key matched, not duplicated
+ok   target left at 0600
+ok   exit 0 when target absent
+ok   target created with the declared key
+ok   created target is 0600
+ok   exit 0 when declared file absent
+ok   target untouched when declared file absent
+
+all merge-authorized-keys checks passed
+ok   scripts/codex-preferences (derived)
+ok   scripts/jcode-preferences (derived)
+ok   scripts/merge-authorized-keys (derived)
+ok   scripts/reap-abandoned-searches.sh (derived)
+nix gate covers every module-referenced script
+ok   no recursive rm in the sweep
+ok   no pipe into grep -q
+ok   no eval direnv-export fallback
+ok   facade routed through fail-closed repo_vcs/direnv-exec wrapper with fixture bypass
+ok   ExecStart is the store wrapper
+ok   hms cannot start the sweep (X-SwitchMethod=keep-old)
+ok   the .local/bin copy is force-replaced, not clobber-blocked
+ok   migration hook retires the unmanaged copies pre-checkLinkTargets
+ok   the sweep honours the fixture root overrides (safe to execute)
+ok   unreadable inventory refuses without calling a verb
+ok   empty inventory refuses
+ok   reclaimable present workspace goes through workspace-close
+ok   missing path clears only the registration
+ok   live lease is never acted on
+ok   a registration matching early in the listing is not treated as an orphan
+ok   a refusal keeps the workspace
+engine-worktree-cleanup contract holds
+sccache profile scope contract: ok
+✔ Home Manager owns the devbox-scoped exact wrapper logic (79.064445ms)
+✔ wrapper selects the nearest marked Engine root and preserves argv (49.287936ms)
+✔ wrapper rejects an unrelated ancestor flake and uses marked fallback (37.485575ms)
+✔ wrapper recursion fails closed before invoking Nix (19.885661ms)
+✔ the canonical repository check runs the cargo-pgrx wrapper contract (1.351846ms)
+✔ skill frontmatter and openai.yaml exist with Use when / Not for description (14.555432ms)
+✔ main-agent-only SUBAGENT-STOP tells bounded subagent to stop and return to root (1.190354ms)
+✔ trigger: delegated external work loads skill; Codex remains sole publisher (2.352937ms)
+✔ near-miss: Default/Plan or v1/v2 wording alone cannot satisfy frontmatter trigger (6.349611ms)
+✔ alternate phrasing: encrypted_content fails closed or starts fresh portable session (2.145384ms)
+✔ Kimi prompt-mode command uses exact model/flags and forbids --prompt with --auto/--yolo (2.73848ms)
+✔ Cursor preferred subscription models are non-fast only (2.365116ms)
+✔ concurrency enforces operator hard ceilings plus resource-based lower limits (3.987215ms)
+✔ run provenance launcher contract is documented and fail-closed (3.685072ms)
+✔ Home Manager installs the launcher only under ~/.codex (3.019803ms)
+✔ Home Manager maps only this user skill; no singularity-engine-forward mapping (4.446599ms)
+✔ AGENTS handwritten section is a minimal load-skill trigger only (1.77474ms)
+✔ general orchestration runbook is absent (2.829861ms)
+✔ no-VCS rule is instruction policy, not a sandbox; worker state is untrusted (0.996702ms)
+✔ Kimi 0.28.1 prompt-mode behavior is documented (auto permission, handlers, validateOptions) (5.073417ms)
+✔ fail-closed worker evidence minimum and independent coordinator rerun (1.86575ms)
+✔ Cursor implementation and read-only commands are proven; boundary fails closed (3.190975ms)
+✔ skill activates only in Codex root; workers cannot load it; root never dispatches it to subagents (2.726251ms)
+✔ concurrency requires live memory check and stops before swap/memory pressure worsens (5.115106ms)
+✔ skill cites the exact contract-test paths and commands (3.249295ms)
+✔ requires explicit root/parent/task identity; no anonymous default (238.065589ms)
+✔ rejects Kimi agent budget above the per-coordinator ceiling of 10 (278.583378ms)
+✔ writes crash-recoverable record with required provenance and no prompt/argv leakage (85.601059ms)
+✔ falls back to ~/.local/state/codex when XDG_STATE_HOME is unset (72.608214ms)
+✔ records child exit code and failed status; launcher forwards exit code (72.910077ms)
+✔ records signal termination and maps launcher exit to 128+signo (67.195155ms)
+✔ forwards SIGTERM to the child and records signal termination (134.028325ms)
+✔ rejects a duplicate run id instead of overwriting an existing record (155.821906ms)
+✔ preserves nested root/parent ancestry (parent is the immediate lead task) (71.596553ms)
+✔ rejects Kimi prompt mode combined with --auto or --yolo (117.985138ms)
+✔ reconciles stale dead-pid records before summing reserved Kimi budget (99.058797ms)
+✔ rejects a launch that would exceed the global 30 Kimi agent ceiling (75.883071ms)
+✔ enforces one writer per workspace lane (79.257438ms)
+✔ serializes concurrent reservations without exceeding the global ceiling (1592.138857ms)
+✔ rejects when one coordinator's aggregated active Kimi reservations would exceed 10 (79.743002ms)
+✔ other coordinators' reservations do not count toward the per-coordinator ceiling (97.968946ms)
+✔ fails closed on an unparsable run record instead of ignoring it (77.872123ms)
+✔ fails closed on a schema-invalid active record instead of treating missing budget as zero (104.417565ms)
+✔ signals the worker process group so grandchildren do not survive launcher termination (123.184464ms)
+✔ cursor harness launches without Kimi budget accounting (112.589585ms)
+✔ recovers a reservation lock whose recorded owner PID is dead (109.098257ms)
+✔ recovers a legacy ownerless lock once it is older than the contention window (111.709226ms)
+✔ recovers a corrupt owner lock once it is older than the contention window (117.55752ms)
+✔ fails closed on a fresh ownerless lock inside the contention window without stealing it (338.259493ms)
+✔ retry-budget overrides never shorten the stale classification window (64.17563ms)
+✔ never steals a lock whose recorded owner PID is alive (325.580471ms)
+✔ root enables live hosted search while every gateway-backed Codex role disables it (23.679453ms)
+✖ Codex keeps external gateway profiles profile-only and residents OpenAI-only (17.793887ms)
+✔ detect-secrets filters only canonical Purpose work-packet metadata (6414.014407ms)
+✔ Home Manager retires only the unsafe JCode lane-settle artifacts (2.807002ms)
+✔ nix-direnv overlay does not GC-root flake archive inputs (17.040369ms)
+✔ Home Manager preserves the requested Forgejo and fast-Nix toolchain without tea (26.1366ms)
+✔ Home Manager owns nix-index database refresh wiring (9.477486ms)
+✔ Home Manager activation does not launch emergency backup jobs (2.107674ms)
+✔ mutable home sweeps serialize and report bounded lock failures (3.381128ms)
+✔ home emergency backup ssh command keeps long uploads alive on Hetzner Storage Box (1.870821ms)
+✔ borgmatic hot-source backup replaces mutating git snapshots safely (4.387789ms)
+✔ git auto-backup yields host resources and waits after completion (2.310546ms)
+✔ workspace ledger preservation is a separate low-priority hourly service (1.79669ms)
+✔ Home Manager gives every managed agent client a deterministic UTF-8 locale (3.205625ms)
+✔ NixOS owns the JCode units; Home Manager must not shadow them (2.025122ms)
+✔ JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gateway fallbacks (5.916895ms)
+✔ shell aliases consume the managed Nix tooling (2.047103ms)
+✔ the Home Manager wrapper preserves an explicitly requested flake (2.069463ms)
+✔ the maintenance shell supplies every executable used by the canonical check (2.082453ms)
+✔ Home Manager does not include the retired Hermes agent (1.458446ms)
+✔ Home Manager uses the nixpkgs mise package without a private overlay (2.623479ms)
+✔ Home Manager activation uses the non-deprecated nix profile command (3.57477ms)
+✔ dotfiles flake does not import ace-coder or the GPU worker (1.647729ms)
+✔ just check delegates to the single repository check implementation (1.663878ms)
+✔ global Codex instructions keep publication owned until land completes (1.105563ms)
+✔ otel-env.sh resolves OTLP helpers without mutating caller PATH (1.480977ms)
+✔ cursor-agent and agent share one OTEL wrapper with unified binary resolution (1.160373ms)
+✔ Claude Code remains native-installer-owned outside Home Manager (0.795919ms)
+✔ Home Manager modules keep single ownership of every managed path and bin name (17.907239ms)
+✔ live config does not call retired *.infra.centralcloud.com endpoints (37.432275ms)
+(node:526805) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ the shell startup secret loaders are untraceable (8.781158ms)
+✔ the untraceable prologue actually suppresses a traced leak (55.778578ms)
+✔ mikki-bunker-windows uses the verified Tailscale admin route (2.009773ms)
+✔ ssh_config declares cc-se-sto-core-01 so fleet loops can reach it (1.226254ms)
+✔ stable shell preserves the caller PATH ahead of Home Manager defaults (16.931618ms)
+✔ SHELL points directly at an immutable store wrapper (8.568834ms)
+✔ stable-shell delegates non-interactive direnv loading to BASH_ENV (2.700441ms)
+✔ ordinary non-interactive shells enter direnv once with a bounded wait (138.179292ms)
+✔ Home Manager uses direnv-instant for interactive shells (4.827313ms)
+﹣ the NixOS devbox is the sole interactive direnv hook authority (2.546628ms) # SKIP
+✔ Home Manager exports BASH_ENV for login and systemd user sessions (4.901385ms)
+✔ BASH_ENV path hook enters direnv once for Claude/Codex bash -c (125.684954ms)
+✔ dump cache hit evals without direnv allow or export (204.029941ms)
+✔ fill runs direnv allow only when the envrc proves blocked (249.059489ms)
+✔ enter-once sentinel is scoped to the repository root (110.124771ms)
+✔ directories without an envrc skip direnv entirely (13.659061ms)
+✔ dump fill strips one-line DIRENV_DIFF and DIRENV_WATCHES (180.880974ms)
+✔ dump whose recorded root no longer has envrc is not reused (223.316694ms)
+✔ dump miss drops leftover flock locks without a matching dump (128.944358ms)
+✔ a dump that froze a truncated PATH cannot strip the caller's tool dirs (111.05177ms)
+✔ an interactive direnv-instant apply cannot strip the caller's tool dirs (104.337475ms)
+✔ the interactive and non-interactive PATH restores stay one rule (2.377667ms)
+✔ Home Manager owns schema-valid Codex hooks.json with repo-memory swarm registration (12.5376ms)
+✔ Home Manager installs every managed hook surface (5.551223ms)
+✔ Goose and JCode wrappers export one inherited session identity (3.504928ms)
+✔ Home Manager enables only Summon delegation with ten background tasks (2.274415ms)
+✔ Goose uses Kimi K3 as main and MiniMax M3 as planner (3.215626ms)
+✔ activation merge preserves unrelated Claude settings and Kimi provider content (64.589967ms)
+✔ activation merge installs JCode session bootstrap without replacing unrelated hooks (60.161646ms)
+✔ workspace selection is durable and scoped to the active repository (25.044718ms)
+✔ session start uses a unique consumer and records the active worktree (27.468235ms)
+✔ client renderers emit only native context shapes (1.146272ms)
+✔ JCode announces availability without creating a consumer cursor it can never advance (9.334284ms)
+✔ MCP transport initializes and calls the lazy repo-memory subscription route (65.530476ms)
+✔ Home Manager symlink execution enters the hook main routine (408.283013ms)
+✔ separate hook processes serialize one durable delivery (480.329401ms)
+✔ delivery is acknowledged only at the next observed hook boundary (31.411878ms)
+✔ overlapping hook invocations emit one durable delivery once (17.587515ms)
+✔ a contending hook does not repeat the active acknowledgement (17.106909ms)
+✔ a kernel-held stable state lock yields then allows delivery after owner exit (27.691506ms)
+✔ killing a hook process releases its kernel lease for a replacement delivery (86.673771ms)
+✔ a legacy state-lock directory fails closed without being moved (2.973053ms)
+✔ a symlinked state lock fails closed without following it (4.335899ms)
+✔ a flock helper that never becomes ready times out without polling (510.626505ms)
+✔ an acknowledgement failure blocks later acknowledgements on the same cursor (25.928677ms)
+✔ first-run subscribes canonical and lane scopes before announcing availability (13.54903ms)
+✔ corrupt local state safely re-subscribes without advancing a server cursor (48.627319ms)
+✔ subscription failure keeps state uninitialized, silent, and retryable (29.636368ms)
+✔ availability failure remains retryable with the same idempotency key (35.162129ms)
+✔ pre-bootstrap state files remain initialized during upgrade (15.428531ms)
+✔ MCP subscription failure does not invent a filesystem bus (16.019137ms)
+✔ a purged message is settled, not retried, and does not block later acknowledgements (13.726051ms)
+✔ a pending entry for a bus this build no longer registers is dropped (14.238318ms)
+✔ a reaped cursor re-subscribes at head instead of replaying the bus into the model (13.903664ms)
+✔ a re-subscribe that itself fails is reported and does not wedge the run (12.484889ms)
+✔ a stale, lock-free state pair is reaped on the next SessionStart sweep, while contested or fresh pairs survive (52.178328ms)
+✔ a stale sibling workspace file for the sweeping session's own consumer is never reaped (15.446712ms)
+✔ concurrent sweepers drain the directory instead of leaking the locks they create (530.371712ms)
+ℹ tests 139
+ℹ suites 0
+ℹ pass 137
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 6642.72821
+
+✖ failing tests:
+
+test at scripts/test-codex-hosted-search.mjs:41:1
+✖ Codex keeps external gateway profiles profile-only and residents OpenAI-only (17.793887ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^model\s*=\s*"gpt-5\.6-sol"$/m. Input:
+  
+  'personality = "pragmatic"\n' +
+    'model = "gpt-6-astra"\n' +
+    'model_provider = "openai"\n' +
+    'model_reasoning_effort = "medium"\n' +
+    'web_search = "live"\n' +
+    'sandbox_mode = "danger-full-access"\n' +
+    'approval_policy = "never"\n' +
+    'suppress_unstable_features_warning = true\n' +
+    '\n' +
+    '[projects."/home/mhugo/code/unity"]\n' +
+    'trust_level = "trusted"\n' +
+    '\n' +
+    '[projects."/home/mhugo/code/singularity-ng/vectordrive"]\n' +
+    'trust_level = "trusted"\n' +
+    '\n' +
+    '[projects."/home/mhugo/code/dr-repo"]\n' +
+    'trust_level = "trusted"\n' +
+    '\n' +
+    '[notice]\n' +
+    'hide_full_access_warning = true\n' +
+    '\n' +
+    '[features]\n' +
+    'context_management = true\n' +
+    'step_model_switching = true\n' +
+    'mcp_2026_07_28 = true\n' +
+    "# Codex's own on-disk memory store is off: durable agent memory belongs in the\n" +
+    '# repo_memory bank reached through the CentralCloud MCP gateway, not in a\n' +
+    '# per-client store no other tool can read, supersede, or purge.\n' +
+    '# ~/.codex/memories/skills and ~/.codex/memories/.agents are the authored\n' +
+    '# instruction plane and are unaffected by this flag.\n' +
+    'memories = false\n' +
+    'unified_exec = true\n' +
+    'shell_snapshot = true\n' +
+    'multi_agent = true\n' +
+    'steer = true\n' +
+    'personality = true\n' +
+    'undo = true\n' +
+    'apply_patch_freeform = true\n' +
+    'remote_models = true\n' +
+    'collaboration_modes = true\n' +
+    'js_repl = true\n' +
+    'prevent_idle_sleep = true\n' +
+    '\n' +
+    '[features.multi_agent_v2]\n' +
+    'enabled = false\n' +
+    'hide_spawn_agent_metadata = false\n' +
+    'max_concurrent_threads_per_session = 6\n' +
+    'multi_agent_mode_hint_text = "Proactive multi-agent delegation is active for the root agent. The root should use sub-agents when independent parallel work would materially improve speed or quality. Spawned sub-agents must not create further sub-agents unless the parent explicitly assigns a bounded nested decomposition."\n' +
+    'tool_namespace = "agents"\n' +
+    '\n' +
+    '[agents]\n' +
+    'max_depth = 2\n' +
+    '\n' +
+    '# Resident subagents carry opaque Responses items and therefore stay on the\n' +
+    '# OpenAI provider. Gateway models are profile-only and run in fresh processes.\n' +
+    '[agents.default]\n' +
+    'description = "Balanced general-purpose subagent (GPT-5.6 Terra): bounded mixed work that does not match a narrower specialist."\n' +
+    'config_file = "agents/default.toml"\n' +
+    '\n' +
+    '[agents.taxonomy_worker]\n' +
+    'description = "Taxonomy discovery worker (GPT-5.6 Terra): source extraction, clustering, normalization, and boundary proposals."\n' +
+    'config_file = "agents/taxonomy-worker.toml"\n' +
+    '\n' +
+    '[agents.taxonomy_validator]\n' +
+    'description = "Mechanical taxonomy validator (GPT-5.6 Luna): labeling, duplicate detection, schema checks, and format validation."\n' +
+    'config_file = "agents/taxonomy-validator.toml"\n' +
+    '\n' +
+    '[agents.singularity_engine_harvester]\n' +
+    'description = "Singularity Engine harvester (GPT-5.6 Terra): source-grounded architecture and capability harvesting from donor systems."\n' +
+    'config_file = "agents/singularity-engine-harvester.toml"\n' +
+    '\n' +
+    '# Belt and braces alongside [features].memories: never generate new local\n' +
+    '# memories, never read the existing ones back into context.\n' +
+    '[memories]\n' +
+    'use_memories = false\n' +
+    'generate_memories = false\n' +
+    '\n' +
+    '[mcp_servers.centralcloud-mcp-gateway]\n' +
+    'url = "http://mcp-gateway.svc/mcp"\n' +
+    'required = true\n' +
+    '\n' +
+    '[model_providers.llm-gateway]\n' +
+    'name = "CentralCloud LLM Gateway"\n' +
+    'base_url = "http://llm-gateway.svc:80/codex/v1"\n' +
+    'env_key = "LLM_MUX_API_KEY"\n' +
+    'wire_api = "responses"\n' +
+    '\n' +
+    '# history.jsonl safety cap. NOTE: this governs ONLY history.jsonl -- codex has\n' +
+    '# no retention whatsoever for the ~/.codex/sessions rollout files, which grow\n' +
+    '# unbounded (12.8 GB / 4.6k files observed on the devbox 2026-08-08).\n' +
+    '[history]\n' +
+    'persistence = "save-all"\n' +
+    'max_bytes = 104857600\n' +
+    '\n' +
+    '# Native OTLP export, replacing the former ~/.local/bin/codex OTEL wrapper.\n' +
+    '# Verified accepted by `codex exec --strict-config` (which rejects unknown\n' +
+    '# fields). exporter MUST be the struct form -- the bare string "otlp-http" is\n' +
+    '# rejected: "invalid type: unit variant, expected struct variant".\n' +
+    '[otel]\n' +
+    'environment = "devbox"\n' +
+    'log_user_prompt = false\n' +
+    'exporter = {otlp-http = {endpoint = "http://otel-collector.monitoring.svc.cluster.local:4318", protocol = "binary", headers = {}}}\n'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-gpt6-settings-11f40c711b04/scripts/test-codex-hosted-search.mjs:75:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'personality = "pragmatic"\nmodel = "gpt-6-astra"\nmodel_provider = "openai"\nmodel_reasoning_effort = "medium"\nweb_search = "live"\nsandbox_mode = "danger-full-access"\napproval_policy = "never"\nsuppress_unstable_features_warning = true\n\n[projects."/home/mhugo/code/unity"]\ntrust_level = "trusted"\n\n[projects."/home/mhugo/code/singularity-ng/vectordrive"]\ntrust_level = "trusted"\n\n[projects."/home/mhugo/code/dr-repo"]\ntrust_level = "trusted"\n\n[notice]\nhide_full_access_warning = true\n\n[features]\ncontext_management = true\nstep_model_switching = true\nmcp_2026_07_28 = true\n# Codex\'s own on-disk memory store is off: durable agent memory belongs in the\n# repo_memory bank reached through the CentralCloud MCP gateway, not in a\n# per-client store no other tool can read, supersede, or purge.\n# ~/.codex/memories/skills and ~/.codex/memories/.agents are the authored\n# instruction plane and are unaffected by this flag.\nmemories = false\nunified_exec = true\nshell_snapshot = true\nmulti_agent = true\nsteer = true\npersonality = true\nundo = true\napply_patch_freeform = true\nremote_models = true\ncollaboration_modes = true\njs_repl = true\nprevent_idle_sleep = true\n\n[features.multi_agent_v2]\nenabled = false\nhide_spawn_agent_metadata = false\nmax_concurrent_threads_per_session = 6\nmulti_agent_mode_hint_text = "Proactive multi-agent delegation is active for the root agent. The root should use sub-agents when independent parallel work would materially improve speed or quality. Spawned sub-agents must not create further sub-agents unless the parent explicitly assigns a bounded nested decomposition."\ntool_namespace = "agents"\n\n[agents]\nmax_depth = 2\n\n# Resident subagents carry opaque Responses items and therefore stay on the\n# OpenAI provider. Gateway models are profile-only and run in fresh processes.\n[agents.default]\ndescription = "Balanced general-purpose subagent (GPT-5.6 Terra): bounded mixed work that does not match a narrower specialist."\nconfig_file = "agents/default.toml"\n\n[agents.taxonomy_worker]\ndescription = "Taxonomy discovery worker (GPT-5.6 Terra): source extraction, clustering, normalization, and boundary proposals."\nconfig_file = "agents/taxonomy-worker.toml"\n\n[agents.taxonomy_validator]\ndescription = "Mechanical taxonomy validator (GPT-5.6 Luna): labeling, duplicate detection, schema checks, and format validation."\nconfig_file = "agents/taxonomy-validator.toml"\n\n[agents.singularity_engine_harvester]\ndescription = "Singularity Engine harvester (GPT-5.6 Terra): source-grounded architecture and capability harvesting from donor systems."\nconfig_file = "agents/singularity-engine-harvester.toml"\n\n# Belt and braces alongside [features].memories: never generate new local\n# memories, never read the existing ones back into context.\n[memories]\nuse_memories = false\ngenerate_memories = false\n\n[mcp_servers.centralcloud-mcp-gateway]\nurl = "http://mcp-gateway.svc/mcp"\nrequired = true\n\n[model_providers.llm-gateway]\nname = "CentralCloud LLM Gateway"\nbase_url = "http://llm-gateway.svc:80/codex/v1"\nenv_key = "LLM_MUX_API_KEY"\nwire_api = "responses"\n\n# history.jsonl safety cap. NOTE: this governs ONLY history.jsonl -- codex has\n# no retention whatsoever for the ~/.codex/sessions rollout files, which grow\n# unbounded (12.8 GB / 4.6k files observed on the devbox 2026-08-08).\n[history]\npersistence = "save-all"\nmax_bytes = 104857600\n\n# Native OTLP export, replacing the former ~/.local/bin/codex OTEL wrapper.\n# Verified accepted by `codex exec --strict-config` (which rejects unknown\n# fields). exporter MUST be the struct form -- the bare string "otlp-http" is\n# rejected: "invalid type: unit variant, expected struct variant".\n[otel]\nenvironment = "devbox"\nlog_user_prompt = false\nexporter = {otlp-http = {endpoint = "http://otel-collector.monitoring.svc.cluster.local:4318", protocol = "binary", headers = {}}}\n',
+    expected: /^model\s*=\s*"gpt-5\.6-sol"$/m,
+    operator: 'match',
+    diff: 'simple'
+  }

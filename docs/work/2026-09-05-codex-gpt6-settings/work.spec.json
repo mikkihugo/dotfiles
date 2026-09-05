@@ -1,0 +1,176 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-09-05-codex-gpt6-settings-work",
+  "purpose_contract_id": "2026-09-05-codex-gpt6-settings-purpose",
+  "handover": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  },
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-09-05-codex-gpt6-settings",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-09-05-codex-gpt6-settings-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "a2e21c2ac305b5dd820a410a70cbee74d875ee7df8d4bc553d517979fd7c5d92"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "Preserve operator-selected GPT6 and experimental flags through seed/save/apply and verify exact-root startup and harmless generated help.",
+        "acceptance_criteria": [
+          "Seed/shared defaults select gpt-6-astra, medium reasoning, context_management, step_model_switching and mcp_2026_07_28.",
+          "Save/apply preserves unrelated profiles, roles and preferences.",
+          "Exact-root startup rejects missing, foreign and fallback environments without invoking full verification.",
+          "Generated facade and backend describe help each succeeds without invoking Git.",
+          "The full repo check gate passes."
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Dotfiles Codex preference and verification tools",
+            "response": "preserve the requested managed settings and reject unsafe check dispatch while keeping help free of VCS side effects"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "wrong defaults or destructive preference replacement, wrong-root check admission, empty-argument full-gate dispatch, or help invoking Git",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "Preserve operator-selected GPT6 and experimental flags through seed/save/apply and verify exact-root startup and harmless generated help.",
+      "acceptance_criteria": [
+        "Seed/shared defaults select gpt-6-astra, medium reasoning, context_management, step_model_switching and mcp_2026_07_28.",
+        "Save/apply preserves unrelated profiles, roles and preferences.",
+        "Exact-root startup rejects missing, foreign and fallback environments without invoking full verification.",
+        "Generated facade and backend describe help each succeeds without invoking Git.",
+        "The full repo check gate passes."
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Dotfiles Codex preference and verification tools",
+          "response": "preserve the requested managed settings and reject unsafe check dispatch while keeping help free of VCS side effects"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "wrong defaults or destructive preference replacement, wrong-root check admission, empty-argument full-gate dispatch, or help invoking Git",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "config/codex/config.toml",
+      "config/codex/shared-preferences.toml",
+      "scripts/codex-preferences",
+      "scripts/test-codex-preferences.py",
+      ".purpose/commands.json",
+      "bin/repo",
+      "scripts/repo-check.sh",
+      "scripts/repo-check-nix.sh",
+      "scripts/test-repo-check-entry.py",
+      "AGENTS.md",
+      "docs/work/2026-09-05-codex-gpt6-settings/**",
+      "devenv.repo-commands.nix",
+      "scripts/test-repo-vcs.sh",
+      "scripts/test-codex-hosted-search.mjs"
+    ],
+    "blocked": [],
+    "expected_files": [
+      "config/codex/config.toml",
+      "config/codex/shared-preferences.toml",
+      "scripts/codex-preferences",
+      "scripts/test-codex-preferences.py",
+      ".purpose/commands.json",
+      "bin/repo",
+      "scripts/repo-check.sh",
+      "AGENTS.md",
+      "scripts/test-repo-vcs.sh",
+      "scripts/test-codex-hosted-search.mjs"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Contract test for the promised behavior.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "repo check nix",
+      "repo test codex-preferences",
+      "repo test check-entry",
+      "repo check"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": false,
+    "approval_required": true,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex-01a06fd4-inventory-recovery"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-09-05-codex-gpt6-settings",
+    "target_planes": [
+      "engine"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "unspecified",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

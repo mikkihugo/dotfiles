@@ -24,7 +24,7 @@ SHARED_SECTION_KEYS = {
     "tui": ["status_line"],
     # Codex's own on-disk memory store stays off: durable agent memory belongs
     # in the repo_memory bank, not a per-client store no other tool can read.
-    "features": ["memories"],
+    "features": ["memories", "context_management", "step_model_switching", "mcp_2026_07_28"],
     "memories": ["use_memories", "generate_memories"],
 }
 

@@ -26,9 +26,16 @@ if ! DESCRIBE_HELP_LOG="$help_log" SE_GIT_BIN="$tmp/record/git" "$root/bin/repo"
 	cat "$tmp/describe-help.err" >&2
 	exit 1
 fi
-grep -Fxq 'usage: repo vcs describe <message>' "$tmp/describe-help.out"
+grep -Fxq '  repo vcs describe' "$tmp/describe-help.out"
 [[ ! -s "$help_log" ]] || {
 	printf 'repo vcs describe --help unexpectedly invoked Git\n' >&2
+	exit 1
+}
+# The generated facade owns public help; the backend retains its argument help.
+DESCRIBE_HELP_LOG="$help_log" SE_GIT_BIN="$tmp/record/git" "$root/scripts/repo-vcs.sh" describe --help >"$tmp/backend-describe-help.out"
+grep -Fxq 'usage: repo vcs describe <message>' "$tmp/backend-describe-help.out"
+[[ ! -s "$help_log" ]] || {
+	printf 'backend describe --help unexpectedly invoked Git\n' >&2
 	exit 1
 }
 

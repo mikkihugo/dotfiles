@@ -1,0 +1,377 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-09-05-codex-gpt6-settings-evidence",
+  "workspec_id": "2026-09-05-codex-gpt6-settings-work",
+  "purpose_contract_id": "2026-09-05-codex-gpt6-settings-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "41b98000d3d621a6f3016f4dacb0c9f03486705ec4eb7a19521818fc1aed5850"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "9b124664c766c4471901a0a0042ab61d7e2a538ab3ed76e7c3d0d8165054c662"
+  },
+  "workflow_run_id": "2026-09-05-codex-gpt6-settings-takeover-run",
+  "execution": {
+    "execution_id": "2026-09-05-codex-gpt6-settings-takeover-execution",
+    "tool": {
+      "id": "repo check",
+      "version": "worktree-at-26441f9c-plus-reviewed-diff"
+    },
+    "result": {
+      "result_id": "2026-09-05-codex-gpt6-settings-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "9e22e92460809e8e20a9f7e066ef0d19e27f32124937c6bb4c5bc6ff83e10b11"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "changed-files.json",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "c5a1452ca5209d7931e9a950635b466662527b38c10e3b0b0b8459b8f9c1db32"
+        }
+      },
+      {
+        "artifact_id": "codex-dotfiles-empty-arg-green.txt",
+        "uri": "evidence/codex-dotfiles-empty-arg-green.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "2305a6ef4c0dbeb1f5c1810b27c754c12a7ba16cff6802cd1e5628a7c20c4ddc"
+        }
+      },
+      {
+        "artifact_id": "codex-dotfiles-empty-arg-red.txt",
+        "uri": "evidence/codex-dotfiles-empty-arg-red.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "0a1e8a15123763f9f5b45e8dbc42e8d22d4c545355e2a786dcdb000f5dc3c128"
+        }
+      },
+      {
+        "artifact_id": "codex-dotfiles-entry-green.txt",
+        "uri": "evidence/codex-dotfiles-entry-green.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "6468378e6100359f274ecdcde4e999b96c35563fc13ff1ea9eb9dc2a2dcd15ec"
+        }
+      },
+      {
+        "artifact_id": "codex-dotfiles-entry-red.txt",
+        "uri": "evidence/codex-dotfiles-entry-red.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "8acbc0d4ab70470d21e0f539dd213a38784524ea654fa428fdac861855094a57"
+        }
+      },
+      {
+        "artifact_id": "codex-dotfiles-settings-green.txt",
+        "uri": "evidence/codex-dotfiles-settings-green.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "5120087d268882c168511d1419a95ddc3fbd2daa3d7296d477047e94a8ca9af9"
+        }
+      },
+      {
+        "artifact_id": "codex-dotfiles-settings-red.txt",
+        "uri": "evidence/codex-dotfiles-settings-red.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "8f13941df3e644acee2ff37535647e185b342a1e263ad3de6ad5348756e43e9e"
+        }
+      },
+      {
+        "artifact_id": "source-proof.json",
+        "uri": "evidence/source-proof.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "2464fdcc85c7f74adc8506bca01818f3de7c89111c99729558934e465db8eb71"
+        }
+      },
+      {
+        "artifact_id": "takeover-entry-fixture-red.txt",
+        "uri": "evidence/takeover-entry-fixture-red.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "1ee69404af0eb70026228d6f94a41eb9603d0fcc8fed135083934552de3942e1"
+        }
+      },
+      {
+        "artifact_id": "takeover-full-green.txt",
+        "uri": "evidence/takeover-full-green.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f0b243bfc46d2721a4ed0509273a3ef71343ef761079b7781211f860b5875579"
+        }
+      },
+      {
+        "artifact_id": "takeover-full-red.txt",
+        "uri": "evidence/takeover-full-red.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      {
+        "artifact_id": "takeover-independent-review.md",
+        "uri": "evidence/takeover-independent-review.md",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "d6bb61a79730addd87fa8ce7c3ef05ec26285bb448f0f9d90f93d1315ed8e8d0"
+        }
+      },
+      {
+        "artifact_id": "takeover-post-format-entry.txt",
+        "uri": "evidence/takeover-post-format-entry.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "4c730bb1de1e5a5cde1b60d4e4e35c5f2908e73391fe2494f6d982e8045a2d50"
+        }
+      },
+      {
+        "artifact_id": "takeover-preflight.json",
+        "uri": "evidence/takeover-preflight.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "c388e6d0ff5341608f5e7723b6953a43c0e71c22a5e47f28ea3e284803cc0bde"
+        }
+      },
+      {
+        "artifact_id": "takeover-red-result.json",
+        "uri": "evidence/takeover-red-result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "7a2993d382eda35e36d9b54527ab427e2d77f6173efd706e6344788cb19308d6"
+        }
+      },
+      {
+        "artifact_id": "takeover-resident-default-red.txt",
+        "uri": "evidence/takeover-resident-default-red.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "7719a752d19324e842abeb106dcee2079ee8f678fc1354ce4ebc984c6ffc2546"
+        }
+      },
+      {
+        "artifact_id": "takeover-result.json",
+        "uri": "evidence/takeover-result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "9e22e92460809e8e20a9f7e066ef0d19e27f32124937c6bb4c5bc6ff83e10b11"
+        }
+      },
+      {
+        "artifact_id": "takeover-state.json",
+        "uri": "evidence/takeover-state.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "528a54c3ad6a7a2962160298a71ec8c65edbd535da528b2f4629b2525a9ee2fc"
+        }
+      },
+      {
+        "artifact_id": "takeover-vcs-status.txt",
+        "uri": "evidence/takeover-vcs-status.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "7d59c813dbde8253f5a44826db634886c19c98599691cc8fc5cff4a62fe1e772"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-09-05-codex-gpt6-settings-takeover-trace",
+    "started_at": "2026-09-05T04:38:37.006598+00:00",
+    "completed_at": "2026-09-05T04:45:12.852286+00:00"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Full repo check covers managed defaults/save-apply, startup rejection, no-mutation help, resident provider boundaries, regression suites and activation package build.",
+      "result_id": "2026-09-05-codex-gpt6-settings-result",
+      "artifact_ids": [
+        "takeover-result.json",
+        "takeover-full-green.txt",
+        "codex-dotfiles-settings-red.txt",
+        "codex-dotfiles-entry-red.txt",
+        "takeover-entry-fixture-red.txt",
+        "takeover-resident-default-red.txt"
+      ],
+      "output_uri": "evidence/takeover-full-green.txt",
+      "green_observed_at": "2026-09-05T04:43:34.258200+00:00",
+      "red_proof": {
+        "result_id": "2026-09-05-codex-gpt6-settings-red",
+        "artifact_id": "takeover-red-result.json",
+        "output_uri": "evidence/takeover-red-result.json",
+        "observed_at": "2026-09-05T04:40:02.318611+00:00"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "9b124664c766c4471901a0a0042ab61d7e2a538ab3ed76e7c3d0d8165054c662"
+      },
+      "artifact_ids": [
+        "takeover-result.json",
+        "takeover-full-green.txt",
+        "takeover-independent-review.md",
+        "takeover-post-format-entry.txt"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "codex-01a06fd4-inventory-recovery"
+      },
+      "observed_at": "2026-09-05T04:45:12.852286+00:00",
+      "rationale": "Full declared gate exits0; independent source review approved. Source-only verification; publication and activation not performed. Required hook formatting applied afterward; scoped entry test and shellcheck pass, independent review confirms mechanical changes. Land repeats full gate."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "changed-files.json",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "c5a1452ca5209d7931e9a950635b466662527b38c10e3b0b0b8459b8f9c1db32"
+      },
+      "files": [
+        ".purpose/commands.json",
+        "AGENTS.md",
+        "bin/repo",
+        "config/codex/config.toml",
+        "config/codex/shared-preferences.toml",
+        "devenv.repo-commands.nix",
+        "docs/work/2026-09-05-codex-gpt6-settings/README.md",
+        "docs/work/2026-09-05-codex-gpt6-settings/current-spec.snapshot.json",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence.bundle.json",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/.gitkeep",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/changed-files.json",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-empty-arg-green.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-empty-arg-red.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-entry-green.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-entry-red.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-settings-green.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-settings-red.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/source-proof.json",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-entry-fixture-red.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-full-green.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-full-red.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-independent-review.md",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-post-format-entry.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-preflight.json",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-red-result.json",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-resident-default-red.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-result.json",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-state.json",
+        "docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-vcs-status.txt",
+        "docs/work/2026-09-05-codex-gpt6-settings/purpose.contract.json",
+        "docs/work/2026-09-05-codex-gpt6-settings/validation.report.json",
+        "docs/work/2026-09-05-codex-gpt6-settings/work.spec.json",
+        "scripts/codex-preferences",
+        "scripts/repo-check-nix.sh",
+        "scripts/repo-check.sh",
+        "scripts/test-codex-hosted-search.mjs",
+        "scripts/test-codex-preferences.py",
+        "scripts/test-repo-check-entry.py",
+        "scripts/test-repo-vcs.sh"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "Original full gate failures captured before correction; full gate now passes, including config preservation and no-Git help assertions.",
+    "output_uri": "evidence/takeover-full-green.txt"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "a2e21c2ac305b5dd820a410a70cbee74d875ee7df8d4bc553d517979fd7c5d92"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "a89b72f8b199c8481697b004267ba1fc7e0bd36e09eef426d51799666fbb18f6"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "d378dee6214f6303cfd40931dcd72918704e26d7e72c48de9fe1e44c0a85f042"
+    },
+    "witness_artifact_id": "takeover-result.json"
+  },
+  "reviews": [
+    {
+      "review_id": "dotfiles-takeover-source-review-01a06fd4",
+      "reviewer": {
+        "kind": "agent",
+        "id": "/root/inventory_older"
+      },
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "9b124664c766c4471901a0a0042ab61d7e2a538ab3ed76e7c3d0d8165054c662"
+      },
+      "verdict": "approved",
+      "artifact_id": "takeover-independent-review.md",
+      "observed_at": "2026-09-05T04:49:13.424331+00:00",
+      "independent": true,
+      "rationale": "Independent source review plus focused test reruns; full gate result recorded separately."
+    }
+  ],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "codex-dotfiles-settings-red.txt",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "9b124664c766c4471901a0a0042ab61d7e2a538ab3ed76e7c3d0d8165054c662"
+      },
+      "observed_at": "2026-09-05T04:06:12.045352+00:00"
+    }
+  ]
+}

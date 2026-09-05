@@ -1,0 +1,14 @@
+{
+  "observed_live": {
+    "model": "gpt-6-astra",
+    "model_reasoning_effort": "medium",
+    "features": {
+      "context_management": true,
+      "step_model_switching": true,
+      "mcp_2026_07_28": true
+    }
+  },
+  "source_changes": "managed source only; live user config untouched",
+  "owner": "codex-11f40c711b04",
+  "status": "focused tests passed; full gate pending"
+}

@@ -1,0 +1,27 @@
+.Fsaved model, model_reasoning_effort, features.memories to /tmp/tmp2c9n04gp/shared.toml
+E
+======================================================================
+ERROR: test_roundtrip_managed_features_preserves_unmanaged_settings (__main__.CodexPreferencesTest.test_roundtrip_managed_features_preserves_unmanaged_settings)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/mhugo/.dotfiles-worktrees/codex-gpt6-settings-11f40c711b04/scripts/test-codex-preferences.py", line 83, in test_roundtrip_managed_features_preserves_unmanaged_settings
+    self.assertIs(saved["features"][feature], True)
+                  ~~~~~~~~~~~~~~~~~^^^^^^^^^
+KeyError: 'context_management'
+
+======================================================================
+FAIL: test_managed_defaults_match_operator_settings (__main__.CodexPreferencesTest.test_managed_defaults_match_operator_settings)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/mhugo/.dotfiles-worktrees/codex-gpt6-settings-11f40c711b04/scripts/test-codex-preferences.py", line 61, in test_managed_defaults_match_operator_settings
+    self.assertEqual(data["model"], "gpt-6-astra")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'gpt-5.6-sol' != 'gpt-6-astra'
+- gpt-5.6-sol
++ gpt-6-astra
+
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.119s
+
+FAILED (failures=1, errors=1)

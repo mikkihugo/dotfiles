@@ -1,7 +1,7 @@
 personality = "pragmatic"
-model = "gpt-5.6-sol"
+model = "gpt-6-astra"
 model_provider = "openai"
-model_reasoning_effort = "low"
+model_reasoning_effort = "medium"
 web_search = "live"
 sandbox_mode = "danger-full-access"
 approval_policy = "never"
@@ -20,6 +20,9 @@ trust_level = "trusted"
 hide_full_access_warning = true
 
 [features]
+context_management = true
+step_model_switching = true
+mcp_2026_07_28 = true
 # Codex's own on-disk memory store is off: durable agent memory belongs in the
 # repo_memory bank reached through the CentralCloud MCP gateway, not in a
 # per-client store no other tool can read, supersede, or purge.

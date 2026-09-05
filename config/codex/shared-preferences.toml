@@ -2,9 +2,9 @@
 # Update from a machine with: codex-preferences save
 # Applied to each machine by Home Manager activation.
 
-model = "gpt-5.6-sol"
+model = "gpt-6-astra"
 model_provider = "openai"
-model_reasoning_effort = "low"
+model_reasoning_effort = "medium"
 web_search = "live"
 
 # AGENTS.md read cap. Default is 32768, verified by measurement: a 89,970-byte
@@ -30,6 +30,9 @@ tool_output_token_limit = 32000
 # (seeded once). ~/.codex/memories/skills and ~/.codex/memories/.agents are the
 # authored instruction plane, not memory, and are untouched by these flags.
 [features]
+context_management = true
+step_model_switching = true
+mcp_2026_07_28 = true
 memories = false
 
 [memories]

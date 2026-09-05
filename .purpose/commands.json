@@ -3,7 +3,9 @@
   "cli_name": "repo",
   "commands": [
     {
-      "path": ["check"],
+      "path": [
+        "check"
+      ],
       "description": "Run the dotfiles repository verification gate",
       "class": "check",
       "backend": {
@@ -12,218 +14,360 @@
       }
     },
     {
-      "path": ["sync", "mise-upgrade"],
+      "path": [
+        "sync",
+        "mise-upgrade"
+      ],
       "description": "Install and upgrade mise-managed tools",
       "class": "sync",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-maintenance.sh",
-        "args": ["mise-upgrade"]
+        "args": [
+          "mise-upgrade"
+        ]
       }
     },
     {
-      "path": ["vcs", "status"],
+      "path": [
+        "vcs",
+        "status"
+      ],
       "description": "Show repository status",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["status"],
+        "args": [
+          "status"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "diff"],
+      "path": [
+        "vcs",
+        "diff"
+      ],
       "description": "Show repository changes",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["diff"],
+        "args": [
+          "diff"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "log"],
+      "path": [
+        "vcs",
+        "log"
+      ],
       "description": "Show revision history",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["log"],
+        "args": [
+          "log"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "show"],
+      "path": [
+        "vcs",
+        "show"
+      ],
       "description": "Show one revision",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["show"],
+        "args": [
+          "show"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "worktree-list"],
+      "path": [
+        "vcs",
+        "worktree-list"
+      ],
       "description": "List registered worktrees",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["worktree-list"],
+        "args": [
+          "worktree-list"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "fetch"],
+      "path": [
+        "vcs",
+        "fetch"
+      ],
       "description": "Fetch the Forgejo integration remote",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["fetch"],
+        "args": [
+          "fetch"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "rebase"],
+      "path": [
+        "vcs",
+        "rebase"
+      ],
       "description": "Rebase the owned task branch onto one revision",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["rebase"],
+        "args": [
+          "rebase"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "describe"],
+      "path": [
+        "vcs",
+        "describe"
+      ],
       "description": "Commit the current workspace changes",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["describe"],
+        "args": [
+          "describe"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "amend"],
+      "path": [
+        "vcs",
+        "amend"
+      ],
       "description": "Correct the message of an unpushed task-head commit without changing its contents",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["amend"],
+        "args": [
+          "amend"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "push"],
+      "path": [
+        "vcs",
+        "push"
+      ],
       "description": "Verify and publish local main to both remotes",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["push"],
+        "args": [
+          "push"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "push-github"],
+      "path": [
+        "vcs",
+        "push-github"
+      ],
       "description": "Verify and publish local main to GitHub only",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["push-github"],
+        "args": [
+          "push-github"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "land"],
+      "path": [
+        "vcs",
+        "land"
+      ],
       "description": "Verify and publish a clean task workspace as main",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["land"],
+        "args": [
+          "land"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "sync-main"],
+      "path": [
+        "vcs",
+        "sync-main"
+      ],
       "description": "Converge a clean patch-equivalent canonical main to origin/main",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["sync-main"],
+        "args": [
+          "sync-main"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "worktree-create"],
+      "path": [
+        "vcs",
+        "worktree-create"
+      ],
       "description": "Create an isolated task worktree",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["worktree-create"],
+        "args": [
+          "worktree-create"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "worktree-drop"],
+      "path": [
+        "vcs",
+        "worktree-drop"
+      ],
       "description": "Remove an integrated clean task worktree",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["worktree-drop"],
+        "args": [
+          "worktree-drop"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "worktree-abandon"],
+      "path": [
+        "vcs",
+        "worktree-abandon"
+      ],
       "description": "Discard an explicitly abandoned clean inactive task worktree",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["worktree-abandon"],
+        "args": [
+          "worktree-abandon"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "branch-retire"],
+      "path": [
+        "vcs",
+        "branch-retire"
+      ],
       "description": "Retire an unused leftover namespaced ref; dry-run unless --apply",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["branch-retire"],
+        "args": [
+          "branch-retire"
+        ],
         "authority": "repository-vcs-facade"
       }
     },
     {
-      "path": ["vcs", "test"],
+      "path": [
+        "vcs",
+        "test"
+      ],
       "description": "Verify the repository VCS facade contract",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
-        "args": ["contract-test"],
+        "args": [
+          "contract-test"
+        ],
         "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": [
+        "check",
+        "nix"
+      ],
+      "description": "Verify the exact dotfiles Nix environment without running package checks",
+      "class": "check",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-check-nix.sh"
+      }
+    },
+    {
+      "path": [
+        "test",
+        "codex-preferences"
+      ],
+      "description": "Verify managed Codex preference preservation",
+      "class": "test",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-check.sh",
+        "args": [
+          "codex-preferences"
+        ]
+      }
+    },
+    {
+      "path": [
+        "test",
+        "check-entry"
+      ],
+      "description": "Verify bounded environment-check dispatch",
+      "class": "test",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-check.sh",
+        "args": [
+          "check-entry"
+        ]
       }
     }
   ],
   "migration": {
-    "legacy_commands": ["just"],
+    "legacy_commands": [
+      "just"
+    ],
     "active_roots": [],
-    "definition_roots": ["justfile", "just"],
+    "definition_roots": [
+      "justfile",
+      "just"
+    ],
     "exclusions": [
       {
         "path": "archive",

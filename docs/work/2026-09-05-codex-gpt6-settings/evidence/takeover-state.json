@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-09-05T04:43:29.244691+00:00",
+  "owner": "codex-01a06fd4-inventory-recovery",
+  "prior_owner": "codex-11f40c711b04",
+  "ownership_evidence": "Old root and child session writer locks absent; parent /proc fd scan found no references to old session IDs; no process cwd in candidate or descendants; repository facade confirms task registration. Dotfiles has no lease mechanism.",
+  "source_only": true,
+  "publication": "not performed",
+  "activation": "not performed",
+  "runtime": "unverified",
+  "preflight": "bundled Purpose CLI passed; MCP validator excludes dotfiles-worktrees root",
+  "failure_repairs": [
+    "generated/backend describe help assertions separated with no-Git side-effect checks retained",
+    "fixture subprocesses suppress inherited BASH_ENV PATH mutation",
+    "resident-profile regression expects requested Astra seed/shared default"
+  ]
+}

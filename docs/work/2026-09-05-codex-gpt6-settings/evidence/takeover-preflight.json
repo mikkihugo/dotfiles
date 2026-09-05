@@ -1,0 +1,107 @@
+{
+  "ok": true,
+  "authorizes_execution": false,
+  "work_dir": "/home/mhugo/.dotfiles-worktrees/codex-gpt6-settings-11f40c711b04/docs/work/2026-09-05-codex-gpt6-settings",
+  "repo_root": "/home/mhugo/.dotfiles-worktrees/codex-gpt6-settings-11f40c711b04",
+  "gates": [
+    {
+      "id": "linkage:schema-major",
+      "status": "pass",
+      "message": "purpose-contract/v2 is the admitted intent source for workspec/v4"
+    },
+    {
+      "id": "linkage:purpose-work",
+      "status": "pass",
+      "message": "purpose and work IDs match"
+    },
+    {
+      "id": "admission:state",
+      "status": "pass",
+      "message": "admission is proposed and does not authorize execution"
+    },
+    {
+      "id": "handover:state",
+      "status": "pass",
+      "message": "handover is proposed and does not authorize execution"
+    },
+    {
+      "id": "spec:snapshot-path",
+      "status": "pass",
+      "message": "current_spec.uri must resolve inside the work directory"
+    },
+    {
+      "id": "spec:snapshot-digest",
+      "status": "pass",
+      "message": "current_spec.digest must bind the exact snapshot bytes"
+    },
+    {
+      "id": "spec:snapshot-id",
+      "status": "pass",
+      "message": "current_spec.snapshot_id must match the referenced snapshot"
+    },
+    {
+      "id": "spec:snapshot-requirements-unique",
+      "status": "pass",
+      "message": "current spec snapshot requirement IDs must be unique"
+    },
+    {
+      "id": "spec:delta-targets",
+      "status": "pass",
+      "message": "delta sources must exist once, added IDs must be new, and rename/modify IDs must be coherent"
+    },
+    {
+      "id": "spec:derived-requirements",
+      "status": "pass",
+      "message": "WorkSpec requirements must equal the deterministic snapshot plus delta result"
+    },
+    {
+      "id": "scope:file:config/codex/config.toml",
+      "status": "pass",
+      "message": "expected file exists: config/codex/config.toml"
+    },
+    {
+      "id": "scope:file:config/codex/shared-preferences.toml",
+      "status": "pass",
+      "message": "expected file exists: config/codex/shared-preferences.toml"
+    },
+    {
+      "id": "scope:file:scripts/codex-preferences",
+      "status": "pass",
+      "message": "expected file exists: scripts/codex-preferences"
+    },
+    {
+      "id": "scope:file:scripts/test-codex-preferences.py",
+      "status": "pass",
+      "message": "expected file exists: scripts/test-codex-preferences.py"
+    },
+    {
+      "id": "scope:file:.purpose/commands.json",
+      "status": "pass",
+      "message": "expected file exists: .purpose/commands.json"
+    },
+    {
+      "id": "scope:file:bin/repo",
+      "status": "pass",
+      "message": "expected file exists: bin/repo"
+    },
+    {
+      "id": "scope:file:scripts/repo-check.sh",
+      "status": "pass",
+      "message": "expected file exists: scripts/repo-check.sh"
+    },
+    {
+      "id": "scope:file:AGENTS.md",
+      "status": "pass",
+      "message": "expected file exists: AGENTS.md"
+    },
+    {
+      "id": "scope:file:scripts/test-repo-vcs.sh",
+      "status": "pass",
+      "message": "expected file exists: scripts/test-repo-vcs.sh"
+    }
+  ],
+  "schema_errors": {
+    "purpose": null,
+    "work": null
+  }
+}

@@ -1,0 +1,27 @@
+Failure excerpt from the original repo check output. Successful preceding Nix build chatter omitted. Full raw output preserved outside the repository for coordinator review.
+
+FAIL: test_nix_entry_is_bounded_and_rejects_wrong_environments (__main__.CheckEntryTest.test_nix_entry_is_bounded_and_rejects_wrong_environments) (shell='impure', fallback='', directory='/tmp/tmpqtfhwyzt')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/mhugo/.dotfiles-worktrees/codex-gpt6-settings-11f40c711b04/scripts/test-repo-check-entry.py", line 37, in test_nix_entry_is_bounded_and_rejects_wrong_environments
+    self.assertEqual(result.returncode == 0, expected, result.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False != True : dotfiles Nix environment rejected: repo resolves outside this checkout
+Next: cd /tmp/tmpqtfhwyzt and eval "$(direnv export bash)".
+
+
+======================================================================
+FAIL: test_nix_entry_is_bounded_and_rejects_wrong_environments (__main__.CheckEntryTest.test_nix_entry_is_bounded_and_rejects_wrong_environments) (shell='pure', fallback='', directory='/tmp/tmpqtfhwyzt')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/mhugo/.dotfiles-worktrees/codex-gpt6-settings-11f40c711b04/scripts/test-repo-check-entry.py", line 37, in test_nix_entry_is_bounded_and_rejects_wrong_environments
+    self.assertEqual(result.returncode == 0, expected, result.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False != True : dotfiles Nix environment rejected: repo resolves outside this checkout
+Next: cd /tmp/tmpqtfhwyzt and eval "$(direnv export bash)".
+
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.739s
+
+FAILED (failures=2)

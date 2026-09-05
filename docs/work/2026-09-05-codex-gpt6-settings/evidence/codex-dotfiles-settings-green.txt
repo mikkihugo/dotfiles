@@ -1,0 +1,6 @@
+..saved model, model_reasoning_effort, features.memories, features.context_management, features.step_model_switching, features.mcp_2026_07_28 to /tmp/tmp_wt_ufvs/shared.toml
+.
+----------------------------------------------------------------------
+Ran 3 tests in 0.274s
+
+OK

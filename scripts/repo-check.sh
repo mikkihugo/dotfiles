@@ -41,10 +41,37 @@ nix_gate_needs_build() {
 }
 
 main() {
+	case "${1:-}" in
+	codex-preferences)
+		[[ $# == 1 ]] || {
+			printf 'unexpected Codex test arguments\n' >&2
+			return 2
+		}
+		python3 "$root/scripts/test-codex-preferences.py"
+		return
+		;;
+	check-entry)
+		[[ $# == 1 ]] || {
+			printf 'unexpected entry test arguments\n' >&2
+			return 2
+		}
+		python3 "$root/scripts/test-repo-check-entry.py"
+		return
+		;;
+	"") [[ $# == 0 ]] || {
+		printf 'unexpected empty check argument\n' >&2
+		return 2
+	} ;;
+	*)
+		printf 'unknown check: %s\n' "$1" >&2
+		return 2
+		;;
+	esac
 	local profile
 	profile="$("$root/scripts/current-home-profile")"
 	"$root/scripts/test-repo-vcs.sh"
 	HOME_MANAGER_PROFILE="$profile" bash "$root/scripts/test-ast-grep-shim.sh"
+	python3 "$root/scripts/test-repo-check-entry.py"
 	python3 "$root/scripts/test-codex-preferences.py"
 	python3 "$root/scripts/test-jcode-preferences.py"
 	python3 "$root/scripts/test-merge-authorized-keys.py"

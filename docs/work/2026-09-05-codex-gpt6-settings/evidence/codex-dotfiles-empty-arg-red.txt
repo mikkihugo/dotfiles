@@ -1,0 +1,25 @@
+FF.
+======================================================================
+FAIL: test_invalid_check_arguments_never_start_full_gate (__main__.CheckEntryTest.test_invalid_check_arguments_never_start_full_gate) (args=[''])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/mhugo/.dotfiles-worktrees/codex-gpt6-settings-11f40c711b04/scripts/test-repo-check-entry.py", line 56, in test_invalid_check_arguments_never_start_full_gate
+    self.assertEqual(result.returncode, 2, result.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 127 != 2 : /tmp/tmp6yrxpd11/scripts/repo-check.sh: line 60: /tmp/tmp6yrxpd11/scripts/test-repo-vcs.sh: No such file or directory
+
+
+======================================================================
+FAIL: test_invalid_check_arguments_never_start_full_gate (__main__.CheckEntryTest.test_invalid_check_arguments_never_start_full_gate) (args=['', 'unexpected'])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/mhugo/.dotfiles-worktrees/codex-gpt6-settings-11f40c711b04/scripts/test-repo-check-entry.py", line 56, in test_invalid_check_arguments_never_start_full_gate
+    self.assertEqual(result.returncode, 2, result.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 127 != 2 : /tmp/tmp6yrxpd11/scripts/repo-check.sh: line 60: /tmp/tmp6yrxpd11/scripts/test-repo-vcs.sh: No such file or directory
+
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.378s
+
+FAILED (failures=2)

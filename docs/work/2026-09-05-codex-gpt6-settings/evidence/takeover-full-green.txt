@@ -1,0 +1,299 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+dotfiles VCS contract: ok
+these 15 derivations will be built:
+  /nix/store/kwfxbfd408pnmxn08f3iwf3hia9x2z2j-hm-session-vars.sh.drv
+  /nix/store/r184igiz9gaxfk3cml4jmhsi9068jz77-hm-session-vars.fish.drv
+  /nix/store/drqjb32kny7l0svbx0bxx55sr5mq2h8c-home-manager-path.drv
+  /nix/store/22v7r5nlcj3j3xam3xbqlapb8kvcxyyh-activation-script.drv
+  /nix/store/f9khxi3nlnnrqsdbdaxkdrl9sw8wf8mv-man-paths.drv
+  /nix/store/qac94hgk7ifmj5xzv5wmgwl9vvakiia9-man-cache.drv
+  /nix/store/5vy9bwvdjlqdf4f38274wkbwn501lih2-hm_.manpath.drv
+  /nix/store/7nbg04ybpq4i65i0s1gwfmc6v766aiic-hm-session-vars.fish-fish-completions.drv
+  /nix/store/x22qprax6jwwcjh4s092p9w6yc2fxzn6-hm-session-vars.sh-fish-completions.drv
+  /nix/store/nzqqcq097w5qfcfvs0wf9qy1w4d3yi7h-mhugo-fish-completions.drv
+  /nix/store/qyb4lc3gs3l6qly10bdjvs7i6iqlb0q0-profile.drv
+  /nix/store/wq5b0fdmhjqylvi0ylzp6gagxnxwhxcw-hm_..zshenv.drv
+  /nix/store/ywcivxh01r1h7x4nbcmyaa8pwxaw9jzq-config.fish.drv
+  /nix/store/n8bgyd60kx7wc9a8cdlbznp0hwqhcka5-home-manager-files.drv
+  /nix/store/6zalh8nnx0k45zq5wx0skxx5fcsd9g2y-home-manager-generation.drv
+building '/nix/store/kwfxbfd408pnmxn08f3iwf3hia9x2z2j-hm-session-vars.sh.drv'...
+building '/nix/store/r184igiz9gaxfk3cml4jmhsi9068jz77-hm-session-vars.fish.drv'...
+building '/nix/store/x22qprax6jwwcjh4s092p9w6yc2fxzn6-hm-session-vars.sh-fish-completions.drv'...
+building '/nix/store/wq5b0fdmhjqylvi0ylzp6gagxnxwhxcw-hm_..zshenv.drv'...
+building '/nix/store/qyb4lc3gs3l6qly10bdjvs7i6iqlb0q0-profile.drv'...
+building '/nix/store/ywcivxh01r1h7x4nbcmyaa8pwxaw9jzq-config.fish.drv' on 'ssh-ng://root@159.195.138.16'...
+building '/nix/store/7nbg04ybpq4i65i0s1gwfmc6v766aiic-hm-session-vars.fish-fish-completions.drv'...
+building '/nix/store/drqjb32kny7l0svbx0bxx55sr5mq2h8c-home-manager-path.drv'...
+building '/nix/store/f9khxi3nlnnrqsdbdaxkdrl9sw8wf8mv-man-paths.drv'...
+building '/nix/store/nzqqcq097w5qfcfvs0wf9qy1w4d3yi7h-mhugo-fish-completions.drv'...
+building '/nix/store/qac94hgk7ifmj5xzv5wmgwl9vvakiia9-man-cache.drv'...
+building '/nix/store/22v7r5nlcj3j3xam3xbqlapb8kvcxyyh-activation-script.drv'...
+copying 1 paths...
+copying path '/nix/store/ngagg7f8f6jy9hs4j8v5nwrzjl9mqrhf-hm-session-vars.fish' to 'ssh-ng://root@159.195.138.16'...
+building '/nix/store/ywcivxh01r1h7x4nbcmyaa8pwxaw9jzq-config.fish.drv'...
+copying 1 paths...
+copying path '/nix/store/53ap1hz5y179nsgi66b87yw2znmyaqw4-config.fish' from 'ssh-ng://root@159.195.138.16'...
+building '/nix/store/5vy9bwvdjlqdf4f38274wkbwn501lih2-hm_.manpath.drv'...
+building '/nix/store/n8bgyd60kx7wc9a8cdlbznp0hwqhcka5-home-manager-files.drv'...
+building '/nix/store/6zalh8nnx0k45zq5wx0skxx5fcsd9g2y-home-manager-generation.drv'...
+ast-grep 0.42.1
+ast-grep 0.42.1
+/tmp/tmp.YMSEjiOVEo/sample.js:1:const answer = 42;
+export LANG="C.UTF-8"
+export LC_ALL="C.UTF-8"
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.301s
+
+OK
+..saved model, model_reasoning_effort, features.memories, features.context_management, features.step_model_switching, features.mcp_2026_07_28 to /tmp/tmpv78inlky/shared.toml
+.
+----------------------------------------------------------------------
+Ran 3 tests in 0.245s
+
+OK
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.719s
+
+OK
+ok   exit 0 on add
+ok   adds only the missing declared key (2 -> 3)
+ok   declared key now present
+ok   undeclared pre-existing key kept
+ok   exit 0 on rerun
+ok   second run is a no-op (byte-identical)
+ok   no duplicate lines after rerun
+ok   comment difference does not create a duplicate
+ok   hardware sk key preserved
+ok   options-prefixed key preserved
+ok   declared key appended alongside (2 -> 3)
+ok   options-prefixed key matched, not duplicated
+ok   target left at 0600
+ok   exit 0 when target absent
+ok   target created with the declared key
+ok   created target is 0600
+ok   exit 0 when declared file absent
+ok   target untouched when declared file absent
+
+all merge-authorized-keys checks passed
+ok   scripts/codex-preferences (derived)
+ok   scripts/jcode-preferences (derived)
+ok   scripts/merge-authorized-keys (derived)
+ok   scripts/reap-abandoned-searches.sh (derived)
+nix gate covers every module-referenced script
+ok   no recursive rm in the sweep
+ok   no pipe into grep -q
+ok   no eval direnv-export fallback
+ok   facade routed through fail-closed repo_vcs/direnv-exec wrapper with fixture bypass
+ok   ExecStart is the store wrapper
+ok   hms cannot start the sweep (X-SwitchMethod=keep-old)
+ok   the .local/bin copy is force-replaced, not clobber-blocked
+ok   migration hook retires the unmanaged copies pre-checkLinkTargets
+ok   the sweep honours the fixture root overrides (safe to execute)
+ok   unreadable inventory refuses without calling a verb
+ok   empty inventory refuses
+ok   reclaimable present workspace goes through workspace-close
+ok   missing path clears only the registration
+ok   live lease is never acted on
+ok   a registration matching early in the listing is not treated as an orphan
+ok   a refusal keeps the workspace
+engine-worktree-cleanup contract holds
+sccache profile scope contract: ok
+✔ Home Manager owns the devbox-scoped exact wrapper logic (7.908576ms)
+✔ wrapper selects the nearest marked Engine root and preserves argv (73.749908ms)
+✔ wrapper rejects an unrelated ancestor flake and uses marked fallback (31.822081ms)
+✔ wrapper recursion fails closed before invoking Nix (29.365145ms)
+✔ the canonical repository check runs the cargo-pgrx wrapper contract (2.867948ms)
+✔ skill frontmatter and openai.yaml exist with Use when / Not for description (42.069041ms)
+✔ main-agent-only SUBAGENT-STOP tells bounded subagent to stop and return to root (1.858048ms)
+✔ trigger: delegated external work loads skill; Codex remains sole publisher (3.153339ms)
+✔ near-miss: Default/Plan or v1/v2 wording alone cannot satisfy frontmatter trigger (7.167513ms)
+✔ alternate phrasing: encrypted_content fails closed or starts fresh portable session (1.981392ms)
+✔ Kimi prompt-mode command uses exact model/flags and forbids --prompt with --auto/--yolo (2.453227ms)
+✔ Cursor preferred subscription models are non-fast only (1.693953ms)
+✔ concurrency enforces operator hard ceilings plus resource-based lower limits (2.109455ms)
+✔ run provenance launcher contract is documented and fail-closed (3.723236ms)
+✔ Home Manager installs the launcher only under ~/.codex (3.896371ms)
+✔ Home Manager maps only this user skill; no singularity-engine-forward mapping (1.578139ms)
+✔ AGENTS handwritten section is a minimal load-skill trigger only (3.009363ms)
+✔ general orchestration runbook is absent (4.465069ms)
+✔ no-VCS rule is instruction policy, not a sandbox; worker state is untrusted (1.660592ms)
+✔ Kimi 0.28.1 prompt-mode behavior is documented (auto permission, handlers, validateOptions) (3.789069ms)
+✔ fail-closed worker evidence minimum and independent coordinator rerun (3.981104ms)
+✔ Cursor implementation and read-only commands are proven; boundary fails closed (1.401323ms)
+✔ skill activates only in Codex root; workers cannot load it; root never dispatches it to subagents (3.925253ms)
+✔ concurrency requires live memory check and stops before swap/memory pressure worsens (1.822986ms)
+✔ skill cites the exact contract-test paths and commands (1.000591ms)
+✔ requires explicit root/parent/task identity; no anonymous default (231.039038ms)
+✔ rejects Kimi agent budget above the per-coordinator ceiling of 10 (287.169008ms)
+✔ writes crash-recoverable record with required provenance and no prompt/argv leakage (81.417037ms)
+✔ falls back to ~/.local/state/codex when XDG_STATE_HOME is unset (95.105614ms)
+✔ records child exit code and failed status; launcher forwards exit code (74.973625ms)
+✔ records signal termination and maps launcher exit to 128+signo (94.488542ms)
+✔ forwards SIGTERM to the child and records signal termination (77.748057ms)
+✔ rejects a duplicate run id instead of overwriting an existing record (142.013974ms)
+✔ preserves nested root/parent ancestry (parent is the immediate lead task) (80.542053ms)
+✔ rejects Kimi prompt mode combined with --auto or --yolo (121.902509ms)
+✔ reconciles stale dead-pid records before summing reserved Kimi budget (86.492669ms)
+✔ rejects a launch that would exceed the global 30 Kimi agent ceiling (83.435744ms)
+✔ enforces one writer per workspace lane (74.965641ms)
+✔ serializes concurrent reservations without exceeding the global ceiling (1582.821313ms)
+✔ rejects when one coordinator's aggregated active Kimi reservations would exceed 10 (77.095994ms)
+✔ other coordinators' reservations do not count toward the per-coordinator ceiling (89.20932ms)
+✔ fails closed on an unparsable run record instead of ignoring it (85.554658ms)
+✔ fails closed on a schema-invalid active record instead of treating missing budget as zero (90.819171ms)
+✔ signals the worker process group so grandchildren do not survive launcher termination (115.755262ms)
+✔ cursor harness launches without Kimi budget accounting (93.41311ms)
+✔ recovers a reservation lock whose recorded owner PID is dead (75.514327ms)
+✔ recovers a legacy ownerless lock once it is older than the contention window (72.780722ms)
+✔ recovers a corrupt owner lock once it is older than the contention window (79.159114ms)
+✔ fails closed on a fresh ownerless lock inside the contention window without stealing it (313.353735ms)
+✔ retry-budget overrides never shorten the stale classification window (63.845931ms)
+✔ never steals a lock whose recorded owner PID is alive (330.095392ms)
+✔ root enables live hosted search while every gateway-backed Codex role disables it (21.135899ms)
+✔ Codex keeps external gateway profiles profile-only and residents OpenAI-only (12.949774ms)
+✔ detect-secrets filters only canonical Purpose work-packet metadata (4758.504875ms)
+✔ Home Manager retires only the unsafe JCode lane-settle artifacts (5.252644ms)
+✔ nix-direnv overlay does not GC-root flake archive inputs (18.588319ms)
+✔ Home Manager preserves the requested Forgejo and fast-Nix toolchain without tea (25.293147ms)
+✔ Home Manager owns nix-index database refresh wiring (2.85651ms)
+✔ Home Manager activation does not launch emergency backup jobs (2.479086ms)
+✔ mutable home sweeps serialize and report bounded lock failures (6.472212ms)
+✔ home emergency backup ssh command keeps long uploads alive on Hetzner Storage Box (2.275591ms)
+✔ borgmatic hot-source backup replaces mutating git snapshots safely (7.115811ms)
+✔ git auto-backup yields host resources and waits after completion (8.3726ms)
+✔ workspace ledger preservation is a separate low-priority hourly service (15.822203ms)
+✔ Home Manager gives every managed agent client a deterministic UTF-8 locale (2.355943ms)
+✔ NixOS owns the JCode units; Home Manager must not shadow them (7.144253ms)
+✔ JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gateway fallbacks (8.629458ms)
+✔ shell aliases consume the managed Nix tooling (3.569671ms)
+✔ the Home Manager wrapper preserves an explicitly requested flake (2.116765ms)
+✔ the maintenance shell supplies every executable used by the canonical check (1.9296ms)
+✔ Home Manager does not include the retired Hermes agent (2.747056ms)
+✔ Home Manager uses the nixpkgs mise package without a private overlay (5.243653ms)
+✔ Home Manager activation uses the non-deprecated nix profile command (4.090258ms)
+✔ dotfiles flake does not import ace-coder or the GPU worker (2.059394ms)
+✔ just check delegates to the single repository check implementation (2.086695ms)
+✔ global Codex instructions keep publication owned until land completes (0.96235ms)
+✔ otel-env.sh resolves OTLP helpers without mutating caller PATH (2.705265ms)
+✔ cursor-agent and agent share one OTEL wrapper with unified binary resolution (1.335211ms)
+✔ Claude Code remains native-installer-owned outside Home Manager (0.977221ms)
+✔ Home Manager modules keep single ownership of every managed path and bin name (23.666717ms)
+✔ live config does not call retired *.infra.centralcloud.com endpoints (33.214985ms)
+(node:594247) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ the shell startup secret loaders are untraceable (9.484616ms)
+✔ the untraceable prologue actually suppresses a traced leak (46.487399ms)
+✔ mikki-bunker-windows uses the verified Tailscale admin route (2.53447ms)
+✔ ssh_config declares cc-se-sto-core-01 so fleet loops can reach it (1.822556ms)
+✔ stable shell preserves the caller PATH ahead of Home Manager defaults (18.018092ms)
+✔ SHELL points directly at an immutable store wrapper (2.837538ms)
+✔ stable-shell delegates non-interactive direnv loading to BASH_ENV (1.524458ms)
+✔ ordinary non-interactive shells enter direnv once with a bounded wait (156.63247ms)
+✔ Home Manager uses direnv-instant for interactive shells (3.589701ms)
+﹣ the NixOS devbox is the sole interactive direnv hook authority (0.406863ms) # SKIP
+✔ Home Manager exports BASH_ENV for login and systemd user sessions (2.144507ms)
+✔ BASH_ENV path hook enters direnv once for Claude/Codex bash -c (212.708477ms)
+✔ dump cache hit evals without direnv allow or export (176.409065ms)
+✔ fill runs direnv allow only when the envrc proves blocked (265.215258ms)
+✔ enter-once sentinel is scoped to the repository root (103.89156ms)
+✔ directories without an envrc skip direnv entirely (10.074322ms)
+✔ dump fill strips one-line DIRENV_DIFF and DIRENV_WATCHES (172.268826ms)
+✔ dump whose recorded root no longer has envrc is not reused (229.309559ms)
+✔ dump miss drops leftover flock locks without a matching dump (135.693568ms)
+✔ a dump that froze a truncated PATH cannot strip the caller's tool dirs (98.034748ms)
+✔ an interactive direnv-instant apply cannot strip the caller's tool dirs (98.918865ms)
+✔ the interactive and non-interactive PATH restores stay one rule (1.727583ms)
+✔ Home Manager owns schema-valid Codex hooks.json with repo-memory swarm registration (9.397622ms)
+✔ Home Manager installs every managed hook surface (6.835022ms)
+✔ Goose and JCode wrappers export one inherited session identity (2.160288ms)
+✔ Home Manager enables only Summon delegation with ten background tasks (2.87616ms)
+✔ Goose uses Kimi K3 as main and MiniMax M3 as planner (2.768116ms)
+✔ activation merge preserves unrelated Claude settings and Kimi provider content (78.688031ms)
+✔ activation merge installs JCode session bootstrap without replacing unrelated hooks (60.387952ms)
+✔ workspace selection is durable and scoped to the active repository (27.498777ms)
+✔ session start uses a unique consumer and records the active worktree (24.975669ms)
+✔ client renderers emit only native context shapes (0.885587ms)
+✔ JCode announces availability without creating a consumer cursor it can never advance (12.380106ms)
+✔ MCP transport initializes and calls the lazy repo-memory subscription route (54.841709ms)
+✔ Home Manager symlink execution enters the hook main routine (447.14809ms)
+✔ separate hook processes serialize one durable delivery (473.202638ms)
+✔ delivery is acknowledged only at the next observed hook boundary (36.888066ms)
+✔ overlapping hook invocations emit one durable delivery once (24.399369ms)
+✔ a contending hook does not repeat the active acknowledgement (18.921758ms)
+✔ a kernel-held stable state lock yields then allows delivery after owner exit (28.560868ms)
+✔ killing a hook process releases its kernel lease for a replacement delivery (85.728674ms)
+✔ a legacy state-lock directory fails closed without being moved (2.366853ms)
+✔ a symlinked state lock fails closed without following it (2.875789ms)
+✔ a flock helper that never becomes ready times out without polling (509.06356ms)
+✔ an acknowledgement failure blocks later acknowledgements on the same cursor (26.099568ms)
+✔ first-run subscribes canonical and lane scopes before announcing availability (11.523986ms)
+✔ corrupt local state safely re-subscribes without advancing a server cursor (47.422319ms)
+✔ subscription failure keeps state uninitialized, silent, and retryable (24.788119ms)
+✔ availability failure remains retryable with the same idempotency key (19.480994ms)
+✔ pre-bootstrap state files remain initialized during upgrade (10.92744ms)
+✔ MCP subscription failure does not invent a filesystem bus (10.111503ms)
+✔ a purged message is settled, not retried, and does not block later acknowledgements (12.822818ms)
+✔ a pending entry for a bus this build no longer registers is dropped (11.055972ms)
+✔ a reaped cursor re-subscribes at head instead of replaying the bus into the model (11.385883ms)
+✔ a re-subscribe that itself fails is reported and does not wedge the run (10.143303ms)
+✔ a stale, lock-free state pair is reaped on the next SessionStart sweep, while contested or fresh pairs survive (35.816662ms)
+✔ a stale sibling workspace file for the sweeping session's own consumer is never reaped (11.407053ms)
+✔ concurrent sweepers drain the directory instead of leaking the locks they create (521.159213ms)
+ℹ tests 139
+ℹ suites 0
+ℹ pass 138
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 4886.215149
+✔ the NixOS devbox is the sole interactive direnv hook authority (11142.463514ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11233.964382
+these 15 derivations will be built:
+  /nix/store/nxdm6r9z2myq146444lkpcgrw598al42-hm-session-vars.sh.drv
+  /nix/store/5aig25g1g1y8vvyk07gcgw53677f4xl6-hm-session-vars.fish.drv
+  /nix/store/6r358088m0afw90qm972gb36jwqlamvc-man-paths.drv
+  /nix/store/78azd7bzizgm178ix6drj63mass1qq4j-hm-session-vars.sh-fish-completions.drv
+  /nix/store/8pdwz4w27yhblm1rzmy9ayw2lk930m6j-config.fish.drv
+  /nix/store/9rs9fgpx68h6n2ab4kn0kczzy8lmxl33-man-cache.drv
+  /nix/store/gw69vxnm612a83asy8lwd4061vy5liz9-profile.drv
+  /nix/store/q9a9msnba86qdp970h3wjdrdvj03yjid-hm_..zshenv.drv
+  /nix/store/wv6yif0kr7x98bdpvsmfvgdk9k73g5y3-hm-session-vars.fish-fish-completions.drv
+  /nix/store/ql3xacp5mmc7f5k47nfih3p124q0rb0w-mhugo-fish-completions.drv
+  /nix/store/s3az22qjwyp1ybfc5qw1b3mjqpnlcaya-hm_.manpath.drv
+  /nix/store/rns8m1pcmipiqwkg7ah4iw4nkxgx0hcb-home-manager-files.drv
+  /nix/store/svcn06j6h26mz0043nj85wdgryfn64zm-home-manager-path.drv
+  /nix/store/y0j9x4k0idxmi75abs54vprj0sdq3mlv-activation-script.drv
+  /nix/store/d0d11kz613mdzyii8drfjd9wwl4wfys1-home-manager-generation.drv
+building '/nix/store/nxdm6r9z2myq146444lkpcgrw598al42-hm-session-vars.sh.drv'...
+building '/nix/store/5aig25g1g1y8vvyk07gcgw53677f4xl6-hm-session-vars.fish.drv'...
+building '/nix/store/78azd7bzizgm178ix6drj63mass1qq4j-hm-session-vars.sh-fish-completions.drv'...
+building '/nix/store/q9a9msnba86qdp970h3wjdrdvj03yjid-hm_..zshenv.drv'...
+building '/nix/store/gw69vxnm612a83asy8lwd4061vy5liz9-profile.drv'...
+building '/nix/store/8pdwz4w27yhblm1rzmy9ayw2lk930m6j-config.fish.drv' on 'ssh-ng://root@159.195.138.16'...
+building '/nix/store/wv6yif0kr7x98bdpvsmfvgdk9k73g5y3-hm-session-vars.fish-fish-completions.drv'...
+building '/nix/store/svcn06j6h26mz0043nj85wdgryfn64zm-home-manager-path.drv'...
+building '/nix/store/6r358088m0afw90qm972gb36jwqlamvc-man-paths.drv'...
+building '/nix/store/ql3xacp5mmc7f5k47nfih3p124q0rb0w-mhugo-fish-completions.drv'...
+building '/nix/store/9rs9fgpx68h6n2ab4kn0kczzy8lmxl33-man-cache.drv'...
+building '/nix/store/y0j9x4k0idxmi75abs54vprj0sdq3mlv-activation-script.drv'...
+copying 1 paths...
+copying path '/nix/store/zxiki8n58swwi1cvgkbfgizcnjh4hs8s-hm-session-vars.fish' to 'ssh-ng://root@159.195.138.16'...
+building '/nix/store/8pdwz4w27yhblm1rzmy9ayw2lk930m6j-config.fish.drv'...
+copying 1 paths...
+copying path '/nix/store/pmlbdd32h2aqbzf6vlzkhm29fq0fwim4-config.fish' from 'ssh-ng://root@159.195.138.16'...
+building '/nix/store/s3az22qjwyp1ybfc5qw1b3mjqpnlcaya-hm_.manpath.drv'...
+building '/nix/store/rns8m1pcmipiqwkg7ah4iw4nkxgx0hcb-home-manager-files.drv'...
+building '/nix/store/d0d11kz613mdzyii8drfjd9wwl4wfys1-home-manager-generation.drv'...

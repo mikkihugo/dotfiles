@@ -1,0 +1,559 @@
+{
+  "schema_version": "validation-report/v0",
+  "ok": true,
+  "authorizes_execution": false,
+  "work_dir": "docs/work/2026-09-05-codex-gpt6-settings",
+  "repo_root": ".",
+  "gates": [
+    {
+      "id": "linkage:schema-major",
+      "status": "pass",
+      "message": "purpose-contract/v2 is the admitted intent source for workspec/v4"
+    },
+    {
+      "id": "linkage:purpose-work",
+      "status": "pass",
+      "message": "purpose and work IDs match"
+    },
+    {
+      "id": "linkage:evidence-purpose",
+      "status": "pass",
+      "message": "evidence purpose_contract_id matches"
+    },
+    {
+      "id": "linkage:evidence-work",
+      "status": "pass",
+      "message": "evidence workspec_id matches"
+    },
+    {
+      "id": "admission:state",
+      "status": "pass",
+      "message": "admission is proposed and does not authorize execution"
+    },
+    {
+      "id": "handover:state",
+      "status": "pass",
+      "message": "handover is proposed and does not authorize execution"
+    },
+    {
+      "id": "spec:snapshot-path",
+      "status": "pass",
+      "message": "current_spec.uri must resolve inside the work directory"
+    },
+    {
+      "id": "spec:snapshot-digest",
+      "status": "pass",
+      "message": "current_spec.digest must bind the exact snapshot bytes"
+    },
+    {
+      "id": "spec:snapshot-id",
+      "status": "pass",
+      "message": "current_spec.snapshot_id must match the referenced snapshot"
+    },
+    {
+      "id": "spec:snapshot-requirements-unique",
+      "status": "pass",
+      "message": "current spec snapshot requirement IDs must be unique"
+    },
+    {
+      "id": "spec:delta-targets",
+      "status": "pass",
+      "message": "delta sources must exist once, added IDs must be new, and rename/modify IDs must be coherent"
+    },
+    {
+      "id": "spec:derived-requirements",
+      "status": "pass",
+      "message": "WorkSpec requirements must equal the deterministic snapshot plus delta result"
+    },
+    {
+      "id": "scope:file:config/codex/config.toml",
+      "status": "pass",
+      "message": "expected file exists: config/codex/config.toml"
+    },
+    {
+      "id": "scope:file:config/codex/shared-preferences.toml",
+      "status": "pass",
+      "message": "expected file exists: config/codex/shared-preferences.toml"
+    },
+    {
+      "id": "scope:file:scripts/codex-preferences",
+      "status": "pass",
+      "message": "expected file exists: scripts/codex-preferences"
+    },
+    {
+      "id": "scope:file:scripts/test-codex-preferences.py",
+      "status": "pass",
+      "message": "expected file exists: scripts/test-codex-preferences.py"
+    },
+    {
+      "id": "scope:file:.purpose/commands.json",
+      "status": "pass",
+      "message": "expected file exists: .purpose/commands.json"
+    },
+    {
+      "id": "scope:file:bin/repo",
+      "status": "pass",
+      "message": "expected file exists: bin/repo"
+    },
+    {
+      "id": "scope:file:scripts/repo-check.sh",
+      "status": "pass",
+      "message": "expected file exists: scripts/repo-check.sh"
+    },
+    {
+      "id": "scope:file:AGENTS.md",
+      "status": "pass",
+      "message": "expected file exists: AGENTS.md"
+    },
+    {
+      "id": "scope:file:scripts/test-repo-vcs.sh",
+      "status": "pass",
+      "message": "expected file exists: scripts/test-repo-vcs.sh"
+    },
+    {
+      "id": "scope:file:scripts/test-codex-hosted-search.mjs",
+      "status": "pass",
+      "message": "expected file exists: scripts/test-codex-hosted-search.mjs"
+    },
+    {
+      "id": "evidence:purpose-subject-digest",
+      "status": "pass",
+      "message": "evidence must bind the exact accepted PurposeContract digest"
+    },
+    {
+      "id": "evidence:workspec-subject-digest",
+      "status": "pass",
+      "message": "evidence must bind the exact accepted WorkSpec digest"
+    },
+    {
+      "id": "evidence:artifact:changed-files.json",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:codex-dotfiles-empty-arg-green.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:codex-dotfiles-empty-arg-red.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:codex-dotfiles-entry-green.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:codex-dotfiles-entry-red.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:codex-dotfiles-settings-green.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:codex-dotfiles-settings-red.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:source-proof.json",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-entry-fixture-red.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-full-green.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-full-red.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-independent-review.md",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-post-format-entry.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-preflight.json",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-red-result.json",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-resident-default-red.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-result.json",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-state.json",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:takeover-vcs-status.txt",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:execution-identity",
+      "status": "pass",
+      "message": "evidence must identify execution, tool, result, and unique artifacts"
+    },
+    {
+      "id": "coverage:requirements-unique",
+      "status": "pass",
+      "message": "requirement IDs must be unique"
+    },
+    {
+      "id": "coverage:planned-tests-unique",
+      "status": "pass",
+      "message": "planned test IDs must be unique"
+    },
+    {
+      "id": "coverage:planned:T1",
+      "status": "pass",
+      "message": "planned test must reference an existing requirement"
+    },
+    {
+      "id": "coverage:requirement:R1",
+      "status": "pass",
+      "message": "every semantic requirement needs a planned test"
+    },
+    {
+      "id": "coverage:evidence-tests-unique",
+      "status": "pass",
+      "message": "evidence test IDs must be unique"
+    },
+    {
+      "id": "coverage:evidence:T1",
+      "status": "pass",
+      "message": "evidence test must bind one planned test, result, and declared artifacts"
+    },
+    {
+      "id": "coverage:red-first:T1",
+      "status": "pass",
+      "message": "must_fail_first requires distinct red result/artifact evidence ordered before green"
+    },
+    {
+      "id": "coverage:planned-evidence:T1",
+      "status": "pass",
+      "message": "every planned test needs passed evidence; skipped, failed, and not_run do not complete coverage"
+    },
+    {
+      "id": "evidence:changed-file-manifest",
+      "status": "pass",
+      "message": "changed-file manifest must be a digest-bound artifact produced by the repository VCS facade"
+    },
+    {
+      "id": "scope:changed:.purpose/commands.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:AGENTS.md",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:bin/repo",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:config/codex/config.toml",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:config/codex/shared-preferences.toml",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:devenv.repo-commands.nix",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/README.md",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/current-spec.snapshot.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence.bundle.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/.gitkeep",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/changed-files.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-empty-arg-green.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-empty-arg-red.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-entry-green.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-entry-red.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-settings-green.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/codex-dotfiles-settings-red.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/source-proof.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-entry-fixture-red.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-full-green.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-full-red.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-independent-review.md",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-post-format-entry.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-preflight.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-red-result.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-resident-default-red.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-result.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-state.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/evidence/takeover-vcs-status.txt",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/purpose.contract.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/validation.report.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:docs/work/2026-09-05-codex-gpt6-settings/work.spec.json",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:scripts/codex-preferences",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:scripts/repo-check-nix.sh",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:scripts/repo-check.sh",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:scripts/test-codex-hosted-search.mjs",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:scripts/test-codex-preferences.py",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:scripts/test-repo-check-entry.py",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "scope:changed:scripts/test-repo-vcs.sh",
+      "status": "pass",
+      "message": "actual VCS changed-file manifest must stay within allowed scope and avoid blocked/protected paths"
+    },
+    {
+      "id": "reconciliation:evidence-version",
+      "status": "pass",
+      "message": "completion evidence for workspec/v4 must use evidence-bundle/v3"
+    },
+    {
+      "id": "reconciliation:status",
+      "status": "pass",
+      "message": "completion requires reconciliation.status=reconciled"
+    },
+    {
+      "id": "reconciliation:runtime-status",
+      "status": "pass",
+      "message": "completion reconciliation requires runtime.status=completed"
+    },
+    {
+      "id": "reconciliation:snapshot-digest",
+      "status": "pass",
+      "message": "reconciliation must bind the exact current spec snapshot digest"
+    },
+    {
+      "id": "reconciliation:delta-digest",
+      "status": "pass",
+      "message": "reconciliation must bind the exact WorkSpec requirement delta"
+    },
+    {
+      "id": "reconciliation:requirement-set-digest",
+      "status": "pass",
+      "message": "reconciliation must bind the deterministic derived requirement set"
+    },
+    {
+      "id": "reconciliation:witness",
+      "status": "pass",
+      "message": "reconciliation must reference a declared digest-verified witness artifact"
+    },
+    {
+      "id": "completion:gates",
+      "status": "pass",
+      "message": "typed completion gates must pass or carry an authority-bound waiver and reference digest-bound artifacts"
+    },
+    {
+      "id": "completion:required-evidence:test",
+      "status": "pass",
+      "message": "verification_plan.evidence_required=test must have corresponding successful typed evidence"
+    },
+    {
+      "id": "completion:required-evidence:quality",
+      "status": "pass",
+      "message": "verification_plan.evidence_required=quality must have corresponding successful typed evidence"
+    },
+    {
+      "id": "completion:required-evidence:falsifier",
+      "status": "pass",
+      "message": "verification_plan.evidence_required=falsifier must have corresponding successful typed evidence"
+    },
+    {
+      "id": "completion:breakers-unique",
+      "status": "pass",
+      "message": "each WorkSpec requirement must declare a unique breaker ID"
+    },
+    {
+      "id": "completion:breaker-witness-set",
+      "status": "pass",
+      "message": "breaker witnesses must form a one-to-one set with declared requirement and breaker pairs"
+    },
+    {
+      "id": "completion:breaker:R1",
+      "status": "pass",
+      "message": "each requirement breaker needs exactly one passed, work-digest-bound artifact witness"
+    },
+    {
+      "id": "completion:contract-preserved",
+      "status": "pass",
+      "message": "completion evidence must affirm contract_preserved.status=true"
+    },
+    {
+      "id": "artifact:test:T1",
+      "status": "pass",
+      "message": "test artifact present: evidence/takeover-full-green.txt"
+    },
+    {
+      "id": "artifact:falsifier",
+      "status": "pass",
+      "message": "falsifier artifact present: evidence/takeover-full-green.txt"
+    }
+  ],
+  "schema_errors": {
+    "purpose": null,
+    "work": null,
+    "evidence": null
+  }
+}

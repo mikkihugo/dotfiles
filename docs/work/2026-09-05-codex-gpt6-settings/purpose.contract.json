@@ -1,0 +1,88 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-05-codex-gpt6-settings-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-09-05-codex-gpt6-settings"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-09-05-codex-gpt6-settings",
+      "revision": "initial"
+    },
+    "objective": {
+      "id": "2026-09-05-codex-gpt6-settings-objective",
+      "statement": "Preserve operator-selected GPT6 and feature settings across managed Codex activation.",
+      "measure": "Seed and shared defaults use gpt-6-astra and medium reasoning; context_management, step_model_switching and mcp_2026_07_28 are enabled through save/apply while unrelated preferences and roles are preserved. Exact-root check nix rejects missing/mismatched/fallback environments without full verification; focused preference tests have a declared facade."
+    },
+    "need": {
+      "id": "2026-09-05-codex-gpt6-settings-need",
+      "statement": "Preserve operator-selected GPT6 and feature settings across managed Codex activation.",
+      "stakeholders": [
+        "Codex operator and Home Manager activation"
+      ],
+      "baseline": "Managed files retained pre-GPT6 defaults; prior RED artifacts demonstrate preference and startup-routing failures. Takeover repo check exits 1 at obsolete backend help wording asserted against generated facade.",
+      "consequence_of_no_action": "The named consumer continues without the promised outcome.",
+      "assumptions": [],
+      "alternatives_considered": [
+        "Keep the current behavior"
+      ]
+    }
+  },
+  "admission": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  },
+  "purpose": "Preserve operator-selected GPT6 and feature settings across managed Codex activation.",
+  "consumer": "Codex operator and Home Manager activation",
+  "contract": "Seed and shared defaults use gpt-6-astra and medium reasoning; context_management, step_model_switching and mcp_2026_07_28 are enabled through save/apply while unrelated preferences and roles are preserved. Exact-root check nix rejects missing/mismatched/fallback environments without full verification; focused preference tests have a declared facade.",
+  "failure_boundary": "If validation fails or scope drifts, the change must not ship.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "Contract test proves the promised behavior.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "The change delivers the promised contract.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Run the contract test; any failure falsifies the claim.",
+      "command": "repo check"
+    }
+  },
+  "non_goals": [
+    "Unrelated refactors",
+    "Scope expansion without contract update"
+  ],
+  "invariants": [
+    "Existing public APIs remain compatible unless explicitly changed"
+  ],
+  "assumptions": [
+    {
+      "statement": "Repo tooling is available in the declared environment.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "The declared verification command cannot be executed in the repo environment."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": false,
+    "risk": "low",
+    "blast_radius": "repo",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "engine"
+  ],
+  "plane_constraints": [
+    "C19 owns durable workflow truth; execution runtimes consume compiled task envelopes."
+  ]
+}

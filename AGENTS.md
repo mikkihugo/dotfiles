@@ -74,3 +74,7 @@ instruction plane despite its path. Disabling memory never means deleting them.
 This repository does not ship a GPU worker Home Manager module. Do not
 propose embedding-worker / inference-fabric workloads on mikki-laptop
 (aarch64, no GPU).
+
+## Scoped Codex verification
+
+Run `repo check nix` once after exact-root direnv entry; it checks only the environment. `repo test codex-preferences` verifies managed GPT6 defaults, feature save/apply, and preservation of unrelated profiles and roles. `repo test check-entry` proves startup checks cannot invoke the full gate. `repo check` remains the required full verification before publication.

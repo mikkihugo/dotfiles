@@ -72,15 +72,15 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
     .map(([, file]) => file)
     .sort();
 
-  assert.match(seed, /^model\s*=\s*"gpt-6-astra"$/m);
-  assert.match(seed, /^model_provider\s*=\s*"openai"$/m);
+  assert.match(seed, /^model\s*=\s*"minimax-coding-plan\/MiniMax-M3"$/m);
+  assert.match(seed, /^model_provider\s*=\s*"llm-gateway"$/m);
   assert.match(
     seed,
     /\[model_providers\.llm-gateway\][\s\S]*?^wire_api\s*=\s*"responses"$/m,
     "the Codex gateway provider must retain its native Responses endpoint",
   );
-  assert.match(shared, /^model\s*=\s*"gpt-6-astra"$/m);
-  assert.match(shared, /^model_provider\s*=\s*"openai"$/m);
+  assert.match(shared, /^model\s*=\s*"minimax-coding-plan\/MiniMax-M3"$/m);
+  assert.match(shared, /^model_provider\s*=\s*"llm-gateway"$/m);
   assert.deepEqual(registeredFiles, expectedResidentConfigs);
 
   const residentSourceFiles = (await readdir("config/codex/agents"))

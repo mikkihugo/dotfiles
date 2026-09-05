@@ -167,9 +167,8 @@
     "${homeDir}/.cache/engine-jj-git-store"
   ];
   hotSourceExcludes = [
-    # jj's authoritative GitBackend store for singularity-engine (.jj/repo/store/git_target); excluded from the home job by ~/.cache and **/.git
-    "+sh:home/mhugo/.cache/engine-jj-git-store/**"
-    "**/.cache"
+    # regex, not **/.cache: a fm/sh glob also excludes a source root that lives under .cache (the engine jj store below)
+    "re:(^|/)\\.cache$"
     "**/.direnv"
     "**/node_modules"
     "**/target"

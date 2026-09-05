@@ -1,6 +1,6 @@
 personality = "pragmatic"
-model = "gpt-6-astra"
-model_provider = "openai"
+model = "minimax-coding-plan/MiniMax-M3"
+model_provider = "llm-gateway"
 model_reasoning_effort = "medium"
 web_search = "live"
 sandbox_mode = "danger-full-access"

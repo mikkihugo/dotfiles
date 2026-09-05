@@ -13,8 +13,14 @@ if [[ ! -x "$rustup_bin" ]]; then
 fi
 
 # An inherited RUSTUP_TOOLCHAIN wins over rust-toolchain files and Rustup's
-# default. Set it at the last host-level entrypoint so stale agent/shell
-# environments cannot select a newer compiler. Explicit `cargo +toolchain`
-# remains Rustup's intentional per-command override.
-export RUSTUP_TOOLCHAIN="1.95.0"
-exec "$rustup_bin" run "$RUSTUP_TOOLCHAIN" "$tool" "$@"
+# default. Select the managed default at the last host-level entrypoint so
+# stale agent/shell environments cannot select a newer compiler. Rustup's
+# explicit `cargo +toolchain` selector remains an intentional one-command
+# override and must be parsed before invoking `rustup run`.
+toolchain="1.95.0"
+if [[ "${1:-}" == +* ]]; then
+	toolchain="${1#+}"
+	shift
+fi
+export RUSTUP_TOOLCHAIN="$toolchain"
+exec "$rustup_bin" run "$toolchain" "$tool" "$@"

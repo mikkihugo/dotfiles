@@ -13,8 +13,8 @@ const makeRustup = async (directory) => {
   await writeFile(
     proxy,
     "#!/usr/bin/env bash\nset -euo pipefail\n" +
-      "[[ $1 == run && $2 == 1.95.0 ]]\n" +
-      "printf '%s:%s\\n' \"$3\" \"${RUSTUP_TOOLCHAIN:-unset}\"\n",
+      "[[ $1 == run ]]\n" +
+      "printf '%s:%s:%s\\n' \"$3\" \"${RUSTUP_TOOLCHAIN:-unset}\" \"$2\"\n",
   );
   await chmod(proxy, 0o755);
   return proxy;
@@ -34,8 +34,21 @@ test("managed host Rust wrappers override a stale inherited Rustup toolchain", a
       },
     });
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(result.stdout, `${tool}:1.95.0\n`);
+    assert.equal(result.stdout, `${tool}:1.95.0:1.95.0\n`);
   }
+});
+
+test("wrapper preserves Rustup's explicit one-command toolchain selector", async (t) => {
+  const temp = await mkdtemp(join(tmpdir(), "rustup-toolchain-wrapper-explicit-"));
+  t.after(() => rm(temp, { recursive: true, force: true }));
+
+  const rustup = await makeRustup(temp);
+  const result = spawnSync("bash", [wrapper, "cargo", rustup, "+1.96.0", "--version"], {
+    encoding: "utf8",
+    env: { ...process.env, RUSTUP_TOOLCHAIN: "1.98.1" },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, "cargo:1.96.0:1.96.0\n");
 });
 
 test("wrapper fails clearly when its Rustup proxy is unavailable", async (t) => {

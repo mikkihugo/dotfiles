@@ -15,7 +15,7 @@
     else shortHost;
   homeDir = "/home/mhugo";
   keyPath = "${homeDir}/.ssh/storagebox-backup";
-  sshCommand = "${pkgs.openssh}/bin/ssh -i ${keyPath} -p 23 -o BatchMode=yes -o StrictHostKeyChecking=yes";
+  sshCommand = "${pkgs.openssh}/bin/ssh -i ${keyPath} -p 23 -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4";
   hotSourcePassphrasePath = config.sops.secrets.borg_hot_source_passphrase.path;
   commonConfig = {
     source_directories = [homeDir];
@@ -112,7 +112,7 @@
     bootstrap.store_config_files = false;
     ssh_command = sshCommand;
     compression = "lz4";
-    extra_borg_options.create = "--upload-buffer 1024 --upload-ratelimit 0";
+    extra_borg_options.create = "--upload-buffer 256 --upload-ratelimit 0";
     borg_exit_codes = [
       {
         code = 105;
@@ -196,7 +196,7 @@
     bootstrap.store_config_files = false;
     ssh_command = sshCommand;
     compression = "lz4";
-    extra_borg_options.create = "--upload-buffer 1024 --upload-ratelimit 0";
+    extra_borg_options.create = "--upload-buffer 256 --upload-ratelimit 0";
     keep_hourly = 96;
     keep_daily = 14;
     keep_weekly = 8;

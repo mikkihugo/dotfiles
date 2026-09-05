@@ -92,6 +92,31 @@ test("mutable home sweeps serialize and report bounded lock failures", async () 
   assert.match(gitBackup, /timeout --kill-after=10s 45m/);
   assert.match(gitBackup, /TimeoutStartSec\s*=\s*"7h"/);
 });
+test("home emergency backup ssh command keeps long uploads alive on Hetzner Storage Box", async () => {
+
+  const emergencyBackup = await source("home/modules/home-emergency-backup.nix");
+  // The ssh command must include an SSH keepalive so a 9GB emergency backup
+  // doesn't idle-disconnect from the Storage Box mid-upload. Without it the
+  // borg create run dies around 28min wall time with "Connection closed by
+  // remote host" (observed 2026-09-04 → 2026-09-05).
+  assert.match(
+    emergencyBackup,
+    /-o\s+ServerAliveInterval=\d+/,
+    "sshCommand must include -o ServerAliveInterval=<seconds>",
+  );
+  assert.match(
+    emergencyBackup,
+    /-o\s+ServerAliveCountMax=\d+/,
+    "sshCommand must include -o ServerAliveCountMax=<count>",
+  );
+  // The ssh command variable itself must wrap those flags; a one-off copy in
+  // a different location is not the same contract.
+  assert.match(
+    emergencyBackup,
+    /sshCommand\s*=\s*"[^"]*-o\s+ServerAliveInterval/m,
+  );
+});
+
 
 test("borgmatic hot-source backup replaces mutating git snapshots safely", async () => {
   const backup = await source("home/modules/home-emergency-backup.nix");

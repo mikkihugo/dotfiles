@@ -7,12 +7,18 @@
         "timeout": 10
       },
       {
-        "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs cursor sessionStart",
-        "timeout": 10
+        "command": "/home/mhugo/.dotfiles/config/codex/hooks/swarm-messages.mjs cursor sessionStart",
+        "timeout": 12
       },
       {
         "command": "test ! -f /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs || node /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs",
         "timeout": 10
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "/home/mhugo/.dotfiles/config/codex/hooks/swarm-messages.mjs cursor beforeSubmitPrompt",
+        "timeout": 12
       }
     ]
   }

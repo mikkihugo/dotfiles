@@ -28,10 +28,13 @@ const message = {
   origin: "repo-memory",
 };
 
-const consumerForSession = (client, sessionID, prefix = client) => {
+const consumerForSession = (client, sessionID, explicit) => {
+  // Mirrors consumerFor: REPO_MEMORY_SWARM_CONSUMER is the verbatim consumer
+  // when set; without it the consumer is <client>-<sha256(sessionID)[:16]>.
+  if (explicit) return explicit.replace(/[^A-Za-z0-9._-]+/g, "-");
   const normalized = sessionID.replace(/[^A-Za-z0-9]+/g, "");
   const digest = createHash("sha256").update(normalized).digest("hex").slice(0, 16);
-  return `${prefix}-${digest}`;
+  return `${client}-${digest}`;
 };
 
 const writeInitializedState = (stateDir, consumer, workspace = "singularity-engine", pending = []) => writeFile(
@@ -47,7 +50,9 @@ const writeInitializedState = (stateDir, consumer, workspace = "singularity-engi
 const messageBus = (counter) => ({
   name: "repo-memory",
   async subscribe() {},
-  async poll() {
+  async poll(workspace) {
+    // The mandatory global poll never carries this helper's message.
+    if (workspace === "global") return [];
     counter.count += 1;
     return [message];
   },
@@ -183,7 +188,7 @@ test("session start uses a unique consumer and records the active worktree", asy
       worktree: "/home/mhugo/code/worktrees/jj/singularity-engine/executor-kernel",
       stateDir,
       buses: [durable],
-      env: { REPO_MEMORY_SWARM_CONSUMER: "shared-prefix" },
+      env: { REPO_MEMORY_SWARM_CONSUMER: "shared-prefix-a" },
     });
     await runHook({
       client: "codex",
@@ -197,29 +202,33 @@ test("session start uses a unique consumer and records the active worktree", asy
       worktree: "/home/mhugo/code/worktrees/jj/singularity-engine/c21-review",
       stateDir,
       buses: [durable],
-      env: { REPO_MEMORY_SWARM_CONSUMER: "shared-prefix" },
+      env: { REPO_MEMORY_SWARM_CONSUMER: "shared-prefix-b" },
     });
 
     const firstConsumer = consumerForSession(
       "codex",
       "019f91dd-3c90-7be0-ab98-63ef80c9a803",
-      "shared-prefix",
+      "shared-prefix-a",
     );
     const secondConsumer = consumerForSession(
       "codex",
       "019f91dd-a12b-4470-b433-17ea04a6b211",
-      "shared-prefix",
+      "shared-prefix-b",
     );
     const subscriptions = calls.filter(({ operation }) => operation === "subscribe");
     assert.deepEqual(subscriptions.map(({ workspace }) => workspace), [
       "singularity-engine",
       "executor-kernel",
+      "global",
       "singularity-engine",
       "c21-review",
+      "global",
     ]);
     assert.deepEqual(subscriptions.map(({ consumer }) => consumer), [
       firstConsumer,
       firstConsumer,
+      firstConsumer,
+      secondConsumer,
       secondConsumer,
       secondConsumer,
     ]);
@@ -264,6 +273,9 @@ test("client renderers emit only native context shapes", () => {
 
   const cursor = renderClientOutput("cursor", "sessionStart", context, {});
   assert.equal(cursor.additional_context, context);
+
+  const cursorTurn = renderClientOutput("cursor", "beforeSubmitPrompt", context, {});
+  assert.equal(cursorTurn.additional_context, context);
 
   const factory = renderClientOutput("factory", "UserPromptSubmit", context, {});
   assert.equal(factory.hookSpecificOutput.hookEventName, "UserPromptSubmit");
@@ -417,7 +429,7 @@ test("Home Manager symlink execution enters the hook main routine", async (t) =>
   assert.equal(bootstrap.stdout, "");
   const delivered = await execFileWithClosedInput(link, ["codex", "UserPromptSubmit"], options);
   assert.match(delivered.stdout, /New work after bootstrap/);
-  assert.equal(subscribeCount, 1);
+  assert.equal(subscribeCount, 2);
 });
 
 test("separate hook processes serialize one durable delivery", async (t) => {
@@ -454,13 +466,20 @@ test("separate hook processes serialize one durable delivery", async (t) => {
     if (tool === "swarm_bus_subscribe") {
       toolResult = { cursor: 7, created: true };
     } else if (tool === "swarm_bus_poll") {
-      pollCalls += 1;
-      if (pollCalls === 1) {
-        firstPollReady();
-        await firstPollStarted;
-        toolResult = { messages: [later], next_cursor: 1 };
+      // The mandatory global poll shares this server; only the workspace poll
+      // carries the delivery and the release handshake, so a global poll that
+      // wins the pollCalls race cannot eat the delivery.
+      if (rpc.params?.arguments?.arguments?.workspace === "global") {
+        toolResult = { messages: [], next_cursor: 0 };
       } else {
-        toolResult = { messages: [], next_cursor: pollCalls };
+        pollCalls += 1;
+        if (pollCalls === 1) {
+          firstPollReady();
+          await firstPollStarted;
+          toolResult = { messages: [later], next_cursor: 1 };
+        } else {
+          toolResult = { messages: [], next_cursor: pollCalls };
+        }
       }
     } else if (tool === "swarm_bus_ack") {
       ackCalls += 1;
@@ -543,7 +562,7 @@ test("delivery is acknowledged only at the next observed hook boundary", async (
       buses: [durable],
     });
     assert.equal(bootstrap.output, null);
-    assert.deepEqual(calls, ["subscribe:singularity-engine", "subscribe:executor-kernel"]);
+    assert.deepEqual(calls, ["subscribe:singularity-engine", "subscribe:executor-kernel", "subscribe:global"]);
 
     calls.length = 0;
     phase = "deliver";
@@ -557,7 +576,7 @@ test("delivery is acknowledged only at the next observed hook boundary", async (
       buses: [durable],
     });
     assert.match(JSON.stringify(first.output), /Review revision abc123/);
-    assert.deepEqual(calls, ["poll:singularity-engine", "poll:executor-kernel"]);
+    assert.deepEqual(calls, ["poll:singularity-engine", "poll:executor-kernel", "poll:global"]);
 
     phase = "empty";
     const second = await runHook({
@@ -573,9 +592,11 @@ test("delivery is acknowledged only at the next observed hook boundary", async (
     assert.deepEqual(calls, [
       "poll:singularity-engine",
       "poll:executor-kernel",
+      "poll:global",
       `ack:executor-kernel:${message.id}`,
       "poll:singularity-engine",
       "poll:executor-kernel",
+      "poll:global",
     ]);
     const consumer = consumerForSession("codex", "019f91dd-3c90-7be0-ab98-63ef80c9a803");
     assert.equal(
@@ -600,7 +621,9 @@ test("overlapping hook invocations emit one durable delivery once", async () => 
   const durable = {
     name: "repo-memory",
     async subscribe() {},
-    async poll() {
+    async poll(workspace) {
+      // The mandatory global poll never carries this test's message.
+      if (workspace === "global") return [];
       pollCalls += 1;
       markPollStarted();
       await pollReleased;
@@ -654,7 +677,7 @@ test("a contending hook does not repeat the active acknowledgement", async () =>
   const durable = {
     name: "repo-memory",
     async subscribe() {},
-    async poll() { pollCalls += 1; return []; },
+    async poll(workspace) { if (workspace === "global") return []; pollCalls += 1; return []; },
     async ack() {
       ackCalls += 1;
       markAckStarted();
@@ -911,6 +934,7 @@ test("an acknowledgement failure blocks later acknowledgements on the same curso
       "ack:executor-kernel:first",
       "poll:singularity-engine",
       "poll:executor-kernel",
+      "poll:global",
     ]);
     assert.deepEqual(JSON.parse(await readFile(stateFile, "utf8")).pending.map(
       ({ message_id: messageID }) => messageID,
@@ -927,6 +951,7 @@ test("an acknowledgement failure blocks later acknowledgements on the same curso
       "ack:executor-kernel:second",
       "poll:singularity-engine",
       "poll:executor-kernel",
+      "poll:global",
     ]);
   } finally {
     await rm(stateDir, { recursive: true, force: true });
@@ -960,6 +985,7 @@ test("first-run subscribes canonical and lane scopes before announcing availabil
     )), [
       { operation: "subscribe", workspace: "singularity-engine", consumer },
       { operation: "subscribe", workspace: "executor-kernel", consumer },
+      { operation: "subscribe", workspace: "global", consumer },
       { operation: "post", workspace: "singularity-engine", consumer: undefined },
     ]);
     assert.equal(
@@ -1007,6 +1033,7 @@ test("corrupt local state safely re-subscribes without advancing a server cursor
     assert.deepEqual(calls, [
       `subscribe:singularity-engine:${consumer}:41`,
       `subscribe:executor-kernel:${consumer}:41`,
+      `subscribe:global:${consumer}:41`,
     ]);
     assert.equal(
       JSON.parse(await readFile(join(stateDir, `${consumer}--singularity-engine.json`), "utf8")).initialized,
@@ -1023,8 +1050,9 @@ test("corrupt local state safely re-subscribes without advancing a server cursor
     assert.deepEqual(calls, [
       `subscribe:singularity-engine:${consumer}:41`,
       `subscribe:executor-kernel:${consumer}:41`,
+      `subscribe:global:${consumer}:41`,
     ]);
-    assert.deepEqual([...cursors.values()], [41, 41]);
+    assert.deepEqual([...cursors.values()], [41, 41, 41]);
 
     await writeFile(
       join(stateDir, `${consumer}--singularity-engine.json`),
@@ -1039,6 +1067,7 @@ test("corrupt local state safely re-subscribes without advancing a server cursor
     assert.deepEqual(calls, [
       `subscribe:singularity-engine:${consumer}:41`,
       `subscribe:executor-kernel:${consumer}:41`,
+      `subscribe:global:${consumer}:41`,
     ]);
 
     phase = "later";
@@ -1048,7 +1077,7 @@ test("corrupt local state safely re-subscribes without advancing a server cursor
       additionalWorkspaces: ["executor-kernel"], stateDir, buses: [durable],
     });
     assert.match(JSON.stringify(delivered.output), /Posted after the subscription cutoff/);
-    assert.deepEqual(calls, ["poll:singularity-engine", "poll:executor-kernel"]);
+    assert.deepEqual(calls, ["poll:singularity-engine", "poll:executor-kernel", "poll:global"]);
   } finally {
     await rm(stateDir, { recursive: true, force: true });
   }
@@ -1081,6 +1110,7 @@ test("subscription failure keeps state uninitialized, silent, and retryable", as
     assert.deepEqual(calls, [
       { operation: "subscribe", workspace: "singularity-engine" },
       { operation: "subscribe", workspace: "executor-kernel" },
+      { operation: "subscribe", workspace: "global" },
     ]);
     assert.equal(result.errors[0]?.operation, "subscribe");
     assert.equal(
@@ -1098,6 +1128,7 @@ test("subscription failure keeps state uninitialized, silent, and retryable", as
     assert.deepEqual(calls, [
       { operation: "subscribe", workspace: "singularity-engine" },
       { operation: "subscribe", workspace: "executor-kernel" },
+      { operation: "subscribe", workspace: "global" },
       { operation: "post", workspace: "singularity-engine", key: `${consumer}:available` },
     ]);
     assert.equal(
@@ -1142,8 +1173,10 @@ test("availability failure remains retryable with the same idempotency key", asy
     assert.equal(second.output, null);
     assert.deepEqual(calls, [
       "subscribe:singularity-engine",
+      "subscribe:global",
       `post:${consumer}:available`,
       "subscribe:singularity-engine",
+      "subscribe:global",
       `post:${consumer}:available`,
     ]);
   } finally {
@@ -1160,7 +1193,7 @@ test("pre-bootstrap state files remain initialized during upgrade", async () => 
   const calls = [];
   const durable = {
     name: "repo-memory",
-    async poll() { calls.push("poll"); return [later]; },
+    async poll(workspace) { if (workspace === "global") return []; calls.push("poll"); return [later]; },
     async ack(_workspace, _consumer, delivery) { calls.push(`ack:${delivery.id}`); },
     async post() {},
     async close() {},
@@ -1338,7 +1371,7 @@ test("a reaped cursor re-subscribes at head instead of replaying the bus into th
 
     assert.equal(result.output, null, "a replayed batch must not be rendered into the model as fresh context");
     assert.deepEqual(result.deliveries, [], "nothing from an unknown-consumer poll counts as delivered");
-    assert.deepEqual(subscribes, [{ workspace: "singularity-engine", consumer }],
+    assert.deepEqual(subscribes, [{ workspace: "singularity-engine", consumer }, { workspace: "global", consumer }],
       "the identity must be re-registered at the current head");
     assert.deepEqual(acks, [], "there is nothing to acknowledge for a batch that was never delivered");
     assert.ok(

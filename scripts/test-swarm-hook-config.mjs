@@ -22,7 +22,7 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
   const cursor = await readJSON("config/cursor/hooks.json");
   assert.equal(cursor.version, 1);
   assert.match(JSON.stringify(cursor.hooks.sessionStart), /swarm-messages\.mjs cursor/);
-  assert.equal(cursor.hooks.beforeSubmitPrompt, undefined);
+  assert.match(JSON.stringify(cursor.hooks.beforeSubmitPrompt), /swarm-messages\.mjs cursor beforeSubmitPrompt/);
 
   const factory = await readJSON("config/factory/settings.json");
   assert.match(JSON.stringify(factory.hooks.SessionStart), /swarm-messages\.mjs factory SessionStart/);

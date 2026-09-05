@@ -308,7 +308,9 @@ export function renderClientOutput(client, eventName, context, payload) {
     return { modifiedTransformedPrompt: `${context}\n\n${original}` };
   }
   if (client === "copilot" && eventName === "sessionStart") return { additionalContext: context };
-  if (client === "cursor" && eventName === "sessionStart") return { additional_context: context };
+  if (client === "cursor" && (eventName === "sessionStart" || eventName === "beforeSubmitPrompt")) {
+    return { additional_context: context };
+  }
   if (client === "factory") {
     return { hookSpecificOutput: { hookEventName: eventName, additionalContext: context } };
   }
@@ -682,7 +684,9 @@ async function sweepStaleState(stateDir, consumer, {
 }
 
 function consumerFor(client, payload, env) {
-  const explicitPrefix = env.REPO_MEMORY_SWARM_CONSUMER?.trim();
+  const explicitConsumer = env.REPO_MEMORY_SWARM_CONSUMER?.trim();
+  if (explicitConsumer) return safePart(explicitConsumer);
+
   const inheritedOwner = env.SE_WORKSPACE_OWNER?.trim();
   const sessionID =
     payload.session_id ??
@@ -691,6 +695,7 @@ function consumerFor(client, payload, env) {
     payload.threadId ??
     payload.conversation_id ??
     payload.conversationId ??
+    (client === "cursor" ? env.CURSOR_CONVERSATION_ID : undefined) ??
     (client === "jcode" ? env.JCODE_HOOK_SESSION_ID : undefined) ??
     (client === "codex" || client === "code" ? env.CODEX_THREAD_ID : undefined) ??
     (inheritedOwner?.includes(":") ? inheritedOwner.slice(inheritedOwner.indexOf(":") + 1) : undefined);
@@ -698,8 +703,12 @@ function consumerFor(client, payload, env) {
   if (!normalized) {
     throw new Error(`missing session-unique repo-memory consumer identity for ${client}`);
   }
+  // Cursor naming subgroup: cursor-<short8> from conversation id (matches agent MCP posts).
+  if (client === "cursor" && normalized.length >= 8) {
+    return `cursor-${normalized.slice(0, 8)}`;
+  }
   const digest = createHash("sha256").update(normalized).digest("hex").slice(0, 16);
-  return `${safePart(explicitPrefix || client)}-${digest}`;
+  return `${safePart(client)}-${digest}`;
 }
 
 async function runHookWithLease({
@@ -764,7 +773,8 @@ async function runHookWithLease({
     }
   }
 
-  const pollWorkspaces = [...new Set([workspace, ...additionalWorkspaces])];
+  // Operator rule: global mailbox mandatory for every consumer (seq 25402).
+  const pollWorkspaces = [...new Set([workspace, ...additionalWorkspaces, "global"])];
 
   const postAvailability = async (required) => {
     if (!required) return true;
@@ -994,8 +1004,11 @@ async function main() {
   const payload = await readStdin();
   const eventName = eventArgument || payload.hook_event_name || "UserPromptSubmit";
   const cwd = resolve(typeof payload.cwd === "string" ? payload.cwd : process.cwd());
-  const selected = selectWorkspace(cwd);
-  if (!selected) return;
+  let selected = selectWorkspace(cwd);
+  // Cursor often opens /home/mhugo (no jj/git). Still subscribe mandatory global.
+  if (!selected) {
+    selected = { identity: "global", worktree: null };
+  }
 
   if (process.env.REPO_MEMORY_SWARM_DISABLE_MCP === "1") return;
 

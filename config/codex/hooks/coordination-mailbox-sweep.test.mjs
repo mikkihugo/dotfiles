@@ -23,9 +23,36 @@ import {
 
 // --- identity ---------------------------------------------------------------
 
-test("identity derivation produces <client>-<short8> from a session id", () => {
+test("identity derivation is the literal first dash-segment, matching identity.rs's worked example -- not a hash", () => {
+  // Same input identity.rs::derive_from_owner's own doctest uses
+  // (via SE_WORKSPACE_OWNER "claude:674f9a3f-eng-swarm-bus" -- the session
+  // component here is what's left after selectWorkspace-style owner
+  // slicing): must produce exactly "claude-674f9a3f", not a digest of it.
   const identity = deriveIdentity("claude", { session_id: "674f9a3f-eng-swarm-bus" }, {});
-  assert.match(identity, /^claude-[0-9a-f]{8}$/);
+  assert.equal(identity, "claude-674f9a3f");
+});
+
+test("identity derivation takes a UUID session id's first hex group literally", () => {
+  // This is the exact shape a Claude session_id arrives in: a standard UUID.
+  // Regression: hashing the whole UUID produced a real but DIFFERENT
+  // identity than the one a poster would address (the UUID's own first
+  // group), so a message sent to "claude-674f9a3f" was never received.
+  const identity = deriveIdentity(
+    "claude",
+    { session_id: "674f9a3f-fffa-4573-8c52-50cbb1b3b1c7" },
+    {},
+  );
+  assert.equal(identity, "claude-674f9a3f");
+});
+
+test("identity derivation uses the whole session id verbatim when it has no dash (matches identity.rs: no forced truncation)", () => {
+  const identity = deriveIdentity("codex", { session_id: "abcdef0123456789" }, {});
+  assert.equal(identity, "codex-abcdef0123456789");
+});
+
+test("identity derivation falls back to the first 8 normalized characters only when the segment before the first dash is itself empty", () => {
+  const identity = deriveIdentity("codex", { session_id: "-abcdef0123456789" }, {});
+  assert.equal(identity, "codex-abcdef01");
 });
 
 test("identity derivation rejects a bare client name", () => {

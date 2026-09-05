@@ -27,6 +27,14 @@
 // can heal -- but correctness of this hook no longer depends on that healing
 // succeeding.
 //
+// Every session also polls the "global" mailbox unconditionally, and falls
+// back to it as its own workspace identity when invoked outside any .git/.jj
+// checkout (the common cwd=$HOME case) -- verified 2026-09-05 that without
+// this fallback such a session polled nothing and never wrote a cursor at
+// all. Set COORDINATION_MAILBOX_DEBUG=1 to print the resolved identity, the
+// cursor path, each request's URL and HTTP status, and cursor writes to
+// stderr.
+//
 // Interim rule: poll (`repo swarm poll` / `swarm_bus_poll` directly) remains
 // the authoritative way to read the mailbox. This hook is a convenience that
 // may drop, cap, or miss messages under load or transport failure; it must
@@ -43,7 +51,6 @@ import {
   writeFileSync,
 } from "node:fs";
 import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -108,22 +115,36 @@ function rpcFromBody(body) {
  * MCP gateway client speaking the 2026-07-28 request shape: the
  * Mcp-Protocol-Version/Mcp-Method/Mcp-Name headers alongside the JSON-RPC
  * body (older proxies on the path read the method/tool name from headers
- * rather than parsing the body), and an initialize `_meta` block carrying
- * protocolVersion/clientCapabilities/clientInfo.
+ * rather than parsing the body), and a `_meta` block on every call carrying
+ * the MCP-namespaced protocolVersion/clientCapabilities/clientInfo keys.
+ *
+ * The gateway is a stateless per-request proxy, verified directly against
+ * the live endpoint (2026-09-05): it has no "initialize" method at all
+ * (`-32601: method not found: "initialize"`, HTTP 503) and never returns an
+ * Mcp-Session-Id header. An earlier version of this client performed an
+ * MCP-style initialize/notifications-initialized handshake before every
+ * call; against this gateway that handshake always failed, which is why
+ * every real invocation surfaced as "unreachable" and never reached
+ * writeCursor. There is no handshake and no session to track -- every
+ * tools/call is independently authenticated by its own `_meta`.
+ *
+ * `_meta` keys are namespaced (`io.modelcontextprotocol/...`); the gateway
+ * rejects a request whose `_meta` omits `clientCapabilities` with -32602,
+ * and requires the Mcp-Protocol-Version header whenever `_meta` carries a
+ * protocolVersion. Falsifier: POST the shape below to the endpoint in
+ * MCP_GATEWAY_URL and confirm HTTP 200 with a `result`, not an `error`.
  */
 export class McpGatewayClient {
-  constructor(url = DEFAULT_GATEWAY_URL, timeoutMs = 4_000, fetchImpl = globalThis.fetch, clientLabel = "hook") {
+  constructor(url = DEFAULT_GATEWAY_URL, timeoutMs = 4_000, fetchImpl = globalThis.fetch, clientLabel = "hook", debug = false) {
     this.url = url;
     this.timeoutMs = timeoutMs;
     this.fetchImpl = fetchImpl;
     this.clientLabel = clientLabel;
-    this.sessionId = null;
+    this.debug = debug;
     this.nextID = 1;
-    this.initialized = false;
-    this.initializePromise = null;
   }
 
-  async request(payload, { method = "POST", signal } = {}) {
+  async request(payload, { signal } = {}) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     const onOuterAbort = () => controller.abort();
@@ -131,24 +152,33 @@ export class McpGatewayClient {
       if (signal.aborted) controller.abort();
       else signal.addEventListener("abort", onOuterAbort, { once: true });
     }
-    const headers = { Accept: "application/json, text/event-stream" };
-    if (payload !== null) headers["Content-Type"] = "application/json";
-    if (this.sessionId) headers["Mcp-Session-Id"] = this.sessionId;
-    headers["Mcp-Protocol-Version"] = SUPPORTED_PROTOCOL;
+    const headers = {
+      Accept: "application/json, text/event-stream",
+      "Content-Type": "application/json",
+      "Mcp-Protocol-Version": SUPPORTED_PROTOCOL,
+    };
     if (payload?.method) headers["Mcp-Method"] = payload.method;
     if (payload?.params?.name) headers["Mcp-Name"] = payload.params.name;
     try {
       const response = await this.fetchImpl(this.url, {
-        method,
+        method: "POST",
         headers,
-        body: payload === null ? undefined : JSON.stringify(payload),
+        body: JSON.stringify(payload),
         signal: controller.signal,
       });
-      if (!response.ok) throw new Error(`MCP gateway returned HTTP ${response.status}`);
-      const session = response.headers.get("mcp-session-id");
-      if (session) this.sessionId = session;
-      const rpc = rpcFromBody(await response.text());
+      const body = await response.text();
+      if (this.debug) {
+        process.stderr.write(`coordination-mailbox debug: POST ${this.url} -> HTTP ${response.status}\n`);
+      }
+      let rpc = null;
+      try {
+        rpc = rpcFromBody(body);
+      } catch {
+        // Fall through to the HTTP-status error below; an unparsable body on
+        // a non-OK response carries no extra diagnostic value.
+      }
       if (rpc?.error) throw new Error(`MCP ${rpc.error.code}: ${rpc.error.message}`);
+      if (!response.ok) throw new Error(`MCP gateway returned HTTP ${response.status}`);
       return rpc?.result ?? null;
     } finally {
       clearTimeout(timer);
@@ -156,41 +186,7 @@ export class McpGatewayClient {
     }
   }
 
-  async initialize(signal) {
-    if (this.initialized) return;
-    if (!this.initializePromise) {
-      this.initializePromise = (async () => {
-        await this.request({
-          jsonrpc: "2.0",
-          id: this.nextID++,
-          method: "initialize",
-          params: {
-            protocolVersion: SUPPORTED_PROTOCOL,
-            capabilities: {},
-            clientCapabilities: {},
-            clientInfo: { name: `${this.clientLabel}-hook`, version: "1.0.0" },
-            _meta: {
-              protocolVersion: SUPPORTED_PROTOCOL,
-              clientCapabilities: {},
-              clientInfo: { name: `${this.clientLabel}-hook`, version: "1.0.0" },
-            },
-          },
-        }, { signal });
-        await this.request({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }, { signal });
-        this.initialized = true;
-      })();
-    }
-    const initialization = this.initializePromise;
-    try {
-      await initialization;
-    } catch (error) {
-      if (this.initializePromise === initialization) this.initializePromise = null;
-      throw error;
-    }
-  }
-
   async callRepoMemory(tool, args, signal) {
-    await this.initialize(signal);
     const result = await this.request({
       jsonrpc: "2.0",
       id: this.nextID++,
@@ -198,6 +194,11 @@ export class McpGatewayClient {
       params: {
         name: "mcp_tool_call",
         arguments: { server: "repo_memory", tool, arguments: args },
+        _meta: {
+          "io.modelcontextprotocol/protocolVersion": SUPPORTED_PROTOCOL,
+          "io.modelcontextprotocol/clientCapabilities": {},
+          "io.modelcontextprotocol/clientInfo": { name: `${this.clientLabel}-hook`, version: "1.0.0" },
+        },
       },
     }, { signal });
     if (result?.isError) throw new Error(`repo-memory ${tool} failed`);
@@ -206,14 +207,9 @@ export class McpGatewayClient {
     return JSON.parse(text);
   }
 
-  async close() {
-    if (!this.sessionId) return;
-    try {
-      await this.request(null, { method: "DELETE" });
-    } catch {
-      // Session cleanup is best effort; message receipts remain authoritative.
-    }
-  }
+  // The gateway is stateless (no session, verified above); there is nothing
+  // to release. Kept as a no-op method so callers do not need a special case.
+  async close() {}
 }
 
 export class RepoMemoryBus {
@@ -346,11 +342,21 @@ export function validateIdentity(identity) {
 }
 
 /**
- * `<client>-<short8>`, derived from whatever session/thread identifier the
- * hook payload or environment carries -- sha256'd and truncated to 8 hex
- * characters (matching the `claude-674f9a3f` shape used across the fleet,
- * including identity.rs's own worked example), so an arbitrary-length raw
- * session id never leaks into the identity string itself.
+ * `<client>-<short8>`, derived the same way as
+ * tools/repo-memory-bus/src/identity.rs::derive_from_owner: the LITERAL
+ * first dash-delimited segment of the session identifier, not a hash of it.
+ * A standard UUID's first group is 8 hex characters, and an owner ref's
+ * session component precedes any lane suffix on its own first dash --
+ * both already look like `674f9a3f`, matching identity.rs's own worked
+ * example (`claude:674f9a3f-eng-swarm-bus` -> `claude-674f9a3f`) exactly.
+ *
+ * An earlier version of this function sha256-hashed the whole session
+ * identifier instead. That produced a real, syntactically valid
+ * `<client>-<8 hex chars>` identity, but a DIFFERENT one than whatever
+ * literally addressed a message to this session (e.g. `repo swarm post
+ * --recipient claude-674f9a3f`) -- so this hook polled under an identity
+ * nobody else would ever address, and a message sent to the "obvious"
+ * short id was never surfaced. Verified 2026-09-05 against a live repro.
  */
 export function deriveIdentity(client, payload, env = process.env) {
   const explicitConsumer = env.REPO_MEMORY_SWARM_CONSUMER?.trim();
@@ -368,12 +374,20 @@ export function deriveIdentity(client, payload, env = process.env) {
     (client === "jcode" ? env.JCODE_HOOK_SESSION_ID : undefined) ??
     (client === "codex" || client === "code" ? env.CODEX_THREAD_ID : undefined) ??
     (inheritedOwner?.includes(":") ? inheritedOwner.slice(inheritedOwner.indexOf(":") + 1) : undefined);
-  const normalized = String(sessionID ?? "").replace(/[^A-Za-z0-9]+/g, "");
-  if (!normalized) {
+  const raw = String(sessionID ?? "").trim();
+  if (!raw) {
     throw new Error(`missing session-unique coordination-mailbox identity for ${client}`);
   }
-  const digest8 = createHash("sha256").update(normalized).digest("hex").slice(0, 8);
-  return validateIdentity(`${safePart(client)}-${digest8}`);
+  const firstSegment = raw.split("-")[0]?.replace(/[^A-Za-z0-9]+/g, "") ?? "";
+  // A session identifier with no dash at all is used verbatim (matching
+  // identity.rs, which does not truncate its session component either).
+  // The fallback below only fires when the segment before the first dash is
+  // itself empty (e.g. a leading dash), which would otherwise throw.
+  const shortSegment = firstSegment || raw.replace(/[^A-Za-z0-9]+/g, "").slice(0, 8);
+  if (!shortSegment) {
+    throw new Error(`missing session-unique coordination-mailbox identity for ${client}`);
+  }
+  return validateIdentity(`${safePart(client)}-${shortSegment}`);
 }
 
 // --- cursor persistence (DELIVER 2) -----------------------------------------
@@ -630,11 +644,24 @@ export async function runSweep({
   bus,
   emitOutput = async () => {},
   deadlineMs = DEFAULT_DEADLINE_MS,
+  debug = false,
 }) {
   const identity = deriveIdentity(client, payload, env);
   const cursorPath = cursorPathFor(identity, env);
   const sessionStart = eventName === "SessionStart" || eventName === "sessionStart";
-  const pollWorkspaces = [...new Set([workspace, ...additionalWorkspaces])];
+  // "global" is polled unconditionally: a session started outside any
+  // .git/.jj checkout (selectWorkspace returns null; main() falls back to
+  // workspace="global" in that case -- e.g. the common cwd=$HOME case) has
+  // no other mailbox to receive on, and a directive with no specific repo
+  // scope is addressed there for every consumer regardless of their own
+  // workspace.
+  const pollWorkspaces = [...new Set([workspace, ...additionalWorkspaces, "global"])];
+
+  if (debug) {
+    process.stderr.write(
+      `coordination-mailbox debug: identity=${identity} cursor=${cursorPath} workspaces=${pollWorkspaces.join(",")}\n`,
+    );
+  }
 
   const controller = new AbortController();
   const deadlineTimer = setTimeout(() => controller.abort(), deadlineMs);
@@ -743,6 +770,9 @@ export async function runSweep({
     }
 
     writeCursor(cursorPath, { schema: "coordination-mailbox-cursor/v1", sequences: nextCursor });
+    if (debug) {
+      process.stderr.write(`coordination-mailbox debug: wrote cursor ${cursorPath} sequences=${JSON.stringify(nextCursor)}\n`);
+    }
 
     const output = renderClientOutput(client, eventName, context, payload);
     if (output !== null) await emitOutput(output);
@@ -776,12 +806,19 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
 
   if (env.REPO_MEMORY_SWARM_DISABLE_MCP === "1") return;
 
-  const selected = selectWorkspace(cwd, env);
-  if (!selected) return;
+  const debug = env.COORDINATION_MAILBOX_DEBUG === "1";
+  // A session started outside any .git/.jj checkout (a bare $HOME cwd is the
+  // common case) has no repo-scoped identity to poll under. It still has a
+  // durable identity (deriveIdentity only needs a session id) and the
+  // "global" mailbox (see pollWorkspaces above) to receive on, so this falls
+  // back rather than silently doing nothing -- the prior silent `return`
+  // here made a whole class of sessions (any hook invoked from $HOME) never
+  // write a cursor and never see a message addressed to them.
+  const selected = selectWorkspace(cwd, env) ?? { identity: "global", worktree: null };
 
   const timeout = Number.parseInt(env.REPO_MEMORY_MCP_TIMEOUT_MS || "4000", 10);
   const gatewayUrl = env.MCP_GATEWAY_URL || DEFAULT_GATEWAY_URL;
-  const bus = new RepoMemoryBus(new McpGatewayClient(gatewayUrl, timeout, globalThis.fetch, client));
+  const bus = new RepoMemoryBus(new McpGatewayClient(gatewayUrl, timeout, globalThis.fetch, client, debug));
 
   try {
     const lane = selected.worktree ? basename(selected.worktree) : null;
@@ -798,6 +835,7 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
       // Overridable only for tests exercising the deadline path quickly; the
       // shipped default is DEFAULT_DEADLINE_MS (8s).
       deadlineMs: Number.parseInt(env.COORDINATION_MAILBOX_DEADLINE_MS || String(DEFAULT_DEADLINE_MS), 10),
+      debug,
     });
     if (outcome?.unreachable) {
       await writeOutput(unreachableLine(outcome.unreachable));

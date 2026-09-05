@@ -36,7 +36,7 @@ async function materializeExecutable(base, name) {
   return target;
 }
 
-test("2026-07-28 transport shape: headers and initialize _meta", async (t) => {
+test("2026-07-28 transport shape: headers and per-call _meta (stateless, no handshake)", async (t) => {
   const seen = [];
   const server = createServer(async (request, response) => {
     let body = "";
@@ -51,16 +51,15 @@ test("2026-07-28 transport shape: headers and initialize _meta", async (t) => {
       },
       meta: rpc.params?._meta,
     });
-    if (rpc.method === "notifications/initialized") {
-      response.writeHead(202).end();
-      return;
-    }
+    // The real gateway has no "initialize" method at all (-32601, HTTP 503)
+    // and never returns Mcp-Session-Id; this mock only ever answers
+    // tools/call, matching that verified reality.
     response.setHeader("Content-Type", "application/json");
-    response.setHeader("Mcp-Session-Id", "transport-test-session");
-    const result = rpc.method === "initialize"
-      ? { protocolVersion: "2026-07-28", capabilities: {}, serverInfo: { name: "test", version: "1" } }
-      : { content: [{ type: "text", text: JSON.stringify({ messages: [], next_cursor: 0 }) }] };
-    response.end(JSON.stringify({ jsonrpc: "2.0", id: rpc.id, result }));
+    response.end(JSON.stringify({
+      jsonrpc: "2.0",
+      id: rpc.id,
+      result: { content: [{ type: "text", text: JSON.stringify({ messages: [], next_cursor: 0 }) }] },
+    }));
   });
   await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
   t.after(() => server.close());
@@ -71,17 +70,49 @@ test("2026-07-28 transport shape: headers and initialize _meta", async (t) => {
   await bus.subscribe("engine", "codex-abcd1234");
   await client.close();
 
-  const initialize = seen.find((entry) => entry.method === "initialize");
-  assert.equal(initialize.headers.protocolVersion, "2026-07-28");
-  assert.equal(initialize.headers.method, "initialize");
-  assert.equal(initialize.meta.protocolVersion, "2026-07-28");
-  assert.deepEqual(initialize.meta.clientCapabilities, {});
-  assert.equal(initialize.meta.clientInfo.name, "codex-hook");
-
-  const toolCall = seen.find((entry) => entry.method === "tools/call");
+  // Exactly one request was made: no separate initialize/notifications
+  // round trip precedes it.
+  assert.equal(seen.length, 1);
+  const toolCall = seen[0];
+  assert.equal(toolCall.method, "tools/call");
   assert.equal(toolCall.headers.protocolVersion, "2026-07-28");
   assert.equal(toolCall.headers.method, "tools/call");
   assert.equal(toolCall.headers.name, "mcp_tool_call");
+  assert.equal(toolCall.meta["io.modelcontextprotocol/protocolVersion"], "2026-07-28");
+  assert.deepEqual(toolCall.meta["io.modelcontextprotocol/clientCapabilities"], {});
+  assert.equal(toolCall.meta["io.modelcontextprotocol/clientInfo"].name, "codex-hook");
+});
+
+test("a _meta missing clientCapabilities is rejected by the gateway with -32602 (regression: this exact shape 400'd in live use)", async (t) => {
+  const server = createServer(async (request, response) => {
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    const rpc = body ? JSON.parse(body) : {};
+    const meta = rpc.params?._meta ?? {};
+    response.setHeader("Content-Type", "application/json");
+    if (!("io.modelcontextprotocol/clientCapabilities" in meta)) {
+      response.statusCode = 400;
+      response.end(JSON.stringify({
+        jsonrpc: "2.0",
+        id: rpc.id,
+        error: { code: -32602, message: 'missing or invalid _meta field "io.modelcontextprotocol/clientCapabilities"' },
+      }));
+      return;
+    }
+    response.end(JSON.stringify({
+      jsonrpc: "2.0",
+      id: rpc.id,
+      result: { content: [{ type: "text", text: JSON.stringify({ messages: [], next_cursor: 0 }) }] },
+    }));
+  });
+  await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+  t.after(() => server.close());
+  const address = server.address();
+
+  const client = new McpGatewayClient(`http://127.0.0.1:${address.port}/mcp`, 2_000, globalThis.fetch, "codex");
+  const bus = new RepoMemoryBus(client);
+  // The shipped client always includes clientCapabilities, so this must succeed.
+  await assert.doesNotReject(() => bus.subscribe("engine", "codex-abcd1234"));
 });
 
 test("SSE responses beginning with an empty prime frame are parsed past it", async (t) => {
@@ -89,19 +120,15 @@ test("SSE responses beginning with an empty prime frame are parsed past it", asy
     let body = "";
     for await (const chunk of request) body += chunk;
     const rpc = body ? JSON.parse(body) : {};
-    if (rpc.method === "notifications/initialized") {
-      response.writeHead(202).end();
-      return;
-    }
     response.setHeader("Content-Type", "text/event-stream");
-    response.setHeader("Mcp-Session-Id", "prime-test-session");
-    const result = rpc.method === "initialize"
-      ? { protocolVersion: "2026-07-28", capabilities: {}, serverInfo: { name: "test", version: "1" } }
-      : { content: [{ type: "text", text: JSON.stringify({ messages: [], next_cursor: 0 }) }] };
     // A real gateway prime frame carries no data at all -- just the event
     // name -- before the frame that actually answers the request.
     response.end(
-      `event: prime\ndata:\n\nevent: message\ndata: ${JSON.stringify({ jsonrpc: "2.0", id: rpc.id, result })}\n\n`,
+      `event: prime\ndata:\n\nevent: message\ndata: ${JSON.stringify({
+        jsonrpc: "2.0",
+        id: rpc.id,
+        result: { content: [{ type: "text", text: JSON.stringify({ messages: [], next_cursor: 0 }) }] },
+      })}\n\n`,
     );
   });
   await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
@@ -151,27 +178,10 @@ test("abort at the internal deadline yields partial output and exit 0", async (t
     const target = await materializeExecutable(base, "coordination-mailbox-sweep.mjs");
     let hangingTimer;
     const server = createServer(async (request, response) => {
-      if (request.method === "DELETE") {
-        response.writeHead(204).end();
-        return;
-      }
       let body = "";
       for await (const chunk of request) body += chunk;
       const rpc = body ? JSON.parse(body) : {};
-      if (rpc.method === "notifications/initialized") {
-        response.writeHead(202).end();
-        return;
-      }
       response.setHeader("Content-Type", "application/json");
-      response.setHeader("Mcp-Session-Id", "deadline-test-session");
-      if (rpc.method === "initialize") {
-        response.end(JSON.stringify({
-          jsonrpc: "2.0",
-          id: rpc.id,
-          result: { protocolVersion: "2026-07-28", capabilities: {}, serverInfo: { name: "test", version: "1" } },
-        }));
-        return;
-      }
       const args = rpc.params?.arguments?.arguments ?? {};
       const tool = rpc.params?.arguments?.tool;
       if (tool === "swarm_bus_poll" && args.workspace === "engine-primary") {
@@ -232,6 +242,159 @@ test("abort at the internal deadline yields partial output and exit 0", async (t
     const result = await runHookProcess(target, ["codex", "UserPromptSubmit"], options);
     assert.equal(result.code, 0);
     assert.match(result.stdout, /delivered before the deadline/);
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test("a successful sweep writes the cursor file (regression: it was never reached before the transport fix)", async (t) => {
+  const base = await mkdtemp(join(tmpdir(), "coordination-mailbox-cursor-write-"));
+  try {
+    const target = await materializeExecutable(base, "coordination-mailbox-sweep.mjs");
+    const server = createServer(async (request, response) => {
+      let body = "";
+      for await (const chunk of request) body += chunk;
+      const rpc = body ? JSON.parse(body) : {};
+      const args = rpc.params?.arguments?.arguments ?? {};
+      response.setHeader("Content-Type", "application/json");
+      response.end(JSON.stringify({
+        jsonrpc: "2.0",
+        id: rpc.id,
+        result: {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              messages: args.workspace === "cursor-write-test" ? [{
+                id: "cursor-write-1",
+                sequence: 5,
+                sender: "codex-11112222",
+                recipient: "all",
+                type: "status",
+                body: "hello",
+              }] : [],
+              next_cursor: 5,
+            }),
+          }],
+        },
+      }));
+    });
+    await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+    t.after(() => server.close());
+    const address = server.address();
+    const stateHome = join(base, "state");
+
+    const options = {
+      cwd: base,
+      env: {
+        ...process.env,
+        MCP_GATEWAY_URL: `http://127.0.0.1:${address.port}/mcp`,
+        REPO_MEMORY_MCP_TIMEOUT_MS: "4000",
+        REPO_MEMORY_SWARM_WORKSPACE: "cursor-write-test",
+        REPO_MEMORY_SWARM_CONSUMER: "codex-abcd1234",
+        XDG_STATE_HOME: stateHome,
+      },
+      timeout: 5_000,
+    };
+    const result = await runHookProcess(target, ["codex", "UserPromptSubmit"], options);
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /hello/);
+
+    const cursorPath = join(stateHome, "coordination-mailbox", "codex-abcd1234.cursor.json");
+    const cursor = JSON.parse(await readFile(cursorPath, "utf8"));
+    assert.equal(cursor.schema, "coordination-mailbox-cursor/v1");
+    assert.equal(cursor.sequences["cursor-write-test"], 5);
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test("COORDINATION_MAILBOX_DEBUG=1 prints identity, request URL, HTTP status, and cursor path to stderr", async (t) => {
+  const base = await mkdtemp(join(tmpdir(), "coordination-mailbox-debug-"));
+  try {
+    const target = await materializeExecutable(base, "coordination-mailbox-sweep.mjs");
+    const server = createServer(async (request, response) => {
+      let body = "";
+      for await (const chunk of request) body += chunk;
+      const rpc = body ? JSON.parse(body) : {};
+      response.setHeader("Content-Type", "application/json");
+      response.end(JSON.stringify({
+        jsonrpc: "2.0",
+        id: rpc.id,
+        result: { content: [{ type: "text", text: JSON.stringify({ messages: [], next_cursor: 0 }) }] },
+      }));
+    });
+    await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+    t.after(() => server.close());
+    const address = server.address();
+    const stateHome = join(base, "state");
+
+    const options = {
+      cwd: base,
+      env: {
+        ...process.env,
+        MCP_GATEWAY_URL: `http://127.0.0.1:${address.port}/mcp`,
+        REPO_MEMORY_MCP_TIMEOUT_MS: "4000",
+        REPO_MEMORY_SWARM_WORKSPACE: "debug-test",
+        REPO_MEMORY_SWARM_CONSUMER: "codex-abcd1234",
+        XDG_STATE_HOME: stateHome,
+        COORDINATION_MAILBOX_DEBUG: "1",
+      },
+      timeout: 5_000,
+    };
+    const result = await runHookProcess(target, ["codex", "UserPromptSubmit"], options);
+    assert.equal(result.code, 0);
+    assert.match(result.stderr, /coordination-mailbox debug: identity=codex-abcd1234/);
+    assert.match(result.stderr, new RegExp(`cursor=${join(stateHome, "coordination-mailbox", "codex-abcd1234.cursor.json").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    assert.match(result.stderr, new RegExp(`POST http://127\\.0\\.0\\.1:${address.port}/mcp -> HTTP 200`));
+    assert.match(result.stderr, /wrote cursor/);
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test("a cwd outside any .git/.jj checkout falls back to the global mailbox instead of silently doing nothing (regression: $HOME cwd never wrote a cursor)", async (t) => {
+  const base = await mkdtemp(join(tmpdir(), "coordination-mailbox-global-fallback-"));
+  // Deliberately no .git/.jj under `base` and no REPO_MEMORY_SWARM_WORKSPACE
+  // override -- this is exactly the reported repro shape (cwd=$HOME).
+  try {
+    const target = await materializeExecutable(base, "coordination-mailbox-sweep.mjs");
+    const seenWorkspaces = [];
+    const server = createServer(async (request, response) => {
+      let body = "";
+      for await (const chunk of request) body += chunk;
+      const rpc = body ? JSON.parse(body) : {};
+      const args = rpc.params?.arguments?.arguments ?? {};
+      if (args.workspace) seenWorkspaces.push(args.workspace);
+      response.setHeader("Content-Type", "application/json");
+      response.end(JSON.stringify({
+        jsonrpc: "2.0",
+        id: rpc.id,
+        result: { content: [{ type: "text", text: JSON.stringify({ messages: [], next_cursor: 0 }) }] },
+      }));
+    });
+    await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+    t.after(() => server.close());
+    const address = server.address();
+    const stateHome = join(base, "state");
+
+    const options = {
+      cwd: base,
+      env: {
+        ...process.env,
+        MCP_GATEWAY_URL: `http://127.0.0.1:${address.port}/mcp`,
+        REPO_MEMORY_MCP_TIMEOUT_MS: "4000",
+        REPO_MEMORY_SWARM_CONSUMER: "codex-abcd1234",
+        XDG_STATE_HOME: stateHome,
+      },
+      timeout: 5_000,
+    };
+    delete options.env.REPO_MEMORY_SWARM_WORKSPACE;
+    const result = await runHookProcess(target, ["codex", "UserPromptSubmit"], options);
+    assert.equal(result.code, 0);
+    assert.ok(seenWorkspaces.includes("global"), `expected a poll of the global mailbox; saw ${JSON.stringify(seenWorkspaces)}`);
+
+    const cursorPath = join(stateHome, "coordination-mailbox", "codex-abcd1234.cursor.json");
+    await readFile(cursorPath, "utf8"); // throws if the cursor file was never written
   } finally {
     await rm(base, { recursive: true, force: true });
   }

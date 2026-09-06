@@ -10,8 +10,15 @@ const readJSON = async (path) => JSON.parse(await readFile(path, "utf8"));
 test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm registration", async () => {
   const codex = await readJSON("config/codex/hooks.json");
   assert.equal(codex.version, undefined);
-  assert.match(JSON.stringify(codex.hooks.SessionStart), /swarm-messages\.mjs codex SessionStart/);
-  assert.match(JSON.stringify(codex.hooks.UserPromptSubmit), /swarm-messages\.mjs codex UserPromptSubmit/);
+  // Codex SessionStart + UserPromptSubmit point at the coordination-mailbox-sweep
+  // successor (the bounded, cursor-based hook). The legacy swarm-messages.mjs
+  // path stays installed as a compatibility shim for clients that still name it
+  // directly (copilot/cursor/factory below), but the HM-owned codex config no
+  // longer references it -- so a codex session must produce a
+  // coordination-mailbox-<identity>.cursor.json under
+  // /home/mhugo/.local/state/coordination-mailbox/ on its first poll.
+  assert.match(JSON.stringify(codex.hooks.SessionStart), /coordination-mailbox-sweep\.mjs codex SessionStart/);
+  assert.match(JSON.stringify(codex.hooks.UserPromptSubmit), /coordination-mailbox-sweep\.mjs codex UserPromptSubmit/);
   assert.match(codex.description, /repo-memory/);
 
   const copilot = await readJSON("config/copilot/hooks/swarm-messages.json");
@@ -27,6 +34,21 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
   const factory = await readJSON("config/factory/settings.json");
   assert.match(JSON.stringify(factory.hooks.SessionStart), /swarm-messages\.mjs factory SessionStart/);
   assert.match(JSON.stringify(factory.hooks.UserPromptSubmit), /swarm-messages\.mjs factory UserPromptSubmit/);
+});
+
+test("codex hooks.json wires SessionStart + UserPromptSubmit at coordination-mailbox-sweep.mjs, not the legacy swarm-messages.mjs shim", async () => {
+  // RED-first contract for the codex migration. The HM-rendered codex config
+  // must name the new hook for both lifecycle events; the old hook is not a
+  // codex invocation target anymore. Other clients (copilot/cursor/factory)
+  // intentionally still name swarm-messages.mjs and are covered by the test
+  // above.
+  const codex = await readJSON("config/codex/hooks.json");
+  const sessionStart = JSON.stringify(codex.hooks.SessionStart);
+  const userPromptSubmit = JSON.stringify(codex.hooks.UserPromptSubmit);
+  assert.match(sessionStart, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs codex SessionStart/);
+  assert.match(userPromptSubmit, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs codex UserPromptSubmit/);
+  assert.doesNotMatch(sessionStart, /swarm-messages\.mjs codex/);
+  assert.doesNotMatch(userPromptSubmit, /swarm-messages\.mjs codex/);
 });
 
 test("Home Manager installs every managed hook surface", async () => {

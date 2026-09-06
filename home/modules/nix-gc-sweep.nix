@@ -55,7 +55,23 @@
     # Step 3: reclaim store space for closures no other live root references.
     # --delete-older-than 1d gives a 1-day grace period for any new gc roots
     # that we just orphaned (e.g. closures still held open by running processes).
-    run ${pkgs.nix}/bin/nix-collect-garbage --delete-older-than 1d
+    #
+    # This call MUST serialize against the system nix-gc.service (which uses
+    # the same lock path on /run/user/1000/codex-fleet-nix-evaluation.lock).
+    # Without this flock the user sweep and the system unit can race each
+    # other and against manual `nix-collect-garbage -d` invocations — three
+    # concurrent GC processes spent ~50min wedged on the daemon's internal
+    # SQLite lock during the 2026-09-05 disk-pressure event.
+    #
+    # Wait at most 15min (matching TimeoutStartSec above). If the lock is
+    # still held after that, fail loudly so the timer logs show it rather
+    # than silently overlapping with whatever else ran. Step 1/2 run OUTSIDE
+    # the flock because they prune gc-root symlinks, not store paths — they
+    # do not conflict with nix-collect-garbage.
+    run ${pkgs.util-linux}/bin/flock \
+      --wait 900 \
+      /run/user/1000/codex-fleet-nix-evaluation.lock \
+      ${pkgs.nix}/bin/nix-collect-garbage --delete-older-than 1d
 
     echo "$LOG_PREFIX done"
   '';

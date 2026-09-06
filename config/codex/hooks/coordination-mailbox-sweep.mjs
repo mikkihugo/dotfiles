@@ -747,17 +747,6 @@ export async function runSweep({
       return !Number.isInteger(priorSequence) || !Number.isInteger(item.sequence) || item.sequence > priorSequence;
     });
 
-    // Advance the local cursor to the max sequence seen per mailbox,
-    // regardless of heartbeat/own-message filtering below and regardless of
-    // whether the ack that follows succeeds -- this is the fix for the
-    // stuck-watermark replay symptom: local "seen" bookkeeping must not
-    // depend on a remote acknowledgement completing.
-    for (const item of unread) {
-      if (!Number.isInteger(item.sequence)) continue;
-      const current = nextCursor[item._workspace];
-      if (!Number.isInteger(current) || item.sequence > current) nextCursor[item._workspace] = item.sequence;
-    }
-
     let heartbeatsSuppressed = 0;
     let ownDropped = 0;
     const eligible = [];
@@ -776,14 +765,41 @@ export async function runSweep({
     // by sequence, best-effort -- this is what heals the remote watermark.
     // Abandon on the deadline rather than partially acking out of order.
     const ackOrder = [...unread].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+    // Lowest sequence per mailbox whose ack did NOT settle. The local cursor
+    // must not advance past it: the server's durable watermark only moves over
+    // a contiguous acknowledged prefix, so jumping a hole here strands that
+    // message -- it is never re-polled, never acked, and the remote watermark
+    // is pinned below it permanently. Advancing unconditionally (the previous
+    // behaviour) masked a replay symptom by manufacturing exactly that wedge.
+    const ackFloor = new Map();
+    const noteAckFailure = (item) => {
+      if (!Number.isInteger(item.sequence)) return;
+      const current = ackFloor.get(item._workspace);
+      if (!Number.isInteger(current) || item.sequence < current) ackFloor.set(item._workspace, item.sequence);
+    };
     for (const item of ackOrder) {
-      if (controller.signal.aborted) break;
+      if (controller.signal.aborted) {
+        noteAckFailure(item);
+        continue;
+      }
       try {
         await bus.ack(item._workspace, identity, item.id, controller.signal);
       } catch (error) {
-        if (isAbortError(error)) break;
+        noteAckFailure(item);
+        if (isAbortError(error)) continue;
         pollErrors.push({ workspace: item._workspace, operation: "ack", error: String(error?.message ?? error) });
       }
+    }
+
+    // Advance the local cursor only across the contiguous acknowledged prefix,
+    // so an unsettled ack is re-polled next sweep and the remote watermark can
+    // heal itself instead of staying wedged.
+    for (const item of unread) {
+      if (!Number.isInteger(item.sequence)) continue;
+      const floor = ackFloor.get(item._workspace);
+      if (Number.isInteger(floor) && item.sequence >= floor) continue;
+      const current = nextCursor[item._workspace];
+      if (!Number.isInteger(current) || item.sequence > current) nextCursor[item._workspace] = item.sequence;
     }
 
     if (sessionStart && canReceive && !controller.signal.aborted) {

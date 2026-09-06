@@ -12,6 +12,7 @@ import {
   createContext,
   cursorPathFor,
   defaultCursorDir,
+  dedupeByMessageId,
   deriveIdentity,
   filterUnread,
   isHeartbeat,
@@ -197,4 +198,52 @@ test("createContext appends the trailer line when present", () => {
   assert.match(context, /codex-aaaa1111 -> all \[status\] \(repo-memory\): hi/);
   assert.match(context, /… 2 more unread \(1 heartbeats suppressed\); poll for the rest/);
   assert.match(context, /poll remains authoritative/);
+});
+
+// --- per-message-id dedupe -------------------------------------------------
+//
+// Same message arriving via two mailboxes (lane bucket + global bucket,
+// both with `recipient='all'`) is observed twice with the same `id` but
+// different sequence numbers (per-mailbox sequences). Filter by sequence
+// alone (current filterUnread contract) keeps both copies; the user then
+// sees the same body twice in one prompt. Fix: dedupe by id across all
+// polled mailboxes before any subsequent filtering.
+
+test("same message id from two mailboxes is surfaced once (recipient='all' cross-bucket dedupe)", () => {
+  const sameMessageId = "evt-deadbeef-0001";
+  // The lane bucket (workspace "foo") and the global bucket each returned
+  // the same recipient='all' message with their own per-mailbox sequence.
+  const polled = [
+    { id: sameMessageId, sequence: 42, sender: "claude-aaa", recipient: "all", type: "status", body: "hi", _workspace: "foo" },
+    { id: sameMessageId, sequence: 9001, sender: "claude-aaa", recipient: "all", type: "status", body: "hi", _workspace: "global" },
+    { id: "evt-other", sequence: 43, sender: "claude-aaa", recipient: "all", type: "status", body: "other", _workspace: "foo" },
+  ];
+  // Local cursors say we have already seen nothing for either mailbox.
+  const deduped = dedupeByMessageId(polled);
+  assert.equal(deduped.length, 2, "the duplicate message id is removed; the distinct id is kept");
+  const seen = new Set(deduped.map((m) => m.id));
+  assert.ok(seen.has(sameMessageId), "the kept copy is the message we expected to keep");
+  assert.ok(seen.has("evt-other"), "the unrelated message is kept");
+  // The first occurrence wins so the cursor advance stays on the lowest
+  // observed sequence per mailbox (matters for ackFloor reasoning).
+  const kept = deduped.find((m) => m.id === sameMessageId);
+  assert.equal(kept._workspace, "foo", "first occurrence is the kept one");
+});
+
+test("dedupeByMessageId is stable for empty input and for already-unique input", () => {
+  assert.deepEqual(dedupeByMessageId([]), []);
+  const unique = [
+    { id: "a", sequence: 1, _workspace: "foo" },
+    { id: "b", sequence: 2, _workspace: "global" },
+    { id: "c", sequence: 3, _workspace: "foo" },
+  ];
+  assert.deepEqual(dedupeByMessageId(unique), unique);
+});
+
+test("dedupeByMessageId leaves messages with no id untouched (no id is not a duplicate)", () => {
+  const polled = [
+    { sequence: 1, body: "no id", _workspace: "foo" },
+    { sequence: 2, body: "no id", _workspace: "global" },
+  ];
+  assert.equal(dedupeByMessageId(polled).length, 2, "messages without id stay; the dedupe key requires an id");
 });

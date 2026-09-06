@@ -566,6 +566,34 @@ export function isOwnMessage(message, identity) {
 }
 
 /**
+ * Dedupe messages by id across mailboxes (recipient='all' broadcasts land
+ * in every bucket a single identity subscribes to, so a message id can
+ * arrive twice with different per-mailbox sequences).
+ *
+ * The first occurrence wins so the kept copy still maps back to the
+ * mailbox whose cursor we advance. Messages without an id are kept
+ * verbatim -- a missing id is not a duplicate, and we cannot safely
+ * synthesise one without re-introducing the same problem.
+ *
+ * Contract: O(n), stable. Returns a new array; the input is not mutated.
+ */
+export function dedupeByMessageId(messages) {
+  const seen = new Set();
+  const kept = [];
+  for (const message of messages) {
+    const id = message?.id;
+    if (typeof id !== "string" || id.length === 0) {
+      kept.push(message);
+      continue;
+    }
+    if (seen.has(id)) continue;
+    seen.add(id);
+    kept.push(message);
+  }
+  return kept;
+}
+
+/**
  * Keep only messages with sequence greater than this mailbox's recorded
  * cursor. Unconditional and local: it does not matter whether the server
  * honored `after_sequence` on the poll call, because this filter still
@@ -740,9 +768,20 @@ export async function runSweep({
       return { output: null, errors: pollErrors, deadlineHit, unreachable: pollFailures[0].error };
     }
 
+    // Dedupe by message id across mailboxes BEFORE per-mailbox filtering.
+    // recipient='all' broadcasts are answered by every bucket this identity
+    // subscribes to, so a single physical message arrives twice with
+    // different per-mailbox sequences; the per-mailbox filterUnread below
+    // would keep both copies and the user would see the same body twice in
+    // one prompt. First occurrence wins so the kept copy still maps back to
+    // the mailbox whose cursor we advance (the second copy's sequence
+    // belongs to a different cursor path). See the unit tests in
+    // coordination-mailbox-sweep.test.mjs for the contract.
+    const dedupedAllPolled = dedupeByMessageId(allPolled);
+
     // Unconditional local filter: bound "unread" by our own cursor regardless
     // of whether the server honored after_sequence above.
-    const unread = allPolled.filter((item) => {
+    const unread = dedupedAllPolled.filter((item) => {
       const priorSequence = cursor.sequences[item._workspace];
       return !Number.isInteger(priorSequence) || !Number.isInteger(item.sequence) || item.sequence > priorSequence;
     });

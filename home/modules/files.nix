@@ -112,6 +112,15 @@
       force = true;
     };
 
+    ".copilot/hooks/coordination-mailbox-sweep.sh" = {
+      source = pkgs.replaceVars ../../config/copilot/hooks/coordination-mailbox-sweep.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
     ".copilot/hooks/swarm-messages.json" = {
       source = ../../config/copilot/hooks/swarm-messages.json;
       force = true;

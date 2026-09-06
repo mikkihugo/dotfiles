@@ -23,8 +23,14 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
 
   const copilot = await readJSON("config/copilot/hooks/swarm-messages.json");
   assert.equal(copilot.version, 1);
-  assert.match(copilot.hooks.sessionStart[0].bash, /swarm-messages\.mjs copilot/);
-  assert.match(copilot.hooks.userPromptTransformed[0].bash, /swarm-messages\.mjs copilot/);
+  // Copilot migrated off the legacy swarm-messages.mjs shim onto the
+  // HM-rendered coordination-mailbox-sweep.sh shim (mirrors the Claude and
+  // Kimi-Code wiring). The bundled schema test still documents the cursor /
+  // factory clients that intentionally keep the legacy path; they will migrate
+  // in their own lanes.
+  assert.match(copilot.hooks.sessionStart[0].bash, /coordination-mailbox-sweep\.sh copilot sessionStart/);
+  assert.match(copilot.hooks.userPromptTransformed[0].bash, /coordination-mailbox-sweep\.sh copilot userPromptTransformed/);
+  assert.doesNotMatch(JSON.stringify(copilot.hooks), /swarm-messages\.mjs copilot/);
 
   const cursor = await readJSON("config/cursor/hooks.json");
   assert.equal(cursor.version, 1);
@@ -49,6 +55,31 @@ test("codex hooks.json wires SessionStart + UserPromptSubmit at coordination-mai
   assert.match(userPromptSubmit, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs codex UserPromptSubmit/);
   assert.doesNotMatch(sessionStart, /swarm-messages\.mjs codex/);
   assert.doesNotMatch(userPromptSubmit, /swarm-messages\.mjs codex/);
+});
+
+test("copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered coordination-mailbox-sweep.sh shim", async () => {
+  // RED-first contract for the copilot migration. Copilot's hook schema uses
+  // lowercase event names (sessionStart / userPromptTransformed) and the
+  // `bash` + `timeoutSec` fields, distinct from codex/claude/factory. The HM
+  // wiring must therefore (a) render ~/.copilot/hooks/coordination-mailbox-sweep.sh
+  // from config/copilot/hooks/coordination-mailbox-sweep.sh, and (b) make
+  // config/copilot/hooks/swarm-messages.json invoke that shim with `copilot`
+  // as the client name. A copilot session under the new wiring must produce
+  // a coordination-mailbox-copilot-*.cursor.json under
+  // /home/mhugo/.local/state/coordination-mailbox/ on its first poll.
+  const copilot = await readJSON("config/copilot/hooks/swarm-messages.json");
+  const sessionStart = JSON.stringify(copilot.hooks.sessionStart);
+  const userPromptTransformed = JSON.stringify(copilot.hooks.userPromptTransformed);
+  assert.match(sessionStart, /\/home\/mhugo\/\.copilot\/hooks\/coordination-mailbox-sweep\.sh copilot sessionStart/);
+  assert.match(userPromptTransformed, /\/home\/mhugo\/\.copilot\/hooks\/coordination-mailbox-sweep\.sh copilot userPromptTransformed/);
+  assert.doesNotMatch(sessionStart, /swarm-messages\.mjs copilot/);
+  assert.doesNotMatch(userPromptTransformed, /swarm-messages\.mjs copilot/);
+
+  const files = await readFile("home/modules/files.nix", "utf8");
+  assert.match(files, /replaceVars[\s\S]*config\/copilot\/hooks\/coordination-mailbox-sweep\.sh/);
+  const shim = await readFile("config/copilot/hooks/coordination-mailbox-sweep.sh", "utf8");
+  assert.match(shim, /^#!@bash@/);
+  assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs copilot/);
 });
 
 test("Home Manager installs every managed hook surface", async () => {

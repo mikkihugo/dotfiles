@@ -65,6 +65,7 @@
     age # encryption backend (replaces GPG for SOPS)
     ssh-to-age # derives age pubkey from SSH ed25519 key
     openbao # `bao` CLI — BAO_ADDR points at vault-active.vault.svc.cluster.local:8200 (in-cluster); public UI at kv.admin.centralcloud.net/ui
+    openssl # CLI for generating random secrets/tokens (openssl rand) before a `bao kv patch`; was missing from the daily shell (only in devShells.default)
     # Shell tooling — linters used by lefthook pre-commit hooks.
     shellcheck # static analysis for shell scripts
     shfmt # formatter for shell scripts

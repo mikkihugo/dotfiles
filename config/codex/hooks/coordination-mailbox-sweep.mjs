@@ -556,8 +556,13 @@ export function renderClientOutput(client, eventName, context, payload) {
  * VERIFIED (c) found these were the bulk of sweep volume. Live coordinators
  * post them as type "status" (coord-dragon/coord-fox, observed 2026-09-05);
  * type "presence" is kept for older senders.
+ *
+ * type "available" pings ("session is live, send orders") are the same
+ * class of noise by construction -- 100% presence, 0% coordination, no
+ * body-content check needed -- so they're suppressed unconditionally too.
  */
 export function isHeartbeat(message) {
+  if (message?.type === "available") return true;
   return (message?.type === "presence" || message?.type === "status")
     && typeof message?.body === "string"
     && message.body.includes('"detail":"heartbeat"');

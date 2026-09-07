@@ -4,14 +4,16 @@
     "sessionStart": [
       {
         "type": "command",
-        "bash": "/home/mhugo/.copilot/hooks/coordination-mailbox-sweep.sh copilot sessionStart",
+        "exec": "/home/mhugo/.nix-profile/bin/bash",
+        "args": ["/home/mhugo/.copilot/hooks/coordination-mailbox-sweep.sh", "copilot", "sessionStart"],
         "timeoutSec": 10
       }
     ],
     "userPromptTransformed": [
       {
         "type": "command",
-        "bash": "/home/mhugo/.copilot/hooks/coordination-mailbox-sweep.sh copilot userPromptTransformed",
+        "exec": "/home/mhugo/.nix-profile/bin/bash",
+        "args": ["/home/mhugo/.copilot/hooks/coordination-mailbox-sweep.sh", "copilot", "userPromptTransformed"],
         "timeoutSec": 10
       }
     ]

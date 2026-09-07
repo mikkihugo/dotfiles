@@ -1,6 +1,7 @@
 {
   "schema": 1,
-  "updatedAt": "2026-07-17",
+  "updatedAt": "2026-09-07",
+  "memoryBankId": "mhugo-dotfiles",
   "files": {
     "config/codex/AGENTS.md": {
       "bundleHash": "47440c934104",

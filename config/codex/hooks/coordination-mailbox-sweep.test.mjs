@@ -173,6 +173,12 @@ test("a status-type heartbeat (the live jcode coordinator shape) is recognized",
   assert.equal(isHeartbeat({ type: "status", body: '{"detail":"real status"}' }), false, "a real status is coordination");
 });
 
+test("type available is always suppressed as presence noise, regardless of body", () => {
+  assert.equal(isHeartbeat({ type: "available", body: "claude session is available from /home/mhugo. Send orders to claude-abcd1234." }), true);
+  assert.equal(isHeartbeat({ type: "available", body: "" }), true, "no body content check needed for available pings");
+  assert.equal(isHeartbeat({ type: "available" }), true, "missing body must not bypass suppression");
+});
+
 test("own messages (sender === identity) are recognized for dropping", () => {
   assert.equal(isOwnMessage({ sender: "claude-abcd1234" }, "claude-abcd1234"), true);
   assert.equal(isOwnMessage({ sender: "codex-11112222" }, "claude-abcd1234"), false);

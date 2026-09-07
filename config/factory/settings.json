@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs factory SessionStart",
+            "command": "/home/mhugo/.factory/hooks/coordination-mailbox-sweep.sh factory SessionStart",
             "timeout": 10
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/mhugo/.codex/hooks/swarm-messages.mjs factory UserPromptSubmit",
+            "command": "/home/mhugo/.factory/hooks/coordination-mailbox-sweep.sh factory UserPromptSubmit",
             "timeout": 10
           }
         ]

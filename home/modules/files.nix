@@ -130,6 +130,15 @@
       force = true;
     };
 
+    ".factory/hooks/coordination-mailbox-sweep.sh" = {
+      source = pkgs.replaceVars ../../config/factory/hooks/coordination-mailbox-sweep.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
     # goose config.yaml is intentionally NOT HM-symlinked: goose writes
     # telemetry consent and other prefs into it. Seeded/merged in activation.nix.
     #

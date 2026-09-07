@@ -43,8 +43,9 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
   assert.doesNotMatch(JSON.stringify(cursor.hooks), /swarm-messages\.mjs cursor/);
 
   const factory = await readJSON("config/factory/settings.json");
-  assert.match(JSON.stringify(factory.hooks.SessionStart), /swarm-messages\.mjs factory SessionStart/);
-  assert.match(JSON.stringify(factory.hooks.UserPromptSubmit), /swarm-messages\.mjs factory UserPromptSubmit/);
+  assert.match(JSON.stringify(factory.hooks.SessionStart), /coordination-mailbox-sweep\.sh factory SessionStart/);
+  assert.match(JSON.stringify(factory.hooks.UserPromptSubmit), /coordination-mailbox-sweep\.sh factory UserPromptSubmit/);
+  assert.doesNotMatch(JSON.stringify(factory.hooks), /swarm-messages\.mjs factory/);
 });
 
 test("codex hooks.json wires SessionStart + UserPromptSubmit at coordination-mailbox-sweep.mjs, not the legacy swarm-messages.mjs shim", async () => {
@@ -105,6 +106,28 @@ test("copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered
   const shim = await readFile("config/copilot/hooks/coordination-mailbox-sweep.sh", "utf8");
   assert.match(shim, /^#!@bash@/);
   assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs copilot/);
+});
+
+test("factory settings.json wires SessionStart + UserPromptSubmit at the HM-rendered coordination-mailbox-sweep.sh shim", async () => {
+  // RED-first contract for the factory migration. Factory's hook schema mirrors
+  // codex (PascalCase SessionStart / UserPromptSubmit events, `command` + `timeout`
+  // fields) but routes through the HM-rendered coordination-mailbox-sweep.sh shim.
+  // The wiring must therefore (a) render ~/.factory/hooks/coordination-mailbox-sweep.sh
+  // from config/factory/hooks/coordination-mailbox-sweep.sh, and (b) make
+  // config/factory/settings.json invoke that shim with `factory` as the client name.
+  const factory = await readJSON("config/factory/settings.json");
+  const sessionStart = JSON.stringify(factory.hooks.SessionStart);
+  const userPromptSubmit = JSON.stringify(factory.hooks.UserPromptSubmit);
+  assert.match(sessionStart, /\/home\/mhugo\/\.factory\/hooks\/coordination-mailbox-sweep\.sh factory SessionStart/);
+  assert.match(userPromptSubmit, /\/home\/mhugo\/\.factory\/hooks\/coordination-mailbox-sweep\.sh factory UserPromptSubmit/);
+  assert.doesNotMatch(sessionStart, /swarm-messages\.mjs factory/);
+  assert.doesNotMatch(userPromptSubmit, /swarm-messages\.mjs factory/);
+
+  const files = await readFile("home/modules/files.nix", "utf8");
+  assert.match(files, /replaceVars[\s\S]*config\/factory\/hooks\/coordination-mailbox-sweep\.sh/);
+  const shim = await readFile("config/factory/hooks/coordination-mailbox-sweep.sh", "utf8");
+  assert.match(shim, /^#!@bash@/);
+  assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs factory/);
 });
 
 test("Home Manager installs every managed hook surface", async () => {

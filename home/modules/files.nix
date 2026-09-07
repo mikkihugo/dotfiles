@@ -102,6 +102,40 @@
       force = true;
     };
 
+    # Claude-only lifecycle hooks. Hand-installed 2026-07/08 and never migrated
+    # into HM-managed wiring until now: settings.json referenced them while
+    # files.nix did not, so a ~/.claude/hooks/ wipe would remove them silently
+    # and leave settings.json pointing at absent scripts.
+    #
+    # block-raw-git-in-jj-repos.sh is the PreToolUse guard that enforces the
+    # raw-git prohibition in jj-backed repos -- losing it removes an
+    # enforcement mechanism without removing the rule it enforces, which is
+    # the worst of both.
+    #
+    # All four are self-contained (no @var@ placeholders, no /nix/store/
+    # references), so plain source, no replaceVars -- same shape as
+    # .copilot/hooks/remind-skills.sh above.
+    ".claude/hooks/block-raw-git-in-jj-repos.sh" = {
+      source = ../../config/claude/hooks/block-raw-git-in-jj-repos.sh;
+      executable = true;
+      force = true;
+    };
+    ".claude/hooks/workspace-closure-report.sh" = {
+      source = ../../config/claude/hooks/workspace-closure-report.sh;
+      executable = true;
+      force = true;
+    };
+    ".claude/hooks/worktree-create-global.sh" = {
+      source = ../../config/claude/hooks/worktree-create-global.sh;
+      executable = true;
+      force = true;
+    };
+    ".claude/hooks/worktree-remove-global.sh" = {
+      source = ../../config/claude/hooks/worktree-remove-global.sh;
+      executable = true;
+      force = true;
+    };
+
     # Stop hook: blocks the session from going idle while a "question" or
     # "blocker" bus message sits unacked, capped so it can never livelock.
     # Claude-only (not shared with other clients the way the sweep script

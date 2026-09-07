@@ -15,8 +15,8 @@ test("root enables live hosted search while every gateway-backed Codex role disa
     .filter((name) => name.endsWith(".toml"))
     .sort();
 
-  assert.match(seed, live);
-  assert.match(shared, live);
+  assert.match(seed, disabled);
+  assert.match(shared, disabled);
   for (const roleName of roleNames) {
     const role = await readConfig(`config/codex/agents/${roleName}`);
     if (/^model_provider\s*=\s*"llm-gateway"\s*$/m.test(role)) {

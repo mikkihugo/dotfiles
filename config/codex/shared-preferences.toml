@@ -5,7 +5,11 @@
 model = "minimax-coding-plan/MiniMax-M3"
 model_provider = "llm-gateway"
 model_reasoning_effort = "medium"
-web_search = "live"
+# Hosted web search boundary (see config/codex/AGENTS.md): llm-gateway models
+# must set web_search = "disabled" until the gateway has a verified
+# provider-hosted search executor. "live" 422s on every turn because no
+# gateway route declares hosted_tools.
+web_search = "disabled"
 
 # AGENTS.md read cap. Default is 32768, verified by measurement: a 89,970-byte
 # AGENTS.md in a scratch repo was truncated at exactly 32 KiB (markers past that

@@ -536,7 +536,9 @@ export function renderClientOutput(client, eventName, context, payload) {
     return { modifiedTransformedPrompt: `${context}\n\n${original}` };
   }
   if (client === "copilot" && eventName === "sessionStart") return { additionalContext: context };
-  if (client === "cursor" && eventName === "sessionStart") return { additional_context: context };
+  if (client === "cursor" && (eventName === "sessionStart" || eventName === "beforeSubmitPrompt")) {
+    return { additional_context: context };
+  }
   if (client === "factory") {
     return { hookSpecificOutput: { hookEventName: eventName, additionalContext: context } };
   }

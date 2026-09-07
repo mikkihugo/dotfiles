@@ -25,17 +25,22 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
   assert.equal(copilot.version, 1);
   // Copilot migrated off the legacy swarm-messages.mjs shim onto the
   // HM-rendered coordination-mailbox-sweep.sh shim (mirrors the Claude and
-  // Kimi-Code wiring). The bundled schema test still documents the cursor /
-  // factory clients that intentionally keep the legacy path; they will migrate
-  // in their own lanes.
-  assert.match(copilot.hooks.sessionStart[0].bash, /coordination-mailbox-sweep\.sh copilot sessionStart/);
-  assert.match(copilot.hooks.userPromptTransformed[0].bash, /coordination-mailbox-sweep\.sh copilot userPromptTransformed/);
+  // Kimi-Code wiring). Factory still keeps the legacy path in its own lane.
+  // Copilot CLI uses {type:command, exec, args, timeoutSec} (not codex/claude's
+  // {type:command, command, timeout}); wire the assertion accordingly.
+  const COPIOT_SHIM = "/home/mhugo/.copilot/hooks/coordination-mailbox-sweep.sh";
+  assert.deepEqual(copilot.hooks.sessionStart[0].args, [COPIOT_SHIM, "copilot", "sessionStart"]);
+  assert.deepEqual(copilot.hooks.userPromptTransformed[0].args, [COPIOT_SHIM, "copilot", "userPromptTransformed"]);
   assert.doesNotMatch(JSON.stringify(copilot.hooks), /swarm-messages\.mjs copilot/);
 
   const cursor = await readJSON("config/cursor/hooks.json");
   assert.equal(cursor.version, 1);
-  assert.match(JSON.stringify(cursor.hooks.sessionStart), /swarm-messages\.mjs cursor/);
-  assert.match(JSON.stringify(cursor.hooks.beforeSubmitPrompt), /swarm-messages\.mjs cursor beforeSubmitPrompt/);
+  // Cursor migrated off the legacy swarm-messages.mjs shim onto the HM-installed
+  // coordination-mailbox-sweep.mjs (same successor codex/claude/kimi/copilot use).
+  // Identity is cursor-<short CURSOR_CONVERSATION_ID>, not a sha256 of the full id.
+  assert.match(JSON.stringify(cursor.hooks.sessionStart), /coordination-mailbox-sweep\.mjs cursor sessionStart/);
+  assert.match(JSON.stringify(cursor.hooks.beforeSubmitPrompt), /coordination-mailbox-sweep\.mjs cursor beforeSubmitPrompt/);
+  assert.doesNotMatch(JSON.stringify(cursor.hooks), /swarm-messages\.mjs cursor/);
 
   const factory = await readJSON("config/factory/settings.json");
   assert.match(JSON.stringify(factory.hooks.SessionStart), /swarm-messages\.mjs factory SessionStart/);
@@ -45,9 +50,8 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
 test("codex hooks.json wires SessionStart + UserPromptSubmit at coordination-mailbox-sweep.mjs, not the legacy swarm-messages.mjs shim", async () => {
   // RED-first contract for the codex migration. The HM-rendered codex config
   // must name the new hook for both lifecycle events; the old hook is not a
-  // codex invocation target anymore. Other clients (copilot/cursor/factory)
-  // intentionally still name swarm-messages.mjs and are covered by the test
-  // above.
+  // codex invocation target anymore. Factory still names swarm-messages.mjs
+  // and is covered by the bundled schema test above.
   const codex = await readJSON("config/codex/hooks.json");
   const sessionStart = JSON.stringify(codex.hooks.SessionStart);
   const userPromptSubmit = JSON.stringify(codex.hooks.UserPromptSubmit);
@@ -57,10 +61,30 @@ test("codex hooks.json wires SessionStart + UserPromptSubmit at coordination-mai
   assert.doesNotMatch(userPromptSubmit, /swarm-messages\.mjs codex/);
 });
 
+test("cursor hooks.json wires sessionStart + beforeSubmitPrompt at coordination-mailbox-sweep.mjs, not the legacy swarm-messages.mjs shim", async () => {
+  // Cursor uses the HM-installed ~/.codex/hooks/coordination-mailbox-sweep.mjs
+  // (same binary as Codex) with client name `cursor` and Cursor event names.
+  const cursor = await readJSON("config/cursor/hooks.json");
+  const sessionStart = JSON.stringify(cursor.hooks.sessionStart);
+  const beforeSubmitPrompt = JSON.stringify(cursor.hooks.beforeSubmitPrompt);
+  assert.match(sessionStart, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs cursor sessionStart/);
+  assert.match(beforeSubmitPrompt, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs cursor beforeSubmitPrompt/);
+  assert.doesNotMatch(sessionStart, /swarm-messages\.mjs/);
+  assert.doesNotMatch(beforeSubmitPrompt, /swarm-messages\.mjs/);
+  // Stable-shell + optional purpose-tool session hooks stay on sessionStart.
+  assert.match(sessionStart, /fix-stable-shell-chmod\.cjs/);
+  assert.match(sessionStart, /purpose-tool\/hooks\/session-start\.mjs/);
+});
+
 test("copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered coordination-mailbox-sweep.sh shim", async () => {
   // RED-first contract for the copilot migration. Copilot's hook schema uses
-  // lowercase event names (sessionStart / userPromptTransformed) and the
-  // `bash` + `timeoutSec` fields, distinct from codex/claude/factory. The HM
+  // lowercase event names (sessionStart / userPromptTransformed) and
+  // `exec` + `args` + `timeoutSec`, distinct from codex/claude/factory.
+  // NOTE: these were a flat `bash` command string until 8888fe79. That field is
+  // passed to the runtime's DEFAULT bash (/run/current-system/sw/bin/bash),
+  // which does not exist on non-NixOS hosts -- every prompt failed with
+  // `spawn ... ENOENT`. Hence the explicit interpreter + argv, and hence these
+  // assertions check the argv array rather than a flattened command string. The HM
   // wiring must therefore (a) render ~/.copilot/hooks/coordination-mailbox-sweep.sh
   // from config/copilot/hooks/coordination-mailbox-sweep.sh, and (b) make
   // config/copilot/hooks/swarm-messages.json invoke that shim with `copilot`
@@ -70,8 +94,9 @@ test("copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered
   const copilot = await readJSON("config/copilot/hooks/swarm-messages.json");
   const sessionStart = JSON.stringify(copilot.hooks.sessionStart);
   const userPromptTransformed = JSON.stringify(copilot.hooks.userPromptTransformed);
-  assert.match(sessionStart, /\/home\/mhugo\/\.copilot\/hooks\/coordination-mailbox-sweep\.sh copilot sessionStart/);
-  assert.match(userPromptTransformed, /\/home\/mhugo\/\.copilot\/hooks\/coordination-mailbox-sweep\.sh copilot userPromptTransformed/);
+  const SHIM = "/home/mhugo/.copilot/hooks/coordination-mailbox-sweep.sh";
+  assert.deepEqual(copilot.hooks.sessionStart[0].args, [SHIM, "copilot", "sessionStart"]);
+  assert.deepEqual(copilot.hooks.userPromptTransformed[0].args, [SHIM, "copilot", "userPromptTransformed"]);
   assert.doesNotMatch(sessionStart, /swarm-messages\.mjs copilot/);
   assert.doesNotMatch(userPromptTransformed, /swarm-messages\.mjs copilot/);
 

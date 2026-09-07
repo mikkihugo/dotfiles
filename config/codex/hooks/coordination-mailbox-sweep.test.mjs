@@ -9,6 +9,7 @@ import {
   CAP_MESSAGE_COUNT,
   buildTrailerLine,
   capMessages,
+  clientCanReceive,
   createContext,
   cursorPathFor,
   defaultCursorDir,
@@ -18,9 +19,26 @@ import {
   isHeartbeat,
   isOwnMessage,
   readCursor,
+  renderClientOutput,
   validateIdentity,
   writeCursor,
 } from "./coordination-mailbox-sweep.mjs";
+
+// --- Cursor hook output shaping ---------------------------------------------
+
+test("cursor sessionStart and beforeSubmitPrompt both emit additional_context", () => {
+  // Cursor hooks.json fires both events; omit beforeSubmitPrompt and the
+  // per-turn sweep silently produces no inject (clientCanReceive === false).
+  assert.deepEqual(
+    renderClientOutput("cursor", "sessionStart", "mailbox note", {}),
+    { additional_context: "mailbox note" },
+  );
+  assert.deepEqual(
+    renderClientOutput("cursor", "beforeSubmitPrompt", "mailbox note", {}),
+    { additional_context: "mailbox note" },
+  );
+  assert.equal(clientCanReceive("cursor", "beforeSubmitPrompt", {}), true);
+});
 
 // --- identity ---------------------------------------------------------------
 

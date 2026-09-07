@@ -7,7 +7,7 @@
         "timeout": 10
       },
       {
-        "command": "/home/mhugo/.dotfiles/config/codex/hooks/swarm-messages.mjs cursor sessionStart",
+        "command": "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs cursor sessionStart",
         "timeout": 12
       },
       {
@@ -17,7 +17,7 @@
     ],
     "beforeSubmitPrompt": [
       {
-        "command": "/home/mhugo/.dotfiles/config/codex/hooks/swarm-messages.mjs cursor beforeSubmitPrompt",
+        "command": "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs cursor beforeSubmitPrompt",
         "timeout": 12
       }
     ]

@@ -80,10 +80,9 @@
 
     # coordination-mailbox-sweep is the renamed, bounded, cursor-based
     # successor to the swarm-messages hook above. The swarm-messages.* paths
-    # above stay in place unmodified as compatibility shims for one release
-    # (codex/hooks.json, copilot, cursor, and factory hook registrations still
-    # name them directly and keep working); new hook registrations (Claude's
-    # settings.json, via install-swarm-hooks.mjs) point at the names below.
+    # above stay as compatibility shims for one release (factory still names
+    # them directly). Codex, Claude, Kimi-Code, Copilot, and Cursor hook
+    # registrations point at the coordination-mailbox-sweep names below.
     ".codex/hooks/coordination-mailbox-sweep.mjs" = {
       source = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.mjs {
         node = "${pkgs.nodejs}/bin/node";

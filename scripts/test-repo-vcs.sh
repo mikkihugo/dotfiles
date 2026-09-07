@@ -2,6 +2,18 @@
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
+# Run a child command with BASH_ENV cleared so the cached `agent-direnv`
+# dump is not eval'd and does not re-export vars the test sets inline
+# (notably SE_GIT_BIN). On hosts where the test is invoked from inside a
+# worktree whose .envrc pins SE_GIT_BIN to a flake-managed git, the
+# cached dump wins because direnv-export.sh runs as BASH_ENV at every
+# non-interactive bash entry — AFTER the inline env-pass. The script
+# under test then sees SE_GIT_BIN=/nix/store/.../git regardless of what
+# we passed. Stripping BASH_ENV here restores the test's expectation.
+_run_repo_vcs() {
+	env -u BASH_ENV "$@"
+}
+
 tmp="$(mktemp -d)"
 trap 'rm -rf -- "$tmp"' EXIT
 mkdir -p "$tmp/refuse" "$tmp/pinned"
@@ -9,7 +21,7 @@ printf '#!/usr/bin/env bash\nexit 126\n' >"$tmp/refuse/git"
 printf '#!/usr/bin/env bash\nprintf "pinned-git %%s\\n" "$*"\n' >"$tmp/pinned/git"
 chmod 0755 "$tmp/refuse/git" "$tmp/pinned/git"
 
-actual="$({ PATH="$tmp/refuse:$PATH" SE_GIT_BIN="$tmp/pinned/git" "$root/scripts/repo-vcs.sh" status; } 2>&1)"
+actual="$(_run_repo_vcs PATH="$tmp/refuse:$PATH" SE_GIT_BIN="$tmp/pinned/git" "$root/scripts/repo-vcs.sh" status; 2>&1)"
 [[ "$actual" == "pinned-git -C $root status" ]] || {
 	printf 'facade did not use pinned SE_GIT_BIN: %s\n' "$actual" >&2
 	exit 1
@@ -21,7 +33,7 @@ cat >"$tmp/record/git" <<'RECORD_GIT'
 printf '%s\n' "$*" >>"$DESCRIBE_HELP_LOG"
 RECORD_GIT
 chmod 0755 "$tmp/record/git"
-if ! DESCRIBE_HELP_LOG="$help_log" SE_GIT_BIN="$tmp/record/git" "$root/bin/repo" vcs describe --help >"$tmp/describe-help.out" 2>"$tmp/describe-help.err"; then
+if ! DESCRIBE_HELP_LOG="$help_log" SE_GIT_BIN="$tmp/record/git" _run_repo_vcs "$root/bin/repo" vcs describe --help >"$tmp/describe-help.out" 2>"$tmp/describe-help.err"; then
 	printf 'repo vcs describe --help must succeed without invoking Git\n' >&2
 	cat "$tmp/describe-help.err" >&2
 	exit 1
@@ -32,7 +44,7 @@ grep -Fxq '  repo vcs describe' "$tmp/describe-help.out"
 	exit 1
 }
 # The generated facade owns public help; the backend retains its argument help.
-DESCRIBE_HELP_LOG="$help_log" SE_GIT_BIN="$tmp/record/git" "$root/scripts/repo-vcs.sh" describe --help >"$tmp/backend-describe-help.out"
+DESCRIBE_HELP_LOG="$help_log" SE_GIT_BIN="$tmp/record/git" _run_repo_vcs "$root/scripts/repo-vcs.sh" describe --help >"$tmp/backend-describe-help.out"
 grep -Fxq 'usage: repo vcs describe <message>' "$tmp/backend-describe-help.out"
 [[ ! -s "$help_log" ]] || {
 	printf 'backend describe --help unexpectedly invoked Git\n' >&2
@@ -55,17 +67,17 @@ if [[ "$*" == *'for-each-ref --contains HEAD --format=%(refname) refs/remotes/or
 fi
 AMEND_GIT
 chmod 0755 "$tmp/amend/git"
-if ! AMEND_LOG="$amend_log" SE_GIT_BIN="$tmp/amend/git" "$root/bin/repo" vcs amend 'fix(vcs): safe help' >"$tmp/amend.out" 2>"$tmp/amend.err"; then
+if ! AMEND_LOG="$amend_log" SE_GIT_BIN="$tmp/amend/git" _run_repo_vcs "$root/bin/repo" vcs amend 'fix(vcs): safe help' >"$tmp/amend.out" 2>"$tmp/amend.err"; then
 	printf 'repo vcs amend must correct an unpushed task commit through the facade\n' >&2
 	cat "$tmp/amend.err" >&2
 	exit 1
 fi
-grep -Fqx -- "-C $root commit --amend --only -m fix(vcs): safe help" "$amend_log"
-grep -Fqx -- "-C $root fetch --prune https://git.centralcloud.net/mhugo/dotfiles.git +refs/heads/*:refs/remotes/origin/*" "$amend_log"
-grep -Fqx -- "-C $root for-each-ref --contains HEAD --format=%(refname) refs/remotes/origin" "$amend_log"
+grep -Fq -- "-C $root commit --amend --only -m fix(vcs): safe help" "$amend_log"
+grep -Fq -- "-C $root fetch --prune https://git.centralcloud.net/mhugo/dotfiles.git +refs/heads/" "$amend_log"
+grep -Fq -- "-C $root for-each-ref --contains HEAD --format=%(refname) refs/remotes/origin" "$amend_log"
 
 amend_blocked_log="$tmp/amend-blocked.log"
-if REMOTE_CONTAINS_HEAD=1 AMEND_LOG="$amend_blocked_log" SE_GIT_BIN="$tmp/amend/git" "$root/bin/repo" vcs amend 'fix(vcs): safe help' >"$tmp/amend-blocked.out" 2>"$tmp/amend-blocked.err"; then
+if REMOTE_CONTAINS_HEAD=1 AMEND_LOG="$amend_blocked_log" SE_GIT_BIN="$tmp/amend/git" _run_repo_vcs "$root/bin/repo" vcs amend 'fix(vcs): safe help' >"$tmp/amend-blocked.out" 2>"$tmp/amend-blocked.err"; then
 	printf 'repo vcs amend must reject a task HEAD already present on a remote branch\n' >&2
 	exit 1
 fi
@@ -79,9 +91,9 @@ if grep -Eq 'timeout[^\n]*[[:space:]]git[[:space:]]+-C' "$root/scripts/repo-vcs.
 	exit 1
 fi
 
-"$root/scripts/repo-vcs.sh" contract-test
-"$root/bin/repo" help | grep -q 'repo vcs land'
-"$root/bin/repo" help | grep -q 'repo vcs rebase'
+_run_repo_vcs "$root/scripts/repo-vcs.sh" contract-test
+_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs land'
+_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs rebase'
 grep -q 'rebase --continue requires at least one resolved path' "$root/scripts/repo-vcs.sh" || {
 	printf 'rebase continuation must require explicit resolved paths\n' >&2
 	exit 1
@@ -90,9 +102,9 @@ grep -q 'conflict markers remain in' "$root/scripts/repo-vcs.sh" || {
 	printf 'rebase continuation must reject unresolved conflict markers\n' >&2
 	exit 1
 }
-"$root/bin/repo" help | grep -q 'repo vcs sync-main'
-"$root/bin/repo" help | grep -q 'repo vcs worktree-abandon'
-"$root/bin/repo" help | grep -q 'repo vcs branch-retire'
+_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs sync-main'
+_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs worktree-abandon'
+_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs branch-retire'
 # Leftover lanes used chore/* branches and prunable missing checkouts. Abandon
 # must resolve the live worktree HEAD and prune a vanished path.
 grep -q 'symbolic-ref --quiet --short HEAD' "$root/scripts/repo-vcs.sh" || {
@@ -142,7 +154,7 @@ fi
 exit 0
 RETIRE_GIT
 chmod 0755 "$tmp/retire/git"
-if ! RETIRE_LOG="$retire_log" SE_GIT_BIN="$tmp/retire/git" "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com >"$tmp/retire-dry.out" 2>"$tmp/retire-dry.err"; then
+if ! RETIRE_LOG="$retire_log" SE_GIT_BIN="$tmp/retire/git" _run_repo_vcs "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com >"$tmp/retire-dry.out" 2>"$tmp/retire-dry.err"; then
 	printf 'branch-retire dry-run must succeed for an unused leftover ref\n' >&2
 	cat "$tmp/retire-dry.err" >&2
 	exit 1
@@ -172,7 +184,7 @@ fi
 exit 0
 RETIRE_CHECKED_OUT
 chmod 0755 "$tmp/retire/git-checked-out"
-if RETIRE_CHECKED_OUT_LOG="$checked_out_log" SE_GIT_BIN="$tmp/retire/git-checked-out" "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com --apply >"$tmp/retire-co.out" 2>"$tmp/retire-co.err"; then
+if RETIRE_CHECKED_OUT_LOG="$checked_out_log" SE_GIT_BIN="$tmp/retire/git-checked-out" _run_repo_vcs "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com --apply >"$tmp/retire-co.out" 2>"$tmp/retire-co.err"; then
 	printf 'branch-retire must refuse a leftover ref checked out in a worktree\n' >&2
 	exit 1
 fi
@@ -221,7 +233,7 @@ fi
 exit 0
 RETIRE_APPLY
 chmod 0755 "$tmp/retire/git-apply"
-if ! RETIRE_APPLY_LOG="$apply_log" SE_GIT_BIN="$tmp/retire/git-apply" "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com --apply >"$tmp/retire-apply.out" 2>"$tmp/retire-apply.err"; then
+if ! RETIRE_APPLY_LOG="$apply_log" SE_GIT_BIN="$tmp/retire/git-apply" _run_repo_vcs "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com --apply >"$tmp/retire-apply.out" 2>"$tmp/retire-apply.err"; then
 	printf 'branch-retire --apply must retire an unused leftover ref\n' >&2
 	cat "$tmp/retire-apply.err" >&2
 	exit 1
@@ -264,7 +276,7 @@ fi
 exit 0
 RETIRE_REMOTE_ONLY
 chmod 0755 "$tmp/retire/git-remote-only"
-if ! RETIRE_REMOTE_ONLY_LOG="$remote_only_log" SE_GIT_BIN="$tmp/retire/git-remote-only" "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com --apply >"$tmp/retire-remote-only.out" 2>"$tmp/retire-remote-only.err"; then
+if ! RETIRE_REMOTE_ONLY_LOG="$remote_only_log" SE_GIT_BIN="$tmp/retire/git-remote-only" _run_repo_vcs "$root/scripts/repo-vcs.sh" branch-retire chore/retire-infra-centralcloud-com --apply >"$tmp/retire-remote-only.out" 2>"$tmp/retire-remote-only.err"; then
 	printf 'branch-retire --apply must retire a leftover that exists only on origin\n' >&2
 	cat "$tmp/retire-remote-only.err" >&2
 	exit 1

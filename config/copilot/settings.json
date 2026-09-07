@@ -34,7 +34,7 @@
         "contextTier": "long_context"
       },
       "task": {
-        "model": "auto-kimi"
+        "model": "auto-minimax"
       },
       "general-purpose": {
         "model": "auto-minimax"
@@ -55,7 +55,7 @@
         "model": "auto-glm"
       },
       "debug": {
-        "model": "auto-kimi"
+        "model": "auto-glm"
       },
       "rubber-duck": {
         "model": "auto-glm",

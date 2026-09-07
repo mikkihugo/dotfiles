@@ -133,9 +133,26 @@
 
     # goose config.yaml is intentionally NOT HM-symlinked: goose writes
     # telemetry consent and other prefs into it. Seeded/merged in activation.nix.
+    #
+    # goose has no coordination-mailbox-sweep equivalent: verified (2026-09-06,
+    # via block/goose docs + DeepWiki) that goose has no lifecycle hook system
+    # at all -- only MCP extensions, which run tools by the agent's own choice,
+    # not deterministically on session start. It already gets bus access via
+    # the centralcloud-mcp-gateway extension activation.nix seeds into
+    # extensions:; that is the ceiling of what's possible here today.
 
     ".config/goose/moim-guardrails.md" = {
       source = ../../config/goose/moim-guardrails.md;
+      force = true;
+    };
+
+    # opencode has a real plugin API (opencode.ai/docs/plugins) but only a
+    # generic event(input) dispatcher for session lifecycle -- no
+    # UserPromptSubmit equivalent, so this covers SessionStart only. Global
+    # plugins load from ~/.config/opencode/plugins/ per opencode's docs; no
+    # opencode.json registration needed.
+    ".config/opencode/plugins/coordination-mailbox-sweep.js" = {
+      source = ../../config/opencode/plugins/coordination-mailbox-sweep.js;
       force = true;
     };
 

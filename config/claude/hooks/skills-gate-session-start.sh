@@ -109,7 +109,14 @@ cursor) shape=cursor ;;
 sdk) shape=sdk ;;
 claude) shape=claude ;;
 *)
-	if [ -n "${COPILOT_CLI:-}" ]; then
+	# Copilot CLI does NOT export a bare COPILOT_CLI. Measured from
+	# /proc/<pid>/environ on three live `copilot` processes: it exports
+	# COPILOT_CLI_BINARY_VERSION, COPILOT_CLI_DIST_DIR and
+	# COPILOT_CLI_RESOLVED_DIST_DIR only. Keying on COPILOT_CLI (as upstream
+	# superpowers does) silently handed Copilot the Claude shape. This is the
+	# second time an assumed-from-upstream variable name was wrong here; the
+	# first was CLAUDE_PLUGIN_ROOT. Detect on what the process actually sets.
+	if [ -n "${COPILOT_CLI:-}${COPILOT_CLI_BINARY_VERSION:-}${COPILOT_CLI_DIST_DIR:-}${COPILOT_CLI_RESOLVED_DIST_DIR:-}" ]; then
 		shape=sdk
 	elif [ -n "${CURSOR_PLUGIN_ROOT:-}" ] || [ -n "${CURSOR_TRACE_ID:-}" ]; then
 		shape=cursor

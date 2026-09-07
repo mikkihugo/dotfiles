@@ -38,13 +38,30 @@ function fakeHome(body) {
 	return home;
 }
 
-/** Run the hook with HOME=home and parse its stdout as JSON. */
-function run(home) {
-	const stdout = execFileSync("bash", [HOOK], {
-		env: { ...process.env, HOME: home },
-		input: "{}",
-		encoding: "utf8",
-	});
+/**
+ * Run the hook with HOME=home and parse its stdout as JSON.
+ * `extraEnv` overrides/clears harness-detection variables; a null value unsets.
+ */
+function run(home, extraEnv = {}) {
+	const env = { ...process.env, HOME: home };
+	// Always start from a clean detection surface so a variable leaking in from
+	// the developer's own shell cannot silently decide the shape under test.
+	for (const key of [
+		"SKILLS_GATE_SHAPE",
+		"COPILOT_CLI",
+		"COPILOT_CLI_BINARY_VERSION",
+		"COPILOT_CLI_DIST_DIR",
+		"COPILOT_CLI_RESOLVED_DIST_DIR",
+		"CURSOR_PLUGIN_ROOT",
+		"CURSOR_TRACE_ID",
+	]) {
+		delete env[key];
+	}
+	for (const [key, value] of Object.entries(extraEnv)) {
+		if (value === null) delete env[key];
+		else env[key] = value;
+	}
+	const stdout = execFileSync("bash", [HOOK], { env, input: "{}", encoding: "utf8" });
 	return JSON.parse(stdout);
 }
 
@@ -132,4 +149,61 @@ describe("skills gate SessionStart hook", () => {
 		const ctx = run(fakeHome(nasty)).hookSpecificOutput.additionalContext;
 		assert.match(ctx, /He said "load the skill"/);
 	});
+});
+
+/**
+ * Harness shape selection.
+ *
+ * These exist because the shape paths were originally UNTESTED, and that gap
+ * hid two real bugs of the same kind: a variable name copied from upstream
+ * without measuring what the process actually exports. First CLAUDE_PLUGIN_ROOT
+ * (set only for plugin hooks, never for user hooks), then COPILOT_CLI (never
+ * set at all -- Copilot exports COPILOT_CLI_DIST_DIR and friends). Both sent a
+ * client to the wrong shape, which fails SILENTLY: the hook still prints valid
+ * JSON, the client just ignores a field it does not know.
+ */
+describe("skills gate harness shape selection", () => {
+	const home = () => fakeHome(FULL);
+
+	it("defaults to the Claude shape when no harness is detected", () => {
+		// Claude Code sets NEITHER CLAUDE_PLUGIN_ROOT nor CLAUDE_PROJECT_DIR for
+		// user hooks (measured), so "no signal" must mean Claude, not SDK.
+		const out = run(home());
+		assert.equal(out.hookSpecificOutput?.hookEventName, "SessionStart");
+		assert.ok(out.hookSpecificOutput?.additionalContext);
+	});
+
+	for (const [label, env] of [
+		["COPILOT_CLI_DIST_DIR", { COPILOT_CLI_DIST_DIR: "/opt/copilot/dist" }],
+		["COPILOT_CLI_BINARY_VERSION", { COPILOT_CLI_BINARY_VERSION: "1.0.11" }],
+		["COPILOT_CLI_RESOLVED_DIST_DIR", { COPILOT_CLI_RESOLVED_DIST_DIR: "/opt/copilot" }],
+		["COPILOT_CLI", { COPILOT_CLI: "1" }],
+	]) {
+		it(`selects the SDK shape for Copilot via ${label}`, () => {
+			// Regression: only the last of these was originally checked, and it is
+			// the one Copilot never actually sets.
+			const out = run(home(), env);
+			assert.deepEqual(Object.keys(out), ["additionalContext"]);
+			assert.match(out.additionalContext, /## Red Flags/);
+		});
+	}
+
+	it("selects the Cursor shape via CURSOR_TRACE_ID", () => {
+		const out = run(home(), { CURSOR_TRACE_ID: "abc123" });
+		assert.deepEqual(Object.keys(out), ["additional_context"]);
+		assert.match(out.additional_context, /## Rule/);
+	});
+
+	for (const [shape, key] of [
+		["claude", "hookSpecificOutput"],
+		["cursor", "additional_context"],
+		["sdk", "additionalContext"],
+	]) {
+		it(`SKILLS_GATE_SHAPE=${shape} overrides auto-detection`, () => {
+			// Every client registration pins this explicitly, so the override must
+			// win even when a competing harness variable is present.
+			const out = run(home(), { SKILLS_GATE_SHAPE: shape, COPILOT_CLI_DIST_DIR: "/opt/x" });
+			assert.deepEqual(Object.keys(out), [key]);
+		});
+	}
 });

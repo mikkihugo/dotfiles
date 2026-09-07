@@ -226,6 +226,41 @@ test("activation merge preserves unrelated Claude settings and Kimi provider con
     assert.match(JSON.stringify(claude.hooks.SessionStart), /"timeout":30/);
     assert.match(JSON.stringify(claude.hooks.UserPromptSubmit), /"timeout":30/);
 
+    // The skills gate must be installed BY THIS SCRIPT, not by hand-editing
+    // settings.json. install() drops every group matching its filter regex and
+    // re-adds its own, so an entry added directly to the live file is deleted
+    // on the next activation -- which is exactly what happened: the gate was
+    // registered by hand, `hms` ran, and it vanished with no error anywhere.
+    assert.match(
+      JSON.stringify(claude.hooks.SessionStart),
+      /skills-gate-session-start\.sh/,
+      "skills gate missing from SessionStart -- it would be deployed but never fire",
+    );
+
+    // Idempotent across activations: a second run must not duplicate it.
+    //
+    // The second run deliberately targets a THROWAWAY kimi config rather than
+    // reusing kimi.toml above. Reusing it makes this test fail on a genuine,
+    // separate, PRE-EXISTING bug: a second installer run drops the user's own
+    // unmanaged [[hooks]] block from kimi.toml (reproduced -- Notification hook
+    // present after run 1, gone after run 2, still gone after run 3). Since
+    // activation runs on every `hms`, the second switch destroys it. That bug
+    // is real and reported, but it is not this change's to fix, and coupling
+    // the Claude idempotency assertion to it would leave a permanently red
+    // test that says nothing about the skills gate.
+    const second = spawnSync(process.execPath, [
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "--claude-settings", join(home, "claude.json"),
+      "--kimi-config", join(home, "kimi-second-run.toml"),
+    ], { encoding: "utf8" });
+    assert.equal(second.status, 0, second.stderr);
+    const reran = await readJSON(join(home, "claude.json"));
+    assert.equal(
+      (JSON.stringify(reran.hooks.SessionStart).match(/skills-gate-session-start\.sh/g) ?? []).length,
+      1,
+    );
+    assert.equal(reran.hooks.PreToolUse[0].matcher, "Bash");
+
     const updatedKimi = await readFile(join(home, "kimi.toml"), "utf8");
     assert.match(updatedKimi, /api_key = \"do-not-touch\"/);
     assert.match(updatedKimi, /event = \"Notification\"/);

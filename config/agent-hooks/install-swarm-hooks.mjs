@@ -36,16 +36,30 @@ async function installClaude() {
   const install = (event, group) => {
     const existing = Array.isArray(settings.hooks[event]) ? settings.hooks[event] : [];
     settings.hooks[event] = existing
-      .filter((item) => !/swarm-messages\.sh|coordination-mailbox-sweep\.sh|stop-continue-if-actionable\.sh/.test(JSON.stringify(item)))
+      .filter((item) => !/swarm-messages\.sh|coordination-mailbox-sweep\.sh|stop-continue-if-actionable\.sh|skills-gate-session-start\.sh/.test(JSON.stringify(item)))
       .concat(group);
   };
+  // The skills gate rides in the SAME group as the mailbox sweep, deliberately.
+  // install() drops every existing group whose JSON matches the filter regex
+  // above and re-adds its own, so a hand-added entry nested inside this group
+  // is silently deleted on the next activation -- which is exactly what
+  // happened when the gate was first registered by editing settings.json
+  // directly. Anything that must survive `hms` has to be written HERE.
   install("SessionStart", {
     matcher: "startup|resume|clear|compact",
-    hooks: [{
-      type: "command",
-      command: "/home/mhugo/.claude/hooks/coordination-mailbox-sweep.sh SessionStart",
-      timeout: 30,
-    }],
+    hooks: [
+      {
+        type: "command",
+        command: "/home/mhugo/.claude/hooks/coordination-mailbox-sweep.sh SessionStart",
+        timeout: 30,
+      },
+      {
+        type: "command",
+        command: "/home/mhugo/.claude/hooks/skills-gate-session-start.sh",
+        timeout: 10,
+        statusMessage: "Loading skills gate",
+      },
+    ],
   });
   install("UserPromptSubmit", {
     hooks: [{

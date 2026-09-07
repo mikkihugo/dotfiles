@@ -39,10 +39,27 @@ if [ ! -r "$SKILL" ]; then
 fi
 
 # Print one "## <header>" section, up to (not including) the next "## " header.
+# Print one "## <header>" section, up to (not including) the next "## " header.
+#
+# FENCE-AWARE, and it has to be. Without the fence toggle, any line starting
+# "## " INSIDE a fenced code block ends the section early -- silently, with
+# valid JSON and exit 0. That is not hypothetical here: the live router already
+# carries a ```text fence inside "## Rule" (the `gate before_acting(task)`
+# pseudo-code), and a fenced example whose body is a literal "## Red Flags"
+# heading is an attested idiom in this skill corpus. Worse, truncating mid-fence
+# leaves the injected text with an UNBALANCED fence, so everything after it --
+# including the Red Flags list -- reads to the model as sample text rather than
+# instruction. The emptiness guard below cannot catch that, because a truncated
+# section is still non-empty.
+#
+# Rule order matters: the fence rule must print-and-next BEFORE the header rule,
+# or the ``` delimiters themselves are dropped. "### " subsections are kept
+# either way -- the match is on "## " with a trailing space.
 section() {
 	awk -v want="## $1" '
 		$0 == want { on = 1; print; next }
-		on && /^## / { exit }
+		on && /^```/ { fence = !fence; print; next }
+		on && !fence && /^## / { exit }
 		on { print }
 	' "$SKILL"
 }

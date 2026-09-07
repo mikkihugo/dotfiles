@@ -149,6 +149,52 @@ describe("skills gate SessionStart hook", () => {
 		const ctx = run(fakeHome(nasty)).hookSpecificOutput.additionalContext;
 		assert.match(ctx, /He said "load the skill"/);
 	});
+
+	// A "## " line inside a fenced code block must NOT end the section.
+	// Without fence awareness the extractor truncates there and still emits
+	// valid JSON with exit 0 -- a silent partial gate, which the emptiness
+	// guard cannot catch because a truncated section is still non-empty.
+	// This is not hypothetical: the live router carries a ```text fence inside
+	// "## Rule", and fenced examples containing a literal "## Red Flags"
+	// heading are an attested idiom in this skill corpus.
+	const FENCED = [
+		"# Using Skills",
+		"",
+		"## Rule",
+		"1. Identify skills whose description might apply.",
+		"```text",
+		"## Fake Header inside a fence",
+		"gate before_acting(task)",
+		"```",
+		"rule tail that must survive",
+		"",
+		"## Red Flags",
+		'- "This is simple."',
+		"flags tail that must survive",
+		"",
+		"## Priority",
+		"trailing noise",
+	].join("\n");
+
+	it("does not truncate a section at a '## ' line inside a code fence", () => {
+		const ctx = run(fakeHome(FENCED)).hookSpecificOutput.additionalContext;
+		assert.match(ctx, /rule tail that must survive/);
+		assert.match(ctx, /flags tail that must survive/);
+		assert.match(ctx, /Fake Header inside a fence/);
+		// and it still stops at the genuine next header
+		assert.doesNotMatch(ctx, /trailing noise/);
+	});
+
+	it("never emits an unbalanced code fence", () => {
+		// The cheap general guard: any mid-fence truncation, from any future
+		// cause, leaves an odd number of ``` markers, which makes everything
+		// after it read as sample text instead of instruction.
+		for (const body of [FULL, FENCED]) {
+			const ctx = run(fakeHome(body)).hookSpecificOutput.additionalContext;
+			const fences = (ctx.match(/```/g) ?? []).length;
+			assert.equal(fences % 2, 0, `odd fence count (${fences}) in injected context`);
+		}
+	});
 });
 
 /**

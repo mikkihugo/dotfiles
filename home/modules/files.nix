@@ -125,6 +125,21 @@
       force = true;
     };
 
+    # remind-skills userPromptSubmitted hook: emits a skill-catalog nudge to
+    # stderr on non-trivial prompts (throttled to 1-in-5). Hand-installed
+    # 2026-06-21; never migrated into HM-managed wiring until now. Without
+    # this entry, the hook disappears on the next `~/.copilot/hooks/` wipe.
+    # Script is self-contained (no @var@ placeholders), so no replaceVars.
+    ".copilot/hooks/remind-skills.json" = {
+      source = ../../config/copilot/hooks/remind-skills.json;
+      force = true;
+    };
+    ".copilot/hooks/remind-skills.sh" = {
+      source = ../../config/copilot/hooks/remind-skills.sh;
+      executable = true;
+      force = true;
+    };
+
     ".cursor/hooks.json" = {
       source = ../../config/cursor/hooks.json;
       force = true;

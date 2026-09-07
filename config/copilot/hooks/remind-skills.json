@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "hooks": {
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "exec": "/home/mhugo/.nix-profile/bin/bash",
+        "args": ["/home/mhugo/.copilot/hooks/remind-skills.sh"],
+        "cwd": "/home/mhugo",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}

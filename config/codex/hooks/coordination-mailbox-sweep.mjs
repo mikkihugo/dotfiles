@@ -75,6 +75,27 @@ export const CAP_BODY_BYTES = 16 * 1024;
 // returns partial output rather than being killed with nothing.
 export const DEFAULT_DEADLINE_MS = 8_000;
 
+// --- coordination_* migration (feature-flagged, DEFAULT OFF) ---------------
+// See CoordinationBus and selectBus() below, after RepoMemoryBus, for the
+// full adapter and the 2026-09-07 live-probe findings that shaped it.
+export const COORDINATION_TOKEN_MIN = 4;
+export const COORDINATION_TOKEN_MAX = 16;
+// swarm_bus_poll requests 100 per mailbox today, up to 3 mailboxes
+// (workspace + lane + global) = up to 300 messages fetched per sweep across
+// separate calls; coordination_poll answers ONE merged stream, so this asks
+// for the same total ceiling in the single call rather than the tool's own
+// default of 20 (which, combined with client-side heartbeat filtering
+// AFTER poll, could return a page that is 100% filtered noise -- see
+// DESIGN's risk note 5).
+export const COORDINATION_POLL_LIMIT = 300;
+const COORDINATION_INBOX_SCHEMA = "coordination-mailbox-inbox/v1";
+// Synthetic bucket for messages that arrive via direct-mail delivery
+// (recipient={kind:"principal"|"session"}) rather than an enumerated
+// channel -- see DESIGN's "partition hole" note. Also polled as if it were
+// a real workspace via CoordinationBus.extraPollWorkspaces() below so it
+// participates in ack/cursor bookkeeping like any other mailbox.
+const INBOX_BUCKET = "__inbox__";
+
 // Client names that must never appear as a bare swarm/consumer identity --
 // mirrors tools/repo-memory-bus/src/identity.rs's BARE_CLIENT_NAMES, extended
 // with every client this hook is invoked under. A bare name collides two
@@ -250,6 +271,270 @@ export class RepoMemoryBus {
   async close() { await this.client.close(); }
 }
 
+// --- coordination_* bus (feature-flagged, DEFAULT OFF) ----------------------
+//
+// Gate: REPO_MEMORY_COORDINATION_BUS=1 (exactly that literal string)
+// selects this path via selectBus() below; anything else (unset, "0",
+// "true", ...) keeps RepoMemoryBus above wired byte-for-byte unchanged.
+//
+// LIVE-PROBED 2026-09-07 against the deployed gateway via mcp_tool_call,
+// disposable principal "probe-01ab", mailbox "dotfiles" (both left
+// subscribed -- someone should reap that binding):
+//
+//   - coordination_subscribe({principal, session, channels}) succeeded and
+//     answered {ack_watermark, channels, created, created_at, principal,
+//     session} -- ack_watermark is a CONFIRMED field name, not a guess, and
+//     NO inbox_uri was present in a successful response at all. subscribe()
+//     below treats ack_watermark-without-inbox_uri as success, matching
+//     this observed shape, not as a missing field to retry around.
+//   - Every follow-up call using only principal+session -- coordination_poll,
+//     coordination_post, coordination_ack -- failed identically, including
+//     immediately after a second subscribe reporting created:false (i.e.
+//     the binding already existed): "requires a matching
+//     coordination_subscribe binding or signed inbox_uri capability for
+//     this exact coordination session". mcp_tool_call is a stateless
+//     per-request proxy; "this exact coordination session" plausibly means
+//     a transport-level session that route cannot hold across calls. This
+//     is strong evidence against principal+session-only reachability
+//     THROUGH THAT ROUTE, but not proof against reachability through this
+//     hook's own direct tools/call transport (McpGatewayClient above),
+//     which remains UNTESTED end-to-end. That gap -- not a generic
+//     "be careful" caveat -- is the concrete reason this stays off by
+//     default pending a live run through the hook's real transport.
+//   - Mailboxes are a CLOSED registry, confirmed by rejection: known
+//     mailboxes as of that probe were global, presence, dotfiles, infra,
+//     jcode, singularity-engine. This hook's channel names come from
+//     basename(repoRoot)/basename(worktree) (e.g. a worktree lane like
+//     "eng-swarm-bus") and are NOT guaranteed to be registered, unlike
+//     swarm_bus_* which accepted any workspace string -- and an
+//     unregistered channel fails the WHOLE subscribe call, not just that
+//     channel. _doSubscribe below retries with the rejected channel
+//     dropped rather than hardcoding this registry, which can grow.
+//
+// Adapter shape matches RepoMemoryBus's external methods exactly
+// (subscribe/poll/ack/post with the same signatures) so runSweep's loop
+// over pollWorkspaces needs no changes for this migration -- see
+// extraPollWorkspaces() for the one deliberate, opt-in exception (the
+// direct-mail catch-all bucket), which is a no-op for RepoMemoryBus.
+// Two distinct rejection wordings observed live for a bad mailbox/channel
+// name: an unregistered-but-otherwise-valid name ("mailbox \"x\" is not
+// registered"), and a malformed-shape name that fails the bare-name check
+// entirely ("... not a bare registered name ... not a path, scheme or
+// label: \"x\"") -- the latter is what a leading-dot identity like
+// ".dotfiles" hits (see normalizeMailboxName above; this pattern is a
+// safety net for cases that normalization doesn't cover, not the primary
+// fix for that specific shape).
+const UNREGISTERED_MAILBOX_PATTERNS = [
+  /mailbox "([^"]+)" is not registered/,
+  /must be a bare registered name.*?:\s*"([^"]+)"/,
+];
+
+export function extractRejectedMailbox(error) {
+  const message = String(error?.message ?? error);
+  for (const pattern of UNREGISTERED_MAILBOX_PATTERNS) {
+    const match = message.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+/**
+ * Partition a coordination_poll response's messages by which enumerated
+ * channel they arrived on. A message naming no matching channel -- direct
+ * mail, addressed to this session/principal specifically rather than to a
+ * subscribed mailbox -- falls into INBOX_BUCKET rather than being dropped;
+ * see the module-level INBOX_BUCKET comment. The field the server uses to
+ * say which mailbox delivered a message is unverified (no probed poll call
+ * returned a message body -- see the class header above), so this checks
+ * both a `channel` and a `mailbox` field defensively.
+ */
+export function partitionMessagesByChannel(messages, channels) {
+  const known = new Set(channels);
+  const buckets = new Map();
+  for (const channel of channels) buckets.set(channel, []);
+  buckets.set(INBOX_BUCKET, []);
+  for (const message of messages) {
+    const tag = typeof message?.channel === "string" ? message.channel
+      : typeof message?.mailbox === "string" ? message.mailbox
+      : null;
+    const bucketKey = tag && known.has(tag) ? tag : INBOX_BUCKET;
+    buckets.get(bucketKey).push(message);
+  }
+  return buckets;
+}
+
+export class CoordinationBus {
+  constructor(client, { identity, clientLabel, channels = [], env = process.env, debug = false } = {}) {
+    this.name = "coordination";
+    this.client = client;
+    this.env = env;
+    this.debug = debug;
+    this._clientLabel = clientLabel;
+    this._channels = new Set(channels);
+    this._identity = identity ?? null;
+    this._principal = identity ? derivePrincipal(identity, clientLabel) : null;
+    this._session = this._principal; // bare-principal session; see DESIGN's addressing recommendation.
+    this._inboxPath = identity ? coordinationInboxPathFor(identity, env) : null;
+    this._inbox = this._inboxPath ? readCoordinationInbox(this._inboxPath) : emptyCoordinationInbox();
+    this._pollCache = null;
+    this._pollKnownSession = true;
+  }
+
+  _ensureIdentity(consumer) {
+    if (this._principal) return;
+    this._identity = consumer;
+    const label = this._clientLabel ?? consumer.slice(0, Math.max(consumer.indexOf("-"), 0));
+    this._principal = derivePrincipal(consumer, label);
+    this._session = this._principal;
+    this._inboxPath = coordinationInboxPathFor(consumer, this.env);
+    this._inbox = readCoordinationInbox(this._inboxPath);
+  }
+
+  // The synthetic direct-mail bucket is polled every run alongside whatever
+  // real channels runSweep already enumerates; a no-op for RepoMemoryBus
+  // (undefined), so this changes nothing when the flag is off.
+  extraPollWorkspaces() {
+    return [INBOX_BUCKET];
+  }
+
+  async _doSubscribe(signal) {
+    let channels = [...this._channels];
+    const inboxUriHint = this._inbox?.inbox_uri;
+    let response;
+    // Bounded retry: drop one rejected (unregistered) mailbox per attempt
+    // rather than hardcoding the closed registry observed live (see class
+    // header) -- the registry can grow, and a hardcoded copy would go
+    // stale silently.
+    for (;;) {
+      const args = { principal: this._principal, session: this._session, channels };
+      if (inboxUriHint) args.inbox_uri = inboxUriHint;
+      try {
+        response = await this.client.callRepoMemory("coordination_subscribe", args, signal);
+        break;
+      } catch (error) {
+        if (isAbortError(error)) throw error;
+        const rejected = extractRejectedMailbox(error);
+        if (!rejected || !channels.includes(rejected) || channels.length <= 1) throw error;
+        channels = channels.filter((channel) => channel !== rejected);
+      }
+    }
+    const inboxUri = typeof response?.inbox_uri === "string" && response.inbox_uri ? response.inbox_uri : undefined;
+    const watermark = Number.isInteger(response?.ack_watermark) ? response.ack_watermark : undefined;
+    this._inbox = {
+      schema: COORDINATION_INBOX_SCHEMA,
+      inbox_uri: inboxUri ?? this._inbox?.inbox_uri,
+      channels: Array.isArray(response?.channels) ? [...response.channels] : channels,
+      principal: this._principal,
+      session: this._session,
+      sequence: Number.isInteger(watermark) ? watermark : this._inbox?.sequence,
+      issued_at: new Date().toISOString(),
+    };
+    // Only persist when there is an actual credential worth saving (see the
+    // live-probe note above: a successful subscribe was observed WITHOUT
+    // one). Writing a stub file with no inbox_uri would fail
+    // readCoordinationInbox's own validity check on the next run anyway.
+    if (this._inboxPath && this._inbox.inbox_uri) writeCoordinationInbox(this._inboxPath, this._inbox);
+    return { watermark };
+  }
+
+  async subscribe(workspace, consumer, signal) {
+    this._ensureIdentity(consumer);
+    if (workspace !== INBOX_BUCKET) this._channels.add(workspace);
+    const { watermark } = await this._doSubscribe(signal);
+    if (!Number.isInteger(watermark)) return {};
+    return { ack_watermark: watermark };
+  }
+
+  async _fetchPollCache(consumer, signal) {
+    this._ensureIdentity(consumer);
+    // Unconditional per-run subscribe (DESIGN's per-run-flow step 2), done
+    // HERE rather than relying on runSweep's per-workspace cursor gating to
+    // have called subscribe() first: a warm .cursor.json left over from the
+    // swarm_bus_* era has an integer sequence for every workspace already,
+    // so runSweep would never call bus.subscribe() at all, and without this
+    // line poll() would permanently see no capability and return empty
+    // forever -- a silent, undetectable no-op, not a degraded mode.
+    await this._doSubscribe(signal);
+    const pollOnce = () => {
+      const args = { principal: this._principal, session: this._session, limit: COORDINATION_POLL_LIMIT };
+      if (this._inbox?.inbox_uri) args.inbox_uri = this._inbox.inbox_uri;
+      return this.client.callRepoMemory("coordination_poll", args, signal);
+    };
+    let result;
+    try {
+      result = await pollOnce();
+    } catch (error) {
+      if (isAbortError(error)) throw error;
+      // Possibly-stale/invalid capability (exact error signal unverified —
+      // no probed poll call reached a success response; see class header):
+      // one fresh subscribe, one retry, then give up like any other
+      // transport failure.
+      await this._doSubscribe(signal);
+      result = await pollOnce();
+    }
+    const knownSession = result?.known_session !== false;
+    this._pollKnownSession = knownSession;
+    if (!knownSession) {
+      // Mirrors today's known_consumer:false handling: this identity was
+      // never subscribed (or was reaped) and the batch is unpositioned --
+      // discard it, resubscribe at head, render nothing this sweep.
+      await this._doSubscribe(signal);
+      this._pollCache = new Map();
+      return;
+    }
+    const messages = Array.isArray(result?.messages) ? result.messages : [];
+    this._pollCache = partitionMessagesByChannel(messages, [...this._channels]);
+  }
+
+  async poll(workspace, consumer, { signal } = {}) {
+    if (!this._pollCache) await this._fetchPollCache(consumer, signal);
+    const bucketKey = workspace === INBOX_BUCKET ? INBOX_BUCKET : workspace;
+    const bucket = (this._pollCache.get(bucketKey) ?? []).map((item) => ({ ...item, origin: this.name }));
+    bucket.knownConsumer = this._pollKnownSession;
+    return bucket;
+  }
+
+  async ack(workspace, consumer, messageId, signal) {
+    this._ensureIdentity(consumer);
+    const args = { principal: this._principal, session: this._session, message_id: messageId };
+    if (this._inbox?.inbox_uri) args.inbox_uri = this._inbox.inbox_uri;
+    await this.client.callRepoMemory("coordination_ack", args, signal);
+  }
+
+  async post(workspace, message, signal) {
+    this._ensureIdentity(message?.sender ?? this._identity);
+    const recipient = message.recipient === "all"
+      ? { kind: "all" }
+      : { kind: "session", id: message.recipient };
+    const args = {
+      mailbox: workspace,
+      recipient,
+      sender_principal: this._principal,
+      sender_session: this._session,
+      type: message.type,
+      body: message.body,
+      idempotency_key: message.idempotency_key,
+      metadata: message.metadata,
+    };
+    if (this._inbox?.inbox_uri) args.inbox_uri = this._inbox.inbox_uri;
+    await this.client.callRepoMemory("coordination_post", args, signal);
+  }
+
+  async close() { await this.client.close(); }
+}
+
+/**
+ * Factory selecting the wire path. `options` (identity, channels, env,
+ * debug) is only consulted when the flag turns on CoordinationBus; the
+ * flag-off branch is exactly today's RepoMemoryBus construction.
+ */
+export function selectBus(env, gatewayClient, clientLabel, options = {}) {
+  if (env.REPO_MEMORY_COORDINATION_BUS === "1") {
+    return new CoordinationBus(gatewayClient, { ...options, clientLabel });
+  }
+  return new RepoMemoryBus(gatewayClient);
+}
+
 // --- workspace selection (unchanged from swarm-messages.mjs) ---------------
 
 function canonicalJjRoot(worktree) {
@@ -390,6 +675,45 @@ export function deriveIdentity(client, payload, env = process.env) {
   return validateIdentity(`${safePart(client)}-${shortSegment}`);
 }
 
+// --- coordination_* principal derivation (feature-flagged path only) -------
+//
+// LIVE-VERIFIED 2026-09-07 (disposable principal "probe-01ab" against the
+// deployed gateway, mailbox "dotfiles"): coordination_subscribe rejects a
+// bare 4-16-alnum string outright. The real required shape is
+// "<client>-<token>" -- the SAME shape as this file's own identity (e.g.
+// "claude-674f9a3f") -- where only the TOKEN half must be 4-16 alphanumeric
+// characters. This narrows DESIGN's "BLOCKING" gap considerably: deriveIdentity's
+// output already matches this shape in the common case. The real exposure
+// is narrower than originally feared: a token over 16 chars (the no-dash
+// verbatim-session-id case deriveIdentity documents above), under 4, or
+// containing "." / "_" (validateIdentity permits both; "alphanumeric" in
+// the coordination schema text implies neither survives there).
+//
+// This is a LOCAL stopgap, not the canonical cross-tool rule DESIGN calls
+// for -- any other coordination_* caller (a future `repo swarm` port, say)
+// must derive the IDENTICAL principal from the identical identity, or a
+// peer addressing "the obvious short id" stops reaching it -- the exact
+// class of bug deriveIdentity's own header above already documents once
+// (the sha256 regression). `client` must be the same literal client label
+// deriveIdentity(client, ...) was called with, so the "<client>-" prefix
+// can be stripped deterministically even for a compound name like
+// "kimi-code" that itself contains a dash.
+export function derivePrincipal(identity, client) {
+  const prefix = `${client}-`;
+  const dash = identity.indexOf("-");
+  const rawToken = identity.startsWith(prefix) ? identity.slice(prefix.length) : identity.slice(dash + 1);
+  const alnumToken = rawToken.replace(/[^A-Za-z0-9]+/g, "");
+  const token = alnumToken.length >= COORDINATION_TOKEN_MIN
+    ? alnumToken.slice(0, COORDINATION_TOKEN_MAX)
+    // Padding is a deterministic, documented stopgap for the rare
+    // under-the-floor case (e.g. identity "ab-cd" strips to "abcd", exactly
+    // at the floor, but "ab-c" would strip to "abc"): it trades a
+    // theoretical collision between two very short raw tokens for never
+    // hard-failing a session out of coordination entirely.
+    : alnumToken.padEnd(COORDINATION_TOKEN_MIN, "0");
+  return `${client}-${token}`;
+}
+
 // --- cursor persistence (DELIVER 2) -----------------------------------------
 
 export function defaultCursorDir(env = process.env) {
@@ -423,6 +747,101 @@ export function writeCursor(path, cursor) {
   writeFileSync(temporary, `${JSON.stringify(cursor, null, 2)}\n`, { mode: 0o600 });
   chmodSync(temporary, 0o600);
   renameSync(temporary, path);
+}
+
+// --- coordination_* inbox capability persistence (feature-flagged path) ----
+//
+// Deliberately a SEPARATE file from .cursor.json, not a reshape of it:
+// readCursor() above treats anything but a `sequences` object as corrupt
+// (falls back to empty). If a coordination-mode write reshaped that file to
+// carry a single capability instead, unsetting REPO_MEMORY_COORDINATION_BUS
+// would make the swarm_bus_* path see "corrupt" and cold-resubscribe every
+// mailbox for that identity -- accidentally safe only because of the
+// fail-closed subscribe guard elsewhere in this file, not by design. A
+// dedicated file makes the flag toggle losslessly reversible in both
+// directions: swarm_bus_* never reads or writes this file at all, and
+// re-enabling the flag later reuses a still-valid inbox_uri instead of a
+// cold resubscribe.
+export function coordinationInboxPathFor(identity, env = process.env) {
+  return join(defaultCursorDir(env), `${safePart(identity)}.coordination-inbox.json`);
+}
+
+function emptyCoordinationInbox() {
+  return {
+    schema: COORDINATION_INBOX_SCHEMA,
+    inbox_uri: undefined,
+    channels: [],
+    principal: undefined,
+    session: undefined,
+    sequence: undefined,
+    issued_at: undefined,
+  };
+}
+
+/**
+ * inbox_uri is a signed bearer-style capability -- treat it like a
+ * credential. Never let it reach a log line or thrown Error's message; this
+ * function and writeCoordinationInbox below are the only places it is read
+ * or written, and neither ever prints it.
+ */
+export function readCoordinationInbox(path) {
+  if (!existsSync(path)) return emptyCoordinationInbox();
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8"));
+    if (!parsed || typeof parsed !== "object" || typeof parsed.inbox_uri !== "string" || !parsed.inbox_uri) {
+      throw new Error("invalid coordination-inbox state");
+    }
+    return {
+      schema: COORDINATION_INBOX_SCHEMA,
+      inbox_uri: parsed.inbox_uri,
+      channels: Array.isArray(parsed.channels) ? [...parsed.channels] : [],
+      principal: typeof parsed.principal === "string" ? parsed.principal : undefined,
+      session: typeof parsed.session === "string" ? parsed.session : undefined,
+      sequence: Number.isInteger(parsed.sequence) ? parsed.sequence : undefined,
+      issued_at: typeof parsed.issued_at === "string" ? parsed.issued_at : undefined,
+    };
+  } catch {
+    // Same hygiene as readCursor's corrupt-file handling above: absent or
+    // corrupt capability state is "no capability yet", not fatal -- costs
+    // one extra subscribe, not a crashed hook.
+    return emptyCoordinationInbox();
+  }
+}
+
+export function writeCoordinationInbox(path, inbox) {
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  const temporary = `${path}.tmp.${process.pid}`;
+  writeFileSync(temporary, `${JSON.stringify(inbox, null, 2)}\n`, { mode: 0o600 });
+  chmodSync(temporary, 0o600);
+  renameSync(temporary, path);
+}
+
+/**
+ * The channel set for one run: today's pollWorkspaces construction
+ * ([workspace, ...additionalWorkspaces, "global"]) made explicit and
+ * independently testable. "global" is listed explicitly even though
+ * coordination_subscribe always includes it by default -- purely for
+ * self-documentation parity with today's code; costs nothing.
+ */
+/**
+ * A workspace identity derived from a hidden-directory basename (e.g. this
+ * hook's own home, /home/mhugo/.dotfiles -> ".dotfiles") is not a valid
+ * coordination_* mailbox name -- confirmed live: the server rejects a
+ * leading dot as "not a bare registered name... not a path, scheme or
+ * label", even though the *bare* name without the dot ("dotfiles") is one
+ * of the actually-registered mailboxes (see repo-memory AGENTS.md's admit
+ * list). Stripping exactly one leading dot recovers the real, already-
+ * registered channel instead of silently losing it to the retry-drop path.
+ * Channel-selection-only: this does not touch the underlying identity used
+ * for cursor files or swarm_bus_* workspaces, which have no such
+ * restriction and must not be changed by this normalization.
+ */
+function normalizeMailboxName(name) {
+  return typeof name === "string" && name.startsWith(".") ? name.slice(1) : name;
+}
+
+export function selectCoordinationChannels(workspace, additionalWorkspaces = []) {
+  return [...new Set([workspace, ...additionalWorkspaces, "global"].map(normalizeMailboxName))];
 }
 
 // --- flock-based lease, reused verbatim from swarm-messages.mjs ------------
@@ -691,7 +1110,12 @@ export async function runSweep({
   // no other mailbox to receive on, and a directive with no specific repo
   // scope is addressed there for every consumer regardless of their own
   // workspace.
-  const pollWorkspaces = [...new Set([workspace, ...additionalWorkspaces, "global"])];
+  // bus.extraPollWorkspaces?.() is undefined for RepoMemoryBus, so this is a
+  // no-op there: [...] spread of `?? []` changes nothing about the flag-off
+  // set or its order. CoordinationBus uses it to add the synthetic
+  // direct-mail bucket (see its class header) without runSweep needing to
+  // know that bucket exists.
+  const pollWorkspaces = [...new Set([workspace, ...additionalWorkspaces, "global", ...(bus.extraPollWorkspaces?.() ?? [])])];
 
   if (debug) {
     process.stderr.write(
@@ -914,16 +1338,30 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
 
   const timeout = Number.parseInt(env.REPO_MEMORY_MCP_TIMEOUT_MS || "4000", 10);
   const gatewayUrl = env.MCP_GATEWAY_URL || DEFAULT_GATEWAY_URL;
-  const bus = new RepoMemoryBus(new McpGatewayClient(gatewayUrl, timeout, globalThis.fetch, client, debug));
+  const gatewayClient = new McpGatewayClient(gatewayUrl, timeout, globalThis.fetch, client, debug);
+  const lane = selected.worktree ? basename(selected.worktree) : null;
+  const additionalWorkspaces = lane && lane !== selected.identity ? [lane] : [];
 
+  // Flag-off (default): bus is exactly `new RepoMemoryBus(gatewayClient)`,
+  // byte-for-byte today's construction -- selectBus()'s flag-off branch does
+  // nothing else. The identity/channel derivation below only runs when
+  // REPO_MEMORY_COORDINATION_BUS=1; a derivation failure there is caught by
+  // the same catch block runSweep's own identical derivation would hit
+  // anyway, so this introduces no new failure mode.
+  let bus = new RepoMemoryBus(gatewayClient);
   try {
-    const lane = selected.worktree ? basename(selected.worktree) : null;
+    if (env.REPO_MEMORY_COORDINATION_BUS === "1") {
+      const identity = deriveIdentity(client, payload, env);
+      const channels = selectCoordinationChannels(selected.identity, additionalWorkspaces);
+      bus = selectBus(env, gatewayClient, client, { identity, channels, env, debug });
+    }
+
     const outcome = await runSweep({
       client,
       eventName,
       payload,
       workspace: selected.identity,
-      additionalWorkspaces: lane && lane !== selected.identity ? [lane] : [],
+      additionalWorkspaces,
       worktree: selected.worktree,
       env,
       bus,

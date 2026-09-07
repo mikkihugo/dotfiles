@@ -7,20 +7,30 @@ import test from "node:test";
 import {
   CAP_BODY_BYTES,
   CAP_MESSAGE_COUNT,
+  CoordinationBus,
+  RepoMemoryBus,
   buildTrailerLine,
   capMessages,
   clientCanReceive,
+  coordinationInboxPathFor,
   createContext,
   cursorPathFor,
   defaultCursorDir,
   dedupeByMessageId,
   deriveIdentity,
+  derivePrincipal,
   filterUnread,
   isHeartbeat,
   isOwnMessage,
+  partitionMessagesByChannel,
+  readCoordinationInbox,
   readCursor,
   renderClientOutput,
+  selectBus,
+  selectCoordinationChannels,
+  extractRejectedMailbox,
   validateIdentity,
+  writeCoordinationInbox,
   writeCursor,
 } from "./coordination-mailbox-sweep.mjs";
 
@@ -270,4 +280,322 @@ test("dedupeByMessageId leaves messages with no id untouched (no id is not a dup
     { sequence: 2, body: "no id", _workspace: "global" },
   ];
   assert.equal(dedupeByMessageId(polled).length, 2, "messages without id stay; the dedupe key requires an id");
+});
+
+// =============================================================================
+// coordination_* migration (feature-flagged, REPO_MEMORY_COORDINATION_BUS=1)
+// =============================================================================
+//
+// These tests cover the new path's pure logic only (channel selection,
+// principal derivation, inbox_uri persistence, and CoordinationBus's request
+// shaping against a fake client). They do not exercise a live or mocked
+// HTTP transport -- see coordination-mailbox-sweep.transport.test.mjs for
+// that style of coverage on the swarm_bus_* path. Every finding cited below
+// (field names, response shapes, error strings) was verified live against
+// the deployed gateway on 2026-09-07 under a disposable principal
+// ("probe-01ab", mailbox "dotfiles") -- see CoordinationBus's own header
+// comment in coordination-mailbox-sweep.mjs for the full probe transcript.
+
+// --- selectBus: flag gating --------------------------------------------------
+
+test("selectBus returns RepoMemoryBus when the flag is unset, empty, or any value other than the literal string \"1\"", () => {
+  const gatewayClient = {};
+  for (const value of [undefined, "", "0", "true", "TRUE", "on", "yes"]) {
+    const env = value === undefined ? {} : { REPO_MEMORY_COORDINATION_BUS: value };
+    const bus = selectBus(env, gatewayClient, "codex");
+    assert.ok(bus instanceof RepoMemoryBus, `expected RepoMemoryBus for REPO_MEMORY_COORDINATION_BUS=${JSON.stringify(value)}`);
+  }
+});
+
+test("selectBus returns CoordinationBus only for the literal string \"1\"", () => {
+  const gatewayClient = {};
+  const bus = selectBus(
+    { REPO_MEMORY_COORDINATION_BUS: "1" },
+    gatewayClient,
+    "codex",
+    { identity: "codex-abcd1234", channels: ["engine", "global"], env: {} },
+  );
+  assert.ok(bus instanceof CoordinationBus);
+});
+
+// --- channel selection --------------------------------------------------------
+
+test("selectCoordinationChannels mirrors pollWorkspaces: workspace + additional + global, deduped", () => {
+  assert.deepEqual(selectCoordinationChannels("engine", ["engine-lane"]), ["engine", "engine-lane", "global"]);
+  assert.deepEqual(selectCoordinationChannels("engine", []), ["engine", "global"]);
+  // "global" as the workspace itself, or as a duplicate lane, still appears once.
+  assert.deepEqual(selectCoordinationChannels("global", []), ["global"]);
+  assert.deepEqual(selectCoordinationChannels("engine", ["engine"]), ["engine", "global"]);
+});
+
+test("selectCoordinationChannels strips a leading dot from a hidden-directory-derived identity", () => {
+  // /home/mhugo/.dotfiles -> basename ".dotfiles" is not a valid mailbox
+  // name server-side, but the bare "dotfiles" is one of the actually
+  // registered mailboxes - verified live 2026-09-07.
+  assert.deepEqual(selectCoordinationChannels(".dotfiles", []), ["dotfiles", "global"]);
+  // Deduping still applies after normalization, not before: ".dotfiles" and
+  // "dotfiles" arriving from different sources collapse to one channel.
+  assert.deepEqual(selectCoordinationChannels(".dotfiles", ["dotfiles"]), ["dotfiles", "global"]);
+});
+
+test("extractRejectedMailbox matches both observed live rejection wordings", () => {
+  assert.equal(extractRejectedMailbox(new Error('mailbox "eng-swarm-bus" is not registered')), "eng-swarm-bus");
+  assert.equal(
+    extractRejectedMailbox(new Error('mailbox must be a bare registered name (letters, digits, dot, underscore or hyphen), not a path, scheme or label: ".dotfiles"')),
+    ".dotfiles",
+  );
+  assert.equal(extractRejectedMailbox(new Error("some unrelated failure")), null);
+});
+
+// --- principal derivation ------------------------------------------------------
+//
+// LIVE-VERIFIED shape (2026-09-07): coordination_subscribe requires
+// "<client>-<token>" with the TOKEN half 4-16 alphanumeric characters --
+// not a bare 4-16 alnum string. These tests pin derivePrincipal to that
+// verified shape, plus the length edge cases DESIGN's blocking gap named.
+
+test("derivePrincipal keeps an already-conforming identity as-is (token already 4-16 alnum)", () => {
+  assert.equal(derivePrincipal("claude-674f9a3f", "claude"), "claude-674f9a3f");
+});
+
+test("derivePrincipal truncates a token over the 16-character ceiling (the no-dash verbatim-session-id case)", () => {
+  // deriveIdentity's own contract: a session id with no dash is used
+  // verbatim and untruncated. A synthetic 24-char no-dash suffix (not a
+  // real session id - illustrating the shape, not a live identity).
+  const identity = "claude-syntheticTestId24Chars";
+  const principal = derivePrincipal(identity, "claude");
+  assert.equal(principal, "claude-syntheticTestId2");
+  const [, token] = principal.split(/-(.+)/);
+  assert.ok(token.length >= 4 && token.length <= 16, `token length ${token.length} must be 4-16`);
+});
+
+test("derivePrincipal pads a token under the 4-character floor deterministically", () => {
+  // identity "cx-ab" strips to token "ab" (2 chars), under the floor.
+  assert.equal(derivePrincipal("cx-ab", "cx"), "cx-ab00");
+});
+
+test("derivePrincipal strips non-alphanumeric characters from the token (validateIdentity permits '.' and '_', the coordination schema does not)", () => {
+  assert.equal(derivePrincipal("codex-ab.cd_12", "codex"), "codex-abcd12");
+});
+
+test("derivePrincipal splits a compound client name (containing its own dash) using the known client label, not the first dash in the identity", () => {
+  const identity = "kimi-code-abcd1234";
+  assert.equal(derivePrincipal(identity, "kimi-code"), "kimi-code-abcd1234");
+});
+
+// --- inbox_uri capability persistence ------------------------------------------
+
+test("coordinationInboxPathFor lands in the same directory as cursorPathFor but under a distinct filename", () => {
+  const env = { XDG_STATE_HOME: "/home/mhugo/.local/state", HOME: "/home/mhugo" };
+  const cursor = cursorPathFor("claude-abcd1234", env);
+  const inbox = coordinationInboxPathFor("claude-abcd1234", env);
+  assert.equal(inbox, "/home/mhugo/.local/state/coordination-mailbox/claude-abcd1234.coordination-inbox.json");
+  assert.notEqual(inbox, cursor, "must be a distinct file from .cursor.json (see DESIGN's rollback-losslessness rationale)");
+});
+
+test("readCoordinationInbox on a missing file returns an empty/absent shape, not an error", () => {
+  const state = readCoordinationInbox("/nonexistent/path/does-not-exist.coordination-inbox.json");
+  assert.equal(state.schema, "coordination-mailbox-inbox/v1");
+  assert.equal(state.inbox_uri, undefined);
+  assert.deepEqual(state.channels, []);
+});
+
+test("a corrupt coordination-inbox file is treated as absent rather than fatal", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "coordination-inbox-"));
+  try {
+    const path = join(dir, "claude-abcd1234.coordination-inbox.json");
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(path, "{not valid json");
+    const state = readCoordinationInbox(path);
+    assert.equal(state.inbox_uri, undefined);
+    assert.deepEqual(state.channels, []);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("a coordination-inbox file with no inbox_uri field is treated as absent (inbox_uri is the field that makes the record valid)", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "coordination-inbox-"));
+  try {
+    const path = join(dir, "claude-abcd1234.coordination-inbox.json");
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(path, JSON.stringify({ schema: "coordination-mailbox-inbox/v1", channels: ["global"], sequence: 5 }));
+    const state = readCoordinationInbox(path);
+    assert.equal(state.inbox_uri, undefined, "a record without inbox_uri is not a usable capability");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("coordination-inbox persistence: write then read round-trips every field", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "coordination-inbox-"));
+  try {
+    const path = join(dir, "claude-abcd1234.coordination-inbox.json");
+    const written = {
+      schema: "coordination-mailbox-inbox/v1",
+      inbox_uri: "coord://fake-signed-capability-token",
+      channels: ["engine", "global"],
+      principal: "claude-abcd1234",
+      session: "claude-abcd1234",
+      sequence: 42,
+      issued_at: "2026-09-07T00:00:00.000Z",
+    };
+    writeCoordinationInbox(path, written);
+    const read = readCoordinationInbox(path);
+    assert.deepEqual(read, written);
+
+    const { statSync } = await import("node:fs");
+    // Same persistence hygiene as writeCursor: 0600 file.
+    assert.equal(statSync(path).mode & 0o777, 0o600);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("coordination-inbox persistence never appears in .cursor.json's directory listing as the same file (flag toggle stays lossless)", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "coordination-inbox-"));
+  try {
+    const cursorPath = join(dir, "claude-abcd1234.cursor.json");
+    const inboxPath = join(dir, "claude-abcd1234.coordination-inbox.json");
+    writeCursor(cursorPath, { schema: "coordination-mailbox-cursor/v1", sequences: { engine: 7 } });
+    writeCoordinationInbox(inboxPath, {
+      schema: "coordination-mailbox-inbox/v1",
+      inbox_uri: "coord://fake",
+      channels: ["engine"],
+      principal: "claude-abcd1234",
+      session: "claude-abcd1234",
+      sequence: 7,
+      issued_at: "2026-09-07T00:00:00.000Z",
+    });
+    // Writing one must never disturb the other -- this is the whole point
+    // of keeping them as separate files.
+    assert.deepEqual(readCursor(cursorPath).sequences, { engine: 7 });
+    assert.equal(readCoordinationInbox(inboxPath).inbox_uri, "coord://fake");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// --- message partitioning (direct-mail catch-all bucket) -----------------------
+
+test("partitionMessagesByChannel buckets a message by its channel/mailbox field when it matches an enumerated channel", () => {
+  const messages = [
+    { id: "a", channel: "engine", body: "on-channel" },
+    { id: "b", mailbox: "global", body: "also on-channel (mailbox field)" },
+  ];
+  const buckets = partitionMessagesByChannel(messages, ["engine", "global"]);
+  assert.deepEqual(buckets.get("engine").map((m) => m.id), ["a"]);
+  assert.deepEqual(buckets.get("global").map((m) => m.id), ["b"]);
+  assert.deepEqual(buckets.get("__inbox__"), []);
+});
+
+test("partitionMessagesByChannel falls back to the __inbox__ catch-all for direct mail matching no enumerated channel (the partition-hole fix)", () => {
+  const messages = [
+    { id: "direct-1", channel: "some-other-session-not-a-mailbox", body: "direct mail" },
+    { id: "direct-2", body: "no channel field at all" },
+  ];
+  const buckets = partitionMessagesByChannel(messages, ["engine", "global"]);
+  assert.deepEqual(buckets.get("engine"), []);
+  assert.deepEqual(buckets.get("global"), []);
+  assert.deepEqual(buckets.get("__inbox__").map((m) => m.id), ["direct-1", "direct-2"]);
+});
+
+// --- CoordinationBus request shaping (fake client, no network) -----------------
+
+function fakeCoordinationClient(responses) {
+  const calls = [];
+  return {
+    calls,
+    async callRepoMemory(tool, args) {
+      calls.push({ tool, args });
+      const handler = responses[tool];
+      if (!handler) throw new Error(`fakeCoordinationClient: no handler for ${tool}`);
+      return typeof handler === "function" ? handler(args) : handler;
+    },
+    async close() {},
+  };
+}
+
+test("CoordinationBus.subscribe treats ack_watermark-without-inbox_uri as success (the live-observed shape)", async () => {
+  const client = fakeCoordinationClient({
+    coordination_subscribe: { ack_watermark: 0, channels: ["engine", "global"], created: true, principal: "codex-abcd1234", session: "codex-abcd1234" },
+  });
+  const bus = new CoordinationBus(client, { identity: "codex-abcd1234", clientLabel: "codex", channels: ["engine", "global"], env: { XDG_STATE_HOME: "/nonexistent" } });
+  const result = await bus.subscribe("engine", "codex-abcd1234");
+  assert.deepEqual(result, { ack_watermark: 0 });
+  assert.equal(client.calls[0].tool, "coordination_subscribe");
+  assert.equal(client.calls[0].args.principal, "codex-abcd1234");
+  assert.equal(client.calls[0].args.session, "codex-abcd1234");
+  assert.ok(!("inbox_uri" in client.calls[0].args), "no inbox_uri hint on the first call -- none is held yet");
+});
+
+test("CoordinationBus.poll partitions the merged inbox and tags the __inbox__ bucket for direct mail, and reuses one cached poll across workspaces in a run", async () => {
+  const client = fakeCoordinationClient({
+    coordination_subscribe: { ack_watermark: 10 },
+    coordination_poll: {
+      known_session: true,
+      messages: [
+        { id: "m1", channel: "engine", body: "on channel" },
+        { id: "m2", body: "direct mail, no channel" },
+      ],
+    },
+  });
+  const bus = new CoordinationBus(client, { identity: "codex-abcd1234", clientLabel: "codex", channels: ["engine", "global"], env: { XDG_STATE_HOME: "/nonexistent" } });
+  const engineBucket = await bus.poll("engine", "codex-abcd1234", {});
+  const inboxBucket = await bus.poll("__inbox__", "codex-abcd1234", {});
+  assert.deepEqual(engineBucket.map((m) => m.id), ["m1"]);
+  assert.deepEqual(inboxBucket.map((m) => m.id), ["m2"]);
+  assert.equal(engineBucket.knownConsumer, true);
+  const pollCalls = client.calls.filter((c) => c.tool === "coordination_poll");
+  assert.equal(pollCalls.length, 1, "the second poll() call in the same run must reuse the cached result, not re-call the network");
+});
+
+test("CoordinationBus.poll subscribes even when a capability is already loaded, every run (no silent no-op on a warm state)", async () => {
+  const client = fakeCoordinationClient({
+    coordination_subscribe: { ack_watermark: 5 },
+    coordination_poll: { known_session: true, messages: [] },
+  });
+  const bus = new CoordinationBus(client, { identity: "codex-abcd1234", clientLabel: "codex", channels: ["global"], env: { XDG_STATE_HOME: "/nonexistent" } });
+  await bus.poll("global", "codex-abcd1234", {});
+  const subscribeCalls = client.calls.filter((c) => c.tool === "coordination_subscribe");
+  assert.equal(subscribeCalls.length, 1, "poll() must call subscribe at least once per run even with no prior bus.subscribe() call");
+});
+
+test("CoordinationBus.subscribe drops a rejected (unregistered) mailbox and retries rather than failing the whole call", async () => {
+  let attempt = 0;
+  const client = fakeCoordinationClient({
+    coordination_subscribe: (args) => {
+      attempt += 1;
+      if (args.channels.includes("eng-swarm-bus")) {
+        throw new Error('mailbox "eng-swarm-bus" is not registered; known mailboxes are global, presence, dotfiles, infra, jcode, singularity-engine');
+      }
+      return { ack_watermark: 0, channels: args.channels };
+    },
+  });
+  const bus = new CoordinationBus(client, {
+    identity: "codex-abcd1234",
+    clientLabel: "codex",
+    channels: ["engine", "eng-swarm-bus", "global"],
+    env: { XDG_STATE_HOME: "/nonexistent" },
+  });
+  const result = await bus.subscribe("engine", "codex-abcd1234");
+  assert.deepEqual(result, { ack_watermark: 0 });
+  assert.equal(attempt, 2, "one rejected attempt, one retry with the offending channel dropped");
+});
+
+test("CoordinationBus.ack and .post include inbox_uri only when one is held, and never otherwise", async () => {
+  const client = fakeCoordinationClient({
+    coordination_ack: {},
+    coordination_post: {},
+  });
+  const bus = new CoordinationBus(client, { identity: "codex-abcd1234", clientLabel: "codex", channels: ["global"], env: { XDG_STATE_HOME: "/nonexistent" } });
+  await bus.ack("global", "codex-abcd1234", "msg-1");
+  await bus.post("global", { sender: "codex-abcd1234", recipient: "all", type: "available", body: "hi", idempotency_key: "k" });
+  const ackArgs = client.calls.find((c) => c.tool === "coordination_ack").args;
+  const postArgs = client.calls.find((c) => c.tool === "coordination_post").args;
+  assert.ok(!("inbox_uri" in ackArgs));
+  assert.ok(!("inbox_uri" in postArgs));
+  assert.equal(postArgs.mailbox, "global");
+  assert.deepEqual(postArgs.recipient, { kind: "all" });
+  assert.equal(postArgs.sender_principal, "codex-abcd1234");
 });

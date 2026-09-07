@@ -208,19 +208,76 @@ rebase)
 	git -C "$root" rebase "$1"
 	;;
 sync-main)
-	[[ $# -eq 0 ]] || die 'sync-main takes no arguments'
+	# mhugo/dotfiles#13: when several agents share the primary checkout
+	# concurrently, primary main may accumulate local commits authored by a
+	# sibling session. The cherry-pick-equivalence guard is correct (we must
+	# not silently reset away a sibling's commits) but the previous error
+	# message gave no recovery path. Print a divergence report naming each
+	# offending commit and pointing at three concrete resolutions so the
+	# operator can act without reading the script.
+	divergence_only=0
+	while (($#)); do
+		case "$1" in
+		--divergence-only) divergence_only=1; shift ;;
+		*) die "sync-main: unknown argument: $1 (supported: --divergence-only)" ;;
+		esac
+	done
 	primary="$HOME/.dotfiles"
 	[[ -d "$primary" ]] || die "primary checkout is missing: $primary"
 	branch="$(git -C "$primary" symbolic-ref --quiet --short HEAD)" || die 'primary checkout is detached'
 	[[ "$branch" == main ]] || die 'primary checkout is not on main'
 	[[ -z "$(git -C "$primary" status --porcelain)" ]] || die 'primary checkout is not clean'
 	fetch_forgejo_main "$primary"
-	if git -C "$primary" cherry origin/main main | grep -q '^+'; then
-		die 'primary main has local commits that are not patch-equivalent upstream'
+	if [[ "$(git -C "$primary" rev-parse main)" == "$(git -C "$primary" rev-parse origin/main)" ]]; then
+		printf 'synced=main revision=%s already_current=true\n' "$(git -C "$primary" rev-parse main)"
+		exit 0
 	fi
-	git -C "$primary" reset --hard origin/main
-	[[ "$(git -C "$primary" rev-parse main)" == "$(git -C "$primary" rev-parse origin/main)" ]] || die 'primary main did not converge'
-	printf 'synced=main revision=%s patch_equivalent=true\n' "$(git -C "$primary" rev-parse main)"
+	# Local main is behind or ahead of origin/main. If local has zero
+	# local-only commits relative to origin/main, a hard reset fast-forwards
+	# cleanly. If local has local-only commits, list them and stop; the
+	# operator picks one of three resolutions below.
+	local_only="$(git -C "$primary" cherry origin/main main 2>/dev/null | awk '/^\+/ {print $2}')"
+	count=0
+	total="$(printf '%s\n' "$local_only" | wc -l | tr -d ' ')"
+	author=
+	subject=
+	files=
+	sha=
+	if [[ -z "$local_only" ]]; then
+		git -C "$primary" reset --hard origin/main
+		printf 'synced=main revision=%s fast_forward=true\n' "$(git -C "$primary" rev-parse main)"
+		exit 0
+	fi
+	# Divergence report. List every local-only commit's short sha + author
+	# + subject so the operator can identify whose work it is. cap at 25
+	# to keep the output bounded; cap can be revisited if it bites.
+	printf 'sync-main: primary main has %s local commit(s) not patch-equivalent to upstream\n' "$total" >&2
+	printf 'divergence=primary_main ahead_of_upstream commits=%s\n' "$total" >&2
+	while IFS= read -r sha; do
+		count=$((count + 1))
+		[[ $count -gt 25 ]] && { printf '  ... %s more (truncated; inspect with: git log origin/main..main)\n' "$((total - 25))" >&2; break; }
+		author="$(git -C "$primary" log -1 --format='%an <%ae>' "$sha" 2>/dev/null || echo '?')"
+		subject="$(git -C "$primary" log -1 --format='%s' "$sha" 2>/dev/null || echo '?')"
+		# Files touched (capped at 5 to keep the line bounded).
+		files="$(git -C "$primary" show --name-only --format='' "$sha" 2>/dev/null | head -5 | paste -sd, -)"
+		printf '  local_commit=%s author="%s" subject=%q files=%s\n' \
+			"$(printf '%s' "$sha" | cut -c1-12)" "$author" "$subject" "$files" >&2
+	done <<<"$local_only"
+	if [[ "$divergence_only" -eq 1 ]]; then
+		exit 2
+	fi
+	cat >&2 <<'DIV_HELP'
+recovery:
+  - if these commits are yours and not yet on a lane:
+      repo vcs worktree-create <lane-name> main    # lifts your commits onto a worktree/* branch
+      # then re-run sync-main from the canonical primary
+  - if these commits are yours and you want them kept on main:
+      repo vcs converge-main                       # rebases main onto origin/main keeping your commits
+  - if these commits belong to a sibling agent:
+      coordinate with them to push their commits to a lane first, then sync-main
+      (raw git: git fetch origin main && git merge --no-ff origin/main)
+DIV_HELP
+	die 'sync-main refused: primary main has unpushed local commits (see recovery above)'
 	;;
 converge-main)
 	# A diverged main -- local commits AND remote commits -- has no other route
@@ -475,5 +532,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main|converge-main|describe|amend|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|branch-retire|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main [--divergence-only]|converge-main|describe|amend|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|branch-retire|contract-test|config}' ;;
 esac

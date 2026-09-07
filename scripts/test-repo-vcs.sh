@@ -105,6 +105,35 @@ grep -q 'conflict markers remain in' "$root/scripts/repo-vcs.sh" || {
 _run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs sync-main'
 _run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs worktree-abandon'
 _run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs branch-retire'
+# mhugo/dotfiles#13: sync-main must report local-only commits with a
+# divergence report naming each commit's sha/author/subject, and the
+# recovery block must point to worktree-create + converge-main. The
+# helper --divergence-only exits 2 with the report and no reset.
+grep -q 'divergence=primary_main ahead_of_upstream commits=' "$root/scripts/repo-vcs.sh" || {
+	printf 'sync-main must emit a structured divergence=primary_main report (mhugo/dotfiles#13)\n' >&2
+	exit 1
+}
+grep -q 'local_commit=.*author=' "$root/scripts/repo-vcs.sh" || {
+	printf 'sync-main must emit a per-commit local_commit=author=subject=files= line (mhugo/dotfiles#13)\n' >&2
+	exit 1
+}
+grep -q 'repo vcs worktree-create <lane-name> main' "$root/scripts/repo-vcs.sh" || {
+	printf 'sync-main recovery must point at repo vcs worktree-create <lane-name> main (mhugo/dotfiles#13)\n' >&2
+	exit 1
+}
+grep -q 'repo vcs converge-main' "$root/scripts/repo-vcs.sh" || {
+	printf 'sync-main recovery must point at repo vcs converge-main (mhugo/dotfiles#13)\n' >&2
+	exit 1
+}
+grep -q -- '--divergence-only' "$root/scripts/repo-vcs.sh" || {
+	printf 'sync-main must accept --divergence-only (mhugo/dotfiles#13)\n' >&2
+	exit 1
+}
+# Old unhelpful one-liner must be gone.
+grep -q 'primary main has local commits that are not patch-equivalent upstream' "$root/scripts/repo-vcs.sh" && {
+	printf 'sync-main must no longer emit the unhelpful single-line local-commits error (mhugo/dotfiles#13)\n' >&2
+	exit 1
+}
 # Leftover lanes used chore/* branches and prunable missing checkouts. Abandon
 # must resolve the live worktree HEAD and prune a vanished path.
 grep -q 'symbolic-ref --quiet --short HEAD' "$root/scripts/repo-vcs.sh" || {

@@ -40,13 +40,13 @@
         "model": "auto-minimax"
       },
       "code-review": {
-        "model": "auto-deepseek"
+        "model": "auto-deepseek-fast"
       },
       "research": {
         "model": "auto-minimax"
       },
       "security-review": {
-        "model": "auto-deepseek"
+        "model": "auto-deepseek-fast"
       },
       "refactor": {
         "model": "auto-qwen"

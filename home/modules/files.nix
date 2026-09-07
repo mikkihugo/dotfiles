@@ -102,6 +102,26 @@
       force = true;
     };
 
+    # Stop hook: blocks the session from going idle while a "question" or
+    # "blocker" bus message sits unacked, capped so it can never livelock.
+    # Claude-only (not shared with other clients the way the sweep script
+    # is), so both files render into .claude/hooks/ rather than a shared
+    # canonical path.
+    ".claude/hooks/stop-continue-if-actionable.mjs" = {
+      source = ../../config/claude/hooks/stop-continue-if-actionable.mjs;
+      executable = true;
+      force = true;
+    };
+
+    ".claude/hooks/stop-continue-if-actionable.sh" = {
+      source = pkgs.replaceVars ../../config/claude/hooks/stop-continue-if-actionable.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
     ".kimi-code/hooks/coordination-mailbox-sweep.sh" = {
       source = pkgs.replaceVars ../../config/kimi-code/hooks/coordination-mailbox-sweep.sh {
         bash = "${pkgs.bash}/bin/bash";

@@ -36,7 +36,7 @@ async function installClaude() {
   const install = (event, group) => {
     const existing = Array.isArray(settings.hooks[event]) ? settings.hooks[event] : [];
     settings.hooks[event] = existing
-      .filter((item) => !/swarm-messages\.sh|coordination-mailbox-sweep\.sh/.test(JSON.stringify(item)))
+      .filter((item) => !/swarm-messages\.sh|coordination-mailbox-sweep\.sh|stop-continue-if-actionable\.sh/.test(JSON.stringify(item)))
       .concat(group);
   };
   install("SessionStart", {
@@ -52,6 +52,15 @@ async function installClaude() {
       type: "command",
       command: "/home/mhugo/.claude/hooks/coordination-mailbox-sweep.sh",
       timeout: 30,
+    }],
+  });
+  // No matcher for Stop, unlike the tool/prompt events above - per the
+  // documented Stop-hook contract, hooks.Stop entries fire unconditionally.
+  install("Stop", {
+    hooks: [{
+      type: "command",
+      command: "/home/mhugo/.claude/hooks/stop-continue-if-actionable.sh",
+      timeout: 15,
     }],
   });
   await atomicWrite(claudePath, `${JSON.stringify(settings, null, 2)}\n`);

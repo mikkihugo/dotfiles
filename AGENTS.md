@@ -11,6 +11,13 @@ before making non-trivial changes.
   (x86_64 WSL2 GPU host), `cc-se-sto-devbox-01` (x86_64 fleet devbox), and
   `mhugo` (generic x86_64 fallback) — see `homeConfigurations` in `flake.nix`,
   which is authoritative if this list drifts.
+- The shorthand `hms` runs `home-manager switch` for this host (alias
+  defined in `home/modules/shell.nix:287`; it auto-selects the host via
+  `scripts/current-home-profile`, so no host argument is required or
+  accepted). Use it for fast re-application after editing anything under
+  `config/` or `home/`; it is the same command the long form runs, just
+  without the recurse-into-`~` footgun. Bare `home-manager switch` without
+  the flake target recurses into `~` and is unsafe.
 - Enter the managed toolchain first: `nix develop` (or
   `eval "$(direnv export bash)"` — this repo's `.envrc` is whitelist-exact, so
   run `direnv allow` only if the export reports it blocked; a redundant allow

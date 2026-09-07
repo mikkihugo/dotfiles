@@ -136,6 +136,22 @@
       force = true;
     };
 
+    # SessionStart skills gate. Our using-skills router is `origin: superpowers
+    # ... adapted`; upstream ships a SessionStart hook that force-injects its
+    # router body, and our adaptation kept the prose but dropped that hook. The
+    # measured result was a gate nothing executed: 26 of 43 skills at zero uses
+    # ever, and the router invoked only on the day a human asked about it.
+    #
+    # Client-agnostic on purpose -- it selects its output shape per harness
+    # (SKILLS_GATE_SHAPE=claude|cursor|sdk), so the same file serves every CLI
+    # coder. Only .claude is wired so far; the other clients each need their own
+    # registration in their own config format.
+    ".claude/hooks/skills-gate-session-start.sh" = {
+      source = ../../config/claude/hooks/skills-gate-session-start.sh;
+      executable = true;
+      force = true;
+    };
+
     # Stop hook: blocks the session from going idle while a "question" or
     # "blocker" bus message sits unacked, capped so it can never livelock.
     # Claude-only (not shared with other clients the way the sweep script

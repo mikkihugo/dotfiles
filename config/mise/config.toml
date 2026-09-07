@@ -19,7 +19,14 @@
 # on disk. Unpin once upstream fixes hook discovery.
 "npm:@github/copilot" = "1.0.82"
 "npm:@hrrrsn/mcp-vnc" = "latest"
-"npm:@playwright/mcp" = "latest"
+# 0.0.80 lost npm provenance vs 0.0.40-0.0.79 (mise's trust-policy correctly
+# flagged it) - verified benign: Microsoft's publish.yml moved npm publishing
+# from GitHub-Actions-OIDC to their internal Azure DevOps ESRP pipeline for
+# this one release (real GitHub release by the known maintainer, PR-linked
+# changelog, matching tag/commit/timeline); the OIDC job was already restored
+# at HEAD as of 2026-09-07. Scoped to this exact version, not a blanket
+# disable - remove once a future version regains provenance.
+"npm:@playwright/mcp" = { version = "latest", trust_policy_excludes = ["@playwright/mcp@0.0.80", "playwright@1.63.0-alpha-2026-08-31", "playwright-core@1.63.0-alpha-2026-08-31"] }
 gcloud = "latest"
 "npm:firebase-tools" = "latest"
 python = "latest"

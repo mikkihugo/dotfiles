@@ -78,6 +78,21 @@
       force = true;
     };
 
+    ".kimi-code/hooks/observations-autolog.sh" = {
+      source = pkgs.replaceVars ../../config/kimi-code/hooks/observations-autolog.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
+    ".kimi-code/hooks/observations-autolog.mjs" = {
+      source = ../../config/kimi-code/hooks/observations-autolog.mjs;
+      executable = true;
+      force = true;
+    };
+
     # coordination-mailbox-sweep is the renamed, bounded, cursor-based
     # successor to the swarm-messages hook above. The swarm-messages.* paths
     # above stay as compatibility shims for one release (factory still names

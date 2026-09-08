@@ -100,7 +100,7 @@ function withoutManagedKimiHooks(content) {
       block.push(lines[index]);
       index += 1;
     }
-    if (!block.join("\n").includes("swarm-messages.sh")) kept.push(...block);
+    if (!block.join("\n").includes("swarm-messages.sh") && !block.join("\n").includes("observations-autolog.sh")) kept.push(...block);
   }
   return kept.join("\n").trimEnd();
 }
@@ -122,6 +122,11 @@ async function installKimi() {
     "[[hooks]]",
     'event = "SessionStart"',
     'command = "/home/mhugo/.kimi-code/hooks/swarm-messages.sh SessionStart"',
+    "timeout = 10",
+    "",
+    "[[hooks]]",
+    'event = "Stop"',
+    'command = "/home/mhugo/.kimi-code/hooks/observations-autolog.sh"',
     "timeout = 10",
     "# END repo-memory swarm hooks",
     "",

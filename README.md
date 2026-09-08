@@ -46,7 +46,7 @@ recipient and re-encrypt the repo secrets.
 
 | Task | Command |
 |------|---------|
-| Apply config changes | `hms` (alias for home-manager switch) |
+| Apply config changes | `hms` — type it alone; it already includes `switch` |
 | Load LLM API keys | `load-ai-keys` |
 | Edit SOPS-encrypted secrets | `secrets` (sops $EDITOR) |
 | Fetch runtime secret from OpenBao | `bao login -method=oidc && bao kv get kv/<name>` |

@@ -14,7 +14,12 @@ before making non-trivial changes.
 - The shorthand `hms` runs `home-manager switch` for this host (alias
   defined in `home/modules/shell.nix:287`; it auto-selects the host via
   `scripts/current-home-profile`, so no host argument is required or
-  accepted). Use it for fast re-application after editing anything under
+  accepted). **Type `hms` alone — never `hms switch`.** The alias already
+  expands to `nh home switch <flake> -c <profile>`, so a trailing `switch`
+  becomes a second positional and `nh` rejects it outright:
+  `error: unexpected argument 'switch' found`. It fails loudly rather than
+  doing the wrong thing, but the wording "alias for home-manager switch"
+  reads like a command prefix, which is why this is spelled out. Use it for fast re-application after editing anything under
   `config/` or `home/`; it is the same command the long form runs, just
   without the recurse-into-`~` footgun. Bare `home-manager switch` without
   the flake target recurses into `~` and is unsafe.

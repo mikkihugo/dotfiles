@@ -27,7 +27,7 @@ mcp_2026_07_28 = true
 # (server__tool) must stay within the 64-char Responses API bound even
 # after codex adds its client prefix; the long deployment-name key
 # pushed 8 of 88 names over the limit (2026-09-08).
-non_prefixed_mcp_tool_names = { enabled = true, server_names = ["gateway"] }
+non_prefixed_mcp_tool_names = { enabled = true, server_names = ["ccgw"] }
 # Codex's own on-disk memory store is off: durable agent memory belongs in the
 # repo_memory bank reached through the CentralCloud MCP gateway, not in a
 # per-client store no other tool can read, supersede, or purge.
@@ -80,7 +80,7 @@ config_file = "agents/singularity-engine-harvester.toml"
 use_memories = false
 generate_memories = false
 
-[mcp_servers.gateway]
+[mcp_servers.ccgw]
 url = "http://mcp-gateway.svc/mcp"
 required = true
 

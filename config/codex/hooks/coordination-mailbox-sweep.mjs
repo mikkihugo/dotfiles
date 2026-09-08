@@ -520,7 +520,14 @@ export class CoordinationBus {
     for (const message of messages) {
       const key = message.direct ? INBOX_BUCKET : message.mailbox;
       if (!buckets.has(key)) buckets.set(key, []);
-      buckets.get(key).push({ ...message, origin: this.name });
+      buckets.get(key).push({
+        ...message,
+        // Map the server wire shape to the renderer's expected fields.
+        id: message.message_id,
+        sequence: message.inbox_sequence,
+        sender: message.sender_session ?? message.sender_principal,
+        origin: this.name,
+      });
     }
     buckets.knownConsumer = result?.known_session !== false;
     buckets.ack_watermark = result?.ack_watermark;
@@ -1194,6 +1201,10 @@ export async function runSweep({
     const allPolled = [];
     const pollErrors = [];
     const pollFailures = [];
+    // True when the coordination sweep fast path ran: the server already
+    // acked atomically, so the per-message ack loop and the local cursor
+    // advance are skipped.
+    let swept = false;
 
     if (canReceive) {
       // Fast path: the coordination bus's sweep is one atomic server-side
@@ -1203,6 +1214,7 @@ export async function runSweep({
       if (typeof bus.sweep === "function") {
         try {
           const buckets = await bus.sweep(identity, controller.signal);
+          swept = true;
           for (const pollWorkspace of pollWorkspaces) {
             if (controller.signal.aborted) break;
             const bucket = buckets.get(pollWorkspace) ?? [];
@@ -1313,7 +1325,10 @@ export async function runSweep({
     // Ack every polled message (not just the capped/kept subset), ascending
     // by sequence, best-effort -- this is what heals the remote watermark.
     // Abandon on the deadline rather than partially acking out of order.
-    const ackOrder = [...unread].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+    // On the sweep fast path the server already acked atomically (the sweep
+    // commits before returning), so this loop and the cursor advance are
+    // skipped entirely.
+    const ackOrder = swept ? [] : [...unread].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
     // Lowest sequence per mailbox whose ack did NOT settle. The local cursor
     // must not advance past it: the server's durable watermark only moves over
     // a contiguous acknowledged prefix, so jumping a hole here strands that
@@ -1342,13 +1357,16 @@ export async function runSweep({
 
     // Advance the local cursor only across the contiguous acknowledged prefix,
     // so an unsettled ack is re-polled next sweep and the remote watermark can
-    // heal itself instead of staying wedged.
-    for (const item of unread) {
-      if (!Number.isInteger(item.sequence)) continue;
-      const floor = ackFloor.get(item._workspace);
-      if (Number.isInteger(floor) && item.sequence >= floor) continue;
-      const current = nextCursor[item._workspace];
-      if (!Number.isInteger(current) || item.sequence > current) nextCursor[item._workspace] = item.sequence;
+    // heal itself instead of staying wedged. Skipped on the sweep fast path:
+    // the server watermark is authoritative and already advanced.
+    if (!swept) {
+      for (const item of unread) {
+        if (!Number.isInteger(item.sequence)) continue;
+        const floor = ackFloor.get(item._workspace);
+        if (Number.isInteger(floor) && item.sequence >= floor) continue;
+        const current = nextCursor[item._workspace];
+        if (!Number.isInteger(current) || item.sequence > current) nextCursor[item._workspace] = item.sequence;
+      }
     }
 
     if (sessionStart && canReceive && !controller.signal.aborted) {

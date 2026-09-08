@@ -11,14 +11,17 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
   const codex = await readJSON("config/codex/hooks.json");
   assert.equal(codex.version, undefined);
   // Codex SessionStart + UserPromptSubmit point at the coordination-mailbox-sweep
-  // successor (the bounded, cursor-based hook). The legacy swarm-messages.mjs
+  // successor (the bounded, cursor-based hook), reached through the HM-rendered
+  // .sh shim -- the shim is what exports REPO_MEMORY_COORDINATION_BUS=1, so
+  // naming the .mjs directly would silently drop codex onto the legacy
+  // RepoMemoryBus path (see the dedicated shim test below). The legacy swarm-messages.mjs
   // path stays installed as a compatibility shim for clients that still name it
   // directly (copilot/cursor/factory below), but the HM-owned codex config no
   // longer references it -- so a codex session must produce a
   // coordination-mailbox-<identity>.cursor.json under
   // /home/mhugo/.local/state/coordination-mailbox/ on its first poll.
-  assert.match(JSON.stringify(codex.hooks.SessionStart), /coordination-mailbox-sweep\.mjs codex SessionStart/);
-  assert.match(JSON.stringify(codex.hooks.UserPromptSubmit), /coordination-mailbox-sweep\.mjs codex UserPromptSubmit/);
+  assert.match(JSON.stringify(codex.hooks.SessionStart), /coordination-mailbox-sweep\.sh codex SessionStart/);
+  assert.match(JSON.stringify(codex.hooks.UserPromptSubmit), /coordination-mailbox-sweep\.sh codex UserPromptSubmit/);
   assert.match(codex.description, /repo-memory/);
 
   const copilot = await readJSON("config/copilot/hooks/swarm-messages.json");
@@ -48,18 +51,33 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
   assert.doesNotMatch(JSON.stringify(factory.hooks), /swarm-messages\.mjs factory/);
 });
 
-test("codex hooks.json wires SessionStart + UserPromptSubmit at coordination-mailbox-sweep.mjs, not the legacy swarm-messages.mjs shim", async () => {
+test("codex hooks.json wires SessionStart + UserPromptSubmit at the HM-rendered coordination-mailbox-sweep.sh shim, not the legacy swarm-messages.mjs shim", async () => {
   // RED-first contract for the codex migration. The HM-rendered codex config
   // must name the new hook for both lifecycle events; the old hook is not a
   // codex invocation target anymore. Factory still names swarm-messages.mjs
   // and is covered by the bundled schema test above.
+  //
+  // codex invokes the .sh shim rather than the .mjs directly (same shape as
+  // copilot and factory) because the shim is the only place
+  // REPO_MEMORY_COORDINATION_BUS=1 is exported; that flag is what routes the
+  // sweep through CoordinationBus and its atomic server-side multi-ack instead
+  // of the legacy per-mailbox RepoMemoryBus path.
   const codex = await readJSON("config/codex/hooks.json");
   const sessionStart = JSON.stringify(codex.hooks.SessionStart);
   const userPromptSubmit = JSON.stringify(codex.hooks.UserPromptSubmit);
-  assert.match(sessionStart, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs codex SessionStart/);
-  assert.match(userPromptSubmit, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs codex UserPromptSubmit/);
+  assert.match(sessionStart, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.sh codex SessionStart/);
+  assert.match(userPromptSubmit, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.sh codex UserPromptSubmit/);
   assert.doesNotMatch(sessionStart, /swarm-messages\.mjs codex/);
   assert.doesNotMatch(userPromptSubmit, /swarm-messages\.mjs codex/);
+
+  // The shim the config now names must actually be rendered by HM, must export
+  // the coordination-bus flag, and must hand off to the .mjs -- otherwise the
+  // assertions above pin a path that resolves to nothing at runtime.
+  const files = await readFile("home/modules/files.nix", "utf8");
+  assert.match(files, /replaceVars[\s\S]*config\/codex\/hooks\/coordination-mailbox-sweep\.sh/);
+  const shim = await readFile("config/codex/hooks/coordination-mailbox-sweep.sh", "utf8");
+  assert.match(shim, /export REPO_MEMORY_COORDINATION_BUS=1/);
+  assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs/);
 });
 
 test("cursor hooks.json wires sessionStart + beforeSubmitPrompt at coordination-mailbox-sweep.mjs, not the legacy swarm-messages.mjs shim", async () => {

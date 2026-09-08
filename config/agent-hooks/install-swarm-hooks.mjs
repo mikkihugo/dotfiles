@@ -80,7 +80,7 @@ async function installClaude() {
       {
         type: "command",
         command: "/home/mhugo/.claude/hooks/observations-autolog.sh claude Stop",
-        timeout: 10,
+        timeout: 30,
         statusMessage: "Autolog observations to repo_memory",
       },
     ],
@@ -135,7 +135,7 @@ async function installKimi() {
     "[[hooks]]",
     'event = "Stop"',
     'command = "/home/mhugo/.kimi-code/hooks/observations-autolog.sh"',
-    "timeout = 10",
+    "timeout = 30",
     "# END repo-memory swarm hooks",
     "",
   ].join("\n");

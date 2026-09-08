@@ -1,13 +1,17 @@
 {
-  "version": 1,
-  "hooks": {
-    "agentStop": [
-      {
-        "type": "command",
-        "exec": "/home/mhugo/.nix-profile/bin/bash",
-        "args": ["/home/mhugo/.copilot/hooks/observations-autolog.sh", "copilot", "agentStop"],
-        "timeoutSec": 10
-      }
-    ]
-  }
+ "version": 1,
+ "hooks": {
+  "agentStop": [
+   {
+    "type": "command",
+    "exec": "/home/mhugo/.nix-profile/bin/bash",
+    "args": [
+     "/home/mhugo/.copilot/hooks/observations-autolog.sh",
+     "copilot",
+     "agentStop"
+    ],
+    "timeoutSec": 30
+   }
+  ]
+ }
 }

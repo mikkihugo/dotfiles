@@ -8,7 +8,7 @@
      {
       "type": "command",
       "command": "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.sh codex SessionStart",
-      "timeout": 12,
+      "timeout": 30,
       "statusMessage": "Joining durable repo-memory swarm"
      },
      {
@@ -26,7 +26,7 @@
      {
       "type": "command",
       "command": "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.sh codex UserPromptSubmit",
-      "timeout": 12,
+      "timeout": 30,
       "statusMessage": "Checking durable repo-memory messages"
      }
     ]

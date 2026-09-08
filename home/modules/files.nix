@@ -152,6 +152,31 @@
       force = true;
     };
 
+    # Point-of-action skills gate: the SessionStart hook above delivers the
+    # router ONCE, at turn zero. Measured 2026-09-08 in a single long session
+    # with that gate active and in context: ~3000 tool calls, 9 skill loads,
+    # all 9 triggered by a human asking about skills, ZERO gate-initiated. What
+    # redirected the agent every time was a refusal AT the action -- the raw-git
+    # guard above, the background-isolation guard, the drift gate: 3 for 3.
+    #
+    # So this pair moves the requirement to where the action is and makes it
+    # blocking. -pretooluse denies a gated command until its skill is loaded;
+    # -mark-loaded records the load so the gate is satisfiable and then silent.
+    # Deliberately narrow: a gate that fires on everything gets rationalized
+    # away, which is the failure mode it replaces. Contract test:
+    # scripts/test-skills-gate-pretooluse.mjs (mutation-checked -- disabling the
+    # denial reddens 7 cases, ignoring the marker 3, breaking the probe 2).
+    ".claude/hooks/skills-gate-pretooluse.sh" = {
+      source = ../../config/claude/hooks/skills-gate-pretooluse.sh;
+      executable = true;
+      force = true;
+    };
+    ".claude/hooks/skills-gate-mark-loaded.sh" = {
+      source = ../../config/claude/hooks/skills-gate-mark-loaded.sh;
+      executable = true;
+      force = true;
+    };
+
     # Stop hook: blocks the session from going idle while a "question" or
     # "blocker" bus message sits unacked, capped so it can never livelock.
     # Claude-only (not shared with other clients the way the sweep script

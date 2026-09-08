@@ -139,7 +139,7 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
   const [clientName = "kimi-code", eventArgument] = argv;
   const payload = await readStdin();
   const eventName = eventArgument || payload.hook_event_name || "Stop";
-  if (eventName !== "Stop" && eventName !== "SessionEnd") return;
+  if (eventName !== "Stop" && eventName !== "SessionEnd" && eventName !== "agentStop") return;
 
   const cwd = resolve(typeof payload.cwd === "string" ? payload.cwd : process.cwd());
   const sessionId =

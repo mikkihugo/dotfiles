@@ -93,6 +93,21 @@
       force = true;
     };
 
+    ".codex/hooks/observations-autolog.mjs" = {
+      source = ../../config/kimi-code/hooks/observations-autolog.mjs;
+      executable = true;
+      force = true;
+    };
+
+    ".claude/hooks/observations-autolog.sh" = {
+      source = pkgs.replaceVars ../../config/claude/hooks/observations-autolog.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
     # coordination-mailbox-sweep is the renamed, bounded, cursor-based
     # successor to the swarm-messages hook above. The swarm-messages.* paths
     # above stay as compatibility shims for one release (factory still names
@@ -247,6 +262,25 @@
     ".copilot/hooks/remind-skills.sh" = {
       source = ../../config/copilot/hooks/remind-skills.sh;
       executable = true;
+      force = true;
+    };
+
+    ".copilot/hooks/observations-autolog.json" = {
+      source = ../../config/copilot/hooks/observations-autolog.json;
+      force = true;
+    };
+
+    ".copilot/hooks/observations-autolog.sh" = {
+      source = pkgs.replaceVars ../../config/copilot/hooks/observations-autolog.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
+    ".copilot/copilot-instructions.md" = {
+      source = ../../config/copilot/copilot-instructions.md;
       force = true;
     };
 

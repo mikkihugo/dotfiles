@@ -1,36 +1,48 @@
 {
-  "description": "Home Manager owns Codex lifecycle hooks. Transport is repo-memory via CentralCloud MCP gateway (swarm_bus_*). Local filesystem bus is opt-in only. Purpose SessionStart refreshes host skills on bundleHash drift.",
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "startup|resume|clear|compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs codex SessionStart",
-            "timeout": 12,
-            "statusMessage": "Joining durable repo-memory swarm"
-          },
-          {
-            "type": "command",
-            "command": "test ! -f /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs || node /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs",
-            "timeout": 10,
-            "statusMessage": "Syncing Purpose host skills"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs codex UserPromptSubmit",
-            "timeout": 12,
-            "statusMessage": "Checking durable repo-memory messages"
-          }
-        ]
-      }
+ "description": "Home Manager owns Codex lifecycle hooks. Transport is repo-memory via CentralCloud MCP gateway (swarm_bus_*). Local filesystem bus is opt-in only. Purpose SessionStart refreshes host skills on bundleHash drift.",
+ "hooks": {
+  "SessionStart": [
+   {
+    "matcher": "startup|resume|clear|compact",
+    "hooks": [
+     {
+      "type": "command",
+      "command": "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs codex SessionStart",
+      "timeout": 12,
+      "statusMessage": "Joining durable repo-memory swarm"
+     },
+     {
+      "type": "command",
+      "command": "test ! -f /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs || node /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs",
+      "timeout": 10,
+      "statusMessage": "Syncing Purpose host skills"
+     }
     ]
-  }
+   }
+  ],
+  "UserPromptSubmit": [
+   {
+    "hooks": [
+     {
+      "type": "command",
+      "command": "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs codex UserPromptSubmit",
+      "timeout": 12,
+      "statusMessage": "Checking durable repo-memory messages"
+     }
+    ]
+   }
+  ],
+  "Stop": [
+   {
+    "hooks": [
+     {
+      "type": "command",
+      "command": "/home/mhugo/.codex/hooks/observations-autolog.mjs codex Stop",
+      "timeout": 10,
+      "statusMessage": "Autolog observations to repo_memory"
+     }
+    ]
+   }
+  ]
+ }
 }

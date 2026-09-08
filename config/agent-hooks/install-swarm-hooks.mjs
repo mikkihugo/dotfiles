@@ -71,11 +71,19 @@ async function installClaude() {
   // No matcher for Stop, unlike the tool/prompt events above - per the
   // documented Stop-hook contract, hooks.Stop entries fire unconditionally.
   install("Stop", {
-    hooks: [{
-      type: "command",
-      command: "/home/mhugo/.claude/hooks/stop-continue-if-actionable.sh",
-      timeout: 15,
-    }],
+    hooks: [
+      {
+        type: "command",
+        command: "/home/mhugo/.claude/hooks/stop-continue-if-actionable.sh",
+        timeout: 15,
+      },
+      {
+        type: "command",
+        command: "/home/mhugo/.claude/hooks/observations-autolog.sh claude Stop",
+        timeout: 10,
+        statusMessage: "Autolog observations to repo_memory",
+      },
+    ],
   });
   await atomicWrite(claudePath, `${JSON.stringify(settings, null, 2)}\n`);
 }

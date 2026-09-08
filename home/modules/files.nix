@@ -123,6 +123,15 @@
       force = true;
     };
 
+    ".codex/hooks/coordination-mailbox-sweep.sh" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
     ".claude/hooks/coordination-mailbox-sweep.sh" = {
       source = pkgs.replaceVars ../../config/claude/hooks/coordination-mailbox-sweep.sh {
         bash = "${pkgs.bash}/bin/bash";

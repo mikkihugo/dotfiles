@@ -16,6 +16,18 @@
 //   - Every failure path (disabled env var, transport error, bad JSON,
 //     counter-file write failure) allows the stop. A malformed hook must
 //     never be silently a permanent block; it must be silently a no-op.
+//   - A recipient="all" broadcast lands in every coordination-mailbox bucket
+//     this identity subscribes to (see coordination-mailbox-sweep.mjs's
+//     dedupeByMessageId and the unreadAllCopies fix next to it). runSweep
+//     now acks every bucket copy it polls in one call, but a long session
+//     accumulates many buckets over time (one per lane/workspace visited)
+//     and any single call only polls the 2-3 buckets for the CURRENT cwd -
+//     so a bucket not polled together with the "winning" one can still hold
+//     an unacked copy and re-surface it later as if new (observed: ~25
+//     consecutive Stop blocks on one broadcast id across a 35-bucket
+//     identity). This hook additionally remembers, per session, every
+//     actionable message id it has already surfaced once and does not
+//     block again for that same id - see blockedIds below.
 import { basename, dirname, join, resolve } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
@@ -50,28 +62,87 @@ export function decide(actionable, previousCount, maxBlocks = MAX_CONSECUTIVE_BL
   };
 }
 
-export function statePath(env) {
+/**
+ * `sessionId`, when given, keys the state file so the consecutive-block cap
+ * (and the blocked-id memory below) is scoped to one Claude session instead
+ * of shared by every concurrent session on the host. Omitted (or blank),
+ * this returns exactly the pre-existing single shared path - callers and
+ * tests that never had a session id keep today's behavior byte-for-byte.
+ */
+export function statePath(env, sessionId) {
   const stateHome = env.XDG_STATE_HOME?.trim() || join(env.HOME || homedir(), ".local", "state");
-  return join(stateHome, "claude-stop-continue", "counter.json");
+  const dir = join(stateHome, "claude-stop-continue");
+  const safeSession = typeof sessionId === "string" ? sessionId.trim().replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 128) : "";
+  return safeSession ? join(dir, `counter.${safeSession}.json`) : join(dir, "counter.json");
 }
 
-export async function readCounter(path) {
+// A pruned id can never legitimately return from the bus and look "new":
+// swarm-messaging's SKILL.md documents delivered messages purged after ~1
+// day and everything after ~1 week, so 24h of local memory is comfortably
+// inside that window without growing forever.
+export const BLOCKED_ID_TTL_MS = 24 * 60 * 60 * 1000;
+export const BLOCKED_ID_CAP = 200;
+
+/** Drop stale entries and cap the map to the most recent BLOCKED_ID_CAP ids. */
+export function pruneBlockedIds(blockedIds, now = Date.now()) {
+  const entries = Object.entries(blockedIds ?? {}).filter(
+    ([, ts]) => Number.isFinite(ts) && now - ts < BLOCKED_ID_TTL_MS,
+  );
+  entries.sort((a, b) => a[1] - b[1]); // oldest first
+  const bounded = entries.length > BLOCKED_ID_CAP ? entries.slice(entries.length - BLOCKED_ID_CAP) : entries;
+  return Object.fromEntries(bounded);
+}
+
+/**
+ * Drop messages whose id we have already surfaced (and let the sweep ack)
+ * before. Messages without a string id are never filtered here - a missing
+ * id cannot be safely deduped without risking a genuinely new message being
+ * silently swallowed, so those always reach decide() unfiltered.
+ */
+export function filterUnblocked(actionable, blockedIds) {
+  return actionable.filter((m) => typeof m?.id !== "string" || m.id.length === 0 || !(m.id in (blockedIds ?? {})));
+}
+
+/** Record every id-bearing message as blocked-as-of `now`, then re-bound. */
+export function recordBlockedIds(blockedIds, messages, now = Date.now()) {
+  const next = { ...(blockedIds ?? {}) };
+  for (const m of messages) {
+    if (typeof m?.id === "string" && m.id.length > 0) next[m.id] = now;
+  }
+  return pruneBlockedIds(next, now);
+}
+
+export async function readState(path) {
   try {
     const raw = await readFile(path, "utf8");
-    const n = JSON.parse(raw)?.count;
-    return Number.isInteger(n) && n >= 0 ? n : 0;
+    const parsed = JSON.parse(raw);
+    const count = Number.isInteger(parsed?.count) && parsed.count >= 0 ? parsed.count : 0;
+    const blockedIdsRaw = parsed?.blockedIds;
+    const blockedIds = blockedIdsRaw && typeof blockedIdsRaw === "object" && !Array.isArray(blockedIdsRaw) ? blockedIdsRaw : {};
+    return { count, blockedIds };
   } catch {
-    return 0;
+    return { count: 0, blockedIds: {} };
   }
 }
 
-export async function writeCounter(path, n) {
+export async function writeState(path, state) {
   try {
     await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, JSON.stringify({ count: n }), "utf8");
+    await writeFile(path, JSON.stringify(state), "utf8");
   } catch {
     // Best-effort only. A failed write must never turn into a block.
   }
+}
+
+export async function readCounter(path) {
+  return (await readState(path)).count;
+}
+
+export async function writeCounter(path, n) {
+  // Read-merge-write so resetting the counter (e.g. on every allowed stop)
+  // never wipes the blocked-id memory living in the same file.
+  const state = await readState(path);
+  await writeState(path, { ...state, count: n });
 }
 
 async function readStdin() {
@@ -84,19 +155,37 @@ async function readStdin() {
   }
 }
 
-async function allowStop(path) {
-  await writeCounter(path, 0);
+/**
+ * `blockedIds`, when given, is written alongside the reset counter (e.g.
+ * after a non-blocking decision that still saw - and should remember - some
+ * actionable ids). Omitted, this preserves whatever blockedIds the state
+ * file already had, matching the pre-existing reset-to-0 behavior exactly.
+ */
+async function allowStop(path, blockedIds) {
+  if (blockedIds === undefined) {
+    await writeCounter(path, 0);
+  } else {
+    await writeState(path, { count: 0, blockedIds });
+  }
   // No stdout at all = allow the stop, per the documented Stop-hook contract.
   process.exit(0);
 }
 
+// Set as soon as main() resolves the (possibly session-keyed) state path, so
+// the top-level catch-all below can reuse the SAME file a mid-run exception
+// interrupted, instead of falling back to the pre-session-keying shared
+// path and resetting a counter main() no longer touches.
+let lastResolvedPath = null;
+
 async function main() {
   const env = process.env;
-  const path = statePath(env);
+  const payload = await readStdin();
+  const sessionId = typeof payload.session_id === "string" && payload.session_id.trim() ? payload.session_id.trim() : undefined;
+  const path = statePath(env, sessionId);
+  lastResolvedPath = path;
 
   if (env.REPO_MEMORY_SWARM_DISABLE_MCP === "1") return allowStop(path);
 
-  const payload = await readStdin();
   const cwd = resolve(typeof payload.cwd === "string" ? payload.cwd : process.cwd());
   const selected = selectWorkspace(cwd, env) ?? { identity: "global", worktree: null };
   const timeout = Number.parseInt(env.REPO_MEMORY_MCP_TIMEOUT_MS || "4000", 10);
@@ -129,12 +218,23 @@ async function main() {
   await bus.close().catch(() => {});
 
   const actionable = (outcome?.kept ?? []).filter((m) => ACTIONABLE_TYPES.has(m?.type));
-  const count = await readCounter(path);
-  const verdict = decide(actionable, count);
+  const state = await readState(path);
+  const prunedBlockedIds = pruneBlockedIds(state.blockedIds);
+  // Drop ids this hook has already surfaced once - a broadcast still unacked
+  // in some other, not-yet-polled bucket must not re-block on the same id.
+  // See the file header and coordination-mailbox-sweep.mjs's unreadAllCopies
+  // fix for why a bucket can still hold a stale unacked copy.
+  const newActionable = filterUnblocked(actionable, prunedBlockedIds);
+  const verdict = decide(newActionable, state.count);
 
-  if (!verdict.block) return allowStop(path); // covers: none actionable, and cap hit (fail open either way)
+  if (!verdict.block) {
+    // covers: nothing actionable, everything actionable was already-blocked
+    // ids, and cap hit (fail open in all three cases). Still remember any
+    // newly-seen ids so they don't cost a future block either.
+    return allowStop(path, recordBlockedIds(prunedBlockedIds, newActionable));
+  }
 
-  await writeCounter(path, count + 1);
+  await writeState(path, { count: state.count + 1, blockedIds: recordBlockedIds(prunedBlockedIds, newActionable) });
   process.stdout.write(JSON.stringify({ decision: "block", reason: verdict.reason }));
 }
 
@@ -152,5 +252,5 @@ try {
 }
 
 if (invokedAsMain) {
-  main().catch(() => allowStop(statePath(process.env)));
+  main().catch(() => allowStop(lastResolvedPath ?? statePath(process.env)));
 }

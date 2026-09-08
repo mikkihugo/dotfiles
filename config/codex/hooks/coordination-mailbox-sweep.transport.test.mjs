@@ -626,3 +626,77 @@ test("subscribe without an ack_watermark fails closed — mailbox skipped, never
     await rm(base, { recursive: true, force: true });
   }
 });
+
+// --- multi-mailbox recipient='all' broadcast: ack every copy, not just one -
+//
+// Regression for the multi-bucket re-block symptom (RESEARCH-BRIEF: a
+// recipient="all" broadcast lands in every mailbox this identity subscribes
+// to; acking only the cross-mailbox-deduped "winning" copy left every other
+// mailbox's copy unacked forever, so it resurfaced as "new" the next time
+// that other mailbox happened to win the dedupe -- observed ~25 consecutive
+// Claude Stop-hook blocks on one broadcast id across a 35-mailbox identity).
+// Both `pollWorkspaces` mailboxes here ("lane-a" and the always-polled
+// "global") hold the identical broadcast id at their own mailbox-scoped
+// sequence. The fix must (1) ack the id in BOTH mailboxes on the same
+// sweep, not just one, and (2) show the body only once in that sweep's
+// output.
+
+test("a recipient='all' broadcast held in two mailboxes is acked in both, not just the cross-mailbox-deduped winner", async (t) => {
+  const base = await mkdtemp(join(tmpdir(), "coordination-mailbox-broadcast-multi-"));
+  try {
+    const target = await materializeExecutable(base, "coordination-mailbox-sweep.mjs");
+    const stateDir = join(base, "state", "coordination-mailbox");
+    await (await import("node:fs/promises")).mkdir(stateDir, { recursive: true });
+    // Both mailboxes already have a local cursor (no subscribe needed) and
+    // have not yet seen the broadcast (each starts at sequence 0).
+    await writeFile(
+      join(stateDir, "codex-abcd1234.cursor.json"),
+      JSON.stringify({ schema: "coordination-mailbox-cursor/v1", sequences: { "broadcast-lane": 0, global: 0 } }),
+    );
+    const seen = [];
+    const server = await mockGateway(t, seen, (tool, args) => {
+      if (tool === "swarm_bus_poll") {
+        // Same physical message, same id, but a mailbox-local sequence --
+        // exactly how a recipient="all" post fans out to every subscribed
+        // mailbox. Once acked (modeled here as after_sequence advancing past
+        // 0), the mailbox reports itself caught up.
+        if (Number.isInteger(args.after_sequence) && args.after_sequence >= 1) {
+          return { messages: [], known_consumer: true };
+        }
+        return {
+          messages: [{ id: "bcast-1", sequence: 1, sender: "codex-11112222", recipient: "all", type: "status", body: "broadcast body" }],
+          known_consumer: true,
+        };
+      }
+      return {};
+    });
+    const port = server.address().port;
+
+    const first = await runHookProcess(target, ["codex", "UserPromptSubmit"], hookOptions(base, port, "broadcast-lane"));
+    assert.equal(first.code, 0);
+    // Shown exactly once in this sweep's output, despite arriving via two
+    // mailboxes.
+    assert.equal((first.stdout.match(/broadcast body/g) ?? []).length, 1, "the broadcast body must not be rendered twice in one sweep");
+
+    const acks = seen.filter((call) => call.tool === "swarm_bus_ack" && call.args.message_id === "bcast-1");
+    const ackedWorkspaces = new Set(acks.map((call) => call.args.workspace));
+    assert.deepEqual(
+      ackedWorkspaces,
+      new Set(["broadcast-lane", "global"]),
+      `expected an ack in both mailboxes holding the broadcast, saw acks in ${JSON.stringify([...ackedWorkspaces])}`,
+    );
+
+    const cursor = JSON.parse(await readFile(join(stateDir, "codex-abcd1234.cursor.json"), "utf8"));
+    assert.equal(cursor.sequences["broadcast-lane"], 1, "the lane mailbox's own cursor advanced past the broadcast");
+    assert.equal(cursor.sequences.global, 1, "the global mailbox's own cursor ALSO advanced past the broadcast, not just the winning one");
+
+    // Second sweep: because both mailboxes were acked/advanced above (not
+    // just one), neither mailbox re-offers the same id, so nothing blocks
+    // and nothing renders again.
+    const second = await runHookProcess(target, ["codex", "UserPromptSubmit"], hookOptions(base, port, "broadcast-lane"));
+    assert.equal(second.code, 0);
+    assert.doesNotMatch(second.stdout, /broadcast body/, "an already-acked-in-both-mailboxes broadcast must not resurface on the next sweep");
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});

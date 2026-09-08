@@ -1320,6 +1320,33 @@ export async function runSweep({
           return !Number.isInteger(priorSequence) || !Number.isInteger(item.sequence) || item.sequence > priorSequence;
         });
 
+    // Same per-mailbox cursor filter as `unread` above, but WITHOUT the
+    // cross-mailbox dedupe: a recipient="all" broadcast lands once per
+    // mailbox this identity subscribes to, each copy carrying its own
+    // mailbox-scoped sequence. dedupeByMessageId (used to build `unread`)
+    // keeps exactly one copy so the same body isn't rendered twice in one
+    // prompt -- but every OTHER copy still sits unacked in ITS mailbox.
+    // The ack loop and cursor-advance below used to walk only the deduped
+    // `unread` set, so only a single "winning" mailbox (deterministically
+    // the first entry of `pollWorkspaces` that still held a live copy) ever
+    // got acked or had its cursor advanced for that message id; every other
+    // subscribed mailbox kept it unacked forever and re-surfaced it as "new"
+    // the next time IT happened to be the first mailbox polled with a live
+    // copy. Observed: a long-lived identity subscribed across ~35 mailboxes
+    // re-blocked the Claude Stop hook on the same recipient="all" broadcast
+    // roughly 25 times in a row as cwd moved between lanes. Acking and
+    // advancing every physical copy here -- not just the deduped one --
+    // heals every mailbox's watermark for this id the first time that
+    // mailbox is included in any poll, fixing both readers of runSweep (the
+    // UserPromptSubmit/SessionStart sweep and the Claude Stop hook) from one
+    // place.
+    const unreadAllCopies = swept
+      ? []
+      : allPolled.filter((item) => {
+          const priorSequence = cursor.sequences[item._workspace];
+          return !Number.isInteger(priorSequence) || !Number.isInteger(item.sequence) || item.sequence > priorSequence;
+        });
+
     let heartbeatsSuppressed = 0;
     let ownDropped = 0;
     const eligible = [];
@@ -1334,13 +1361,14 @@ export async function runSweep({
     const publicKept = kept.map(({ _workspace, ...rest }) => rest);
     const context = publicKept.length || trailerLine ? createContext(publicKept, trailerLine) : "";
 
-    // Ack every polled message (not just the capped/kept subset), ascending
-    // by sequence, best-effort -- this is what heals the remote watermark.
-    // Abandon on the deadline rather than partially acking out of order.
-    // On the sweep fast path the server already acked atomically (the sweep
-    // commits before returning), so this loop and the cursor advance are
-    // skipped entirely.
-    const ackOrder = swept ? [] : [...unread].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+    // Ack every polled message (not just the capped/kept subset, and not
+    // just the cross-mailbox-deduped subset -- see unreadAllCopies above),
+    // ascending by sequence, best-effort -- this is what heals the remote
+    // watermark. Abandon on the deadline rather than partially acking out of
+    // order. On the sweep fast path the server already acked atomically (the
+    // sweep commits before returning), so this loop and the cursor advance
+    // are skipped entirely.
+    const ackOrder = swept ? [] : [...unreadAllCopies].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
     // Lowest sequence per mailbox whose ack did NOT settle. The local cursor
     // must not advance past it: the server's durable watermark only moves over
     // a contiguous acknowledged prefix, so jumping a hole here strands that
@@ -1370,9 +1398,13 @@ export async function runSweep({
     // Advance the local cursor only across the contiguous acknowledged prefix,
     // so an unsettled ack is re-polled next sweep and the remote watermark can
     // heal itself instead of staying wedged. Skipped on the sweep fast path:
-    // the server watermark is authoritative and already advanced.
+    // the server watermark is authoritative and already advanced. Walks
+    // unreadAllCopies (every physical copy, every mailbox), not the deduped
+    // `unread` set, for the same reason the ack loop above does: a mailbox
+    // whose copy lost the display-dedupe still needs its own cursor moved
+    // past the id it just got acked for.
     if (!swept) {
-      for (const item of unread) {
+      for (const item of unreadAllCopies) {
         if (!Number.isInteger(item.sequence)) continue;
         const floor = ackFloor.get(item._workspace);
         if (Number.isInteger(floor) && item.sequence >= floor) continue;

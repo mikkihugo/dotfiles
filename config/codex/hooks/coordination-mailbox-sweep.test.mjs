@@ -379,8 +379,8 @@ test("derivePrincipal strips non-alphanumeric characters from the token (validat
 });
 
 test("derivePrincipal splits a compound client name (containing its own dash) using the known client label, not the first dash in the identity", () => {
-  const identity = "kimi-code-abcd1234";
-  assert.equal(derivePrincipal(identity, "kimi-code"), "kimi-code-abcd1234");
+  const identity = "kimicode-abcd1234";
+  assert.equal(derivePrincipal(identity, "kimi-code"), "kimicode-abcd1234");
 });
 
 // --- inbox_uri capability persistence ------------------------------------------

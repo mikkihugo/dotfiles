@@ -499,6 +499,34 @@ export class CoordinationBus {
     return bucket;
   }
 
+  // sweep replaces the subscribe+poll+ack dance with one server-side call
+  // (coordination_sweep: atomic subscribe-if-needed + poll + multi-ack, one
+  // transaction, committed before the tool returns). The server watermark
+  // is authoritative, so the client cursor is redundant on this path.
+  // Returns the full inbox message list partitioned by mailbox, plus the
+  // advanced watermark.
+  async sweep(consumer, signal) {
+    this._ensureIdentity(consumer);
+    const args = {
+      principal: this._principal,
+      session: this._session,
+      channels: [...this._channels],
+      limit: COORDINATION_POLL_LIMIT,
+    };
+    if (this._inbox?.inbox_uri) args.inbox_uri = this._inbox.inbox_uri;
+    const result = await this.client.callRepoMemory("coordination_sweep", args, signal);
+    const messages = Array.isArray(result?.messages) ? result.messages : [];
+    const buckets = new Map();
+    for (const message of messages) {
+      const key = message.direct ? INBOX_BUCKET : message.mailbox;
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push({ ...message, origin: this.name });
+    }
+    buckets.knownConsumer = result?.known_session !== false;
+    buckets.ack_watermark = result?.ack_watermark;
+    return buckets;
+  }
+
   async ack(workspace, consumer, messageId, signal) {
     this._ensureIdentity(consumer);
     const args = { principal: this._principal, session: this._session, message_id: messageId };
@@ -1168,6 +1196,27 @@ export async function runSweep({
     const pollFailures = [];
 
     if (canReceive) {
+      // Fast path: the coordination bus's sweep is one atomic server-side
+      // call (subscribe+poll+multi-ack, committed before it returns), so the
+      // per-workspace subscribe/poll/ack dance and the local cursor are
+      // redundant. The server watermark is authoritative.
+      if (typeof bus.sweep === "function") {
+        try {
+          const buckets = await bus.sweep(identity, controller.signal);
+          for (const pollWorkspace of pollWorkspaces) {
+            if (controller.signal.aborted) break;
+            const bucket = buckets.get(pollWorkspace) ?? [];
+            bucket.knownConsumer = buckets.knownConsumer;
+            allPolled.push({ workspace: pollWorkspace, messages: bucket });
+          }
+        } catch (error) {
+          if (isAbortError(error)) {
+            deadlineHit = true;
+          } else {
+            pollFailures.push({ workspace: pollWorkspaces[0], error: String(error?.message ?? error) });
+          }
+        }
+      } else {
       for (const pollWorkspace of pollWorkspaces) {
         if (controller.signal.aborted) break;
         try {
@@ -1216,6 +1265,7 @@ export async function runSweep({
           pollErrors.push({ workspace: pollWorkspace, error: message });
           pollFailures.push({ workspace: pollWorkspace, error: message });
         }
+      }
       }
     }
 

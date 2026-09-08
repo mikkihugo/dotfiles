@@ -1219,7 +1219,7 @@ export async function runSweep({
             if (controller.signal.aborted) break;
             const bucket = buckets.get(pollWorkspace) ?? [];
             bucket.knownConsumer = buckets.knownConsumer;
-            allPolled.push({ workspace: pollWorkspace, messages: bucket });
+            for (const item of bucket) allPolled.push({ ...item, _workspace: pollWorkspace });
           }
         } catch (error) {
           if (isAbortError(error)) {

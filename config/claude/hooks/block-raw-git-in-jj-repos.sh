@@ -92,11 +92,21 @@ for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
 done
 
 if [ -z "$jj_root" ]; then
+	# Match against the already-resolved $target path, not the raw command
+	# text. Scanning $cmd for these substrings previously matched any command
+	# that merely MENTIONED one of these paths in prose -- e.g. a commit
+	# message in an unrelated repo that referenced "/srv/infra" as context --
+	# and misidentified it as targeting that repo. $target is the real
+	# effective directory (git -C > cd > cwd, resolved absolute), so a
+	# prefix match against it only fires when the command actually operates
+	# there.
 	for known in /srv/infra /home/mhugo/code/singularity-engine; do
-		if printf '%s' "$cmd" | grep -q "$known"; then
+		case "$target" in
+		"$known" | "$known"/*)
 			jj_root="$known"
 			break
-		fi
+			;;
+		esac
 	done
 fi
 

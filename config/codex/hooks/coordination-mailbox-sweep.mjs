@@ -327,6 +327,11 @@ export class RepoMemoryBus {
 const UNREGISTERED_MAILBOX_PATTERNS = [
   /mailbox "([^"]+)" is not registered/,
   /must be a bare registered name.*?:\s*"([^"]+)"/,
+  // Empty/missing mailbox: no name to drop, so extractRejectedMailbox
+  // returns null and the retry loop throws (fail fast — retrying an empty
+  // mailbox cannot succeed). Recognized here so the error is classified as
+  // a mailbox-shape error rather than an unknown transport failure.
+  /mailbox is required/,
 ];
 
 export function extractRejectedMailbox(error) {
@@ -616,12 +621,17 @@ export function validateIdentity(identity) {
       `coordination-mailbox identity "${trimmed}" is a bare client name; use <client>-<short-session-id>`,
     );
   }
-  const dash = trimmed.indexOf("-");
-  if (dash <= 0 || dash === trimmed.length - 1) {
-    throw new Error(`coordination-mailbox identity "${trimmed}" must be <client>-<short-session-id>`);
-  }
-  if (!/^[A-Za-z0-9._-]+$/.test(trimmed)) {
-    throw new Error(`coordination-mailbox identity "${trimmed}" may only contain alphanumerics, dot, underscore, dash`);
+  // Match the downstream principal pattern exactly
+  // (repo-memory vocabulary.go: principalPattern
+  // ^[a-z][a-z0-9]*-[a-z0-9]{4,16}$): a dash-free lowercase client part and
+  // an alphanumeric 4-16 token. Anything else (uppercase, dots, underscores,
+  // dash-bearing tokens, short/long tokens) is rejected here so a malformed
+  // explicit consumer fails fast instead of silently diverging from the
+  // derived principal's session key.
+  if (!/^[a-z][a-z0-9]*-[a-z0-9]{4,16}$/.test(trimmed)) {
+    throw new Error(
+      `coordination-mailbox identity "${trimmed}" must be <client>-<token> with a dash-free client and a 4-16 character alphanumeric token (downstream principal pattern)`,
+    );
   }
   return trimmed;
 }
@@ -645,6 +655,10 @@ export function validateIdentity(identity) {
  */
 export function deriveIdentity(client, payload, env = process.env) {
   const explicitConsumer = env.REPO_MEMORY_SWARM_CONSUMER?.trim();
+  // validateIdentity now enforces the downstream principal pattern exactly,
+  // so a malformed explicit consumer (dash-bearing token, uppercase, dots)
+  // fails fast here instead of silently diverging from the derived
+  // principal's session key.
   if (explicitConsumer) return validateIdentity(safePart(explicitConsumer));
 
   const inheritedOwner = env.SE_WORKSPACE_OWNER?.trim();
@@ -668,11 +682,22 @@ export function deriveIdentity(client, payload, env = process.env) {
   // identity.rs, which does not truncate its session component either).
   // The fallback below only fires when the segment before the first dash is
   // itself empty (e.g. a leading dash), which would otherwise throw.
-  const shortSegment = firstSegment || raw.replace(/[^A-Za-z0-9]+/g, "").slice(0, 8);
+  const shortSegment =
+    firstSegment ||
+    raw.replace(/[^A-Za-z0-9]+/g, "").slice(0, 8) ||
+    // Degenerate session id with no alphanumeric anywhere (e.g. "---"):
+    // fall back to a fixed token rather than hard-failing the turn.
+    "0000";
   if (!shortSegment) {
     throw new Error(`missing session-unique coordination-mailbox identity for ${client}`);
   }
-  return validateIdentity(`${safePart(client)}-${shortSegment}`);
+  // The identity's client part must be dash-free: the downstream
+  // coordination validation requires <client>-<token> with an alphanumeric
+  // token (principalPattern ^[a-z][a-z0-9]*-[a-z0-9]{4,16}$), so a client
+  // label like "kimi-code" would otherwise produce "kimi-code-<token>"
+  // whose token part contains a dash and is rejected. Strip dashes from the
+  // client part ("kimi-code" -> "kimi"); dash-free labels are unchanged.
+  return validateIdentity(`${safePart(client).replace(/-/g, "")}-${shortSegment}`);
 }
 
 // --- coordination_* principal derivation (feature-flagged path only) -------
@@ -711,7 +736,11 @@ export function derivePrincipal(identity, client) {
     // theoretical collision between two very short raw tokens for never
     // hard-failing a session out of coordination entirely.
     : alnumToken.padEnd(COORDINATION_TOKEN_MIN, "0");
-  return `${client}-${token}`;
+  // The principal's client part must be dash-free (downstream requires
+  // <client>-<token> with an alphanumeric token), matching deriveIdentity's
+  // dash-strip: a client label like "kimi-code" would otherwise rebuild an
+  // invalid "kimi-code-<token>" principal.
+  return `${client.replace(/-/g, "")}-${token}`;
 }
 
 // --- cursor persistence (DELIVER 2) -----------------------------------------

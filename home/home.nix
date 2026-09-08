@@ -38,6 +38,7 @@ in {
     ./modules/ast-grep.nix
     ./modules/cargo-pgrx.nix
     ./modules/cargo-build-jobs.nix
+    ./modules/cargo-subcommand-proxies.nix
     ./modules/shell.nix
     ./modules/git.nix
     ./modules/stable-shell.nix

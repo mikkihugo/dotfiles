@@ -1220,6 +1220,12 @@ export async function runSweep({
             const bucket = buckets.get(pollWorkspace) ?? [];
             bucket.knownConsumer = buckets.knownConsumer;
             for (const item of bucket) allPolled.push({ ...item, _workspace: pollWorkspace });
+            // Keep the local cursor in sync with the server watermark so a
+            // later legacy-path run (or a cursor read) never replays or
+            // drops based on a stale file.
+            if (Number.isInteger(buckets.ack_watermark)) {
+              nextCursor[pollWorkspace] = buckets.ack_watermark;
+            }
           }
         } catch (error) {
           if (isAbortError(error)) {
@@ -1303,10 +1309,16 @@ export async function runSweep({
 
     // Unconditional local filter: bound "unread" by our own cursor regardless
     // of whether the server honored after_sequence above.
-    const unread = dedupedAllPolled.filter((item) => {
-      const priorSequence = cursor.sequences[item._workspace];
-      return !Number.isInteger(priorSequence) || !Number.isInteger(item.sequence) || item.sequence > priorSequence;
-    });
+    // On the sweep fast path the server already filtered by its durable
+    // watermark (the sweep polls only unread messages), so the local-cursor
+    // filter is redundant and would wrongly drop messages when the cursor
+    // file lags or leads the server. The server is authoritative.
+    const unread = swept
+      ? dedupedAllPolled
+      : dedupedAllPolled.filter((item) => {
+          const priorSequence = cursor.sequences[item._workspace];
+          return !Number.isInteger(priorSequence) || !Number.isInteger(item.sequence) || item.sequence > priorSequence;
+        });
 
     let heartbeatsSuppressed = 0;
     let ownDropped = 0;

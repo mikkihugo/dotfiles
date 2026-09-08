@@ -33,6 +33,11 @@ python = "latest"
 java = "latest"
 crush = "latest"
 opencode = "latest"
+# Rust is NOT managed by mise anymore: the fleet-wide nix-managed toolchain
+# (hosts/_shared/rust-toolchain.nix in /srv/infra, pinned to the engine's
+# nixpkgs 1.95.0) replaced the rustup/mise proxies on 2026-09-08 after the
+# GC'd-interpreter incident. cargo/rustc/rustfmt resolve from the system
+# profile; the mise rust toolchains and shims were uninstalled.
 "github:contabo/cntb" = "latest"
 "github:ovh/ovhcloud-cli" = "latest"
 awscli = { version = "latest", symlink_bins = "true" }

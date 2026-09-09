@@ -29,7 +29,7 @@ test("root enables live hosted search while every gateway-backed Codex role disa
   }
   assert.match(
     seed,
-    /\[mcp_servers\.centralcloud-mcp-gateway\][\s\S]*?^required\s*=\s*true\s*$/m,
+    /\[mcp_servers\.ccgw\][\s\S]*?^required\s*=\s*true\s*$/m,
   );
   assert.match(activation, /cp "\$\{\.\.\/\.\.\/config\/codex\/config\.toml\}"/);
   assert.match(

@@ -293,6 +293,33 @@
       force = true;
     };
 
+    # Custom /agent definitions for the interactive CLI (`/agent [name]`).
+    # The .agent.md format is the user-defined-agent surface; the YAML
+    # frontmatter declares name/description/model/tools, the body is the
+    # agent's system prompt. NOT the same surface as the built-in
+    # `task` tool's `agent_type` (those system prompts live in the CLI
+    # binary). See config/copilot/agents/README.md for the split.
+    ".copilot/agents/balanced.agent.md" = {
+      source = ../../config/copilot/agents/balanced.agent.md;
+      force = true;
+    };
+    ".copilot/agents/cheap-explore.agent.md" = {
+      source = ../../config/copilot/agents/cheap-explore.agent.md;
+      force = true;
+    };
+    ".copilot/agents/tri-lane.agent.md" = {
+      source = ../../config/copilot/agents/tri-lane.agent.md;
+      force = true;
+    };
+    ".copilot/agents/task-prompts.md" = {
+      source = ../../config/copilot/agents/task-prompts.md;
+      force = true;
+    };
+    ".copilot/agents/README.md" = {
+      source = ../../config/copilot/agents/README.md;
+      force = true;
+    };
+
     ".cursor/hooks.json" = {
       source = ../../config/cursor/hooks.json;
       force = true;

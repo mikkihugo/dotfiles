@@ -157,7 +157,7 @@ _load_sops_secrets() {
 		# second protocol:openai_chat_completions deployment for it (tracked
 		# separately). Anthropic wire matches what's actually configured, so it
 		# skips that conversion.
-		export COPILOT_PROVIDER_TYPE="anthropic"
+		export COPILOT_PROVIDER_TYPE="openai"
 
 		# BYOK also needs an explicit model or copilot refuses to start:
 		# "BYOK providers require an explicit model." The "model" key in
@@ -179,20 +179,20 @@ _load_sops_secrets() {
 		# warns "not in the built-in catalog" and silently uses generic
 		# defaults -- throwing away most of the window.
 		#
-		# auto-minimax resolves to MiniMax-M3 (gateway-config named_models);
-		# the fabric catalogue advertises context_length 524288. Prompt and
-		# Speak Anthropic Messages to the gateway, not OpenAI chat completions.
 		# auto-minimax resolves to minimax-coding-plan/MiniMax-M3, whose upstream
 		# declares protocol: anthropic_messages at api.minimax.io/anthropic/v1.
-		# An OpenAI-shaped request is therefore CONVERTED, and the converter
-		# (chat_request_to_anthropic_messages) never reads "tools" or
-		# "tool_choice" - so the model arrives with no tools and says so, while
-		# emitting improvised text markers where tool calls belong.
-		# Anthropic ingress matches the upstream and passes through natively.
-		# Measured 2026-09-04, same model, same tool definition:
-		#   POST /v1/chat/completions -> tool_calls: None
-		#   POST /v1/messages         -> tool_use: get_weather {"city":"Paris"}
-		export COPILOT_PROVIDER_TYPE="${COPILOT_PROVIDER_TYPE:-anthropic}"
+		# An OpenAI-shaped request is therefore CONVERTED; Anthropic ingress
+		# matches the upstream and passes through natively, skipping that
+		# conversion cost.
+		# Note (post-#1332, kimi-c6cb190a live probe 2026-09-09T17:05Z): tools on
+		# the chat wire are no longer stripped — /v1/chat/completions with
+		# tools=[...] now returns well-formed tool_calls[0] (typed arguments,
+		# real call id, finish_reason=tool_calls). The 2026-09-04 measurement
+		# below was correct AT THE TIME and is kept for historical context;
+		# Anthropic wire still wins where it fits because it avoids conversion.
+		#     POST /v1/chat/completions -> tool_calls: None   (pre-#1332)
+		#     POST /v1/messages         -> tool_use: well-formed (always)
+		export COPILOT_PROVIDER_TYPE="${COPILOT_PROVIDER_TYPE:-openai}"
 		# MiniMax publishes a 1M context but guarantees only 512K of it, so the
 		# prompt cap stays inside the guarantee rather than the ceiling.
 		# An earlier revision of this comment claimed prompt+output had to sum to

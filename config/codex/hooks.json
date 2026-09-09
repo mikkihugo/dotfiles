@@ -38,7 +38,7 @@
      {
       "type": "command",
       "command": "/home/mhugo/.codex/hooks/observations-autolog.mjs codex Stop",
-      "timeout": 10,
+      "timeout": 30,
       "statusMessage": "Autolog observations to repo_memory"
      }
     ]

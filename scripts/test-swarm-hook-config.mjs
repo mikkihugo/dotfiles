@@ -311,3 +311,37 @@ test("activation merge installs JCode session bootstrap without replacing unrela
     await rm(home, { recursive: true, force: true });
   }
 });
+
+test("repo-memory hook timeouts match the 30s fleet standard (dotfiles #28)", async () => {
+  // Codex's Stop hook runs observations-autolog.mjs, whose memory_retain
+  // round trip routinely exceeds 20s server-side; 10s killed it mid-flight.
+  // Claude, copilot, and kimi already budget 30s for the same hook.
+  const codexHooks = await readJSON("config/codex/hooks.json");
+  const stopHook = codexHooks.hooks.Stop[0].hooks.find(
+    (hook) => /observations-autolog/.test(hook.command),
+  );
+  assert.ok(stopHook, "codex Stop hook must run observations-autolog");
+  assert.equal(stopHook.timeout, 30);
+
+  const home = await mkdtemp(join(tmpdir(), "repo-memory-hook-home-"));
+  try {
+    await writeFile(join(home, "claude.json"), "{}");
+    await writeFile(join(home, "kimi.toml"), "");
+    const result = spawnSync(process.execPath, [
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "--claude-settings", join(home, "claude.json"),
+      "--kimi-config", join(home, "kimi.toml"),
+    ], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+
+    const kimi = await readFile(join(home, "kimi.toml"), "utf8");
+    assert.doesNotMatch(kimi, /timeout = 10/, "kimi managed hooks must not sit at the 10s budget that times out on cold gateway starts");
+    const thirtySecondBudgets = (kimi.match(/timeout = 30/g) ?? []).length;
+    assert.ok(
+      thirtySecondBudgets >= 3,
+      `expected the kimi sweep (x2) and autolog hooks at 30s, found ${thirtySecondBudgets}`,
+    );
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});

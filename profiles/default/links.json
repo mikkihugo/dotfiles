@@ -4,6 +4,8 @@
     "~/.ripgreprc": "config/ripgreprc",
     "~/.config/opencode/opencode.json": "config/opencode/opencode.json",
     "~/.config/opencode/oh-my-opencode.json": "config/opencode/oh-my-opencode.json",
-    "~/.config/opencode/opencode-mem.jsonc": "config/opencode/opencode-mem.jsonc"
+    "~/.config/opencode/opencode-mem.jsonc": "config/opencode/opencode-mem.jsonc",
+    "~/.config/kimi-code/init-otel.sh": "config/kimi-code/init-otel.sh",
+    "~/.kimi-code/hooks/otel-resource-attrs.sh": "config/kimi-code/hooks/otel-resource-attrs.sh"
   }
 }

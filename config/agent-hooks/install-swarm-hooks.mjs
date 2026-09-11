@@ -139,26 +139,24 @@ async function installClaude() {
 }
 
 function withoutManagedKimiHooks(content) {
+  // Strip the entire BEGIN/END managed-kimi-hooks block. The previous
+  // implementation only stripped blocks matching two magic strings
+  // (`swarm-messages.sh`, `observations-autolog.sh`), so other managed hooks
+  // (coordination-mailbox-sweep, skills-gate-session-start, otel-resource-attrs)
+  // accumulated on every run.
   const lines = content.split("\n");
   const kept = [];
-  for (let index = 0; index < lines.length;) {
-    const line = lines[index];
-    if (line === "# BEGIN repo-memory swarm hooks" || line === "# END repo-memory swarm hooks") {
-      index += 1;
+  let insideManaged = false;
+  for (const line of lines) {
+    if (line === "# BEGIN repo-memory managed kimi hooks") {
+      insideManaged = true;
       continue;
     }
-    if (line.trim() !== "[[hooks]]") {
-      kept.push(line);
-      index += 1;
+    if (line === "# END repo-memory managed kimi hooks") {
+      insideManaged = false;
       continue;
     }
-    const block = [line];
-    index += 1;
-    while (index < lines.length && !/^\s*\[\[?[^]]+\]\]?\s*$/.test(lines[index])) {
-      block.push(lines[index]);
-      index += 1;
-    }
-    if (!block.join("\n").includes("swarm-messages.sh") && !block.join("\n").includes("observations-autolog.sh")) kept.push(...block);
+    if (!insideManaged) kept.push(line);
   }
   return kept.join("\n").trimEnd();
 }
@@ -171,7 +169,7 @@ async function installKimi() {
   }
   const base = withoutManagedKimiHooks(content);
   const managed = [
-    "# BEGIN repo-memory swarm hooks",
+    "# BEGIN repo-memory managed kimi hooks",
     "[[hooks]]",
     'event = "UserPromptSubmit"',
     'command = "/home/mhugo/.kimi-code/hooks/coordination-mailbox-sweep.sh kimi-code UserPromptSubmit"',
@@ -188,10 +186,20 @@ async function installKimi() {
     "timeout = 10",
     "",
     "[[hooks]]",
+    'event = "SessionStart"',
+    // OTel resource-attribute injection: writes OTEL_RESOURCE_ATTRIBUTES with
+    // session_id/workspace/lane/principal/model, and a JSON sidecar at
+    // ${XDG_RUNTIME_DIR}/kimi-otel/${session_id}.json for the
+    // observability_trace_session MCP tool. Idempotent. See
+    // docs/runbooks/2026-09-11-kimi-otel-tie.md.
+    'command = "/home/mhugo/.kimi-code/hooks/otel-resource-attrs.sh"',
+    "timeout = 5",
+    "",
+    "[[hooks]]",
     'event = "Stop"',
     'command = "/home/mhugo/.kimi-code/hooks/observations-autolog.sh kimi-code Stop"',
     "timeout = 30",
-    "# END repo-memory swarm hooks",
+    "# END repo-memory managed kimi hooks",
     "",
   ].join("\n");
   await atomicWrite(kimiPath, `${base}${base ? "\n\n" : ""}${managed}`);

@@ -49,6 +49,7 @@ in {
     ./modules/home-emergency-backup.nix
     ./modules/files.nix
     ./modules/ai-tools.nix
+    ./modules/kimi-code-otel.nix
     ./modules/jcode-providers.nix
     ./modules/jcode-server.nix
     ./modules/ops-tools.nix
@@ -107,6 +108,11 @@ in {
         # the intent). Side effect: update rollout gating is skipped, so new
         # kimi versions are always offered immediately (rollout.ts).
         KIMI_CODE_EXPERIMENTAL_FLAG = "1";
+        # kimi-code: disable auto-mode permission reminders (added in 0.42.0;
+        # permissionModeService.ts:45). When unset or truthy, the agent-core-v2
+        # engine injects PermissionModeInjection reminders into the prompt
+        # stream on auto mode; setting to "false" suppresses them.
+        KIMI_CODE_PERMISSION_MODE_REMINDER = "false";
         MISE_YES = "1";
         COLORTERM = "truecolor";
         RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";

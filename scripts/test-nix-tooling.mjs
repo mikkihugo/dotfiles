@@ -3,6 +3,14 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
+// home/modules/git-auto-backup.nix and home/modules/forgejo-pr-autofix.nix were
+// removed 2026-09-11 (commit head ffcb4629). They belonged to the operator tier
+// (`/srv/infra/clusters/default/...` and `/srv/infra/hosts/_shared/...`),
+// not Home Manager; tests that asserted their home-manager-side contracts moved
+// with them. The borgmatic test below still asserts the negative —
+// `home/home.nix` does NOT import git-auto-backup.nix — which is the remaining
+// ~/.dotfiles↔/srv/infra boundary contract.
+
 const contractRoot = resolve(process.env.DOTFILES_CONTRACT_ROOT ?? ".");
 const source = async (path) => readFile(join(contractRoot, path), "utf8");
 
@@ -71,26 +79,18 @@ test("Home Manager owns nix-index database refresh wiring", async () => {
 test("Home Manager activation does not launch emergency backup jobs", async () => {
   const backup = await source("home/modules/home-emergency-backup.nix");
   assert.match(backup, /X-SwitchMethod\s*=\s*"keep-old"/);
-
-  const gitBackup = await source("home/modules/git-auto-backup.nix");
-  assert.match(gitBackup, /X-SwitchMethod\s*=\s*"keep-old"/);
 });
 
 test("mutable home sweeps serialize and report bounded lock failures", async () => {
-  const gitBackup = await source("home/modules/git-auto-backup.nix");
   const emergencyBackup = await source("home/modules/home-emergency-backup.nix");
-  for (const module of [gitBackup, emergencyBackup]) {
-    assert.match(module, /home-mutable-workspace-sweep\.lock/);
-    assert.match(module, /flock --exclusive --wait/);
-    assert.doesNotMatch(
-      module,
-      /--wait\s+\d+[hms]/,
-      "flock --wait only accepts integer seconds; time suffixes like 12h are invalid and silently break service startup",
-    );
-    assert.match(module, /mutable sweep lock unavailable/);
-  }
-  assert.match(gitBackup, /timeout --kill-after=10s 45m/);
-  assert.match(gitBackup, /TimeoutStartSec\s*=\s*"7h"/);
+  assert.match(emergencyBackup, /home-mutable-workspace-sweep\.lock/);
+  assert.match(emergencyBackup, /flock --exclusive --wait/);
+  assert.doesNotMatch(
+    emergencyBackup,
+    /--wait\s+\d+[hms]/,
+    "flock --wait only accepts integer seconds; time suffixes like 12h are invalid and silently break service startup",
+  );
+  assert.match(emergencyBackup, /mutable sweep lock unavailable/);
 });
 test("home emergency backup ssh command keeps long uploads alive on Hetzner Storage Box", async () => {
 
@@ -168,64 +168,6 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   for (const excluded of ["**/target", "**/node_modules", "**/.direnv", "**/.cache"]) {
     assert.match(backup, new RegExp(excluded.replaceAll("*", "\\*").replaceAll("/", "\\/")));
   }
-});
-
-test("git auto-backup yields host resources and waits after completion", async () => {
-  const backup = await source("home/modules/git-auto-backup.nix");
-  const backupService = backup.slice(
-    backup.indexOf("services.git-auto-backup"),
-    backup.indexOf("timers.git-auto-backup"),
-  );
-
-  assert.match(backup, /jobs=2/);
-  assert.match(backupService, /Nice\s*=\s*19/);
-  assert.match(backupService, /IOSchedulingClass\s*=\s*"idle"/);
-  assert.match(backupService, /CPUWeight\s*=\s*10/);
-  assert.match(backupService, /IOWeight\s*=\s*10/);
-  assert.match(backupService, /MemoryHigh\s*=\s*"8G"/);
-  assert.match(backupService, /MemoryMax\s*=\s*"12G"/);
-  assert.match(backup, /OnActiveSec\s*=\s*"5m"/);
-  assert.doesNotMatch(backup, /OnBootSec\s*=/);
-  assert.match(backup, /OnUnitInactiveSec\s*=\s*"15m"/);
-  assert.doesNotMatch(backup, /OnCalendar\s*=\s*"\*:0\/15"/);
-  const hotPath = backup.slice(0, backup.indexOf("workspaceLedgerScript ="));
-  assert.doesNotMatch(hotPath, /workspace-debt|workspace-ledger-snapshot|rsync -a/);
-  const pushCommands = backup
-    .split("\n")
-    .filter((line) => /git_net .*\spush\s/.test(line));
-  assert.equal(pushCommands.length, 9, "enumerate every backup network push path");
-  for (const command of pushCommands) assert.match(command, /--no-verify/);
-  for (const command of pushCommands) {
-    assert.match(command, /\$(?:snapshot_ref|ref|backup_ref)|\\$/);
-  }
-  assert.match(backup, /ref="refs\/backup\/\$host\/\$slug\/\$branch\/wip"/);
-  assert.match(backup, /snapshot_ref="refs\/backup\/\$host\/\$slug\/\$branch\/wip-\$stamp"/);
-  assert.match(backup, /backup_ref="refs\/backup\/\$host\/\$slug\/\$branch\/head"/);
-  assert.match(backup, /\$commit:refs\/backup\/\$host\/\$slug\/workspace-\$wsname\/wip/);
-  assert.doesNotMatch(backup, /"HEAD:\$branch"/);
-  assert.match(backup, /refs\/backup\/\$host\/\$slug\/\$branch\/head/);
-});
-
-test("workspace ledger preservation is a separate low-priority hourly service", async () => {
-  const backup = await source("home/modules/git-auto-backup.nix");
-  assert.match(backup, /services\.workspace-ledger-snapshot/);
-  assert.match(backup, /timers\.workspace-ledger-snapshot/);
-  const ledgerService = backup.slice(
-    backup.indexOf("services.workspace-ledger-snapshot"),
-    backup.indexOf("timers.workspace-ledger-snapshot"),
-  );
-  const ledgerTimer = backup.slice(backup.indexOf("timers.workspace-ledger-snapshot"));
-  assert.match(ledgerTimer, /OnActiveSec\s*=\s*"10m"/);
-  assert.match(ledgerTimer, /OnUnitInactiveSec\s*=\s*"1h"/);
-  assert.doesNotMatch(ledgerTimer, /OnCalendar|Persistent/);
-  assert.match(ledgerService, /ExecStart\s*=\s*"\$\{workspaceLedgerScript\}"/);
-  assert.match(ledgerService, /Nice\s*=\s*19/);
-  assert.match(ledgerService, /IOSchedulingClass\s*=\s*"idle"/);
-  const ledgerScript = backup.slice(
-    backup.indexOf("workspaceLedgerScript ="),
-    backup.indexOf("in {"),
-  );
-  assert.match(ledgerScript, /rsync -a/);
 });
 
 test("Home Manager gives every managed agent client a deterministic UTF-8 locale", async () => {

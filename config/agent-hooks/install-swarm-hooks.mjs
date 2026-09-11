@@ -174,6 +174,12 @@ const KIMI_MANAGED_HOOKS = [
   { event: "UserPromptSubmit", command: "/home/mhugo/.kimi-code/hooks/coordination-mailbox-sweep.sh kimi-code UserPromptSubmit", timeout: 30 },
   { event: "SessionStart", command: "/home/mhugo/.kimi-code/hooks/coordination-mailbox-sweep.sh kimi-code SessionStart", timeout: 30 },
   { event: "SessionStart", command: "/home/mhugo/.kimi-code/hooks/skills-gate-session-start.sh", timeout: 30 },
+  // OTel resource-attribute injection: writes OTEL_RESOURCE_ATTRIBUTES with
+  // session_id/workspace/lane/principal/model, and a JSON sidecar at
+  // ${XDG_RUNTIME_DIR}/kimi-otel/${session_id}.json for the
+  // observability_trace_session MCP tool. Idempotent. See
+  // docs/runbooks/2026-09-11-kimi-otel-tie.md.
+  { event: "SessionStart", command: "/home/mhugo/.kimi-code/hooks/otel-resource-attrs.sh", timeout: 5 },
   { event: "Stop", command: "/home/mhugo/.kimi-code/hooks/observations-autolog.sh kimi-code Stop", timeout: 30 },
 ];
 

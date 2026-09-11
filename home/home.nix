@@ -49,6 +49,7 @@ in {
     ./modules/home-emergency-backup.nix
     ./modules/files.nix
     ./modules/ai-tools.nix
+    ./modules/kimi-code-otel.nix
     ./modules/jcode-providers.nix
     ./modules/jcode-server.nix
     ./modules/ops-tools.nix

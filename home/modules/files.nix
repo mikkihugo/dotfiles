@@ -308,6 +308,16 @@
       force = true;
     };
 
+    ".kimi-code/hooks/coordination-mailbox-sweep.mjs" = {
+      source = pkgs.replaceVars ../../config/kimi-code/hooks/coordination-mailbox-sweep.mjs {
+        node = "${pkgs.nodejs}/bin/node";
+        flock = "${pkgs.util-linux}/bin/flock";
+        bash = "${pkgs.bash}/bin/bash";
+      };
+      executable = true;
+      force = true;
+    };
+
     ".kimi-code/hooks/coordination-mailbox-sweep.sh" = {
       source = pkgs.replaceVars ../../config/kimi-code/hooks/coordination-mailbox-sweep.sh {
         bash = "${pkgs.bash}/bin/bash";

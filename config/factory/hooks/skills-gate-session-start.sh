@@ -33,9 +33,9 @@ set -uo pipefail
 SKILL="${HOME}/.claude/skills/using-skills/SKILL.md"
 
 if [ ! -r "$SKILL" ]; then
-  jq -nc --arg m "skills gate: cannot read ${SKILL} — using-skills was NOT injected this session" \
-    '{systemMessage: $m}'
-  exit 0
+	jq -nc --arg m "skills gate: cannot read ${SKILL} — using-skills was NOT injected this session" \
+		'{systemMessage: $m}'
+	exit 0
 fi
 
 # Print one "## <header>" section, up to (not including) the next "## " header.
@@ -56,7 +56,7 @@ fi
 # or the ``` delimiters themselves are dropped. "### " subsections are kept
 # either way -- the match is on "## " with a trailing space.
 section() {
-  awk -v want="## $1" '
+	awk -v want="## $1" '
     $0 == want { on = 1; print; next }
     on && /^```/ { fence = !fence; print; next }
     on && !fence && /^## / { exit }
@@ -68,9 +68,9 @@ rule=$(section "Rule")
 flags=$(section "Red Flags")
 
 if [ -z "$rule" ] || [ -z "$flags" ]; then
-  jq -nc --arg m "skills gate: using-skills is missing its '## Rule' or '## Red Flags' section — gate NOT injected; fix the hook's section names" \
-    '{systemMessage: $m}'
-  exit 0
+	jq -nc --arg m "skills gate: using-skills is missing its '## Rule' or '## Red Flags' section — gate NOT injected; fix the hook's section names" \
+		'{systemMessage: $m}'
+	exit 0
 fi
 
 read -r -d '' frame <<EOF || true
@@ -126,31 +126,31 @@ cursor) shape=cursor ;;
 sdk) shape=sdk ;;
 claude) shape=claude ;;
 *)
-    # Copilot CLI does NOT export a bare COPILOT_CLI. Measured from
-  # /proc/<pid>/environ on three live `copilot` processes: it exports
-  # COPILOT_CLI_BINARY_VERSION, COPILOT_CLI_DIST_DIR and
-  # COPILOT_CLI_RESOLVED_DIST_DIR only. Keying on COPILOT_CLI (as upstream
-  # superpowers does) silently handed Copilot the Claude shape. This is the
-  # second time an assumed-from-upstream variable name was wrong here; the
-  # first was CLAUDE_PLUGIN_ROOT. Detect on what the process actually sets.
-  # Kimi Code is identified by KIMI_API_KEY or KIMI_CODE_EXPERIMENTAL_FLAG;
-  # it consumes the `sdk` (additionalContext) shape via its harness.
-  if [ -n "${KIMI_API_KEY:-}" ] || [ -n "${KIMI_CODE_EXPERIMENTAL_FLAG:-}" ]; then
-    shape=sdk
-  elif [ -n "${COPILOT_CLI:-}${COPILOT_CLI_BINARY_VERSION:-}${COPILOT_CLI_DIST_DIR:-}${COPILOT_CLI_RESOLVED_DIST_DIR:-}" ]; then
-    shape=sdk
-  elif [ -n "${CURSOR_PLUGIN_ROOT:-}" ] || [ -n "${CURSOR_TRACE_ID:-}" ]; then
-    shape=cursor
-  else
-    shape=claude
-  fi
-  ;;
+	# Copilot CLI does NOT export a bare COPILOT_CLI. Measured from
+	# /proc/<pid>/environ on three live `copilot` processes: it exports
+	# COPILOT_CLI_BINARY_VERSION, COPILOT_CLI_DIST_DIR and
+	# COPILOT_CLI_RESOLVED_DIST_DIR only. Keying on COPILOT_CLI (as upstream
+	# superpowers does) silently handed Copilot the Claude shape. This is the
+	# second time an assumed-from-upstream variable name was wrong here; the
+	# first was CLAUDE_PLUGIN_ROOT. Detect on what the process actually sets.
+	# Kimi Code is identified by KIMI_API_KEY or KIMI_CODE_EXPERIMENTAL_FLAG;
+	# it consumes the `sdk` (additionalContext) shape via its harness.
+	if [ -n "${KIMI_API_KEY:-}" ] || [ -n "${KIMI_CODE_EXPERIMENTAL_FLAG:-}" ]; then
+		shape=sdk
+	elif [ -n "${COPILOT_CLI:-}${COPILOT_CLI_BINARY_VERSION:-}${COPILOT_CLI_DIST_DIR:-}${COPILOT_CLI_RESOLVED_DIST_DIR:-}" ]; then
+		shape=sdk
+	elif [ -n "${CURSOR_PLUGIN_ROOT:-}" ] || [ -n "${CURSOR_TRACE_ID:-}" ]; then
+		shape=cursor
+	else
+		shape=claude
+	fi
+	;;
 esac
 
 case "$shape" in
 cursor) jq -nc --arg ctx "$frame" '{additional_context: $ctx}' ;;
 sdk) jq -nc --arg ctx "$frame" '{additionalContext: $ctx}' ;;
 *) jq -nc --arg ctx "$frame" \
-  '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}' ;;
+	'{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}' ;;
 esac
 exit 0

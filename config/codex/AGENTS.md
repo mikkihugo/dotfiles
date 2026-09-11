@@ -301,6 +301,39 @@ Every Codex role configured with `model_provider = "llm-gateway"` must also set
 search executor. CentralCloud MCP browser and search tools are separate
 capabilities and remain enabled.
 
+## Codex login: destructive `device-auth` behavior
+
+`codex login --device-auth` deletes `~/.codex/auth.json` before issuing the
+new device code. Verified on Codex CLI 0.154.0 (2026-09-11). Symptom: a
+working ChatGPT OAuth session is lost without rollback; the file is
+removed and `codex login status` flips from "Logged in using ChatGPT" to
+"Not logged in". No `auth.json.bak*` is created automatically.
+
+**Mitigation — copy `auth.json` aside before any login probe:**
+
+```bash
+cp ~/.codex/auth.json ~/.codex/auth.json.pre-probe
+# then run codex login / codex login --device-auth / etc.
+# if the probe succeeds, restore: mv ~/.codex/auth.json.pre-probe ~/.codex/auth.json
+```
+
+**Recovery path:** complete the device-auth in a browser at
+`https://auth.openai.com/codex/device` within 15 minutes (the device code
+expires). The Codex CLI is already holding the PKCE challenge; the human
+half of the flow must complete the OAuth prompt for `~/.codex/auth.json`
+to be re-written. The CentralCloud `llm-gateway` provider is unaffected —
+it uses `LLM_MUX_API_KEY`, not `auth.json`.
+
+**Non-destructive alternatives** (do not delete `auth.json`):
+
+- `codex login` (default flow, browser at `127.0.0.1:1455`)
+- `codex login --with-api-key` (read OPENAI_API_KEY from stdin)
+- `codex login --with-access-token` (read access token from stdin)
+
+Full incident timeline, retention, and verification: see
+`~/.agent-work/plans/codex-default-flip-20260911.md` and the `kind:bug`
+retention in the `singularity-engine` repo_memory bank.
+
 ## Managed Tool Instructions
 
 <!-- markdownlint-disable -->

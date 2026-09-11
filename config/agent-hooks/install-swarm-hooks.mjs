@@ -15,7 +15,7 @@ const option = (name, fallback) => {
 const engineHostHooks = option(
   "--engine-host-hooks",
   process.env.PURPOSE_TOOL_HOST_HOOKS ??
-    "/home/mhugo/code/singularity-engine/fabrics/tools/services/purpose-tool/host-hooks",
+    "/home/mhugo/code/worktrees/jj/singularity-engine/purpose-tool-host-hooks-origin/fabrics/tools/services/purpose-tool/host-hooks",
 );
 
 const home = process.env.HOME;
@@ -31,10 +31,12 @@ const dotfilesRoot = option("--dotfiles-root", home);
 async function mirrorScripts() {
   const entries = await readFile(join(engineHostHooks, "AGENTS.md"), "utf8").catch(() => null);
   if (entries === null) {
-    throw new Error(
-      `Cannot read engine host-hooks at ${engineHostHooks}/AGENTS.md — ` +
-        `pass --engine-host-hooks <path> or set PURPOSE_TOOL_HOST_HOOKS`,
+    console.warn(
+      `[mirror] engine host-hooks not found at ${engineHostHooks} — ` +
+        `skipping mirror (existing dotfiles source will be used). ` +
+        `pass --engine-host-hooks or set PURPOSE_TOOL_HOST_HOOKS to enable.`,
     );
+    return;
   }
   const clients = ["kimi-code", "codex", "claude", "factory", "copilot"];
   const scripts = [

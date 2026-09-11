@@ -166,67 +166,49 @@
     # no-op tombstone once the skill is loaded. Per-client dispatch is keyed
     # off env vars (claude/cursor/sdk JSON shapes); kimi-code uses the sdk
     # shape detected via KIMI_API_KEY/KIMI_CODE_EXPERIMENTAL_FLAG.
+    #
+    # All three use plain `source` not `pkgs.replaceVars`: their source bodies
+    # contain no @bash@ / @jq@ / @node@ placeholders. replaceVars would fail
+    # the build with "pattern @bash@ doesn't match anything in file". The
+    # scripts use `#!/usr/bin/env bash` and `jq` directly; Nix puts them
+    # on PATH at activation time.
     ".kimi-code/hooks/skills-gate-session-start.sh" = {
-      source = pkgs.replaceVars ../../config/kimi-code/hooks/skills-gate-session-start.sh {
-        bash = "${pkgs.bash}/bin/bash";
-        jq = "${pkgs.jq}/bin/jq";
-      };
+      source = ../../config/kimi-code/hooks/skills-gate-session-start.sh;
       executable = true;
       force = true;
     };
     ".kimi-code/hooks/skills-gate-pretooluse.sh" = {
-      source = pkgs.replaceVars ../../config/kimi-code/hooks/skills-gate-pretooluse.sh {
-        bash = "${pkgs.bash}/bin/bash";
-        jq = "${pkgs.jq}/bin/jq";
-      };
+      source = ../../config/kimi-code/hooks/skills-gate-pretooluse.sh;
       executable = true;
       force = true;
     };
     ".kimi-code/hooks/skills-gate-mark-loaded.sh" = {
-      source = pkgs.replaceVars ../../config/kimi-code/hooks/skills-gate-mark-loaded.sh {
-        bash = "${pkgs.bash}/bin/bash";
-        jq = "${pkgs.jq}/bin/jq";
-      };
+      source = ../../config/kimi-code/hooks/skills-gate-mark-loaded.sh;
       executable = true;
       force = true;
     };
     ".codex/hooks/skills-gate-session-start.sh" = {
-      source = pkgs.replaceVars ../../config/codex/hooks/skills-gate-session-start.sh {
-        bash = "${pkgs.bash}/bin/bash";
-        jq = "${pkgs.jq}/bin/jq";
-      };
+      source = ../../config/codex/hooks/skills-gate-session-start.sh;
       executable = true;
       force = true;
     };
     ".codex/hooks/skills-gate-pretooluse.sh" = {
-      source = pkgs.replaceVars ../../config/codex/hooks/skills-gate-pretooluse.sh {
-        bash = "${pkgs.bash}/bin/bash";
-        jq = "${pkgs.jq}/bin/jq";
-      };
+      source = ../../config/codex/hooks/skills-gate-pretooluse.sh;
       executable = true;
       force = true;
     };
     ".codex/hooks/skills-gate-mark-loaded.sh" = {
-      source = pkgs.replaceVars ../../config/codex/hooks/skills-gate-mark-loaded.sh {
-        bash = "${pkgs.bash}/bin/bash";
-        jq = "${pkgs.jq}/bin/jq";
-      };
+      source = ../../config/codex/hooks/skills-gate-mark-loaded.sh;
       executable = true;
       force = true;
     };
     ".factory/hooks/skills-gate-session-start.sh" = {
-      source = pkgs.replaceVars ../../config/factory/hooks/skills-gate-session-start.sh {
-        bash = "${pkgs.bash}/bin/bash";
-        jq = "${pkgs.jq}/bin/jq";
-      };
+      source = ../../config/factory/hooks/skills-gate-session-start.sh;
       executable = true;
       force = true;
     };
     ".copilot/hooks/skills-gate-session-start.sh" = {
-      source = pkgs.replaceVars ../../config/copilot/hooks/skills-gate-session-start.sh {
-        bash = "${pkgs.bash}/bin/bash";
-        jq = "${pkgs.jq}/bin/jq";
-      };
+      source = ../../config/copilot/hooks/skills-gate-session-start.sh;
       executable = true;
       force = true;
     };

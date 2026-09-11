@@ -74,7 +74,7 @@ in {
     # field or TOML table byte-for-byte.
     installRepoMemorySwarmHooks = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ${pkgs.nodejs}/bin/node ${../../config/agent-hooks/install-swarm-hooks.mjs} \
-        --engine-host-hooks "/home/mhugo/code/singularity-engine/fabrics/tools/services/purpose-tool/host-hooks"
+        --engine-host-hooks "/home/mhugo/code/worktrees/jj/singularity-engine/purpose-tool-host-hooks-origin/fabrics/tools/services/purpose-tool/host-hooks"
     '';
 
     # programs.gh and programs.jujutsu own these files as nix-store symlinks.

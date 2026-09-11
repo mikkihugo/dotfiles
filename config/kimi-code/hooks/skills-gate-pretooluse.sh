@@ -58,19 +58,19 @@ esac
 # protected state was routinely left open. Whatever caused that (not traced),
 # the facade -- not a human -- must own the window.
 if printf '%s' "$cmd" | grep -Eq 'mount[[:space:]]+(-[^[:space:]]+[[:space:]]+)*-o[[:space:]]+[^[:space:]]*remount'; then
-	for word in $cmd; do
-		case "$word" in
-		/*)
-			if [ -d "$word/.jj" ] || [ -d "$word/.git" ]; then
-				if ! skill_loaded version-control-facade; then
-					reason="BLOCKED: this remounts the protected canonical primary at ${word} by hand. That is a facade bypass of the same class as raw git or raw jj: the facade owns the write window under its declared lock, and a hand-opened window is routinely left open (measured on this host: ~100 openings against ~57 restores, 2026-09-05..09-08). Load the skill first: load_skill({ name: \"version-control-facade\" }) -- see its 'Protected-primary write window' section -- then use the repository's repo vcs route. If no such route exists, that is the bug to fix; do not open the window by hand."
-					jq -nc --arg r "$reason" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:$r}}'
-					exit 0
-				fi
-			fi
-			;;
-		esac
-	done
+  for word in $cmd; do
+    case "$word" in
+    /*)
+      if [ -d "$word/.jj" ] || [ -d "$word/.git" ]; then
+        if ! skill_loaded version-control-facade; then
+          reason="BLOCKED: this remounts the protected canonical primary at ${word} by hand. That is a facade bypass of the same class as raw git or raw jj: the facade owns the write window under its declared lock, and a hand-opened window is routinely left open (measured on this host: ~100 openings against ~57 restores, 2026-09-05..09-08). Load the skill first: load_skill({ name: \"version-control-facade\" }) -- see its 'Protected-primary write window' section -- then use the repository's repo vcs route. If no such route exists, that is the bug to fix; do not open the window by hand."
+          jq -nc --arg r "$reason" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:$r}}'
+          exit 0
+        fi
+      fi
+      ;;
+    esac
+  done
 fi
 
 # ---- rule 2: publication transitions ----------------------------------------
@@ -79,11 +79,11 @@ fi
 # exiting non-zero AFTER its push succeeded; a workspace-close exiting clean
 # while the lane stayed live). The skill carries the read-back-the-artifact rule.
 if printf '%s' "$cmd" | grep -Eq '(^|[[:space:];&|(])(repo|just)[[:space:]]+vcs[[:space:]]+(land|promote|publish)([[:space:]]|$)'; then
-	if ! skill_loaded version-control-facade; then
-		reason="BLOCKED: publication transition (land/promote/publish) without version-control-facade loaded. This is the single-writer, hard-to-reverse transition, and on this host these commands have exited zero while changing nothing AND exited non-zero after already succeeding -- so the exit code is not the result. Load it first: load_skill({ name: \"version-control-facade\" }), then verify by artifact: read back the state the command claims to have changed."
-		jq -nc --arg r "$reason" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:$r}}'
-		exit 0
-	fi
+  if ! skill_loaded version-control-facade; then
+    reason="BLOCKED: publication transition (land/promote/publish) without version-control-facade loaded. This is the single-writer, hard-to-reverse transition, and on this host these commands have exited zero while changing nothing AND exited non-zero after already succeeding -- so the exit code is not the result. Load it first: load_skill({ name: \"version-control-facade\" }), then verify by artifact: read back the state the command claims to have changed."
+    jq -nc --arg r "$reason" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:$r}}'
+    exit 0
+  fi
 fi
 
 exit 0

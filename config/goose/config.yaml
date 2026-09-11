@@ -78,8 +78,8 @@ providers:
 # Extensions
 extensions:
   # External
-  centralcloud-mcp-gateway:
-    name: centralcloud-mcp-gateway
+  ccgw:
+    name: ccgw
     type: streamable_http
     description: CentralCloud MCP gateway
     uri: http://mcp-gateway.svc/mcp

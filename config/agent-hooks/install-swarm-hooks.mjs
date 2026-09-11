@@ -1,16 +1,63 @@
 #!/usr/bin/env node
-import { chmod, mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { chmod, copyFile, mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : fallback;
 };
+
+// Single-source-of-truth: the engine's purpose-tool package. The mirror
+// step below copies scripts from here into the dotfiles tree so home-manager
+// can symlink them into $HOME. Editing the engine moves every client; editing
+// here (this file) only changes what gets *wired into client configs*.
+const engineHostHooks = option(
+  "--engine-host-hooks",
+  process.env.PURPOSE_TOOL_HOST_HOOKS ??
+    "/home/mhugo/code/singularity-engine/fabrics/tools/services/purpose-tool/host-hooks",
+);
+
 const home = process.env.HOME;
 const claudePath = option("--claude-settings", join(home, ".claude", "settings.json"));
 const kimiPath = option("--kimi-config", join(home, ".kimi-code", "config.toml"));
 const jcodePath = option("--jcode-config", join(home, ".jcode", "config.toml"));
+
+const dotfilesRoot = option("--dotfiles-root", home);
+
+// Mirror every script in the engine's host-hooks/ dir into the per-client
+// dotfiles hook dirs (as vendored mirrors, not symlinks — so the dotfiles
+// stays a self-contained source tree for home-manager).
+async function mirrorScripts() {
+  const entries = await readFile(join(engineHostHooks, "AGENTS.md"), "utf8").catch(() => null);
+  if (entries === null) {
+    throw new Error(
+      `Cannot read engine host-hooks at ${engineHostHooks}/AGENTS.md — ` +
+        `pass --engine-host-hooks <path> or set PURPOSE_TOOL_HOST_HOOKS`,
+    );
+  }
+  const clients = ["kimi-code", "codex", "claude", "factory", "copilot"];
+  const scripts = [
+    "coordination-mailbox-sweep.sh",
+    "coordination-mailbox-sweep.mjs",
+    "observations-autolog.sh",
+    "observations-autolog.mjs",
+    "skills-gate-session-start.sh",
+    "skills-gate-pretooluse.sh",
+    "skills-gate-mark-loaded.sh",
+  ];
+  for (const client of clients) {
+    const targetDir = join(dotfilesRoot, ".dotfiles", "config", client, "hooks");
+    await mkdir(targetDir, { recursive: true });
+    for (const script of scripts) {
+      const src = join(engineHostHooks, script);
+      const dst = join(targetDir, script);
+      await copyFile(src, dst);
+      await chmod(dst, 0o755);
+    }
+  }
+  console.log(`[mirror] copied ${scripts.length} scripts from ${engineHostHooks} -> ${clients.length} client hook dirs`);
+}
 
 async function existingMode(path) {
   try { return (await stat(path)).mode & 0o777; }
@@ -39,18 +86,12 @@ async function installClaude() {
       .filter((item) => !/swarm-messages\.sh|coordination-mailbox-sweep\.sh|stop-continue-if-actionable\.sh|skills-gate-session-start\.sh/.test(JSON.stringify(item)))
       .concat(group);
   };
-  // The skills gate rides in the SAME group as the mailbox sweep, deliberately.
-  // install() drops every existing group whose JSON matches the filter regex
-  // above and re-adds its own, so a hand-added entry nested inside this group
-  // is silently deleted on the next activation -- which is exactly what
-  // happened when the gate was first registered by editing settings.json
-  // directly. Anything that must survive `hms` has to be written HERE.
   install("SessionStart", {
     matcher: "startup|resume|clear|compact",
     hooks: [
       {
         type: "command",
-        command: "/home/mhugo/.claude/hooks/coordination-mailbox-sweep.sh SessionStart",
+        command: "/home/mhugo/.claude/hooks/coordination-mailbox-sweep.sh claude SessionStart",
         timeout: 30,
       },
       {
@@ -61,15 +102,22 @@ async function installClaude() {
       },
     ],
   });
+  install("PreToolUse", {
+    matcher: "Bash|Read|Edit|Write|Glob|Grep",
+    hooks: [{
+      type: "command",
+      command: "/home/mhugo/.claude/hooks/skills-gate-pretooluse.sh",
+      timeout: 10,
+      statusMessage: "Skills gate pretooluse",
+    }],
+  });
   install("UserPromptSubmit", {
     hooks: [{
       type: "command",
-      command: "/home/mhugo/.claude/hooks/coordination-mailbox-sweep.sh",
+      command: "/home/mhugo/.claude/hooks/coordination-mailbox-sweep.sh claude",
       timeout: 30,
     }],
   });
-  // No matcher for Stop, unlike the tool/prompt events above - per the
-  // documented Stop-hook contract, hooks.Stop entries fire unconditionally.
   install("Stop", {
     hooks: [
       {
@@ -124,17 +172,22 @@ async function installKimi() {
     "# BEGIN repo-memory swarm hooks",
     "[[hooks]]",
     'event = "UserPromptSubmit"',
-    'command = "/home/mhugo/.kimi-code/hooks/swarm-messages.sh"',
+    'command = "/home/mhugo/.kimi-code/hooks/coordination-mailbox-sweep.sh kimi-code UserPromptSubmit"',
     "timeout = 30",
     "",
     "[[hooks]]",
     'event = "SessionStart"',
-    'command = "/home/mhugo/.kimi-code/hooks/swarm-messages.sh SessionStart"',
+    'command = "/home/mhugo/.kimi-code/hooks/coordination-mailbox-sweep.sh kimi-code SessionStart"',
     "timeout = 30",
     "",
     "[[hooks]]",
+    'event = "SessionStart"',
+    'command = "/home/mhugo/.kimi-code/hooks/skills-gate-session-start.sh"',
+    "timeout = 10",
+    "",
+    "[[hooks]]",
     'event = "Stop"',
-    'command = "/home/mhugo/.kimi-code/hooks/observations-autolog.sh"',
+    'command = "/home/mhugo/.kimi-code/hooks/observations-autolog.sh kimi-code Stop"',
     "timeout = 30",
     "# END repo-memory swarm hooks",
     "",
@@ -164,6 +217,7 @@ async function installJcode() {
   await atomicWrite(jcodePath, lines.join("\n"));
 }
 
+await mirrorScripts();
 await installClaude();
 await installKimi();
 await installJcode();

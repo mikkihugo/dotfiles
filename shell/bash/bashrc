@@ -316,6 +316,12 @@ _load_sops_secrets() {
 	[ -n "$val" ] && export OPENCODE_API_KEY="$val"
 	val=$(_sops_sf_val OPENCODE_GO_API_KEY)
 	[ -n "$val" ] && export OPENCODE_GO_API_KEY="$val"
+	# Enable opencode's built-in websearch tool (Exa-backed) regardless of
+	# provider — per opencode docs, OPENCODE_ENABLE_EXA=1 exposes the
+	# websearch tool to the LLM even when not on the OpenCode/OpenCode Go
+	# provider. Sets independently of OPENCODE_API_KEY above so it works
+	# with whatever provider the session is using (MiniMax, google, etc.).
+	export OPENCODE_ENABLE_EXA=1
 	val=$(_sops_sf_val OLLAMA_API_KEY)
 	if [ -n "$val" ]; then
 		export OLLAMA_API_KEY="$val"

@@ -900,6 +900,7 @@ in {
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
           export OTEL_SERVICE_NAME="opencode"
+          export OPENCODE_ENABLE_EXA=1
           exec "$HOME/.local/share/mise/shims/opencode" "$@"
         '';
       };

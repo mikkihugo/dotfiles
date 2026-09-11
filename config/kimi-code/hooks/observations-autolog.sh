@@ -3,4 +3,6 @@
 # Autolog: drain session observations/ideas into repo_memory at turn end.
 # Reads ~/.agent-work/observations/<client>-<session>.md and retains each
 # entry with kind:observation (no OBSERVATIONS.md trail). Fires on Stop.
-exec @node@ /home/mhugo/.dotfiles/config/kimi-code/hooks/observations-autolog.mjs kimi-code "${1:-Stop}"
+# Pass client label as $1 (kimi-code, codex, claude, factory, copilot)
+# and event name as $2 (Stop / SessionEnd).
+exec @node@ "$(dirname "$0")/observations-autolog.mjs" "${1:-kimi-code}" "${2:-Stop}"

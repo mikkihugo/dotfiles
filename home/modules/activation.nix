@@ -73,7 +73,8 @@ in {
     # state. Merge only the repo-memory hook groups and preserve every other
     # field or TOML table byte-for-byte.
     installRepoMemorySwarmHooks = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      ${pkgs.nodejs}/bin/node ${../../config/agent-hooks/install-swarm-hooks.mjs}
+      ${pkgs.nodejs}/bin/node ${../../config/agent-hooks/install-swarm-hooks.mjs} \
+        --engine-host-hooks "/home/mhugo/code/singularity-engine/fabrics/tools/services/purpose-tool/host-hooks"
     '';
 
     # programs.gh and programs.jujutsu own these files as nix-store symlinks.
@@ -226,11 +227,18 @@ in {
 
       home = Path.home()
       gateway_url = "http://mcp-gateway.svc/mcp"
-      generic = {"centralcloud-mcp-gateway": {"url": gateway_url}}
-      typed_http = {"centralcloud-mcp-gateway": {"type": "http", "url": gateway_url}}
-      opencode = {"centralcloud-mcp-gateway": {"type": "remote", "url": gateway_url}}
+      # Stale MCP server keys from earlier wiring — these used to be the
+      # canonical name in every client config and are still found in live
+      # files from before the migration. After writing the current key,
+      # each spec also pops every stale key from its parent dict so old
+      # entries don't linger next to the live one. Update this list when
+      # the canonical key changes again.
+      STALE_MCP_KEYS = ("centralcloud-mcp-gateway",)
+      generic = {"ccgw": {"url": gateway_url}}
+      typed_http = {"ccgw": {"type": "http", "url": gateway_url}}
+      opencode = {"ccgw": {"type": "remote", "url": gateway_url}}
       copilot = {
-          "centralcloud-mcp-gateway": {
+          "ccgw": {
               "type": "http",
               "url": gateway_url,
               "tools": ["*"],
@@ -239,7 +247,7 @@ in {
           }
       }
       factory = {
-          "centralcloud-mcp-gateway": {
+          "ccgw": {
               "type": "http",
               "url": gateway_url,
               "disabled": False,
@@ -276,6 +284,9 @@ in {
           else:
               data = {}
           data[key] = value
+          if isinstance(data[key], dict):
+              for stale in STALE_MCP_KEYS:
+                  data[key].pop(stale, None)
           if path == home / ".qoder" / "settings.json":
               data["mcp"] = {
                   "enabledProjectMcpServers": [],
@@ -292,7 +303,7 @@ in {
       goose_path = home / ".config" / "goose" / "config.yaml"
       # Goose streamable_http requires `uri` (not `url`); `url` is skipped as malformed.
       goose_mcp_entry = {
-          "name": "centralcloud-mcp-gateway",
+          "name": "ccgw",
           "type": "streamable_http",
           "description": "CentralCloud MCP gateway",
           "uri": gateway_url,
@@ -379,7 +390,9 @@ in {
           if not isinstance(extensions, dict):
               extensions = {}
               goose_config["extensions"] = extensions
-          extensions["centralcloud-mcp-gateway"] = goose_mcp_entry
+          extensions["ccgw"] = goose_mcp_entry
+          for stale in STALE_MCP_KEYS:
+              extensions.pop(stale, None)
           extensions["summon"] = {
               "name": "summon",
               "type": "platform",
@@ -426,7 +439,7 @@ in {
 
       nanobot_path = home / ".nanobot" / "config.json"
       nanobot_mcp = {
-          "centralcloud-mcp-gateway": {
+          "ccgw": {
               "type": "streamableHttp",
               "url": gateway_url,
               "tool_timeout": 120,
@@ -494,18 +507,27 @@ in {
           else:
               text += "\n[mcp]\nenabled = true\n"
 
+          # Strip any [[mcp.providers]] blocks from stale keys before we
+          # either rewrite the live one or append the canonical one.
+          for stale in STALE_MCP_KEYS:
+              text = re.sub(
+                  rf'(?ms)\[\[mcp\.providers\]\]\s*\nname\s*=\s*"{re.escape(stale)}"\s*\n(?:(?!\[\[).)*?(?=\n\[\[|\Z)',
+                  "",
+                  text,
+              )
+
           provider_block = (
               "\n[[mcp.providers]]\n"
-              'name = "centralcloud-mcp-gateway"\n'
+              'name = "ccgw"\n'
               f'endpoint = "{gateway_url}"\n'
               'protocol_version = "2024-11-05"\n'
               "enabled = true\n"
               "max_concurrent_requests = 3\n"
           )
-          if 'name = "centralcloud-mcp-gateway"' in text:
+          if 'name = "ccgw"' in text:
               # Rewrite endpoint on the centralcloud provider only.
               text = re.sub(
-                  r'(?ms)(\[\[mcp\.providers\]\]\s*\nname\s*=\s*"centralcloud-mcp-gateway"\s*\n(?:(?!\[\[).)*?^endpoint\s*=\s*)"[^"]*"',
+                  r'(?ms)(\[\[mcp\.providers\]\]\s*\nname\s*=\s*"ccgw"\s*\n(?:(?!\[\[).)*?^endpoint\s*=\s*)"[^"]*"',
                   rf'\g<1>"{gateway_url}"',
                   text,
                   count=1,

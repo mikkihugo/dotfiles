@@ -18,7 +18,7 @@ custom_providers = []
 enabled = true
 
 [[mcp.providers]]
-name = "centralcloud-mcp-gateway"
+name = "ccgw"
 endpoint = "http://mcp-gateway.svc/mcp"
 protocol_version = "2024-11-05"
 enabled = true

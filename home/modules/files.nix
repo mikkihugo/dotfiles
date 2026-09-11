@@ -113,6 +113,12 @@
     # above stay as compatibility shims for one release (factory still names
     # them directly). Codex, Claude, Kimi-Code, Copilot, and Cursor hook
     # registrations point at the coordination-mailbox-sweep names below.
+    # The .mjs impls and observations-autolog.*.{sh,mjs} live as a canonical
+    # bundle in fabrics/tools/services/purpose-tool/host-hooks/ (engine source
+    # of truth). The installer in config/agent-hooks/install-swarm-hooks.mjs
+    # mirrors them into config/<client>/hooks/ at every hms, and the entries
+    # below symlink them into $HOME. Mirror step uses replaceVars to substitute
+    # @bash@/@node@ placeholders at Nix build time.
     ".codex/hooks/coordination-mailbox-sweep.mjs" = {
       source = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.mjs {
         node = "${pkgs.nodejs}/bin/node";
@@ -123,19 +129,103 @@
       force = true;
     };
 
-    ".codex/hooks/coordination-mailbox-sweep.sh" = {
-      source = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.sh {
+    # observations-autolog.{sh,mjs} mirrors the canonical stop hook. .mjs
+    # entries for codex and kimi-code already exist above (lines 90, 96); only
+    # the .sh entries that weren't previously symlinked are added here, plus
+    # the missing .mjs for claude and copilot.
+    ".codex/hooks/observations-autolog.sh" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/observations-autolog.sh {
         bash = "${pkgs.bash}/bin/bash";
         node = "${pkgs.nodejs}/bin/node";
       };
       executable = true;
       force = true;
     };
-
-    ".claude/hooks/coordination-mailbox-sweep.sh" = {
-      source = pkgs.replaceVars ../../config/claude/hooks/coordination-mailbox-sweep.sh {
+    ".claude/hooks/observations-autolog.mjs" = {
+      source = ../../config/claude/hooks/observations-autolog.mjs;
+      executable = true;
+      force = true;
+    };
+    ".factory/hooks/observations-autolog.sh" = {
+      source = pkgs.replaceVars ../../config/factory/hooks/observations-autolog.sh {
         bash = "${pkgs.bash}/bin/bash";
         node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+    ".copilot/hooks/observations-autolog.mjs" = {
+      source = ../../config/copilot/hooks/observations-autolog.mjs;
+      executable = true;
+      force = true;
+    };
+
+    # Skills gate bundle. The SessionStart hook injects the using-skills
+    # router body into the agent's context for every session; the PreToolUse
+    # hook re-injects if the gate was skipped; the mark-loaded hook is a
+    # no-op tombstone once the skill is loaded. Per-client dispatch is keyed
+    # off env vars (claude/cursor/sdk JSON shapes); kimi-code uses the sdk
+    # shape detected via KIMI_API_KEY/KIMI_CODE_EXPERIMENTAL_FLAG.
+    ".kimi-code/hooks/skills-gate-session-start.sh" = {
+      source = pkgs.replaceVars ../../config/kimi-code/hooks/skills-gate-session-start.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        jq = "${pkgs.jq}/bin/jq";
+      };
+      executable = true;
+      force = true;
+    };
+    ".kimi-code/hooks/skills-gate-pretooluse.sh" = {
+      source = pkgs.replaceVars ../../config/kimi-code/hooks/skills-gate-pretooluse.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        jq = "${pkgs.jq}/bin/jq";
+      };
+      executable = true;
+      force = true;
+    };
+    ".kimi-code/hooks/skills-gate-mark-loaded.sh" = {
+      source = pkgs.replaceVars ../../config/kimi-code/hooks/skills-gate-mark-loaded.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        jq = "${pkgs.jq}/bin/jq";
+      };
+      executable = true;
+      force = true;
+    };
+    ".codex/hooks/skills-gate-session-start.sh" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/skills-gate-session-start.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        jq = "${pkgs.jq}/bin/jq";
+      };
+      executable = true;
+      force = true;
+    };
+    ".codex/hooks/skills-gate-pretooluse.sh" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/skills-gate-pretooluse.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        jq = "${pkgs.jq}/bin/jq";
+      };
+      executable = true;
+      force = true;
+    };
+    ".codex/hooks/skills-gate-mark-loaded.sh" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/skills-gate-mark-loaded.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        jq = "${pkgs.jq}/bin/jq";
+      };
+      executable = true;
+      force = true;
+    };
+    ".factory/hooks/skills-gate-session-start.sh" = {
+      source = pkgs.replaceVars ../../config/factory/hooks/skills-gate-session-start.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        jq = "${pkgs.jq}/bin/jq";
+      };
+      executable = true;
+      force = true;
+    };
+    ".copilot/hooks/skills-gate-session-start.sh" = {
+      source = pkgs.replaceVars ../../config/copilot/hooks/skills-gate-session-start.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        jq = "${pkgs.jq}/bin/jq";
       };
       executable = true;
       force = true;
@@ -341,7 +431,7 @@
     # via block/goose docs + DeepWiki) that goose has no lifecycle hook system
     # at all -- only MCP extensions, which run tools by the agent's own choice,
     # not deterministically on session start. It already gets bus access via
-    # the centralcloud-mcp-gateway extension activation.nix seeds into
+    # the ccgw extension activation.nix seeds into
     # extensions:; that is the ceiling of what's possible here today.
 
     ".config/goose/moim-guardrails.md" = {

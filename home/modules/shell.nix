@@ -74,6 +74,31 @@
       unset _tmux_detached
     fi
 
+    # fj (forgejo-cli) does not support a config file for default host. Pin
+    # the central host at the wrapper layer so any `fj` invocation from
+    # any directory works without `--host`. Pass-through when the caller
+    # already supplied `--host` or `-H*`. Host is overridable via $FJ_HOST.
+    if command -v fj >/dev/null 2>&1; then
+      fj() {
+        # Default host; FJ_HOST env var overrides for ad-hoc or future hosts.
+        FJ_HOST_DEFAULT="https://git.centralcloud.net"
+        FJ_HOST="$FJ_HOST"
+        # Walk argv looking for an explicit --host or -H flag (in either
+        # separated or joined form). When found, pass through unchanged.
+        has_host=
+        for arg in "$@"; do
+          case "$arg" in
+            --host|-H|--host=*|-H*) has_host=1; break ;;
+          esac
+        done
+        if [[ -n "$has_host" ]]; then
+          command fj "$@"
+        else
+          command fj --host "$FJ_HOST" "$@"
+        fi
+      }
+    fi
+
   '';
 in {
   home.file = {

@@ -90,6 +90,24 @@ test("identity derivation rejects a bare client name", () => {
   assert.throws(() => deriveIdentity("codex", {}, {}), /missing session-unique coordination-mailbox identity/);
 });
 
+test("identity derivation error includes actionable setup hint (REPO_MEMORY_SWARM_CONSUMER + per-client env vars)", () => {
+  // Regression: an opaque "identity is missing" error previously left operators
+  // to read source. The hook must tell them HOW to set the identity, naming
+  // the env var and the per-client fallback shape.
+  let caught;
+  try {
+    deriveIdentity("codex", {}, {});
+  } catch (error) {
+    caught = error;
+  }
+  assert.ok(caught, "deriveIdentity should throw without a session id");
+  const message = String(caught.message);
+  assert.match(message, /REPO_MEMORY_SWARM_CONSUMER/);
+  assert.match(message, /CODEX_THREAD_ID/);
+  assert.match(message, /opencode/);
+  assert.match(message, /session_id|thread_id|conversation_id/);
+});
+
 test("validateIdentity rejects every bare client name outright", () => {
   for (const bare of ["claude", "codex", "cursor", "kimi", "kimi-code", "jcode", "agent", "copilot", "factory", "code"]) {
     assert.throws(() => validateIdentity(bare), /bare client name/);
@@ -101,6 +119,16 @@ test("validateIdentity rejects a missing or empty session segment", () => {
     assert.throws(() => validateIdentity(bad));
   }
   assert.doesNotThrow(() => validateIdentity("claude-674f9a3f"));
+});
+
+test("validateIdentity empty-string error references the consumer env var so operators can self-serve", () => {
+  // Regression: the bare "coordination-mailbox identity is empty" message gave
+  // no path forward. The hint must name the env var that fixes it.
+  assert.throws(() => validateIdentity(""), /REPO_MEMORY_SWARM_CONSUMER/);
+});
+
+test("validateIdentity malformed-identity error explains the required <client>-<token> shape", () => {
+  assert.throws(() => validateIdentity("Codex-ABCD"), /REPO_MEMORY_SWARM_CONSUMER|dash-free|alphanumeric/);
 });
 
 test("an explicit REPO_MEMORY_SWARM_CONSUMER override is validated the same way", () => {

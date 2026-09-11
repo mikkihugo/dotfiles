@@ -126,7 +126,7 @@ cursor) shape=cursor ;;
 sdk) shape=sdk ;;
 claude) shape=claude ;;
 *)
-	# Copilot CLI does NOT export a bare COPILOT_CLI. Measured from
+		# Copilot CLI does NOT export a bare COPILOT_CLI. Measured from
 	# /proc/<pid>/environ on three live `copilot` processes: it exports
 	# COPILOT_CLI_BINARY_VERSION, COPILOT_CLI_DIST_DIR and
 	# COPILOT_CLI_RESOLVED_DIST_DIR only. Keying on COPILOT_CLI (as upstream

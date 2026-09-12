@@ -407,6 +407,49 @@ test("a second install does not duplicate managed hook blocks (dotfiles #28)", a
   }
 });
 
+test("the installer evicts the renamed legacy hook from an existing config (dotfiles #28)", async () => {
+  // swarm-messages.sh was renamed to coordination-mailbox-sweep.sh. The strip
+  // must still evict the OLD name from a config written before the rename, or
+  // the legacy hook stays registered alongside its replacement and every
+  // lifecycle event sweeps twice. Nothing covered this: the other tests seed an
+  // empty or unrelated config, so deleting the legacy-name list broke nothing.
+  const home = await mkdtemp(join(tmpdir(), "repo-memory-hook-legacy-"));
+  try {
+    await writeFile(join(home, "claude.json"), JSON.stringify({
+      language: "English",
+      hooks: {
+        SessionStart: [{
+          matcher: "startup",
+          hooks: [{ type: "command", command: "/home/mhugo/.claude/hooks/swarm-messages.sh claude SessionStart", timeout: 10 }],
+        }],
+      },
+    }));
+    await writeFile(
+      join(home, "kimi.toml"),
+      '[providers.keep_me]\napi_key = "do-not-touch"\n\n'
+        + '[[hooks]]\nevent = "SessionStart"\ncommand = "/home/mhugo/.kimi-code/hooks/swarm-messages.sh kimi-code SessionStart"\ntimeout = 10\n',
+    );
+    const result = spawnSync(process.execPath, [
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "--claude-settings", join(home, "claude.json"),
+      "--kimi-config", join(home, "kimi.toml"),
+    ], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+
+    const claude = await readFile(join(home, "claude.json"), "utf8");
+    assert.doesNotMatch(claude, /swarm-messages\.sh/, "the renamed legacy Claude hook must be evicted, not left beside its replacement");
+    assert.match(claude, /coordination-mailbox-sweep\.sh claude SessionStart/);
+    assert.match(claude, /"language": "English"/, "unrelated settings must survive the strip");
+
+    const kimi = await readFile(join(home, "kimi.toml"), "utf8");
+    assert.doesNotMatch(kimi, /swarm-messages\.sh/, "the renamed legacy Kimi hook must be evicted, not left beside its replacement");
+    assert.match(kimi, /coordination-mailbox-sweep\.sh kimi-code SessionStart/);
+    assert.match(kimi, /api_key = "do-not-touch"/, "unrelated provider content must survive the strip");
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
 test("files.nix declares every hook path the installer registers (dotfiles #28)", async () => {
   // The installer pointed Claude's settings at
   // ~/.claude/hooks/coordination-mailbox-sweep.sh while files.nix never

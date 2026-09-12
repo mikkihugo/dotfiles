@@ -100,17 +100,12 @@ async function installClaude() {
     if (error.code !== "ENOENT") throw error;
   }
   settings.hooks ??= {};
-  // Renamed hooks we no longer install but must still evict from an old
-  // settings.json. Everything we DO install is derived from the group below,
-  // so this list never has to grow again: a hand-maintained strip list is what
-  // let skills-gate-pretooluse.sh and observations-autolog.sh duplicate on
-  // every hms, firing Claude's skills gate twice per tool call.
-  const legacyHookNames = ["swarm-messages.sh"];
+  // Everything we install is derived from the group being written, so this
+  // strip never has to be maintained by hand: a hardcoded list is what let
+  // skills-gate-pretooluse.sh and observations-autolog.sh duplicate on every
+  // hms, firing Claude's skills gate twice per tool call.
   const install = (event, group) => {
-    const managedNames = [
-      ...legacyHookNames,
-      ...group.hooks.map((hook) => hook.command.split(/\s+/)[0].split("/").pop()),
-    ];
+    const managedNames = managedHookNames(group.hooks.map((hook) => hook.command));
     const existing = Array.isArray(settings.hooks[event]) ? settings.hooks[event] : [];
     settings.hooks[event] = existing
       .filter((item) => {
@@ -169,7 +164,33 @@ async function installClaude() {
   await atomicWrite(claudePath, `${JSON.stringify(settings, null, 2)}\n`);
 }
 
+// The kimi managed hooks, declared once. Both the TOML this installer writes
+// and the strip that evicts the previous copy are derived from this list, so
+// adding a hook cannot desynchronise them. Previously the emitted block and the
+// strip list were two hand-maintained copies of the same names; the strip fell
+// behind twice (coordination-mailbox-sweep.sh, then skills-gate-session-start.sh)
+// and each miss duplicated that hook on every hms.
+const KIMI_MANAGED_HOOKS = [
+  { event: "UserPromptSubmit", command: "/home/mhugo/.kimi-code/hooks/coordination-mailbox-sweep.sh kimi-code UserPromptSubmit", timeout: 30 },
+  { event: "SessionStart", command: "/home/mhugo/.kimi-code/hooks/coordination-mailbox-sweep.sh kimi-code SessionStart", timeout: 30 },
+  { event: "SessionStart", command: "/home/mhugo/.kimi-code/hooks/skills-gate-session-start.sh", timeout: 30 },
+  { event: "Stop", command: "/home/mhugo/.kimi-code/hooks/observations-autolog.sh kimi-code Stop", timeout: 30 },
+];
+
+// Renamed hooks this installer no longer emits but must still evict from an
+// older on-disk config. Shared by the Claude and Kimi strips.
+const LEGACY_HOOK_NAMES = ["swarm-messages.sh"];
+
+function hookScriptName(command) {
+  return command.split(/\s+/)[0].split("/").pop();
+}
+
+function managedHookNames(commands) {
+  return [...LEGACY_HOOK_NAMES, ...commands.map(hookScriptName)];
+}
+
 function withoutManagedKimiHooks(content) {
+  const managedNames = managedHookNames(KIMI_MANAGED_HOOKS.map((hook) => hook.command));
   const lines = content.split("\n");
   const kept = [];
   for (let index = 0; index < lines.length;) {
@@ -189,16 +210,7 @@ function withoutManagedKimiHooks(content) {
       block.push(lines[index]);
       index += 1;
     }
-    // Every managed hook name must be listed here. A name the installer emits
-    // but this strip misses survives the rewrite and is then re-appended, so
-    // the managed block silently duplicates on the next hms.
     const body = block.join("\n");
-    const managedNames = [
-      "swarm-messages.sh",
-      "observations-autolog.sh",
-      "coordination-mailbox-sweep.sh",
-      "skills-gate-session-start.sh",
-    ];
     if (!managedNames.some((name) => body.includes(name))) kept.push(...block);
   }
   return kept.join("\n").trimEnd();
@@ -211,27 +223,17 @@ async function installKimi() {
     if (error.code !== "ENOENT") throw error;
   }
   const base = withoutManagedKimiHooks(content);
+  const blocks = KIMI_MANAGED_HOOKS.map((hook) => [
+    "[[hooks]]",
+    `event = ${JSON.stringify(hook.event)}`,
+    `command = ${JSON.stringify(hook.command)}`,
+    `timeout = ${hook.timeout}`,
+  ]);
   const managed = [
     "# BEGIN repo-memory swarm hooks",
-    "[[hooks]]",
-    'event = "UserPromptSubmit"',
-    'command = "/home/mhugo/.kimi-code/hooks/coordination-mailbox-sweep.sh kimi-code UserPromptSubmit"',
-    "timeout = 30",
-    "",
-    "[[hooks]]",
-    'event = "SessionStart"',
-    'command = "/home/mhugo/.kimi-code/hooks/coordination-mailbox-sweep.sh kimi-code SessionStart"',
-    "timeout = 30",
-    "",
-    "[[hooks]]",
-    'event = "SessionStart"',
-    'command = "/home/mhugo/.kimi-code/hooks/skills-gate-session-start.sh"',
-    "timeout = 30",
-    "",
-    "[[hooks]]",
-    'event = "Stop"',
-    'command = "/home/mhugo/.kimi-code/hooks/observations-autolog.sh kimi-code Stop"',
-    "timeout = 30",
+    // A blank line separates blocks; the last one butts against END, matching
+    // the layout this file has always written.
+    ...blocks.flatMap((block, index) => (index < blocks.length - 1 ? [...block, ""] : block)),
     "# END repo-memory swarm hooks",
     "",
   ].join("\n");

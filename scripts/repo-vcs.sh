@@ -83,7 +83,9 @@ run_forgejo_https() {
 		fi
 	done
 	[[ "$saw_git" -eq 1 ]] || die "run_forgejo_https: no git binary in args: $*"
-	"${prefix[@]}" "$git_bin" -c "credential.helper=$helper" "${suffix[@]}" || result=$?
+	# An inherited helper can answer first and silently shadow this token. Clear
+	# the configured helper chain, then install exactly this invocation's helper.
+	"${prefix[@]}" "$git_bin" -c credential.helper= -c "credential.helper=$helper" "${suffix[@]}" || result=$?
 	return "$result"
 }
 # Contract for the forgejo-https credential helper: this expression must
@@ -112,11 +114,11 @@ forgejo_https_credential_helper_check() {
 	# via %s at build time, so the child shell that git spawns does not
 	# need to expand any variables.
 	local fill_output
-	fill_output="$(printf 'protocol=https\nhost=git.centralcloud.net\n\n' | git -c "credential.helper=$helper" credential fill 2>/dev/null || true)"
+	fill_output="$(printf 'protocol=https\nhost=git.centralcloud.net\n\n' | git -c credential.helper= -c "credential.helper=$helper" credential fill 2>/dev/null || true)"
 	actual="$(printf '%s' "$fill_output" | awk -F= '/^password=/{print $2; exit}')"
 	expected="$(printf '%q' "$token")"
-	[[ "$actual" == "$expected" ]] || die "forgejo-https credential helper: helper password does not match expected. got=$actual expected=$expected"
-	printf 'forgejo-https credential helper: ok (git credential fill returned the %q-quoted token)\n' "$token"
+	[[ "$actual" == "$expected" ]] || die 'forgejo-https credential helper: helper password does not match the selected credential source'
+	printf 'forgejo-https credential helper: ok\n'
 }
 fetch_forgejo_main() {
 	run_forgejo_https git -C "$1" fetch "$forgejo_https_url" '+refs/heads/main:refs/remotes/origin/main'
@@ -218,7 +220,10 @@ sync-main)
 	divergence_only=0
 	while (($#)); do
 		case "$1" in
-		--divergence-only) divergence_only=1; shift ;;
+		--divergence-only)
+			divergence_only=1
+			shift
+			;;
 		*) die "sync-main: unknown argument: $1 (supported: --divergence-only)" ;;
 		esac
 	done
@@ -255,7 +260,10 @@ sync-main)
 	printf 'divergence=primary_main ahead_of_upstream commits=%s\n' "$total" >&2
 	while IFS= read -r sha; do
 		count=$((count + 1))
-		[[ $count -gt 25 ]] && { printf '  ... %s more (truncated; inspect with: git log origin/main..main)\n' "$((total - 25))" >&2; break; }
+		[[ $count -gt 25 ]] && {
+			printf '  ... %s more (truncated; inspect with: git log origin/main..main)\n' "$((total - 25))" >&2
+			break
+		}
 		author="$(git -C "$primary" log -1 --format='%an <%ae>' "$sha" 2>/dev/null || echo '?')"
 		subject="$(git -C "$primary" log -1 --format='%s' "$sha" 2>/dev/null || echo '?')"
 		# Files touched (capped at 5 to keep the line bounded).

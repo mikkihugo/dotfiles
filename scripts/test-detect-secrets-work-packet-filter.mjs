@@ -299,7 +299,13 @@ test("detect-secrets filters only canonical Purpose work-packet metadata", async
 
 test("detect-secrets filters host-hook content hashes in hooks.lock.json", async () => {
   const baselineDir = await mkdtemp(join(tmpdir(), "detect-secrets-hook-lock-baseline-"));
-  const lockRoot = await mkdtemp(join(tmpdir(), "detect-secrets-hook-lock-"));
+  // Scan targets must live under repoRoot: `detect-secrets scan` runs with
+  // cwd: repoRoot and silently returns zero results (no error) for anything
+  // outside it, so a tmpdir fixture here made every "must be filtered"
+  // assertion below pass whether the filter ran or the file was simply never
+  // scanned (issue #32; the sibling test above avoids this by keeping its
+  // scan fixtures under docs/work).
+  const lockRoot = await mkdtemp(join(repoRoot, "docs", "work", ".detect-secrets-hook-lock-"));
   const baseline = join(baselineDir, ".secrets.baseline");
   const hookBaseline = join(baselineDir, ".hook-secrets.baseline");
   await Promise.all([
@@ -319,6 +325,12 @@ test("detect-secrets filters host-hook content hashes in hooks.lock.json", async
       },
     }),
   );
+  // Positive control: a real (non-canonical) token in the same directory as
+  // `allowed`. If the scan below ever stops walking this directory, this
+  // fixture goes unflagged too, so "nothing was scanned" can't read as
+  // "the hook lock hash was filtered" (issue #32).
+  const dirty = join(lockRoot, "config/agent-hooks/dirty.lock.json");
+  await writeFile(dirty, JSON.stringify({ token: nonDigest }));
   const tokenDoc = {
     hooks: {
       "skills-gate-session-start.sh": {
@@ -357,10 +369,20 @@ print("ok")
   try {
     assert.equal(pythonProbe.status, 0, pythonProbe.stderr || pythonProbe.stdout);
     assert.match(pythonProbe.stdout, /ok/);
-    const results = await scan([allowed, "config/agent-hooks/hooks.lock.json"], baseline);
+    const results = await scan([allowed, dirty, "config/agent-hooks/hooks.lock.json"], baseline);
     assert.equal(results["config/agent-hooks/hooks.lock.json"], undefined, "tracked hook lock hashes must be filtered");
-    const key = Object.keys(results).find((name) => name.endsWith("config/agent-hooks/hooks.lock.json") && name !== "config/agent-hooks/hooks.lock.json");
-    assert.equal(key ? results[key] : undefined, undefined, "canonical temp hook lock hashes must be filtered");
+    assert.equal(
+      results[relative(repoRoot, allowed)],
+      undefined,
+      "a canonical hook lock hash outside the tracked tree must also be filtered",
+    );
+    // Positive control: prove the scan actually walked this fixture directory
+    // at all (issue #32 — a tmpdir fixture here previously produced zero
+    // results, no error, and the assertions above passed vacuously).
+    assert.ok(
+      results[relative(repoRoot, dirty)]?.length,
+      "a real high-entropy token in this same directory must still be flagged",
+    );
     const allowedHook = hookScan(["config/agent-hooks/hooks.lock.json"], hookBaseline);
     assert.equal(allowedHook.status, 0, allowedHook.stderr || allowedHook.stdout);
   } finally {

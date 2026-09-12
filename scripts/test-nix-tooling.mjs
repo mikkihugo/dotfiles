@@ -450,7 +450,12 @@ test("shell aliases consume the managed Nix tooling", async () => {
   // every host-gated module then evaluates false and activation silently
   // removes those services. current-home-profile is the same resolver the
   // .local/bin/home-manager wrapper uses.
-  const hmsAlias = /^\s*hms\s*=\s*''nh home switch "\$HOME\/\.dotfiles" -c "\$\("\$HOME\/\.dotfiles\/scripts\/current-home-profile"\)"'';/m;
+  // The pinned part is the nh invocation itself: no --ask, and always -c with
+  // the profile resolver. A prefix is allowed so the alias can guard before it
+  // builds -- the primary checkout is routinely parked on another agent's lane,
+  // and hms would otherwise deploy that tree silently (dotfiles#33). What must
+  // not drift is everything after the guard, which is still matched exactly.
+  const hmsAlias = /^\s*hms\s*=\s*''[\s\S]*?nh home switch "\$HOME\/\.dotfiles" -c "\$\("\$HOME\/\.dotfiles\/scripts\/current-home-profile"\)"'';/m;
   assert.match(shell, hmsAlias);
   assert.doesNotMatch(shell, /hms\s*=\s*\S*nh home switch[^;]*--ask/);
   // hms must never activate without naming the configuration.

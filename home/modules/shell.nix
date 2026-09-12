@@ -82,7 +82,10 @@
       fj() {
         # Default host; FJ_HOST env var overrides for ad-hoc or future hosts.
         FJ_HOST_DEFAULT="https://git.centralcloud.net"
-        FJ_HOST="$FJ_HOST"
+        # Apply the default when unset/empty; FJ_HOST="$FJ_HOST" was a
+        # no-op that left an empty --host, sending fj to ~/.config/fj/config.toml
+        # (port 2222) and dying with "received corrupt message of type InvalidContentType".
+        FJ_HOST="''${FJ_HOST:-$FJ_HOST_DEFAULT}"
         # Walk argv looking for an explicit --host or -H flag (in either
         # separated or joined form). When found, pass through unchanged.
         has_host=
@@ -309,7 +312,18 @@ in {
     # ttyd on cc-se-sto-devbox-01. scripts/current-home-profile is the same
     # hostname->profile resolver the .local/bin/home-manager wrapper already
     # uses, so both activation paths agree on one source of truth.
-    hms = ''nh home switch "$HOME/.dotfiles" -c "$("$HOME/.dotfiles/scripts/current-home-profile")"'';
+    #
+    # Warn (never refuse) when $HOME/.dotfiles is not a clean checkout of
+    # main before building from it. Observed 2026-09-12: the primary sat on
+    # lane/kimi-otel-stdin-fix-20260911, a day-old commit, with 22+ modified
+    # files from another agent, and hms rebuilt and deployed that foreign
+    # tree with exit 0 -- neither landed main nor a reviewable state. In
+    # this multi-agent setup the primary is routinely parked on someone
+    # else's in-flight lane, so a hard refusal would block hms as often as
+    # it helps; naming the branch and dirty-file count is enough to stop an
+    # operator deploying the wrong tree by accident while still letting a
+    # deliberate build-from-WIP proceed.
+    hms = ''( branch="$(git -C "$HOME/.dotfiles" rev-parse --abbrev-ref HEAD 2>/dev/null)"; dirty="$(git -C "$HOME/.dotfiles" status --porcelain 2>/dev/null | wc -l)"; if [ "$branch" != main ] || [ "$dirty" -ne 0 ]; then echo "hms: WARNING $HOME/.dotfiles is on branch=$branch dirty=$dirty (not a clean main checkout) -- building and deploying this tree as-is, not landed main" >&2; fi ); nh home switch "$HOME/.dotfiles" -c "$("$HOME/.dotfiles/scripts/current-home-profile")"'';
     # Standard home-manager subcommand aliases. Same wrapper as hms.
     hmn = "nh home news";
     hmp = "nh home packages";

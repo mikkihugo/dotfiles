@@ -725,3 +725,32 @@ test("the interactive and non-interactive PATH restores stay one rule", async ()
   assert.doesNotMatch(guard, /__HM_SESS_VARS_SOURCED/);
 });
 
+test("fj wrapper falls back to FJ_HOST_DEFAULT when FJ_HOST is unset", async () => {
+  // FJ_HOST_DEFAULT used to be assigned and never read (FJ_HOST="$FJ_HOST"
+  // was a no-op), so an unset FJ_HOST produced an empty --host and fj fell
+  // back to ~/.config/fj/config.toml's SSH-port host, dying with
+  // "received corrupt message of type InvalidContentType".
+  const source = await readFile("home/modules/shell.nix", "utf8");
+  const match = source.match(/if command -v fj >\/dev\/null 2>&1; then\n([\s\S]*?)\n    fi\n/);
+  assert.ok(match, "fj wrapper block not found in home/modules/shell.nix");
+  const fjBlock = match[1].replace(/''\$\{/g, "${");
+
+  const stub = `
+command() {
+  if [ "$1" = "-v" ] && [ "$2" = "fj" ]; then return 0; fi
+  if [ "$1" = "fj" ]; then shift; printf '<%s>\\n' "$@"; return 0; fi
+  builtin command "$@"
+}
+${fjBlock}
+fj
+`;
+
+  const result = spawnSync("bash", ["-c", stub], { encoding: "utf8", env: { ...process.env, FJ_HOST: "" } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(
+    result.stdout,
+    /<--host>\n<https:\/\/[^>]+>\n/,
+    `fj must pass a non-empty --host when FJ_HOST is unset, got: ${JSON.stringify(result.stdout)}`,
+  );
+});
+

@@ -140,6 +140,14 @@ in
           Environment=PATH=${jcodeLauncher}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
         '';
 
+        # 90-exact-root replaces PATH from its EnvironmentFile. Reassert the
+        # server-attached launcher after it, or the watchdog cannot reach the
+        # healthy socket even though jcode-server is running.
+        ".config/systemd/user/jcode-swarm-fleet-watchdog.service.d/95-server-jcode-path.conf".text = ''
+          [Service]
+          Environment=PATH=${jcodeLauncher}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
+        '';
+
         # OnUnitActiveSec alone leaves NEXT=- after a failed oneshot across a
         # user-session restart. Calendar catch-up keeps heal running.
         ".config/systemd/user/jcode-swarm-fleet-watchdog.timer.d/10-calendar.conf".text = ''

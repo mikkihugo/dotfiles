@@ -316,6 +316,8 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   assert.doesNotMatch(service, /packages\s*=\s*\[[^\]]*jcodeLauncher/);
   assert.doesNotMatch(service, /file\."\.local\/bin\/jcode"/);
   assert.match(service, /jcode-swarm-fleet-watchdog\.service\.d\/50-server-jcode/);
+  assert.match(service, /jcode-swarm-fleet-watchdog\.service\.d\/95-server-jcode-path/);
+  assert.match(service, /\[Service\]\n\s*Environment=PATH=\$\{jcodeLauncher\}/);
   assert.match(service, /jcode-swarm-fleet-watchdog\.timer\.d\/10-calendar/);
   assert.match(service, /OnCalendar=\*:0\/5/);
   assert.match(

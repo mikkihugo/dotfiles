@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { chmod, mkdtemp, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -123,7 +124,7 @@ test("copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered
   assert.match(files, /replaceVars[\s\S]*config\/copilot\/hooks\/coordination-mailbox-sweep\.sh/);
   const shim = await readFile("config/copilot/hooks/coordination-mailbox-sweep.sh", "utf8");
   assert.match(shim, /^#!@bash@/);
-  assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs copilot/);
+  assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs "\$\{1:-kimi-code\}"/);
 });
 
 test("factory settings.json wires SessionStart + UserPromptSubmit at the HM-rendered coordination-mailbox-sweep.sh shim", async () => {
@@ -145,7 +146,7 @@ test("factory settings.json wires SessionStart + UserPromptSubmit at the HM-rend
   assert.match(files, /replaceVars[\s\S]*config\/factory\/hooks\/coordination-mailbox-sweep\.sh/);
   const shim = await readFile("config/factory/hooks/coordination-mailbox-sweep.sh", "utf8");
   assert.match(shim, /^#!@bash@/);
-  assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs factory/);
+  assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs "\$\{1:-kimi-code\}"/);
 });
 
 test("Home Manager installs every managed hook surface", async () => {
@@ -239,7 +240,7 @@ test("activation merge preserves unrelated Claude settings and Kimi provider con
     const claude = await readJSON(join(home, "claude.json"));
     assert.equal(claude.language, "English");
     assert.equal(claude.hooks.PreToolUse[0].matcher, "Bash");
-    assert.match(JSON.stringify(claude.hooks.SessionStart), /coordination-mailbox-sweep\.sh SessionStart/);
+    assert.match(JSON.stringify(claude.hooks.SessionStart), /coordination-mailbox-sweep\.sh claude SessionStart/);
     assert.match(JSON.stringify(claude.hooks.UserPromptSubmit), /coordination-mailbox-sweep\.sh/);
     assert.match(JSON.stringify(claude.hooks.SessionStart), /"timeout":30/);
     assert.match(JSON.stringify(claude.hooks.UserPromptSubmit), /"timeout":30/);
@@ -282,8 +283,8 @@ test("activation merge preserves unrelated Claude settings and Kimi provider con
     const updatedKimi = await readFile(join(home, "kimi.toml"), "utf8");
     assert.match(updatedKimi, /api_key = \"do-not-touch\"/);
     assert.match(updatedKimi, /event = \"Notification\"/);
-    assert.equal((updatedKimi.match(/command = ".*swarm-messages\.sh"/g) ?? []).length, 1);
-    assert.equal((updatedKimi.match(/command = ".*swarm-messages\.sh SessionStart"/g) ?? []).length, 1);
+    assert.equal((updatedKimi.match(/command = ".*coordination-mailbox-sweep\.sh/g) ?? []).length, 2);
+    assert.equal((updatedKimi.match(/command = ".*coordination-mailbox-sweep\.sh kimi-code SessionStart"/g) ?? []).length, 1);
   } finally {
     await rm(home, { recursive: true, force: true });
   }
@@ -341,7 +342,143 @@ test("repo-memory hook timeouts match the 30s fleet standard (dotfiles #28)", as
       thirtySecondBudgets >= 3,
       `expected the kimi sweep (x2) and autolog hooks at 30s, found ${thirtySecondBudgets}`,
     );
+
+    // The kimi assertion above left Claude unguarded, so the skills-gate hooks
+    // sat at 10s and timed out on cold gateway starts exactly like codex's did.
+    const claudeSettings = JSON.parse(await readFile(join(home, "claude.json"), "utf8"));
+    const claudeHooks = Object.values(claudeSettings.hooks)
+      .flat()
+      .flatMap((group) => group.hooks ?? []);
+    const tenSecondClaudeHooks = claudeHooks.filter((hook) => hook.timeout === 10);
+    assert.deepEqual(
+      tenSecondClaudeHooks.map((hook) => hook.command),
+      [],
+      "claude managed hooks must not sit at the 10s budget that times out on cold gateway starts",
+    );
+    for (const name of ["skills-gate-session-start.sh", "skills-gate-pretooluse.sh"]) {
+      const hook = claudeHooks.find((entry) => entry.command.includes(name));
+      assert.ok(hook, `claude must register ${name}`);
+      assert.equal(hook.timeout, 30, `${name} must budget 30s`);
+    }
   } finally {
     await rm(home, { recursive: true, force: true });
+  }
+});
+
+test("a second install does not duplicate managed hook blocks (dotfiles #28)", async () => {
+  // withoutManagedKimiHooks strips by hook name, so a name the installer emits
+  // but the strip list misses survives the rewrite and is re-appended: the
+  // managed block grows by one copy per hms. coordination-mailbox-sweep.sh was
+  // missing from that list.
+  const home = await mkdtemp(join(tmpdir(), "repo-memory-hook-dup-"));
+  try {
+    await writeFile(join(home, "claude.json"), "{}");
+    await writeFile(join(home, "kimi.toml"), "");
+    const run = () => spawnSync(process.execPath, [
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "--claude-settings", join(home, "claude.json"),
+      "--kimi-config", join(home, "kimi.toml"),
+    ], { encoding: "utf8" });
+
+    assert.equal(run().status, 0);
+    const afterFirst = await readFile(join(home, "kimi.toml"), "utf8");
+    assert.equal(run().status, 0);
+    const afterSecond = await readFile(join(home, "kimi.toml"), "utf8");
+
+    assert.equal(
+      afterSecond,
+      afterFirst,
+      "installing twice must be a no-op; a surviving managed block means the strip list is missing a hook name",
+    );
+    const sweepBlocks = (afterSecond.match(/coordination-mailbox-sweep\.sh/g) ?? []).length;
+    assert.equal(sweepBlocks, 2, `expected exactly the UserPromptSubmit + SessionStart sweep entries, found ${sweepBlocks}`);
+
+    const claudeSettings = JSON.parse(await readFile(join(home, "claude.json"), "utf8"));
+    for (const [event, groups] of Object.entries(claudeSettings.hooks)) {
+      const commands = groups.flatMap((group) => (group.hooks ?? []).map((hook) => hook.command));
+      assert.equal(
+        new Set(commands).size,
+        commands.length,
+        `claude ${event} has duplicate hook commands after a second install: ${commands.join(", ")}`,
+      );
+    }
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test("files.nix declares every hook path the installer registers (dotfiles #28)", async () => {
+  // The installer pointed Claude's settings at
+  // ~/.claude/hooks/coordination-mailbox-sweep.sh while files.nix never
+  // installed it, so the hook ENOENT'd after a wipe and Claude alone kept
+  // sweeping the legacy swarm_bus tier.
+  const filesNix = await readFile("home/modules/files.nix", "utf8");
+  const installer = await readFile("config/agent-hooks/install-swarm-hooks.mjs", "utf8");
+  const registered = new Set(
+    [...installer.matchAll(/\/home\/mhugo\/\.([\w.-]+)\/hooks\/([\w.-]+\.(?:sh|mjs))/g)]
+      .map((match) => `.${match[1]}/hooks/${match[2]}`),
+  );
+  const missing = [...registered].filter((path) => !filesNix.includes(`"${path}"`));
+  assert.deepEqual(missing, [], `installer registers hook paths that files.nix never installs: ${missing.join(", ")}`);
+});
+
+test("host-hook mirror no-ops on hash match and replaces on mismatch", async () => {
+  const engine = await mkdtemp(join(tmpdir(), "host-hooks-src-"));
+  const destHome = await mkdtemp(join(tmpdir(), "host-hooks-dst-"));
+  try {
+    await writeFile(join(engine, "AGENTS.md"), "# host-hooks\n");
+    const body = "#!/bin/sh\necho canonical-hook\n";
+    await writeFile(join(engine, "skills-gate-session-start.sh"), body);
+    await chmod(join(engine, "skills-gate-session-start.sh"), 0o755);
+    for (const name of [
+      "coordination-mailbox-sweep.sh",
+      "coordination-mailbox-sweep.mjs",
+      "observations-autolog.sh",
+      "observations-autolog.mjs",
+      "skills-gate-pretooluse.sh",
+      "skills-gate-mark-loaded.sh",
+    ]) {
+      await writeFile(join(engine, name), `placeholder ${name}\n`);
+    }
+
+    const run = () => spawnSync(process.execPath, [
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "--engine-host-hooks", engine,
+      "--dotfiles-root", destHome,
+      "--claude-settings", join(destHome, "claude.json"),
+      "--kimi-config", join(destHome, "kimi.toml"),
+    ], { encoding: "utf8" });
+
+    assert.equal(run().status, 0, "first mirror must copy");
+    const dest = join(destHome, ".dotfiles/config/claude/hooks/skills-gate-session-start.sh");
+    const first = await stat(dest);
+    await utimes(dest, first.atime, first.mtime);
+    const frozen = await stat(dest);
+    assert.equal(run().status, 0, "second mirror must no-op on hash match");
+    const second = await stat(dest);
+    assert.equal(
+      second.mtimeMs,
+      frozen.mtimeMs,
+      "matching content hash must not rewrite the dest hook",
+    );
+
+    await writeFile(join(engine, "skills-gate-session-start.sh"), "#!/bin/sh\necho upgraded-hook\n");
+    assert.equal(run().status, 0, "mismatch must replace");
+    const upgraded = await readFile(dest, "utf8");
+    assert.match(upgraded, /upgraded-hook/);
+    const expected = createHash("sha256").update(await readFile(join(engine, "skills-gate-session-start.sh"))).digest("hex");
+    const lock = JSON.parse(await readFile("config/agent-hooks/hooks.lock.json", "utf8"));
+    assert.equal(
+      lock.hooks["skills-gate-session-start.sh"].uri,
+      "skill://purpose_tool/host-hooks/skills-gate-session-start.sh",
+    );
+    const sourceHash = createHash("sha256")
+      .update(await readFile("config/claude/hooks/skills-gate-session-start.sh"))
+      .digest("hex");
+    assert.equal(lock.hooks["skills-gate-session-start.sh"].sha256, sourceHash);
+    assert.equal(expected.length, 64);
+  } finally {
+    await rm(engine, { recursive: true, force: true });
+    await rm(destHome, { recursive: true, force: true });
   }
 });

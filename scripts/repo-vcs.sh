@@ -35,6 +35,26 @@ die() {
 	exit 1
 }
 run_remote() { GIT_SSH_COMMAND="$remote_ssh" "$@"; }
+forgejo_https_token() {
+	# Token source precedence:
+	#   1. DOTFILES_FORGEJO_TOKEN (hermetic tests / operator override)
+	#   2. OpenBao at kv/forgejo/cli-mhugo:token (canonical; preferred)
+	#   3. ~/.config/tea/config.yml (legacy fallback; matches mhugo/dotfiles#14
+	#      pre-fix behavior so older agents keep working without bao access)
+	local token=""
+	if [[ -n "${DOTFILES_FORGEJO_TOKEN:-}" ]]; then
+		printf '%s' "$DOTFILES_FORGEJO_TOKEN"
+		return 0
+	fi
+	if command -v bao >/dev/null 2>&1; then
+		token="$(BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" bao kv get -field=token kv/forgejo/cli-mhugo 2>/dev/null || true)"
+	fi
+	if [[ -z "$token" && -f "$HOME/.config/tea/config.yml" ]]; then
+		token="$(awk '/^[[:space:]]+token:/ {print $2; exit}' "$HOME/.config/tea/config.yml" 2>/dev/null || true)"
+	fi
+	printf '%s' "$token"
+}
+
 run_forgejo_https() {
 	# Use a per-invocation credential.helper rather than GIT_ASKPASS.
 	# GIT_ASKPASS is silently ignored by git >= 2.46 when GIT_TERMINAL_PROMPT=0,
@@ -42,18 +62,9 @@ run_forgejo_https() {
 	# tty (see mhugo/dotfiles#14). `git -c credential.helper=<expr>` sets the
 	# helper for this single invocation only; no .git/config mutation, no
 	# cleanup needed.
-	#
-	# Token source precedence:
-	#   1. OpenBao at kv/forgejo/cli-mhugo:token (canonical; preferred)
-	#   2. ~/.config/tea/config.yml (legacy fallback; matches mhugo/dotfiles#14
-	#      pre-fix behavior so older agents keep working without bao access)
 	local helper result=0 token
-	if token="$(BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" command -v bao >/dev/null 2>&1 && bao kv get -field=token kv/forgejo/cli-mhugo 2>/dev/null)"; then
-		:
-	elif token="$(awk '/^[[:space:]]+token:/ {print $2; exit}' "$HOME/.config/tea/config.yml" 2>/dev/null)"; then
-		:
-	fi
-	[[ -n "$token" ]] || die 'run_forgejo_https: no token found in bao kv/forgejo/cli-mhugo:token nor in ~/.config/tea/config.yml'
+	token="$(forgejo_https_token)"
+	[[ -n "$token" ]] || die 'run_forgejo_https: no token found in DOTFILES_FORGEJO_TOKEN, bao kv/forgejo/cli-mhugo:token, nor ~/.config/tea/config.yml'
 	helper=$(printf '!printf "username=mhugo\\npassword=%%q\\n\\n" "%s"' "$token")
 	# Inject the credential helper right after the git binary so that
 	# callers can write either `run_forgejo_https git -C root fetch ...`
@@ -95,29 +106,28 @@ run_forgejo_https() {
 # `repo vcs test` or as part of `repo check`. Git invokes
 # `credential.helper` as `sh -c '<expr>'` with the credential prompt on
 # stdin; replicate that exactly here.
-forgejo_https_credential_helper_check() {
-	# Build the same credential.helper expression that run_forgejo_https
-	# uses, then exercise it via `git credential fill`, the same machinery
-	# git uses for https transports. The helper should emit username and
-	# password; we extract the password line and compare with the expected.
-	local expected actual helper token
-	if command -v bao >/dev/null 2>&1; then
-		token="$(bao kv get -format=json kv/forgejo/cli-mhugo 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); data=d.get('data',{}); print((data.get('data') or data).get('token',''))" 2>/dev/null || true)"
-	fi
-	if [[ -z "$token" ]] && [[ -f "$HOME/.config/tea/config.yml" ]]; then
-		token="$(awk '/^[[:space:]]+token:[[:space:]]/ {print $2; exit}' "$HOME/.config/tea/config.yml" 2>/dev/null || true)"
-	fi
-	[[ -n "$token" ]] || die 'forgejo-https credential helper: no token found in bao or tea config'
+forgejo_https_credential_helper_prove() {
+	# Exercise the helper the same way git's https transport does. The helper
+	# expression embeds the literal token at build time, so the child shell
+	# git spawns does not need to expand any variables. An inherited helper is
+	# cleared first (`credential.helper=`) so it cannot shadow this token.
+	local token="$1" expected actual helper fill_output
 	helper=$(printf '!printf "username=mhugo\\npassword=%%q\\n\\n" "%s"' "$token")
-	# Use git credential fill to exercise the helper exactly the way an
-	# https transport would. The helper expression embeds the literal token
-	# via %s at build time, so the child shell that git spawns does not
-	# need to expand any variables.
-	local fill_output
 	fill_output="$(printf 'protocol=https\nhost=git.centralcloud.net\n\n' | git -c credential.helper= -c "credential.helper=$helper" credential fill 2>/dev/null || true)"
 	actual="$(printf '%s' "$fill_output" | awk -F= '/^password=/{print $2; exit}')"
 	expected="$(printf '%q' "$token")"
 	[[ "$actual" == "$expected" ]] || die 'forgejo-https credential helper: helper password does not match the selected credential source'
+}
+
+forgejo_https_credential_helper_check() {
+	forgejo_https_credential_helper_prove 'dotfiles-credential-helper-canned'
+	local token
+	token="$(forgejo_https_token)"
+	if [[ -z "$token" ]]; then
+		printf 'forgejo-https credential helper: canned ok; live source skipped (no bao/tea token)\n'
+		return 0
+	fi
+	forgejo_https_credential_helper_prove "$token"
 	printf 'forgejo-https credential helper: ok\n'
 }
 fetch_forgejo_main() {

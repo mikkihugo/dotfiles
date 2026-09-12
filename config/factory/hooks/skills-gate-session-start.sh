@@ -30,12 +30,23 @@
 
 set -uo pipefail
 
+HOOK_URI="skill://purpose_tool/host-hooks/skills-gate-session-start.sh"
+
+emit_failure() {
+	local msg="$1"
+	local hook_hash
+	hook_hash=$(sha256sum "$0" 2>/dev/null | awk '{print $1}')
+	export PURPOSE_HOOK_URI="$HOOK_URI"
+	export PURPOSE_HOOK_HASH="${hook_hash:-unknown}"
+	jq -nc --arg m "${msg} — fetch ${HOOK_URI} hash=${PURPOSE_HOOK_HASH}" \
+		'{systemMessage: $m}'
+	exit 0
+}
+
 SKILL="${HOME}/.claude/skills/using-skills/SKILL.md"
 
 if [ ! -r "$SKILL" ]; then
-	jq -nc --arg m "skills gate: cannot read ${SKILL} — using-skills was NOT injected this session" \
-		'{systemMessage: $m}'
-	exit 0
+	emit_failure "skills gate: cannot read ${SKILL} — using-skills was NOT injected this session"
 fi
 
 # Print one "## <header>" section, up to (not including) the next "## " header.
@@ -68,9 +79,7 @@ rule=$(section "Rule")
 flags=$(section "Red Flags")
 
 if [ -z "$rule" ] || [ -z "$flags" ]; then
-	jq -nc --arg m "skills gate: using-skills is missing its '## Rule' or '## Red Flags' section — gate NOT injected; fix the hook's section names" \
-		'{systemMessage: $m}'
-	exit 0
+	emit_failure "skills gate: using-skills is missing its '## Rule' or '## Red Flags' section — gate NOT injected; fix the hook's section names"
 fi
 
 read -r -d '' frame <<EOF || true

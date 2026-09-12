@@ -54,6 +54,8 @@ function run(home, extraEnv = {}) {
 		"COPILOT_CLI_RESOLVED_DIST_DIR",
 		"CURSOR_PLUGIN_ROOT",
 		"CURSOR_TRACE_ID",
+		"KIMI_API_KEY",
+		"KIMI_CODE_EXPERIMENTAL_FLAG",
 	]) {
 		delete env[key];
 	}
@@ -124,6 +126,16 @@ describe("skills gate SessionStart hook", () => {
 		const out = run(empty);
 		assert.ok(out.systemMessage, "expected a visible systemMessage");
 		assert.match(out.systemMessage, /NOT injected/);
+		assert.match(
+			out.systemMessage,
+			/skill:\/\/purpose_tool\/host-hooks\/skills-gate-session-start\.sh/,
+			"failure must name the replacement resource URI",
+		);
+		assert.match(
+			out.systemMessage,
+			/hash=[0-9a-f]{64}/,
+			"failure must name the installed hook content hash so a mismatch can upgrade",
+		);
 		assert.equal(out.hookSpecificOutput, undefined);
 	});
 

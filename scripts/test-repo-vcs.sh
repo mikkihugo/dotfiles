@@ -14,6 +14,10 @@ _run_repo_vcs() {
 	env -u BASH_ENV "$@"
 }
 
+# Hermetic Forgejo HTTPS: unit tests must not require live OpenBao or tea.
+# run_forgejo_https still injects credential.helper= + the token helper.
+export DOTFILES_FORGEJO_TOKEN="${DOTFILES_FORGEJO_TOKEN:-dotfiles-test-token}"
+
 tmp="$(mktemp -d)"
 trap 'rm -rf -- "$tmp"' EXIT
 mkdir -p "$tmp/refuse" "$tmp/pinned"
@@ -21,7 +25,7 @@ printf '#!/usr/bin/env bash\nexit 126\n' >"$tmp/refuse/git"
 printf '#!/usr/bin/env bash\nprintf "pinned-git %%s\\n" "$*"\n' >"$tmp/pinned/git"
 chmod 0755 "$tmp/refuse/git" "$tmp/pinned/git"
 
-actual="$(_run_repo_vcs PATH="$tmp/refuse:$PATH" SE_GIT_BIN="$tmp/pinned/git" "$root/scripts/repo-vcs.sh" status; 2>&1)"
+actual="$(_run_repo_vcs PATH="$tmp/refuse:$PATH" SE_GIT_BIN="$tmp/pinned/git" "$root/scripts/repo-vcs.sh" status 2>&1)"
 [[ "$actual" == "pinned-git -C $root status" ]] || {
 	printf 'facade did not use pinned SE_GIT_BIN: %s\n' "$actual" >&2
 	exit 1
@@ -74,6 +78,7 @@ if ! AMEND_LOG="$amend_log" SE_GIT_BIN="$tmp/amend/git" _run_repo_vcs "$root/bin
 fi
 grep -Fq -- "-C $root commit --amend --only -m fix(vcs): safe help" "$amend_log"
 grep -Fq -- "-C $root fetch --prune https://git.centralcloud.net/mhugo/dotfiles.git +refs/heads/" "$amend_log"
+grep -Fq -- 'credential.helper=' "$amend_log"
 grep -Fq -- "-C $root for-each-ref --contains HEAD --format=%(refname) refs/remotes/origin" "$amend_log"
 
 amend_blocked_log="$tmp/amend-blocked.log"

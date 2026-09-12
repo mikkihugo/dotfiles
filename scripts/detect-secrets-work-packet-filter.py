@@ -1,4 +1,4 @@
-"""Narrow detect-secrets exemption for canonical Purpose work-packet digests."""
+"""Narrow detect-secrets exemption for recorded content hashes, not secrets."""
 
 import json
 import re
@@ -9,6 +9,8 @@ from typing import Any
 _DIGEST_PACKET_PATH = re.compile(
     r"(?:^|/)docs/work/[^/]+/(?:purpose\.contract|work\.spec|evidence\.bundle)\.json$"
 )
+_HOOK_LOCK_PATH = re.compile(r"(?:^|/)config/agent-hooks/hooks\.lock\.json$")
+_HOOK_URI_PREFIX = "skill://purpose_tool/host-hooks/"
 _SNAPSHOT_PATH = re.compile(r"(?:^|/)docs/work/[^/]+/current-spec\.snapshot\.json$")
 _EVIDENCE_PROOF_PATH = re.compile(
     r"(?:^|/)docs/work/[^/]+/evidence/(?:red|green)(?:-[a-z0-9._-]+)?-proof\.json$"
@@ -62,6 +64,10 @@ def is_purpose_work_packet_digest(filename: str, secret: str) -> bool:
         occurrences, canonical_revisions = _count_source_revision_occurrences(document, secret)
         return canonical_revisions > 0 and occurrences == canonical_revisions
 
+    if _HOOK_LOCK_PATH.search(normalized_filename) and _DIGEST_VALUE.fullmatch(secret):
+        occurrences, canonical_hashes = _count_hook_lock_hashes(document, secret)
+        return canonical_hashes > 0 and occurrences == canonical_hashes
+
     return False
 
 
@@ -84,6 +90,29 @@ def _count_digest_occurrences(value: Any, secret: str) -> tuple[int, int]:
         return (
             sum(occurrences for occurrences, _ in child_counts),
             sum(digests for _, digests in child_counts),
+        )
+    return (int(value == secret), 0)
+
+
+def _count_hook_lock_hashes(value: Any, secret: str) -> tuple[int, int]:
+    """Count candidate strings and exact host-hook lock hash records."""
+    if isinstance(value, dict):
+        canonical_hash = int(
+            set(value) == {"sha256", "uri"}
+            and value.get("sha256") == secret
+            and isinstance(value.get("uri"), str)
+            and value["uri"].startswith(_HOOK_URI_PREFIX)
+        )
+        child_counts = [_count_hook_lock_hashes(child, secret) for child in value.values()]
+        return (
+            sum(key == secret for key in value) + sum(occurrences for occurrences, _ in child_counts),
+            canonical_hash + sum(hashes for _, hashes in child_counts),
+        )
+    if isinstance(value, list):
+        child_counts = [_count_hook_lock_hashes(child, secret) for child in value]
+        return (
+            sum(occurrences for occurrences, _ in child_counts),
+            sum(hashes for _, hashes in child_counts),
         )
     return (int(value == secret), 0)
 

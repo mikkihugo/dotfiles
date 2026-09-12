@@ -57,6 +57,21 @@
       force = true;
     };
 
+    # install-swarm-hooks.mjs registers SessionStart and UserPromptSubmit
+    # against this exact path, so it must be declared here or Claude's managed
+    # hooks ENOENT after a wipe while every other client keeps sweeping. Claude
+    # was the one client left off the coordination-tier rename, which is why its
+    # sessions kept replaying legacy swarm_bus backlog the coordination inbox
+    # had already drained.
+    ".claude/hooks/coordination-mailbox-sweep.sh" = {
+      source = pkgs.replaceVars ../../config/claude/hooks/coordination-mailbox-sweep.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
     # Claude Code status line for Jujutsu-backed repos. Those repos replace `jj`
     # on PATH with a refuse shim and expose reads only through their own `repo
     # vcs` facade, so the usual git-branch status line has nothing to read.
@@ -124,6 +139,17 @@
         node = "${pkgs.nodejs}/bin/node";
         flock = "${pkgs.util-linux}/bin/flock";
         bash = "${pkgs.bash}/bin/bash";
+      };
+      executable = true;
+      force = true;
+    };
+
+    # Codex hooks.json names the .sh shim (it exports REPO_MEMORY_COORDINATION_BUS=1
+    # then execs the .mjs). Without this entry the path in hooks.json is ENOENT.
+    ".codex/hooks/coordination-mailbox-sweep.sh" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
       };
       executable = true;
       force = true;

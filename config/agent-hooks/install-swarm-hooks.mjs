@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { chmod, copyFile, mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { chmod, mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 const args = process.argv.slice(2);
@@ -24,6 +25,24 @@ const kimiPath = option("--kimi-config", join(home, ".kimi-code", "config.toml")
 const jcodePath = option("--jcode-config", join(home, ".jcode", "config.toml"));
 
 const dotfilesRoot = option("--dotfiles-root", home);
+
+function sha256(buf) {
+  return createHash("sha256").update(buf).digest("hex");
+}
+
+async function copyIfHashMismatch(src, dst) {
+  const srcBuf = await readFile(src);
+  try {
+    const dstBuf = await readFile(dst);
+    if (sha256(dstBuf) === sha256(srcBuf)) return "unchanged";
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  await mkdir(dirname(dst), { recursive: true });
+  await writeFile(dst, srcBuf);
+  await chmod(dst, 0o755);
+  return "replaced";
+}
 
 // Mirror every script in the engine's host-hooks/ dir into the per-client
 // dotfiles hook dirs (as vendored mirrors, not symlinks — so the dotfiles
@@ -54,8 +73,7 @@ async function mirrorScripts() {
     for (const script of scripts) {
       const src = join(engineHostHooks, script);
       const dst = join(targetDir, script);
-      await copyFile(src, dst);
-      await chmod(dst, 0o755);
+      await copyIfHashMismatch(src, dst);
     }
   }
   console.log(`[mirror] copied ${scripts.length} scripts from ${engineHostHooks} -> ${clients.length} client hook dirs`);
@@ -82,10 +100,23 @@ async function installClaude() {
     if (error.code !== "ENOENT") throw error;
   }
   settings.hooks ??= {};
+  // Renamed hooks we no longer install but must still evict from an old
+  // settings.json. Everything we DO install is derived from the group below,
+  // so this list never has to grow again: a hand-maintained strip list is what
+  // let skills-gate-pretooluse.sh and observations-autolog.sh duplicate on
+  // every hms, firing Claude's skills gate twice per tool call.
+  const legacyHookNames = ["swarm-messages.sh"];
   const install = (event, group) => {
+    const managedNames = [
+      ...legacyHookNames,
+      ...group.hooks.map((hook) => hook.command.split(/\s+/)[0].split("/").pop()),
+    ];
     const existing = Array.isArray(settings.hooks[event]) ? settings.hooks[event] : [];
     settings.hooks[event] = existing
-      .filter((item) => !/swarm-messages\.sh|coordination-mailbox-sweep\.sh|stop-continue-if-actionable\.sh|skills-gate-session-start\.sh/.test(JSON.stringify(item)))
+      .filter((item) => {
+        const serialised = JSON.stringify(item);
+        return !managedNames.some((name) => serialised.includes(name));
+      })
       .concat(group);
   };
   install("SessionStart", {
@@ -99,7 +130,7 @@ async function installClaude() {
       {
         type: "command",
         command: "/home/mhugo/.claude/hooks/skills-gate-session-start.sh",
-        timeout: 10,
+        timeout: 30,
         statusMessage: "Loading skills gate",
       },
     ],
@@ -109,7 +140,7 @@ async function installClaude() {
     hooks: [{
       type: "command",
       command: "/home/mhugo/.claude/hooks/skills-gate-pretooluse.sh",
-      timeout: 10,
+      timeout: 30,
       statusMessage: "Skills gate pretooluse",
     }],
   });
@@ -158,7 +189,17 @@ function withoutManagedKimiHooks(content) {
       block.push(lines[index]);
       index += 1;
     }
-    if (!block.join("\n").includes("swarm-messages.sh") && !block.join("\n").includes("observations-autolog.sh")) kept.push(...block);
+    // Every managed hook name must be listed here. A name the installer emits
+    // but this strip misses survives the rewrite and is then re-appended, so
+    // the managed block silently duplicates on the next hms.
+    const body = block.join("\n");
+    const managedNames = [
+      "swarm-messages.sh",
+      "observations-autolog.sh",
+      "coordination-mailbox-sweep.sh",
+      "skills-gate-session-start.sh",
+    ];
+    if (!managedNames.some((name) => body.includes(name))) kept.push(...block);
   }
   return kept.join("\n").trimEnd();
 }
@@ -185,7 +226,7 @@ async function installKimi() {
     "[[hooks]]",
     'event = "SessionStart"',
     'command = "/home/mhugo/.kimi-code/hooks/skills-gate-session-start.sh"',
-    "timeout = 10",
+    "timeout = 30",
     "",
     "[[hooks]]",
     'event = "Stop"',

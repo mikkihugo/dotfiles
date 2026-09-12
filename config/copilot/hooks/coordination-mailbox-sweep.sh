@@ -6,4 +6,4 @@
 # client label as $1 (e.g. kimi-code, codex, claude, factory, copilot) and
 # event name as $2 (UserPromptSubmit / SessionStart).
 export REPO_MEMORY_COORDINATION_BUS=1
-exec @node@ "$(dirname "$0")/coordination-mailbox-sweep.mjs" "${1:-kimi-code}" "${2:-UserPromptSubmit}"
+exec @node@ /home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs "${1:-kimi-code}" "${2:-UserPromptSubmit}"

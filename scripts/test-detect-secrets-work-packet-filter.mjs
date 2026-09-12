@@ -296,3 +296,75 @@ test("detect-secrets filters only canonical Purpose work-packet metadata", async
     await rm(baselineDir, { recursive: true, force: true });
   }
 });
+
+test("detect-secrets filters host-hook content hashes in hooks.lock.json", async () => {
+  const baselineDir = await mkdtemp(join(tmpdir(), "detect-secrets-hook-lock-baseline-"));
+  const lockRoot = await mkdtemp(join(tmpdir(), "detect-secrets-hook-lock-"));
+  const baseline = join(baselineDir, ".secrets.baseline");
+  const hookBaseline = join(baselineDir, ".hook-secrets.baseline");
+  await Promise.all([
+    copyFile(join(repoRoot, ".secrets.baseline"), baseline),
+    copyFile(join(repoRoot, ".secrets.baseline"), hookBaseline),
+  ]);
+  const allowed = join(lockRoot, "config/agent-hooks/hooks.lock.json");
+  await mkdir(dirname(allowed), { recursive: true });
+  await writeFile(
+    allowed,
+    JSON.stringify({
+      hooks: {
+        "skills-gate-session-start.sh": {
+          sha256: digest,
+          uri: "skill://purpose_tool/host-hooks/skills-gate-session-start.sh",
+        },
+      },
+    }),
+  );
+  const tokenDoc = {
+    hooks: {
+      "skills-gate-session-start.sh": {
+        sha256: digest,
+        uri: "skill://purpose_tool/host-hooks/skills-gate-session-start.sh",
+      },
+    },
+    actual_token: digest,
+  };
+  const pythonProbe = spawnSync("python3", ["-"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    input: `
+import importlib.util
+from pathlib import Path
+spec = importlib.util.spec_from_file_location(
+    "hook_lock_filter",
+    Path("scripts/detect-secrets-work-packet-filter.py"),
+)
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+allowed = Path(${JSON.stringify(allowed)})
+assert mod.is_purpose_work_packet_digest(str(allowed), ${JSON.stringify(digest)}), "canonical lock hash must be filtered"
+token = Path(${JSON.stringify(join(lockRoot, "config/agent-hooks/token.lock.json"))})
+token.parent.mkdir(parents=True, exist_ok=True)
+token.write_text(${JSON.stringify(JSON.stringify(tokenDoc))})
+# Same directory name as the lock, different file: must not match the path gate.
+assert not mod.is_purpose_work_packet_digest(str(token), ${JSON.stringify(digest)})
+token_lock = Path(${JSON.stringify(join(lockRoot, "other/config/agent-hooks/hooks.lock.json"))})
+token_lock.parent.mkdir(parents=True, exist_ok=True)
+token_lock.write_text(${JSON.stringify(JSON.stringify(tokenDoc))})
+assert not mod.is_purpose_work_packet_digest(str(token_lock), ${JSON.stringify(digest)}), "a lock hash reused as a token must remain detectable"
+print("ok")
+`,
+  });
+  try {
+    assert.equal(pythonProbe.status, 0, pythonProbe.stderr || pythonProbe.stdout);
+    assert.match(pythonProbe.stdout, /ok/);
+    const results = await scan([allowed, "config/agent-hooks/hooks.lock.json"], baseline);
+    assert.equal(results["config/agent-hooks/hooks.lock.json"], undefined, "tracked hook lock hashes must be filtered");
+    const key = Object.keys(results).find((name) => name.endsWith("config/agent-hooks/hooks.lock.json") && name !== "config/agent-hooks/hooks.lock.json");
+    assert.equal(key ? results[key] : undefined, undefined, "canonical temp hook lock hashes must be filtered");
+    const allowedHook = hookScan(["config/agent-hooks/hooks.lock.json"], hookBaseline);
+    assert.equal(allowedHook.status, 0, allowedHook.stderr || allowedHook.stdout);
+  } finally {
+    await rm(lockRoot, { recursive: true, force: true });
+    await rm(baselineDir, { recursive: true, force: true });
+  }
+});

@@ -1,0 +1,32 @@
+{
+  "hooks": {
+    "skills-gate-session-start.sh": {
+      "sha256": "fc61b7317150a47498937fefeed1983bb0d26945f0f65c7a0d61b320c5347ff6",
+      "uri": "skill://purpose_tool/host-hooks/skills-gate-session-start.sh"
+    },
+    "skills-gate-pretooluse.sh": {
+      "sha256": "339b21b1290afd402668e2d9e8ef1198f5ad622650b38243f4d16a11ad910300",
+      "uri": "skill://purpose_tool/host-hooks/skills-gate-pretooluse.sh"
+    },
+    "skills-gate-mark-loaded.sh": {
+      "sha256": "3c7e76ca63ccb2fbc5cfc173118c0a513cc321a9f90f2ce4952a538ebbfd1473",
+      "uri": "skill://purpose_tool/host-hooks/skills-gate-mark-loaded.sh"
+    },
+    "coordination-mailbox-sweep.sh": {
+      "sha256": "020e2744aa96e10e91935ab65721b1bdf33e3b78aab956572c27e165acbb1b48",
+      "uri": "skill://purpose_tool/host-hooks/coordination-mailbox-sweep.sh"
+    },
+    "coordination-mailbox-sweep.mjs": {
+      "sha256": "1b940eb4283c05d0d32a336e739299eddd606f40ab4a4791082f06bb2cca2132",
+      "uri": "skill://purpose_tool/host-hooks/coordination-mailbox-sweep.mjs"
+    },
+    "observations-autolog.sh": {
+      "sha256": "becf9de8dbdcbe26612853bb64eaf14507692236e587aa8f066d0e18f184099c",
+      "uri": "skill://purpose_tool/host-hooks/observations-autolog.sh"
+    },
+    "observations-autolog.mjs": {
+      "sha256": "94a818a988206dc6928d6fdc97571ceae1ae4f192e750575bde3a703d07a119c",
+      "uri": "skill://purpose_tool/host-hooks/observations-autolog.mjs"
+    }
+  }
+}

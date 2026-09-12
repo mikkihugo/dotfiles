@@ -407,6 +407,42 @@ test("a second install does not duplicate managed hook blocks (dotfiles #28)", a
   }
 });
 
+test("the Claude Stop hook reads the same bus tier as the sweep (dotfiles #28)", async () => {
+  // Both hooks poll ONE mailbox. If they disagree on the wire they keep two
+  // watermarks: the sweep acks on the coordination tier while the Stop hook
+  // re-reads legacy per-bucket copies it can never see acked, so a Stop block
+  // replays messages the coordination inbox already drained. Observed live:
+  // coordination_poll returned 0 unacked while Stop replayed August blockers.
+  const shim = await readFile("config/claude/hooks/stop-continue-if-actionable.sh", "utf8");
+  assert.match(
+    shim,
+    /export REPO_MEMORY_COORDINATION_BUS=1/,
+    "the Stop shim must select the same tier the sweep shim selects",
+  );
+
+  const sweepShim = await readFile("config/claude/hooks/coordination-mailbox-sweep.sh", "utf8");
+  const tierOf = (text) => /export REPO_MEMORY_COORDINATION_BUS=(\S+)/.exec(text)?.[1];
+  assert.equal(
+    tierOf(shim),
+    tierOf(sweepShim),
+    "Stop and sweep must not drift onto different tiers",
+  );
+
+  // The shim only sets the flag; the hook still has to consult it. Pinning
+  // RepoMemoryBus directly ignores the flag and silently stays on the dead wire.
+  const hook = await readFile("config/claude/hooks/stop-continue-if-actionable.mjs", "utf8");
+  assert.match(hook, /selectBus\(/, "the Stop hook must choose its bus via selectBus(), not pin one");
+  assert.match(hook, /REPO_MEMORY_COORDINATION_BUS === "1"/, "the Stop hook must gate on the tier flag");
+
+  // Home Manager must actually render the shim, or the flag lives only in git.
+  const files = await readFile("home/modules/files.nix", "utf8");
+  assert.match(
+    files,
+    /replaceVars[\s\S]*config\/claude\/hooks\/stop-continue-if-actionable\.sh/,
+    "files.nix must render the Stop shim through replaceVars so @bash@/@node@ resolve",
+  );
+});
+
 test("the installer evicts the renamed legacy hook from an existing config (dotfiles #28)", async () => {
   // swarm-messages.sh was renamed to coordination-mailbox-sweep.sh. The strip
   // must still evict the OLD name from a config written before the rename, or

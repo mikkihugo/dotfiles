@@ -36,7 +36,10 @@ import { pathToFileURL } from "node:url";
 import {
   McpGatewayClient,
   RepoMemoryBus,
+  deriveIdentity,
   runSweep,
+  selectBus,
+  selectCoordinationChannels,
   selectWorkspace,
 } from "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs";
 
@@ -190,17 +193,38 @@ async function main() {
   const selected = selectWorkspace(cwd, env) ?? { identity: "global", worktree: null };
   const timeout = Number.parseInt(env.REPO_MEMORY_MCP_TIMEOUT_MS || "4000", 10);
   const debug = env.COORDINATION_MAILBOX_DEBUG === "1";
-  const bus = new RepoMemoryBus(new McpGatewayClient(env.MCP_GATEWAY_URL, timeout, globalThis.fetch, "claude", debug));
+  const lane = selected.worktree ? basename(selected.worktree) : null;
+  const additionalWorkspaces = lane && lane !== selected.identity ? [lane] : [];
+  const gatewayClient = new McpGatewayClient(env.MCP_GATEWAY_URL, timeout, globalThis.fetch, "claude", debug);
+
+  // Pick the wire the same way the sweep's main() does, instead of pinning
+  // RepoMemoryBus. Both hooks read the SAME mailbox, so when the sweep runs on
+  // the coordination tier and this one does not, they keep separate watermarks:
+  // coordination_poll reports nothing unacked while this hook keeps re-surfacing
+  // legacy per-bucket copies it can never see acked. That split is what made a
+  // Stop block replay month-old messages a coordination inbox had already drained.
+  let bus = new RepoMemoryBus(gatewayClient);
+  if (env.REPO_MEMORY_COORDINATION_BUS === "1") {
+    try {
+      const identity = deriveIdentity("claude", payload, env);
+      const channels = selectCoordinationChannels(selected.identity, additionalWorkspaces);
+      bus = selectBus(env, gatewayClient, "claude", { identity, channels, env, debug });
+    } catch {
+      // Identity derivation needs a session id in the payload. If it is absent
+      // or malformed, keep the legacy bus rather than throw: the sweep performs
+      // the same derivation and reports the failure, and a Stop hook that threw
+      // here would fail the session instead of degrading to the old behaviour.
+    }
+  }
 
   let outcome;
   try {
-    const lane = selected.worktree ? basename(selected.worktree) : null;
     outcome = await runSweep({
       client: "claude",
       eventName: "Stop",
       payload,
       workspace: selected.identity,
-      additionalWorkspaces: lane && lane !== selected.identity ? [lane] : [],
+      additionalWorkspaces,
       worktree: selected.worktree,
       env,
       bus,

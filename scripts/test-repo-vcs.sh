@@ -79,6 +79,12 @@ fi
 grep -Fq -- "-C $root commit --amend --only -m fix(vcs): safe help" "$amend_log"
 grep -Fq -- "-C $root fetch --prune https://git.centralcloud.net/mhugo/dotfiles.git +refs/heads/" "$amend_log"
 grep -Fq -- 'credential.helper=' "$amend_log"
+# mhugo/dotfiles#43: /proc/<pid>/cmdline is world-readable, so the token must
+# reach the credential helper through the environment, never through argv.
+if grep -Fq -- "$DOTFILES_FORGEJO_TOKEN" "$amend_log"; then
+	printf 'run_forgejo_https leaked the Forgejo token onto git argv (dotfiles#43)\n' >&2
+	exit 1
+fi
 grep -Fq -- "-C $root for-each-ref --contains HEAD --format=%(refname) refs/remotes/origin" "$amend_log"
 
 amend_blocked_log="$tmp/amend-blocked.log"

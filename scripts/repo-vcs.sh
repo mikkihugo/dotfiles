@@ -55,17 +55,23 @@ forgejo_https_token() {
 	printf '%s' "$token"
 }
 
+# Fixed credential helper expression. It carries no secret: the token comes from
+# DOTFILES_FORGEJO_HELPER_TOKEN in the helper's environment, and only git's
+# `get` action answers, so `store`/`erase` stay no-ops.
+# shellcheck disable=SC2016 # expanded by the sh git spawns, not here
+forgejo_https_helper='!f() { test "$1" = get || return 0; printf "username=mhugo\npassword=%s\n" "$DOTFILES_FORGEJO_HELPER_TOKEN"; }; f'
+
 run_forgejo_https() {
 	# Use a per-invocation credential.helper rather than GIT_ASKPASS.
 	# GIT_ASKPASS is silently ignored by git >= 2.46 when GIT_TERMINAL_PROMPT=0,
 	# because git then refuses to consult any askpass mechanism and demands a
 	# tty (see mhugo/dotfiles#14). `git -c credential.helper=<expr>` sets the
 	# helper for this single invocation only; no .git/config mutation, no
-	# cleanup needed.
-	local helper result=0 token
+	# cleanup needed. The token travels in the environment, never on argv:
+	# /proc/<pid>/cmdline is world-readable, environ is owner-only (dotfiles#43).
+	local result=0 token
 	token="$(forgejo_https_token)"
 	[[ -n "$token" ]] || die 'run_forgejo_https: no token found in DOTFILES_FORGEJO_TOKEN, bao kv/forgejo/cli-mhugo:token, nor ~/.config/tea/config.yml'
-	helper=$(printf '!printf "username=mhugo\\npassword=%%q\\n\\n" "%s"' "$token")
 	# Inject the credential helper right after the git binary so that
 	# callers can write either `run_forgejo_https git -C root fetch ...`
 	# or `run_forgejo_https timeout ... git_bin -C root fetch ...`.
@@ -96,7 +102,7 @@ run_forgejo_https() {
 	[[ "$saw_git" -eq 1 ]] || die "run_forgejo_https: no git binary in args: $*"
 	# An inherited helper can answer first and silently shadow this token. Clear
 	# the configured helper chain, then install exactly this invocation's helper.
-	"${prefix[@]}" "$git_bin" -c credential.helper= -c "credential.helper=$helper" "${suffix[@]}" || result=$?
+	DOTFILES_FORGEJO_HELPER_TOKEN="$token" "${prefix[@]}" "$git_bin" -c credential.helper= -c "credential.helper=$forgejo_https_helper" "${suffix[@]}" || result=$?
 	return "$result"
 }
 # Contract for the forgejo-https credential helper: this expression must
@@ -107,16 +113,14 @@ run_forgejo_https() {
 # `credential.helper` as `sh -c '<expr>'` with the credential prompt on
 # stdin; replicate that exactly here.
 forgejo_https_credential_helper_prove() {
-	# Exercise the helper the same way git's https transport does. The helper
-	# expression embeds the literal token at build time, so the child shell
-	# git spawns does not need to expand any variables. An inherited helper is
-	# cleared first (`credential.helper=`) so it cannot shadow this token.
-	local token="$1" expected actual helper fill_output
-	helper=$(printf '!printf "username=mhugo\\npassword=%%q\\n\\n" "%s"' "$token")
-	fill_output="$(printf 'protocol=https\nhost=git.centralcloud.net\n\n' | git -c credential.helper= -c "credential.helper=$helper" credential fill 2>/dev/null || true)"
-	actual="$(printf '%s' "$fill_output" | awk -F= '/^password=/{print $2; exit}')"
-	expected="$(printf '%q' "$token")"
-	[[ "$actual" == "$expected" ]] || die 'forgejo-https credential helper: helper password does not match the selected credential source'
+	# Exercise the helper the same way git's https transport does: git runs
+	# the fixed helper expression through sh with the action as $1, and the
+	# child shell reads the token from the inherited environment. An inherited
+	# helper is cleared first (`credential.helper=`) so it cannot shadow it.
+	local token="$1" actual fill_output
+	fill_output="$(printf 'protocol=https\nhost=git.centralcloud.net\n\n' | DOTFILES_FORGEJO_HELPER_TOKEN="$token" git -c credential.helper= -c "credential.helper=$forgejo_https_helper" credential fill 2>/dev/null || true)"
+	actual="$(printf '%s' "$fill_output" | awk '/^password=/{sub(/^password=/, ""); print; exit}')"
+	[[ "$actual" == "$token" ]] || die 'forgejo-https credential helper: helper password does not match the selected credential source'
 }
 
 forgejo_https_credential_helper_check() {

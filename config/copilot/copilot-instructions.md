@@ -50,6 +50,28 @@ Load `using-skills`, then `purpose-first`. Full doctrine:
 Done: named purpose, named consumer, proof run (failed first for a behavior
 change), evidence on disk, named falsifier.
 
+## MCP 2026-07-28 (live tools)
+
+Gateway is MCP 2026-07-28 stateless (`PURPOSE_TOOL_STATELESS=1`). Do not
+expect `initialize` / `initialized`. Version rides the request (`_meta`).
+
+Live CentralCloud tools on this host:
+- Discover: grouped `search_*` or `mcp_catalog_search`.
+- Call: `mcp_tool_call(server=<server>, tool=<short_name>, arguments={...})`.
+- Do not hardcode session-promoted wrappers. A missing wrapper is not a
+  missing server — call `mcp_tool_call`.
+- Skills: `mcp_tool_call(server=purpose_tool, tool=load_skill, arguments={name})`
+  or native Skill on `~/.agents/skills`.
+- Mail: `repo_memory` `coordination_sweep`. `inbox_uri` is reconnect /
+  stateless follow-on and may be absent (gateway #408). `resources/subscribe`
+  is legacy 2025-11-25 stateful only.
+- Codex: `features.mcp_2026_07_28 = true` is the MCP protocol flag, not
+  `developer_instructions`.
+
+MCP `InitializeResult.instructions` (2025-11-25 handshake) is how-to-use
+**that server**. It is not PDD, not `CLAUDE.md`, not `AGENTS.md`.
+
+
 
 Verified 2026-09-04 against Copilot CLI 1.0.82 on the llm-gateway fabric.
 

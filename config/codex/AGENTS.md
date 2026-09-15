@@ -86,26 +86,26 @@ change), evidence on disk, named falsifier.
 
 ## MCP 2026-07-28 (live tools)
 
-Gateway is MCP 2026-07-28 stateless (`PURPOSE_TOOL_STATELESS=1`). Do not
-expect `initialize` / `initialized`. Version rides the request (`_meta`).
+One protocol on this host: **2026-07-28**. Do not mention or target
+2025-11-25 in prompts, configs, or tool names. The gateway may negotiate;
+agents only use this version.
 
-Live CentralCloud tools on this host:
-- Discover: grouped `search_*` or `mcp_catalog_search`.
-- Call: `mcp_tool_call(server=<server>, tool=<short_name>, arguments={...})`.
-- Do not hardcode session-promoted wrappers. A missing wrapper is not a
-  missing server — call `mcp_tool_call`.
-- Skills: `mcp_tool_call(server=purpose_tool, tool=load_skill, arguments={name})`
-  or native Skill on `~/.agents/skills`.
-- Mail: `repo_memory` `coordination_sweep`. `inbox_uri` is reconnect /
-  stateless follow-on and may be absent (gateway #408). `resources/subscribe`
-  is legacy 2025-11-25 stateful only.
-- Codex: `features.mcp_2026_07_28 = true` is the MCP protocol flag, not
-  `developer_instructions`.
+Handshake: none. No `initialize` / `initialized`. Version rides `_meta`.
+Discover with `server/discover` / `search_*` / `mcp_catalog_search`.
+Wake path: `subscriptions/listen` if the client has it — not
+`resources/subscribe`.
 
-MCP `InitializeResult.instructions` (2025-11-25 handshake) is how-to-use
-**that server**. It is not PDD, not `CLAUDE.md`, not `AGENTS.md`.
+Standard tool names (short, no client prefix):
+- `mcp_tool_call(server, tool, arguments)` — every CentralCloud call
+- `load_skill` on `purpose_tool`
+- `coordination_sweep` on `repo_memory`
+- grouped `search_*` then `mcp_catalog_search`
 
+Do not call `ccgw__…` wrappers, `mcp__ccgw__…`, or `server_tool` glued
+names. A missing wrapper is not a missing tool.
 
+`inbox_uri` is reconnect/stateless follow-on and may be absent (#408).
+Poll is `coordination_sweep`.
 
 ## Verify, don't assume
 

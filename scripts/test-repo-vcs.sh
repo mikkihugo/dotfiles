@@ -336,3 +336,45 @@ if DOTFILES_GIT_PUSH_TIMEOUT=invalid "$root/scripts/repo-vcs.sh" config >/dev/nu
 	printf 'invalid push timeout unexpectedly accepted\n' >&2
 	exit 1
 fi
+
+# primary-to-main: move the shared primary checkout off a stale branch onto
+# origin/main only when every uncommitted change is already in main's history,
+# and refuse (touching nothing) when any change is unique. Hermetic: a local
+# bare repository stands in for Forgejo.
+p2m="$tmp/primary-to-main"
+mkdir -p "$p2m"
+p2m_git_bin="$(command -v git)"
+p2m_git() { "$p2m_git_bin" -c user.name=t -c user.email=t@t -c init.defaultBranch=main "$@"; }
+p2m_git init -q --bare "$p2m/remote.git"
+p2m_git clone -q "$p2m/remote.git" "$p2m/seed" 2>/dev/null
+printf 'v1\n' >"$p2m/seed/f"
+p2m_git -C "$p2m/seed" add f
+p2m_git -C "$p2m/seed" commit -qm one
+printf 'v2\n' >"$p2m/seed/f"
+p2m_git -C "$p2m/seed" commit -qam two
+p2m_git -C "$p2m/seed" push -q origin main
+p2m_git clone -q "$p2m/remote.git" "$p2m/primary"
+p2m_git -C "$p2m/primary" checkout -q -b lane/stale HEAD~1
+printf 'v2\n' >"$p2m/primary/f"
+if ! DOTFILES_PRIMARY="$p2m/primary" DOTFILES_FORGEJO_HTTPS_URL="$p2m/remote.git" SE_GIT_BIN="$p2m_git_bin" _run_repo_vcs "$root/scripts/repo-vcs.sh" primary-to-main >"$tmp/p2m-ok.out" 2>"$tmp/p2m-ok.err"; then
+	printf 'primary-to-main must align a primary whose dirt is already in origin/main\n' >&2
+	cat "$tmp/p2m-ok.err" >&2
+	exit 1
+fi
+grep -Fq 'aligned=main' "$tmp/p2m-ok.out"
+[[ "$(p2m_git -C "$p2m/primary" symbolic-ref --short HEAD)" == main ]]
+[[ "$(p2m_git -C "$p2m/primary" rev-parse HEAD)" == "$(p2m_git -C "$p2m/remote.git" rev-parse main)" ]]
+[[ -z "$(p2m_git -C "$p2m/primary" status --porcelain)" ]]
+p2m_git -C "$p2m/primary" show-ref --verify --quiet refs/heads/lane/stale || {
+	printf 'primary-to-main must preserve the previous branch ref\n' >&2
+	exit 1
+}
+p2m_git -C "$p2m/primary" checkout -q lane/stale
+printf 'unique local work\n' >"$p2m/primary/f"
+if DOTFILES_PRIMARY="$p2m/primary" DOTFILES_FORGEJO_HTTPS_URL="$p2m/remote.git" SE_GIT_BIN="$p2m_git_bin" _run_repo_vcs "$root/scripts/repo-vcs.sh" primary-to-main >"$tmp/p2m-refuse.out" 2>"$tmp/p2m-refuse.err"; then
+	printf 'primary-to-main must refuse dirt that is not in origin/main history\n' >&2
+	exit 1
+fi
+grep -Fq 'unproven_dirt=f' "$tmp/p2m-refuse.err"
+[[ "$(cat "$p2m/primary/f")" == 'unique local work' ]]
+[[ "$(p2m_git -C "$p2m/primary" symbolic-ref --short HEAD)" == lane/stale ]]

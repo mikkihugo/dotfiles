@@ -33,6 +33,9 @@ sync-main:
 converge-main:
     @{{runner}} converge-main
 
+primary-to-main:
+    @{{runner}} primary-to-main
+
 describe MESSAGE:
     @{{runner}} describe "$1"
 

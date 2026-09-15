@@ -161,6 +161,13 @@ Version control:
       1. Run `repo vcs branch-retire`.
       2. Read back repository state through `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs primary-to-main
+    What: Move the primary checkout off a stale branch onto origin/main when all its uncommitted changes are already in main's history
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs primary-to-main`.
+      2. Read back repository state through `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs push-github
     What: Verify and publish local main to GitHub only
     When: Before choosing a repository lifecycle transition.
@@ -256,6 +263,7 @@ elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'diff' ]]; then shift 2; if [[ "$
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'fetch' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'fetch' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'land' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'land' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'log' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'log' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'primary-to-main' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'primary-to-main' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'push' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push-github' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'push-github' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'rebase' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'rebase' "$@"

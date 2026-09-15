@@ -239,6 +239,22 @@
     {
       "path": [
         "vcs",
+        "primary-to-main"
+      ],
+      "description": "Move the primary checkout off a stale branch onto origin/main when all its uncommitted changes are already in main's history",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": [
+          "primary-to-main"
+        ],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": [
+        "vcs",
         "worktree-create"
       ],
       "description": "Create an isolated task worktree",

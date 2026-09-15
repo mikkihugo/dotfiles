@@ -7,7 +7,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 remote_ssh="${DOTFILES_GIT_SSH_COMMAND:-ssh -o ControlMaster=no -o ControlPath=none -o ControlPersist=no}"
-forgejo_https_url="https://git.centralcloud.net/mhugo/dotfiles.git"
+forgejo_https_url="${DOTFILES_FORGEJO_HTTPS_URL:-https://git.centralcloud.net/mhugo/dotfiles.git}"
 github_url="git@github.com:mikkihugo/dotfiles.git"
 push_timeout="${DOTFILES_GIT_PUSH_TIMEOUT:-300}"
 git_bin="${SE_GIT_BIN:-}"
@@ -320,6 +320,48 @@ converge-main)
 	fi
 	printf 'converged=main before=%s after=%s onto=%s\n' "$before" "$(git -C "$root" rev-parse main)" "$(git -C "$root" rev-parse origin/main)"
 	;;
+primary-to-main)
+	# The shared primary checkout can be left on a task or lane branch with
+	# uncommitted edits after that work has already landed on main (hms then
+	# builds a stale tree). `sync-main` only handles a clean primary already on
+	# main. This moves the primary onto origin/main, but only when every
+	# uncommitted file's content already exists in origin/main's history for
+	# that path, so nothing unique is discarded. The previous branch ref is kept.
+	[[ $# -eq 0 ]] || die 'primary-to-main takes no arguments'
+	primary="${DOTFILES_PRIMARY:-$HOME/.dotfiles}"
+	[[ -d "$primary" ]] || die "primary checkout is missing: $primary"
+	branch="$(git -C "$primary" symbolic-ref --quiet --short HEAD)" || die 'primary checkout is detached'
+	[[ "$branch" != main ]] || die 'primary checkout is already on main; use: repo vcs sync-main'
+	fetch_forgejo_main "$primary"
+	if git -C "$primary" show-ref --verify --quiet refs/heads/main && git -C "$primary" cherry origin/main main | grep -q '^+'; then
+		die 'local main has commits that are not in origin/main; converge it first from a main checkout: repo vcs converge-main'
+	fi
+	unproven=()
+	discarded=0
+	while IFS= read -r -d '' entry; do
+		entry_status="${entry:0:2}"
+		path="${entry:3}"
+		case "$entry_status" in
+		' M' | 'M ' | 'MM') ;;
+		*)
+			unproven+=("$path status=$entry_status")
+			continue
+			;;
+		esac
+		blob="$(git -C "$primary" hash-object -- "$path")"
+		if git -C "$primary" rev-list --objects origin/main -- "$path" | awk '{print $1}' | grep -Fxq "$blob"; then
+			discarded=$((discarded + 1))
+		else
+			unproven+=("$path")
+		fi
+	done < <(git -C "$primary" status --porcelain=v1 -z)
+	if ((${#unproven[@]})); then
+		printf 'unproven_dirt=%s\n' "${unproven[@]}" >&2
+		die "primary checkout $primary has changes that are not in origin/main history; land them first: repo vcs worktree-create <name> origin/main, copy the files, then repo vcs land"
+	fi
+	git -C "$primary" checkout --quiet --force -B main origin/main
+	printf 'aligned=main revision=%s previous_branch=%s discarded_paths=%d\n' "$(git -C "$primary" rev-parse HEAD)" "$branch" "$discarded"
+	;;
 describe)
 	if [[ "${1:-}" == '--help' ]]; then
 		[[ $# -eq 1 ]] || die 'describe --help takes no arguments'
@@ -550,5 +592,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main [--divergence-only]|converge-main|describe|amend|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|branch-retire|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main [--divergence-only]|converge-main|primary-to-main|describe|amend|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|branch-retire|contract-test|config}' ;;
 esac

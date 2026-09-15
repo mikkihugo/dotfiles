@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { chmod, mkdtemp, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readdir, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -486,12 +486,16 @@ test("the installer evicts the renamed legacy hook from an existing config (dotf
   }
 });
 
-test("files.nix declares every hook path the installer registers (dotfiles #28)", async () => {
+test("home modules declare every hook path the installer registers (dotfiles #28)", async () => {
   // The installer pointed Claude's settings at
   // ~/.claude/hooks/coordination-mailbox-sweep.sh while files.nix never
   // installed it, so the hook ENOENT'd after a wipe and Claude alone kept
-  // sweeping the legacy swarm_bus tier.
-  const filesNix = await readFile("home/modules/files.nix", "utf8");
+  // sweeping the legacy swarm_bus tier. Hooks may be installed by any home
+  // module (kimi-code-otel.nix owns otel-resource-attrs.sh), so read them all.
+  const moduleDir = "home/modules";
+  const filesNix = (await Promise.all(
+    (await readdir(moduleDir)).filter((name) => name.endsWith(".nix")).map((name) => readFile(join(moduleDir, name), "utf8")),
+  )).join("\n");
   const installer = await readFile("config/agent-hooks/install-swarm-hooks.mjs", "utf8");
   const registered = new Set(
     [...installer.matchAll(/\/home\/mhugo\/\.([\w.-]+)\/hooks\/([\w.-]+\.(?:sh|mjs))/g)]

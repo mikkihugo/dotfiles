@@ -11,6 +11,7 @@ SHARED_KEYS = [
     "model_reasoning_effort",
     "model_reasoning_summary",
     "web_search",
+    "developer_instructions",
     # Codex truncates AGENTS.md at 32 KiB by default (measured: a 89,970-byte
     # AGENTS.md was cut at exactly 32 KiB). Several repos here exceed that, so
     # this must be shared to every machine, not just set locally.
@@ -46,7 +47,7 @@ def toml_value(value) -> str:
         return str(value)
     if isinstance(value, list) and all(isinstance(item, str) for item in value):
         return "[" + ", ".join(toml_value(item) for item in value) + "]"
-    return '"' + str(value).replace("\\", "\\\\").replace('"', '\\"') + '"'
+    return '"' + str(value).replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
 
 
 def save(args) -> None:

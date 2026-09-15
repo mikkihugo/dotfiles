@@ -7,8 +7,10 @@ check:
 
 # Report Home Manager units shadowing NixOS units, daemons running outside
 # systemd, and who owns contested loopback ports. Non-zero when any is found.
+# Source-of-truth lives in /srv/infra/scripts/diagnose-systemd-user-units.sh
+# (fleet operator GitOps). This justfile recipe is kept as a thin alias.
 unit-doctor:
-    bash scripts/unit-doctor.sh
+    bash /srv/infra/scripts/diagnose-systemd-user-units.sh
 
 # Prune Codex subagent rollouts (dry run; pass --apply to delete). Codex has no
 # retention of its own for ~/.codex/sessions, which grows without bound.

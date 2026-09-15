@@ -213,6 +213,16 @@
       executable = true;
       force = true;
     };
+
+    # PreToolUse guard: no autonomous send_feedback / tracker issue creation.
+    # Kimi-contract port of the grok-side ~/.grok/hooks/bin/deny-bug-send.sh;
+    # keep the rule bodies in sync by hand. Plain `source` like the skills
+    # gate trio: env bash + jq/rg from PATH, no replaceVars placeholders.
+    ".kimi-code/hooks/deny-bug-send.sh" = {
+      source = ../../config/kimi-code/hooks/deny-bug-send.sh;
+      executable = true;
+      force = true;
+    };
     ".codex/hooks/skills-gate-session-start.sh" = {
       source = ../../config/codex/hooks/skills-gate-session-start.sh;
       executable = true;
@@ -336,6 +346,18 @@
 
     ".kimi-code/hooks/coordination-mailbox-sweep.sh" = {
       source = pkgs.replaceVars ../../config/kimi-code/hooks/coordination-mailbox-sweep.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
+    # Kimi Stop hook wrapping the claude-side stop-continue-if-actionable
+    # helper: keeps the turn open while unacked question/blocker coordination
+    # mail exists. Renders with @bash@/@node@ like the claude wrapper.
+    ".kimi-code/hooks/stop-actionable.sh" = {
+      source = pkgs.replaceVars ../../config/kimi-code/hooks/stop-actionable.sh {
         bash = "${pkgs.bash}/bin/bash";
         node = "${pkgs.nodejs}/bin/node";
       };

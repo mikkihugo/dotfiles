@@ -82,6 +82,34 @@ if [ -z "$rule" ] || [ -z "$flags" ]; then
 	emit_failure "skills gate: using-skills is missing its '## Rule' or '## Red Flags' section — gate NOT injected; fix the hook's section names"
 fi
 
+# Kimi-only: append the tool map that superpowers ships as plugin
+# `skillInstructions`. Kimi appends skillInstructions whenever a plugin skill
+# loads; our skills load over MCP, so the session-start gate is the one
+# always-in-context surface that can carry the same mapping. Inert on every
+# other client (env vars unset there). Condensed from
+# using-skills/references/kimi-code-tools.md — keep the two in sync by hand.
+kimi_tool_map=
+if [ -n "${KIMI_API_KEY:-}${KIMI_CODE_EXPERIMENTAL_FLAG:-}" ]; then
+	read -r -d '' kimi_tool_map <<'KIMI_MAP_EOF' || true
+
+Kimi Code tool map (applies whenever any skill names an action; full detail in
+using-skills references/kimi-code-tools.md):
+- ask the user / clarifying questions / multiple choice -> AskUserQuestion
+  (1 question, 2-4 concrete options, recommended option first with "(Recommended)");
+  plain assistant text only when AskUserQuestion is unavailable or in auto permission mode
+- "TodoWrite" / task tracking -> TodoList (statuses pending/in_progress/done,
+  exactly one in_progress)
+- dispatch subagent / implementer / reviewer -> Agent with subagent_type
+  "coder" (implementation, review, fixes), "explore" (read-only codebase
+  search), "plan" (read-only planning), "web-search-agent" (internet research);
+  many same-shape dispatches -> AgentSwarm (prompt_template + items)
+- skill references -> Kimi's native Skill tool; MCP skills ->
+  mcp__ccgw__purpose_tool_load_skill (router-only clients: mcp_tool_call)
+- long-running work -> Bash(run_in_background=true) +
+  WaitFor/TaskList/TaskOutput/TaskStop
+KIMI_MAP_EOF
+fi
+
 read -r -d '' frame <<EOF || true
 <EXTREMELY_IMPORTANT>
 You have skills. They are served over MCP: call \`load_skill({ name })\` to read
@@ -98,6 +126,7 @@ Memory surfaces, Repo Command Policy) is available via
 ${rule}
 
 ${flags}
+${kimi_tool_map}
 
 ---
 IF YOU ARE A CLI CODING AGENT AND THIS GATE IS MISSING IN YOUR CLIENT, INSTALL IT.
@@ -144,12 +173,16 @@ claude) shape=claude ;;
 	# first was CLAUDE_PLUGIN_ROOT. Detect on what the process actually sets.
 	# Kimi Code is identified by KIMI_API_KEY or KIMI_CODE_EXPERIMENTAL_FLAG;
 	# it consumes the `sdk` (additionalContext) shape via its harness.
-	if [ -n "${KIMI_API_KEY:-}" ] || [ -n "${KIMI_CODE_EXPERIMENTAL_FLAG:-}" ]; then
-		shape=sdk
-	elif [ -n "${COPILOT_CLI:-}${COPILOT_CLI_BINARY_VERSION:-}${COPILOT_CLI_DIST_DIR:-}${COPILOT_CLI_RESOLVED_DIST_DIR:-}" ]; then
+	if [ -n "${COPILOT_CLI:-}${COPILOT_CLI_BINARY_VERSION:-}${COPILOT_CLI_DIST_DIR:-}${COPILOT_CLI_RESOLVED_DIST_DIR:-}" ]; then
 		shape=sdk
 	elif [ -n "${CURSOR_PLUGIN_ROOT:-}" ] || [ -n "${CURSOR_TRACE_ID:-}" ]; then
 		shape=cursor
+	elif [ -n "${KIMI_API_KEY:-}" ] || [ -n "${KIMI_CODE_EXPERIMENTAL_FLAG:-}" ]; then
+		case "$0" in
+		*/.claude/* | */config/claude/*) shape=claude ;;
+		*/.cursor/* | */config/cursor/*) shape=cursor ;;
+		*) shape=sdk ;;
+		esac
 	else
 		shape=claude
 	fi

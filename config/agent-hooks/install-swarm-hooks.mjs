@@ -181,6 +181,14 @@ const KIMI_MANAGED_HOOKS = [
   // docs/runbooks/2026-09-11-kimi-otel-tie.md.
   { event: "SessionStart", command: "/home/mhugo/.kimi-code/hooks/otel-resource-attrs.sh", timeout: 5 },
   { event: "Stop", command: "/home/mhugo/.kimi-code/hooks/observations-autolog.sh kimi-code Stop", timeout: 30 },
+  // Kimi names MCP tools individually (mcp__...forgejo_issue_create), so
+  // the matcher must name those; the hook body still makes the deny
+  // decision. Ported from grok's send_feedback|use_tool wiring.
+  { event: "PreToolUse", matcher: "send_feedback|use_tool|issue_create|create_issue|feedback", command: "/home/mhugo/.kimi-code/hooks/deny-bug-send.sh", timeout: 5 },
+  // Keep the turn open while unacked question/blocker coordination mail
+  // exists. Wrapper translates the Claude-shape helper output to Kimi's
+  // Stop contract (stderr + exit 2).
+  { event: "Stop", command: "/home/mhugo/.kimi-code/hooks/stop-actionable.sh", timeout: 20 },
 ];
 
 // Renamed hooks this installer no longer emits but must still evict from an
@@ -232,6 +240,7 @@ async function installKimi() {
   const blocks = KIMI_MANAGED_HOOKS.map((hook) => [
     "[[hooks]]",
     `event = ${JSON.stringify(hook.event)}`,
+    ...(hook.matcher ? [`matcher = ${JSON.stringify(hook.matcher)}`] : []),
     `command = ${JSON.stringify(hook.command)}`,
     `timeout = ${hook.timeout}`,
   ]);

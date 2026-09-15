@@ -11,6 +11,9 @@
 
     # Modern CLI replacements — faster, friendlier alternatives to coreutils.
     # Aliases (ls→eza, man→batman) are declared in shell.nix shellAliases.
+    # Duplicates with /srv/infra/hosts/_shared/sysop-tools.nix are
+    # intentional: HM is mhugo's personal toolbox on the devbox, sysop-tools
+    # is the fleet-wide diagnostic kit. The devbox imports both.
     eza # ls replacement (tree view, git status, icons)
     bat # cat replacement (syntax highlight, paging)
     fd # find replacement (respects .gitignore, faster)

@@ -144,12 +144,16 @@ claude) shape=claude ;;
 	# first was CLAUDE_PLUGIN_ROOT. Detect on what the process actually sets.
 	# Kimi Code is identified by KIMI_API_KEY or KIMI_CODE_EXPERIMENTAL_FLAG;
 	# it consumes the `sdk` (additionalContext) shape via its harness.
-	if [ -n "${KIMI_API_KEY:-}" ] || [ -n "${KIMI_CODE_EXPERIMENTAL_FLAG:-}" ]; then
-		shape=sdk
-	elif [ -n "${COPILOT_CLI:-}${COPILOT_CLI_BINARY_VERSION:-}${COPILOT_CLI_DIST_DIR:-}${COPILOT_CLI_RESOLVED_DIST_DIR:-}" ]; then
+	if [ -n "${COPILOT_CLI:-}${COPILOT_CLI_BINARY_VERSION:-}${COPILOT_CLI_DIST_DIR:-}${COPILOT_CLI_RESOLVED_DIST_DIR:-}" ]; then
 		shape=sdk
 	elif [ -n "${CURSOR_PLUGIN_ROOT:-}" ] || [ -n "${CURSOR_TRACE_ID:-}" ]; then
 		shape=cursor
+	elif [ -n "${KIMI_API_KEY:-}" ] || [ -n "${KIMI_CODE_EXPERIMENTAL_FLAG:-}" ]; then
+		case "$0" in
+		*/.claude/* | */config/claude/*) shape=claude ;;
+		*/.cursor/* | */config/cursor/*) shape=cursor ;;
+		*) shape=sdk ;;
+		esac
 	else
 		shape=claude
 	fi

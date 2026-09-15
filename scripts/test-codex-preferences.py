@@ -20,6 +20,8 @@ class CodexPreferencesTest(unittest.TestCase):
                 'model_provider = "openai"\n'
                 'model_reasoning_effort = "low"\n'
                 'web_search = "disabled"\n\n'
+                'developer_instructions = """Ground claims in evidence.\n'
+                'Delegate only independent work.\n"""\n\n'
                 '[tui]\n'
                 'status_line = ["model-with-reasoning", "thread-id"]\n'
             )
@@ -48,6 +50,10 @@ class CodexPreferencesTest(unittest.TestCase):
             self.assertEqual(parsed["model_provider"], "openai")
             self.assertEqual(parsed["model_reasoning_effort"], "low")
             self.assertEqual(parsed["web_search"], "disabled")
+            self.assertEqual(
+                parsed["developer_instructions"],
+                "Ground claims in evidence.\nDelegate only independent work.\n",
+            )
             self.assertEqual(parsed["tui"]["status_line"], ["model-with-reasoning", "thread-id"])
             self.assertEqual(parsed["tui"]["terminal_title"], ["activity", "project-name"])
             self.assertTrue(parsed["tui"]["status_line_use_colors"])

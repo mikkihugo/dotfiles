@@ -137,15 +137,19 @@ in
         # isolate the client from %t/jcode.sock.
         ".config/systemd/user/jcode-swarm-fleet-watchdog.service.d/50-server-jcode.conf".text = ''
           [Service]
-          Environment=PATH=${jcodeLauncher}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
+          Environment=PATH=${jcodeLauncher}/bin:${pkgs.python3}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
         '';
 
         # 90-exact-root replaces PATH from its EnvironmentFile. Reassert the
         # server-attached launcher after it, or the watchdog cannot reach the
         # healthy socket even though jcode-server is running.
+        # python3: Engine's nix/cache/org-nix-config.sh derives NIX_CONFIG with
+        # python3. Absent from this PATH it exported `builders-use-substitutes =`
+        # (empty), Nix rejected it, direnv fell back and Engine recovery failed on
+        # every pass (2026-09-15).
         ".config/systemd/user/jcode-swarm-fleet-watchdog.service.d/95-server-jcode-path.conf".text = ''
           [Service]
-          Environment=PATH=${jcodeLauncher}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
+          Environment=PATH=${jcodeLauncher}/bin:${pkgs.python3}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
         '';
 
         # OnUnitActiveSec alone leaves NEXT=- after a failed oneshot across a

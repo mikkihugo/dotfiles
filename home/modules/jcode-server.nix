@@ -131,6 +131,18 @@ in
           Environment="JCODE_MEMORY_ENABLED=0"
         '';
 
+        # Server-side MCP call deadline (crates/jcode-base/src/mcp/pool.rs
+        # default_call_timeout, 30s when unset). Debug-socket commands such as the
+        # fleet watchdog's `repo_memory:retain` run INSIDE this server process, so
+        # the override must be on this unit: the watchdog's env file also sets it,
+        # but that only reaches the `jcode debug` client and never applied.
+        # 30s (plus one retry) killed every SelfDev recovery handoff retain batch
+        # at 60s (2026-09-15). Kept below the watchdog's 210s retain budget.
+        ".config/systemd/user/jcode-server.service.d/30-mcp-call-timeout.conf".text = ''
+          [Service]
+          Environment="JCODE_MCP_DEFAULT_CALL_TIMEOUT_SECS=180"
+        '';
+
         # Watchdog `dbg()` calls PATH `jcode`. Put the castle-attached launcher
         # first so a lagged CLI current (install_release) cannot fail debug
         # against the live server, and so the laptop allowlist wrapper cannot

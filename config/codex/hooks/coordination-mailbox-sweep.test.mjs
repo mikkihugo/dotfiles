@@ -50,6 +50,19 @@ test("cursor sessionStart and beforeSubmitPrompt both emit additional_context", 
   assert.equal(clientCanReceive("cursor", "beforeSubmitPrompt", {}), true);
 });
 
+test("grok SessionStart emits Claude-shaped hookSpecificOutput so clientCanReceive is true", () => {
+  assert.deepEqual(
+    renderClientOutput("grok", "SessionStart", "mailbox note", {}),
+    {
+      hookSpecificOutput: {
+        hookEventName: "SessionStart",
+        additionalContext: "mailbox note",
+      },
+    },
+  );
+  assert.equal(clientCanReceive("grok", "SessionStart", {}), true);
+});
+
 // --- identity ---------------------------------------------------------------
 
 test("identity derivation is the literal first dash-segment, matching identity.rs's worked example -- not a hash", () => {

@@ -338,7 +338,7 @@ export function renderClientOutput(client, eventName, context, payload) {
     return { hookSpecificOutput: { hookEventName: eventName, additionalContext: context } };
   }
   // `code` (@just-every/code) shares Codex's hookSpecificOutput schema.
-  if (client === "codex" || client === "code" || client === "claude") {
+  if (client === "codex" || client === "code" || client === "claude" || client === "grok") {
     return { hookSpecificOutput: { hookEventName: eventName, additionalContext: context } };
   }
   return null;

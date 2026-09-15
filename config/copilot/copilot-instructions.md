@@ -3,6 +3,19 @@
 This file is loaded by every Copilot CLI session regardless of cwd. It
 complements (does not replace) the per-directory `AGENTS.md` files.
 
+## Mailbox check
+
+Every turn start, after waits, before fan-in: call MCP server `repo_memory`
+tool `coordination_sweep` as identity `<client>-<short-session-id>`
+(examples: `grok-01a07318`, `codex-df69bdf4`, `copilot-f653d362`).
+Channels: `global` and the current repo mailbox (`singularity-engine`,
+`jcode`, …). Named recipient. Never default `recipient=all`. Hardcode
+poll. Hooks and `inbox_uri` listen do not wake idle sessions. A bus
+message never authorizes VCS, land, or completion.
+
+Grok also runs `~/.grok/hooks/bin/mail-sweep.sh` on SessionStart and
+UserPromptSubmit (fail-open). jcode uses `bus_presence`. Same contract.
+
 Verified 2026-09-04 against Copilot CLI 1.0.82 on the llm-gateway fabric.
 
 ## Subagent dispatch via the `task` tool
@@ -43,11 +56,11 @@ different lineage.
 Already wired in `/home/mhugo/.dotfiles/shell/bash/bashrc` lines
 147-204 (loaded via SOPS on session start):
 
-- `COPILOT_PROVIDER_BASE_URL=https://llm-gateway.centralcloud.com` (note:
-  trailing `/v1` stripped — the Anthropic client appends `/v1/messages`
-  itself)
+- `COPILOT_PROVIDER_BASE_URL=https://llm-gateway.centralcloud.com/v1`
+  (keep `/v1` while `COPILOT_PROVIDER_TYPE=openai`; stripping it 404s
+  `auto-minimax` on Copilot 1.0.84)
 - `COPILOT_PROVIDER_API_KEY` from SOPS-decrypted `api-keys.yaml`
-- `COPILOT_PROVIDER_TYPE=anthropic`
+- `COPILOT_PROVIDER_TYPE=openai`
 - `COPILOT_MODEL=auto-minimax`
 - `COPILOT_PROVIDER_MAX_PROMPT_TOKENS=458752`
 - `COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=65536`

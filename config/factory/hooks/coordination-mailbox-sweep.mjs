@@ -1067,7 +1067,7 @@ export function renderClientOutput(client, eventName, context, payload) {
   if (client === "factory") {
     return { hookSpecificOutput: { hookEventName: eventName, additionalContext: context } };
   }
-  if (client === "codex" || client === "code" || client === "claude") {
+  if (client === "codex" || client === "code" || client === "claude" || client === "grok") {
     return { hookSpecificOutput: { hookEventName: eventName, additionalContext: context } };
   }
   return null;

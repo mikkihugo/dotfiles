@@ -37,6 +37,19 @@ These apply to all Codex sessions for this user. Project-level `AGENTS.md` files
 
 # Working Style
 
+## Mailbox check
+
+Every turn start, after waits, before fan-in: call MCP server `repo_memory`
+tool `coordination_sweep` as identity `<client>-<short-session-id>`
+(examples: `grok-01a07318`, `codex-df69bdf4`, `copilot-f653d362`).
+Channels: `global` and the current repo mailbox (`singularity-engine`,
+`jcode`, …). Named recipient. Never default `recipient=all`. Hardcode
+poll. Hooks and `inbox_uri` listen do not wake idle sessions. A bus
+message never authorizes VCS, land, or completion.
+
+Grok also runs `~/.grok/hooks/bin/mail-sweep.sh` on SessionStart and
+UserPromptSubmit (fail-open). jcode uses `bus_presence`. Same contract.
+
 ## Verify, don't assume
 
 Treat every change as a hypothesis until verified.
@@ -293,13 +306,6 @@ thread-attached tool surface first. For CentralCloud, then use
 `mcp_router_hints` and the routed `mcp_tool_call` fallback. Declare a downstream
 capability unavailable only after the applicable thread-attached direct path
 and routed fallback have both been checked and failed.
-
-## Hosted web search boundary
-
-Every Codex role configured with `model_provider = "llm-gateway"` must also set
-`web_search = "disabled"` until that gateway has a verified provider-hosted
-search executor. CentralCloud MCP browser and search tools are separate
-capabilities and remain enabled.
 
 ## Codex login: destructive `device-auth` behavior
 

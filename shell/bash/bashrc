@@ -135,16 +135,16 @@ _load_sops_secrets() {
 		# copilot only offers GitHub-native models and every gateway alias
 		# (auto-minimax, auto-glm, auto-kimi, ollama-*) is unresolvable --
 		# including the ones ~/.copilot/settings.json assigns to subagents.
-		# Trailing /v1 stripped: the Anthropic client appends "/v1/messages"
-		# itself, so passing the OpenAI-shaped base (which already ends in /v1)
-		# produces /v1/v1/messages. Measured 2026-09-04 against the gateway:
-		#   POST /v1/v1/messages -> 404   (the "Model not found (HTTP 404)" error)
-		#   POST /v1/messages    -> 200
-		#   GET  /v1/models      -> 200   (catalog probe still resolves)
-		# This matches gatewayUrlResolver in home/modules/ai-tools.nix, which
-		# hands ANTHROPIC_BASE_URL a bare root for the same reason.
-		# LLM_MUX_BASE_URL above deliberately keeps /v1 for OpenAI consumers.
-		export COPILOT_PROVIDER_BASE_URL="${url%/v1}"
+		#
+		# Keep /v1 while COPILOT_PROVIDER_TYPE is openai (Copilot 1.0.84
+		# looks up models at {base}/...; stripping /v1 404s auto-minimax).
+		# Measured 2026-09-15:
+		#   COPILOT_PROVIDER_BASE_URL without /v1 -> Model not found HTTP 404
+		#   .../v1 + auto-minimax                 -> copilot -p pong works
+		# Anthropic used to need a bare root (/v1/v1/messages). TYPE is openai
+		# now, so the OpenAI-shaped URL (LLM_MUX_BASE_URL, with /v1) is correct.
+		# LLM_MUX_BASE_URL keeps /v1 for OpenAI consumers.
+		export COPILOT_PROVIDER_BASE_URL="$url"
 		export COPILOT_PROVIDER_API_KEY="$val"
 
 		# Anthropic wire, not the "openai" default: auto-minimax's only gateway
@@ -350,6 +350,55 @@ _load_sops_secrets() {
 }
 
 alias load-ai-keys='_load_sops_secrets'
+
+# ── Codex ChatGPT OAuth session backup/restore via Bao ──────────────────────
+# ~/.codex/auth.json holds a live ChatGPT OAuth token pair (access+refresh,
+# from `codex login`), not a static API key -- Bao can't mint or refresh it,
+# but it can hold a point-in-time copy so a wiped/new host can restore the
+# session instead of forcing a fresh browser/device-auth login. Manual,
+# on-demand only: never auto-run on login, so a broken session never silently
+# clobbers a good backup (or vice versa). See config/codex/AGENTS.md for the
+# `codex login --device-auth` incident this mitigation pattern also covers.
+codex-auth-backup() {
+	local auth_file="$HOME/.codex/auth.json"
+	if [ ! -f "$auth_file" ]; then
+		echo "codex-auth-backup: $auth_file not found (run 'codex login' first)" >&2
+		return 1
+	fi
+	if ! command -v bao >/dev/null 2>&1; then
+		echo "codex-auth-backup: bao not in PATH" >&2
+		return 1
+	fi
+	if ! BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
+		bao kv put -mount=kv codex-mhugo-chatgpt-session "auth_json=@${auth_file}"; then
+		echo "codex-auth-backup: bao kv put failed" >&2
+		return 1
+	fi
+	echo "codex-auth-backup: backed up $auth_file to kv/codex-mhugo-chatgpt-session"
+}
+
+codex-auth-restore() {
+	local auth_file="$HOME/.codex/auth.json"
+	if ! command -v bao >/dev/null 2>&1; then
+		echo "codex-auth-restore: bao not in PATH" >&2
+		return 1
+	fi
+	if [ -f "$auth_file" ]; then
+		cp "$auth_file" "$auth_file.pre-restore-$(date +%s)"
+		echo "codex-auth-restore: existing $auth_file backed up alongside" >&2
+	fi
+	local tmp
+	tmp=$(mktemp)
+	if ! BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" \
+		bao kv get -field=auth_json -mount=kv codex-mhugo-chatgpt-session >"$tmp" 2>/dev/null; then
+		rm -f "$tmp"
+		echo "codex-auth-restore: no backup at kv/codex-mhugo-chatgpt-session (run codex-auth-backup first)" >&2
+		return 1
+	fi
+	mv "$tmp" "$auth_file"
+	chmod 600 "$auth_file"
+	echo "codex-auth-restore: restored $auth_file from kv/codex-mhugo-chatgpt-session"
+}
 
 # claude-squad harness shortcuts
 # default (claude) — same as plain `claude-squad`

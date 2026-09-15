@@ -64,6 +64,15 @@ class CodexPreferencesTest(unittest.TestCase):
                 self.assertIs(data["features"][feature], True)
             self.assertIs(data["features"]["memories"], False)
 
+    def test_base_developer_instructions_are_pdd_and_adr_0000(self):
+        for name in ("config.toml", "shared-preferences.toml"):
+            data = tomllib.loads((SCRIPT.parents[1] / "config/codex" / name).read_text())
+            instructions = data["developer_instructions"]
+            self.assertIn("no behavior change without a PurposeContract", instructions)
+            self.assertIn("purpose, consumer, contract, failureBoundary", instructions)
+            self.assertIn("ADR-0000 lifecycle", instructions)
+            self.assertIn("Contract tests or executable evidence before implementation", instructions)
+
     def test_roundtrip_managed_features_preserves_unmanaged_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

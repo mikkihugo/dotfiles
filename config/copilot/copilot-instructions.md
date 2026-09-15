@@ -50,28 +50,21 @@ Load `using-skills`, then `purpose-first`. Full doctrine:
 Done: named purpose, named consumer, proof run (failed first for a behavior
 change), evidence on disk, named falsifier.
 
-## MCP 2026-07-28 (live tools)
+## Live MCP tools
 
-One protocol on this host: **2026-07-28**. Do not mention or target
-2025-11-25 in prompts, configs, or tool names. The gateway may negotiate;
-agents only use this version.
+Do not pin a protocol version in this prompt. Use whatever the live
+session already negotiated (one per session). Standard names:
 
-Handshake: none. No `initialize` / `initialized`. Version rides `_meta`.
-Discover with `server/discover` / `search_*` / `mcp_catalog_search`.
-Wake path: `subscriptions/listen` if the client has it — not
-`resources/subscribe`.
-
-Standard tool names (short, no client prefix):
 - `mcp_tool_call(server, tool, arguments)` — every CentralCloud call
 - `load_skill` on `purpose_tool`
 - `coordination_sweep` on `repo_memory`
-- grouped `search_*` then `mcp_catalog_search`
+- grouped `search_*`, then `mcp_catalog_search`
 
-Do not call `ccgw__…` wrappers, `mcp__ccgw__…`, or `server_tool` glued
-names. A missing wrapper is not a missing tool.
+No `ccgw__` / `mcp__ccgw__` / glued `server_tool` names. A missing
+wrapper is not a missing tool.
 
-`inbox_uri` is reconnect/stateless follow-on and may be absent (#408).
-Poll is `coordination_sweep`.
+Handshake is the client's job. Do not invent `initialize` if this
+session already has tools. Poll mail with `coordination_sweep`.
 
 ## Subagent dispatch via the `task` tool
 

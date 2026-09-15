@@ -349,7 +349,9 @@ primary-to-main)
 			;;
 		esac
 		blob="$(git -C "$primary" hash-object -- "$path")"
-		if git -C "$primary" rev-list --objects origin/main -- "$path" | awk '{print $1}' | grep -Fxq "$blob"; then
+		# awk reads the whole stream: an early-exiting `grep -q` would SIGPIPE
+		# rev-list on long histories and, under pipefail, misreport the match.
+		if git -C "$primary" rev-list --objects origin/main -- "$path" | awk -v want="$blob" '$1 == want { found = 1 } END { exit !found }'; then
 			discarded=$((discarded + 1))
 		else
 			unproven+=("$path")

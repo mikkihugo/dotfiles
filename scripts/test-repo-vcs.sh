@@ -378,3 +378,25 @@ fi
 grep -Fq 'unproven_dirt=f' "$tmp/p2m-refuse.err"
 [[ "$(cat "$p2m/primary/f")" == 'unique local work' ]]
 [[ "$(p2m_git -C "$p2m/primary" symbolic-ref --short HEAD)" == lane/stale ]]
+
+# A path with long history makes rev-list --objects exceed the pipe buffer. The
+# history match must read the whole stream: an early-exiting `grep -q` SIGPIPEs
+# rev-list, and under pipefail a proven file then reads as unproven.
+p2m_long="$tmp/primary-to-main-long"
+mkdir -p "$p2m_long"
+p2m_git init -q --bare "$p2m_long/remote.git"
+{
+	for n in $(seq 1 700); do
+		printf 'commit refs/heads/main\ncommitter t <t@t> %d +0000\ndata 1\nc\n' "$n"
+		printf 'M 100644 inline f\ndata %d\n%s\n' "$((${#n} + 1))" "$n"
+	done
+} | p2m_git -C "$p2m_long/remote.git" fast-import --quiet
+p2m_git clone -q "$p2m_long/remote.git" "$p2m_long/primary"
+p2m_git -C "$p2m_long/primary" checkout -q -b lane/stale HEAD~1
+printf '700\n' >"$p2m_long/primary/f"
+if ! DOTFILES_PRIMARY="$p2m_long/primary" DOTFILES_FORGEJO_HTTPS_URL="$p2m_long/remote.git" SE_GIT_BIN="$p2m_git_bin" _run_repo_vcs "$root/scripts/repo-vcs.sh" primary-to-main >"$tmp/p2m-long.out" 2>"$tmp/p2m-long.err"; then
+	printf 'primary-to-main must prove dirt on a path whose history overflows the pipe buffer\n' >&2
+	cat "$tmp/p2m-long.err" >&2
+	exit 1
+fi
+grep -Fq 'aligned=main' "$tmp/p2m-long.out"

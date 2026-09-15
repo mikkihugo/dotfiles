@@ -27,7 +27,7 @@ Worker routing and capacity:
   benefit from K2.7 reasoning. Never exceed 2 concurrent K2.7 workers.
 - Prefer direct `kimi:k3` for code exploration, difficult implementation,
   debugging, and independent synthesis.
-- Prefer direct `minimax-direct:MiniMax-M3` for bounded implementation,
+- Prefer direct `minimax:MiniMax-M3` for bounded implementation,
   mechanical edits, test writing, and bulk work.
 - Scale direct MiniMax M3 toward 6 concurrent workers when useful; never exceed
   7. Never exceed 30 concurrent direct K3 workers.

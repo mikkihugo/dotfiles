@@ -15,7 +15,7 @@ SCRIPT = Path(__file__).with_name("jcode-preferences")
 SOURCE = '''[provider]
 default_provider = "llm-gateway"
 default_model = "llm-gateway:auto"
-model_picker_providers = ["llm-gateway", "kimi", "minimax-direct", "openai-oauth", "ollama-cloud"]
+model_picker_providers = ["llm-gateway", "kimi", "minimax", "openai-oauth", "ollama-cloud"]
 cross_provider_failover = "manual"
 
 [auth]
@@ -30,12 +30,6 @@ model_catalog = true
 
 [[providers.llm-gateway.models]]
 id = "auto"
-
-[providers.minimax-direct]
-type = "open-ai-compatible"
-base_url = "https://api.minimax.io/v1"
-api_key_env = "MINIMAX_API_KEY"
-default_model = "MiniMax-M3"
 
 [providers.ollama-cloud]
 type = "open-ai-compatible"
@@ -142,9 +136,11 @@ class JcodePreferencesTest(unittest.TestCase):
             self.assertEqual(parsed["auth"]["trusted_external_sources"], [])
             self.assertEqual(parsed["providers"]["other"]["token"], "keep-me")
             self.assertNotIn("obsolete", parsed["providers"]["llm-gateway"])
-            self.assertNotIn("obsolete", parsed["providers"]["minimax-direct"])
+            # minimax-direct is retired in favour of J-Code's built-in minimax
+            # provider: a stale copy in the live config is removed, not kept.
+            self.assertNotIn("minimax-direct", parsed["providers"])
+            self.assertNotIn("stale-minimax.example", first)
             self.assertEqual(parsed["providers"]["llm-gateway"]["models"], [{"id": "auto"}])
-            self.assertEqual(parsed["providers"]["minimax-direct"]["default_model"], "MiniMax-M3")
             self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o640)
 
             self.apply(source, target)
@@ -165,7 +161,7 @@ class JcodePreferencesTest(unittest.TestCase):
 
             self.assertEqual(
                 parsed["provider"]["model_picker_providers"],
-                ["llm-gateway", "kimi", "minimax-direct", "openai-oauth", "ollama-cloud"],
+                ["llm-gateway", "kimi", "minimax", "openai-oauth", "ollama-cloud"],
             )
             # the stale entries must be gone entirely, not left dangling
             self.assertNotIn("old-a", rendered)
@@ -244,7 +240,7 @@ class JcodePreferencesTest(unittest.TestCase):
             self.assertIn('model_picker_providers = ["POISON"]', parsed["provider"]["note"])
             self.assertEqual(
                 parsed["provider"]["model_picker_providers"],
-                ["llm-gateway", "kimi", "minimax-direct", "openai-oauth", "ollama-cloud"],
+                ["llm-gateway", "kimi", "minimax", "openai-oauth", "ollama-cloud"],
             )
             self.assertEqual(parsed["provider"]["default_provider"], "llm-gateway")
 
@@ -271,7 +267,7 @@ class JcodePreferencesTest(unittest.TestCase):
 
             self.assertEqual(
                 parsed["provider"]["model_picker_providers"],
-                ["llm-gateway", "kimi", "minimax-direct", "openai-oauth", "ollama-cloud"],
+                ["llm-gateway", "kimi", "minimax", "openai-oauth", "ollama-cloud"],
             )
             self.assertNotIn('["c"]', rendered)
             self.assertEqual(parsed["provider"]["stream_idle_timeout_secs"], 180)

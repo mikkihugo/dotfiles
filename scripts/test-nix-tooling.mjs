@@ -287,7 +287,7 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   );
   assert.doesNotMatch(service, /JCODE_RUNTIME_DIR|runtime-allowlisted/);
 
-  for (const provider of ["minimax-direct", "ollama-cloud", "byteplus-ark"]) {
+  for (const provider of ["minimax", "ollama-cloud", "byteplus-ark"]) {
     assert.match(
       aiTools,
       new RegExp(`claude\\|openai[^\\n]*${provider}`),
@@ -299,6 +299,7 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
       `jcode provider list must expose ${provider}`,
     );
   }
+  assert.doesNotMatch(aiTools, /minimax-direct/, "the retired minimax-direct profile must not be allowed or listed");
   assert.match(aiTools, /\*\) return 1 ;;/, "unknown providers must remain denied");
   assert.match(aiTools, /oauth_login_provider\(\)/);
   assert.match(aiTools, /claude\|openai\) return 0 ;;/);
@@ -325,7 +326,8 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   assert.match(providers, /config\.sops\.secrets\.llm_gateway_api_key\.path/);
   assert.match(providers, /kimi\.env/);
   assert.match(providers, /KIMI_API_KEY/);
-  assert.match(providers, /minimax-direct\.env/);
+  assert.match(providers, /"\$provider_dir\/minimax\.env"/);
+  assert.doesNotMatch(providers, /minimax-direct/);
   assert.match(providers, /MINIMAX_API_KEY/);
   assert.match(providers, /provider-llm-gateway\.env/);
   assert.match(providers, /JCODE_PROVIDER_LLM_GATEWAY_API_KEY/);
@@ -357,7 +359,7 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   // first), which is a config decision this test has no opinion about. What it
   // must protect is that every provider the managed profiles depend on is
   // offered in the picker.
-  for (const provider of ["llm-gateway", "kimi", "minimax-direct", "openai-oauth", "ollama-cloud"]) {
+  for (const provider of ["llm-gateway", "kimi", "minimax", "openai-oauth", "ollama-cloud"]) {
     assert.match(
       preferences,
       new RegExp(`model_picker_providers\\s*=\\s*\\[[^\\]]*"${provider}"`),
@@ -369,14 +371,16 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   assert.match(preferences, /trusted_external_source_paths\s*=\s*\[\]/);
   assert.match(preferences, /\[providers\.llm-gateway\]/);
   assert.match(preferences, /base_url\s*=\s*"https:\/\/llm-gateway\.centralcloud\.com\/v1"/);
-  assert.match(preferences, /\[providers\.minimax-direct\]/);
-  assert.match(preferences, /base_url\s*=\s*"https:\/\/api\.minimax\.io\/v1"/);
-  assert.match(preferences, /api_key_env\s*=\s*"MINIMAX_API_KEY"/);
-  assert.match(preferences, /default_model\s*=\s*"MiniMax-M3"/);
+  // MiniMax uses J-Code's built-in `minimax` provider (api.minimax.io; China
+  // endpoint is opt-in via JCODE_MINIMAX_CN), not a separately named profile.
+  assert.match(preferences, /default_provider\s*=\s*"minimax"/);
+  assert.match(preferences, /default_model\s*=\s*"minimax:MiniMax-M3"/);
+  assert.doesNotMatch(preferences, /minimax-direct/);
   assert.doesNotMatch(preferences, /api\.minimaxi\.com/);
 
   assert.match(prompt, /direct `kimi:k3`/);
-  assert.match(prompt, /direct `minimax-direct:MiniMax-M3`/);
+  assert.match(prompt, /direct `minimax:MiniMax-M3`/);
+  assert.doesNotMatch(prompt, /minimax-direct/);
   assert.match(prompt, /`llm-gateway:kimi-for-coding\/k3`/);
   assert.match(prompt, /`llm-gateway:minimax-coding-plan\/MiniMax-M3`/);
   assert.doesNotMatch(prompt, /`llm-gateway:opencode-go\/kimi-k3`/);

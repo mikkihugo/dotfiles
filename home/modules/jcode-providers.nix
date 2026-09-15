@@ -46,7 +46,7 @@
         "KIMI_API_KEY" \
         "${config.sops.secrets.kimi_api_key.path}"
       render_provider_env \
-        "$provider_dir/minimax-direct.env" \
+        "$provider_dir/minimax.env" \
         "MINIMAX_API_KEY" \
         "${config.sops.secrets.minimax_api_key.path}"
       render_provider_env \

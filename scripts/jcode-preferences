@@ -11,7 +11,12 @@ from pathlib import Path
 
 
 MANAGED_SECTIONS = ("provider", "auth", "features", "agents")
-MANAGED_PROFILES = ("llm-gateway", "minimax-direct", "ollama-cloud", "byteplus-ark")
+MANAGED_PROFILES = ("llm-gateway", "ollama-cloud", "byteplus-ark")
+# Profiles this script used to own and now removes from the live config.
+# minimax-direct duplicated J-Code's built-in `minimax` provider (same
+# api.minimax.io endpoint and MINIMAX_API_KEY); the built-in's China endpoint is
+# opt-in only (JCODE_MINIMAX_CN=1), so the separate name is no longer needed.
+RETIRED_PROFILES = ("minimax-direct",)
 SECTION_HEADER = re.compile(r"^\s*(\[\[?)([^\]]+)(\]\]?)\s*(?:#.*)?$")
 KEY = re.compile(r"^\s*([A-Za-z0-9_-]+)\s*=")
 
@@ -186,10 +191,14 @@ def render_profile(name: str, profile: dict) -> list[str]:
     return output
 
 
-def is_managed_profile(name: str | None) -> bool:
+def is_profile_section(name: str | None, profiles: tuple[str, ...]) -> bool:
     if name is None:
         return False
-    return any(name == f"providers.{profile}" or name.startswith(f"providers.{profile}.") for profile in MANAGED_PROFILES)
+    return any(name == f"providers.{profile}" or name.startswith(f"providers.{profile}.") for profile in profiles)
+
+
+def is_managed_profile(name: str | None) -> bool:
+    return is_profile_section(name, MANAGED_PROFILES)
 
 
 def apply_preferences(source: Path, target: Path) -> None:
@@ -204,6 +213,8 @@ def apply_preferences(source: Path, target: Path) -> None:
     profile_block = [line for name in MANAGED_PROFILES for line in ([""] if name != MANAGED_PROFILES[0] else []) + render_profile(name, profiles[name])]
 
     for name, chunk in chunks(original.splitlines()):
+        if is_profile_section(name, RETIRED_PROFILES):
+            continue
         if is_managed_profile(name):
             if not profile_inserted:
                 if output and output[-1]:

@@ -17,6 +17,9 @@ _run_repo_vcs() {
 # Hermetic Forgejo HTTPS: unit tests must not require live OpenBao or tea.
 # run_forgejo_https still injects credential.helper= + the token helper.
 export DOTFILES_FORGEJO_TOKEN="${DOTFILES_FORGEJO_TOKEN:-dotfiles-test-token}"
+# Pin the HTTPS transport for the cases below; on-cluster hosts resolve git.svc,
+# so `auto` would otherwise pick SSH. The transport cases further down cover it.
+export DOTFILES_FORGEJO_TRANSPORT=https
 
 tmp="$(mktemp -d)"
 trap 'rm -rf -- "$tmp"' EXIT
@@ -86,6 +89,57 @@ if grep -Fq -- "$DOTFILES_FORGEJO_TOKEN" "$amend_log"; then
 	exit 1
 fi
 grep -Fq -- "-C $root for-each-ref --contains HEAD --format=%(refname) refs/remotes/origin" "$amend_log"
+
+# Forgejo transport. SSH to git.svc needs no token at all: no credential helper,
+# no OpenBao read (its http:// listener crosses sites in cleartext), nothing
+# token-shaped in any process. A fake `bao` proves the token path never runs.
+mkdir -p "$tmp/fakebao"
+printf '#!/usr/bin/env bash\ntouch "%s/bao-called"\nexit 1\n' "$tmp" >"$tmp/fakebao/bao"
+chmod 0755 "$tmp/fakebao/bao"
+transport_case() { # <label> <expect: ssh|https> <env assignments...>
+	local label="$1" expect="$2" log="$tmp/transport-$1.log"
+	shift 2
+	rm -f "$tmp/bao-called"
+	if ! env -u BASH_ENV -u DOTFILES_FORGEJO_TOKEN PATH="$tmp/fakebao:$PATH" AMEND_LOG="$log" SE_GIT_BIN="$tmp/amend/git" "$@" \
+		"$root/scripts/repo-vcs.sh" amend 'fix(vcs): transport' >"$tmp/transport-$label.out" 2>"$tmp/transport-$label.err"; then
+		if [[ "$expect" == ssh ]]; then
+			printf 'forgejo transport %s: amend failed\n' "$label" >&2
+			cat "$tmp/transport-$label.err" >&2
+			exit 1
+		fi
+	fi
+	if [[ "$expect" == ssh ]]; then
+		grep -Fq -- "-C $root fetch --prune git@git.svc:mhugo/dotfiles.git +refs/heads/" "$log" || {
+			printf 'forgejo transport %s: expected SSH fetch from git@git.svc\n' "$label" >&2
+			exit 1
+		}
+		! grep -Fq -- 'credential.helper' "$log" || {
+			printf 'forgejo transport %s: SSH must not register a credential helper\n' "$label" >&2
+			exit 1
+		}
+		[[ ! -e "$tmp/bao-called" ]] || {
+			printf 'forgejo transport %s: SSH must not read a token from OpenBao\n' "$label" >&2
+			exit 1
+		}
+	else
+		# No token source exists here (fake bao fails, token env unset), so the
+		# HTTPS path must be the one that refused.
+		grep -Fq 'run_forgejo_https: no token found' "$tmp/transport-$label.err" || {
+			printf 'forgejo transport %s: expected the HTTPS token path\n' "$label" >&2
+			cat "$tmp/transport-$label.err" >&2
+			exit 1
+		}
+	fi
+}
+transport_case explicit-ssh ssh DOTFILES_FORGEJO_TRANSPORT=ssh HOME="$tmp"
+transport_case auto-resolvable ssh DOTFILES_FORGEJO_TRANSPORT=auto DOTFILES_FORGEJO_SSH_PROBE_HOST=localhost HOME="$tmp"
+transport_case auto-unresolvable https DOTFILES_FORGEJO_TRANSPORT=auto DOTFILES_FORGEJO_SSH_PROBE_HOST=dotfiles-no-such-host.invalid HOME="$tmp"
+if env -u BASH_ENV DOTFILES_FORGEJO_TRANSPORT=carrier-pigeon SE_GIT_BIN="$tmp/amend/git" AMEND_LOG="$tmp/transport-bad.log" \
+	"$root/scripts/repo-vcs.sh" amend 'fix(vcs): transport' >/dev/null 2>"$tmp/transport-bad.err"; then
+	printf 'an unknown DOTFILES_FORGEJO_TRANSPORT must be refused\n' >&2
+	exit 1
+fi
+grep -Fq 'DOTFILES_FORGEJO_TRANSPORT must be auto, ssh or https' "$tmp/transport-bad.err"
 
 amend_blocked_log="$tmp/amend-blocked.log"
 if REMOTE_CONTAINS_HEAD=1 AMEND_LOG="$amend_blocked_log" SE_GIT_BIN="$tmp/amend/git" _run_repo_vcs "$root/bin/repo" vcs amend 'fix(vcs): safe help' >"$tmp/amend-blocked.out" 2>"$tmp/amend-blocked.err"; then
@@ -333,7 +387,7 @@ grep -Fq -- ':refs/heads/chore/retire-infra-centralcloud-com' "$remote_only_log"
 # shellcheck disable=SC2016
 github_push_line="$(grep -n 'push "$github_url" HEAD:main' "$root/scripts/repo-vcs.sh" | cut -d: -f1)"
 # shellcheck disable=SC2016
-forgejo_push_line="$(grep -n 'push "$forgejo_https_url" HEAD:main' "$root/scripts/repo-vcs.sh" | cut -d: -f1)"
+forgejo_push_line="$(grep -n 'push "$forgejo_url" HEAD:main' "$root/scripts/repo-vcs.sh" | cut -d: -f1)"
 [[ "$github_push_line" -lt "$forgejo_push_line" ]] || {
 	printf 'land must converge GitHub before triggering the Forgejo mirror\n' >&2
 	exit 1

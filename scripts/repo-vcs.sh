@@ -8,6 +8,12 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 remote_ssh="${DOTFILES_GIT_SSH_COMMAND:-ssh -o ControlMaster=no -o ControlPath=none -o ControlPersist=no}"
 forgejo_https_url="${DOTFILES_FORGEJO_HTTPS_URL:-https://git.centralcloud.net/mhugo/dotfiles.git}"
+# On-cluster hosts reach Forgejo's SSH service as git.svc. SSH authenticates
+# with the operator key, so no token is read, handed to a credential helper, or
+# fetched from OpenBao (whose http:// listener crosses sites unencrypted). Off
+# cluster, git.svc does not resolve and `auto` falls back to token HTTPS.
+forgejo_ssh_url="${DOTFILES_FORGEJO_SSH_URL:-git@git.svc:mhugo/dotfiles.git}"
+forgejo_ssh_probe_host="${DOTFILES_FORGEJO_SSH_PROBE_HOST:-git.svc}"
 github_url="git@github.com:mikkihugo/dotfiles.git"
 push_timeout="${DOTFILES_GIT_PUSH_TIMEOUT:-300}"
 git_bin="${SE_GIT_BIN:-}"
@@ -24,6 +30,26 @@ fi
 # intentionally resolve `git` to a refusal shim; every backend call uses the
 # pinned executable selected above instead.
 git() { "$git_bin" "$@"; }
+
+case "${DOTFILES_FORGEJO_TRANSPORT:-auto}" in
+ssh | https) forgejo_transport="$DOTFILES_FORGEJO_TRANSPORT" ;;
+auto)
+	if getent hosts "$forgejo_ssh_probe_host" >/dev/null 2>&1; then
+		forgejo_transport=ssh
+	else
+		forgejo_transport=https
+	fi
+	;;
+*)
+	printf 'dotfiles-vcs: DOTFILES_FORGEJO_TRANSPORT must be auto, ssh or https, got %s\n' "$DOTFILES_FORGEJO_TRANSPORT" >&2
+	exit 1
+	;;
+esac
+if [[ "$forgejo_transport" == ssh ]]; then
+	forgejo_url="$forgejo_ssh_url"
+else
+	forgejo_url="$forgejo_https_url"
+fi
 
 [[ "$push_timeout" =~ ^[1-9][0-9]*$ ]] || {
 	printf 'dotfiles-vcs: DOTFILES_GIT_PUSH_TIMEOUT must be a positive integer\n' >&2
@@ -105,6 +131,16 @@ run_forgejo_https() {
 	DOTFILES_FORGEJO_HELPER_TOKEN="$token" "${prefix[@]}" "$git_bin" -c credential.helper= -c "credential.helper=$forgejo_https_helper" "${suffix[@]}" || result=$?
 	return "$result"
 }
+# Run one Git command against Forgejo over the selected transport. Callers pass
+# "$forgejo_url"; SSH needs only the facade's no-master ssh command.
+run_forgejo() {
+	if [[ "$forgejo_transport" == ssh ]]; then
+		run_remote "$@"
+	else
+		run_forgejo_https "$@"
+	fi
+}
+
 # Contract for the forgejo-https credential helper: this expression must
 # print exactly two lines (username, password) on git's credential prompt,
 # and the password line must match the token stored in bao (preferred) or
@@ -135,10 +171,10 @@ forgejo_https_credential_helper_check() {
 	printf 'forgejo-https credential helper: ok\n'
 }
 fetch_forgejo_main() {
-	run_forgejo_https git -C "$1" fetch "$forgejo_https_url" '+refs/heads/main:refs/remotes/origin/main'
+	run_forgejo git -C "$1" fetch "$forgejo_url" '+refs/heads/main:refs/remotes/origin/main'
 }
 fetch_forgejo_pruned() {
-	run_forgejo_https git -C "$1" fetch --prune "$forgejo_https_url" '+refs/heads/*:refs/remotes/origin/*'
+	run_forgejo git -C "$1" fetch --prune "$forgejo_url" '+refs/heads/*:refs/remotes/origin/*'
 }
 valid_name() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid worktree name: $1"; }
 # Leftover refs are namespaced (chore/*, fix/*, …). The slash keeps main and
@@ -404,9 +440,9 @@ push)
 	# first so Forgejo's post-receive mirror is already converged and cannot
 	# hold the client until the publication timeout.
 	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" main
-	run_forgejo_https timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_https_url" main
+	run_forgejo timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_url" main
 	local_revision="$(git -C "$root" rev-parse main)"
-	forgejo_revision="$(run_forgejo_https timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_https_url" refs/heads/main | cut -f1)"
+	forgejo_revision="$(run_forgejo timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
 	[[ "$local_revision" == "$forgejo_revision" ]] || die "Forgejo remote readback mismatch"
 	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"
@@ -436,9 +472,9 @@ land)
 	"$root/scripts/repo-check.sh"
 	# Keep the server-side Forgejo mirror a no-op during its post-receive hook.
 	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" HEAD:main
-	run_forgejo_https timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_https_url" HEAD:main
+	run_forgejo timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_url" HEAD:main
 	local_revision="$(git -C "$root" rev-parse HEAD)"
-	forgejo_revision="$(run_forgejo_https timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_https_url" refs/heads/main | cut -f1)"
+	forgejo_revision="$(run_forgejo timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
 	[[ "$local_revision" == "$forgejo_revision" ]] || die 'Forgejo remote readback mismatch'
 	[[ "$local_revision" == "$github_revision" ]] || die 'GitHub remote readback mismatch'
@@ -537,7 +573,7 @@ branch-retire)
 		github_present=true
 	fi
 	if [[ "$forgejo_present" == true ]]; then
-		run_forgejo_https timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_https_url" ":refs/heads/$ref"
+		run_forgejo timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_url" ":refs/heads/$ref"
 	fi
 	if [[ "$github_present" == true ]]; then
 		GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" ":refs/heads/$ref"

@@ -57,6 +57,7 @@ in {
     ./modules/dotfiles-auto-update.nix
     ./modules/sshid-key-sync.nix
     ./modules/mise-auto-update.nix
+    ./modules/grok-leader.nix
     ./modules/tailscale.nix
     ./modules/wezterm.nix
   ];

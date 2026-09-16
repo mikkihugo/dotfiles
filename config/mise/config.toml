@@ -29,7 +29,9 @@
 "npm:@playwright/mcp" = { version = "latest", trust_policy_excludes = ["@playwright/mcp@0.0.80", "playwright@1.63.0-alpha-2026-08-31", "playwright-core@1.63.0-alpha-2026-08-31"] }
 gcloud = "latest"
 "npm:firebase-tools" = "latest"
-python = "latest"
+# Python is NOT managed by mise: Home Manager + flake.nix ship nixpkgs python3.
+# The mise-built interpreter could not import bz2 (libbz2.so.1 dlopen miss) and
+# sat ahead of nixpkgs on PATH via shims. Uninstalled by activation.
 java = "latest"
 crush = "latest"
 opencode = "latest"

@@ -243,22 +243,11 @@
           go # build and validate local Go tools
           cargo # build and validate local Rust tools
           nodejs # run Node contract tests from the canonical repo check
-          python3 # run Python preference/configuration contract tests
+          python3 # nixpkgs interpreter for repo-check Python tests (not mise)
           just # operator entrypoints for dotfiles maintenance tasks
           nix-fast-build # parallel activation evaluation/build for `just check`
-          gnumake # required by the managed mise/python-build when tracking python@latest
+          gnumake # native builds in the maintenance shell
           pkg-config # native dependency discovery for rust crates when needed
-          openssl # CPython ssl/hashlib modules for mise/python-build
-          zlib # CPython zlib module; ensurepip needs this to unpack pip wheels
-          bzip2 # CPython bz2 module
-          xz # CPython lzma module
-          zstd # CPython zstd module
-          libffi # CPython ctypes module
-          readline # CPython readline module
-          sqlite # CPython sqlite3 module
-          ncurses # CPython curses/readline terminal support
-          gdbm # CPython dbm module
-          tk # CPython tkinter module
           sops # encrypt/decrypt secrets/api-keys.yaml
           age # age key generation and encryption backend
           ssh-to-age # derive age public key from SSH ed25519 key

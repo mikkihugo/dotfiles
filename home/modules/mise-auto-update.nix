@@ -1,45 +1,24 @@
-{
-  lib,
-  pkgs,
-  ...
-}: let
-  pythonBuildDeps = with pkgs; [
-    openssl
-    zlib
-    bzip2
-    xz
-    zstd
-    libffi
-    readline
-    sqlite
-    ncurses
-    gdbm
-    tcl
-    tk
-  ];
-  buildPath = lib.makeBinPath ([pkgs.gnumake pkgs.pkg-config pkgs.gcc] ++ pythonBuildDeps);
-  includeFlags = lib.concatMapStringsSep " " (dep: "-I${lib.getDev dep}/include") pythonBuildDeps;
-  libraryFlags = lib.concatMapStringsSep " " (dep: "-L${lib.getLib dep}/lib -Wl,-rpath,${lib.getLib dep}/lib") pythonBuildDeps;
-  pkgConfigPath = lib.concatStringsSep ":" [
-    (lib.makeSearchPath "lib/pkgconfig" (map lib.getDev pythonBuildDeps))
-    (lib.makeSearchPath "share/pkgconfig" (map lib.getDev pythonBuildDeps))
-  ];
+{pkgs, ...}: let
   updateScript = pkgs.writeShellScript "mise-auto-update" ''
     set -euo pipefail
 
     export HOME="/home/mhugo"
     export MISE_YES=1
     export MISE_JOBS=4
-    export PATH="${pkgs.mise}/bin:$HOME/.local/share/mise/shims:${buildPath}:${pkgs.coreutils}/bin:${pkgs.bash}/bin:$PATH"
-    export NIX_CFLAGS_COMPILE="${includeFlags} ''${NIX_CFLAGS_COMPILE:-}"
-    export NIX_LDFLAGS="${libraryFlags} ''${NIX_LDFLAGS:-}"
-    export PKG_CONFIG_PATH="${pkgConfigPath}''${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    export PATH="${pkgs.mise}/bin:${pkgs.python3}/bin:${pkgs.coreutils}/bin:${pkgs.bash}/bin:$PATH"
 
     mise_bin="${pkgs.mise}/bin/mise"
     if [ ! -x "$mise_bin" ]; then
       echo "mise-auto-update: mise missing at $mise_bin" >&2
       exit 0
     fi
+
+    # Python is nixpkgs-owned. Drop any leftover mise python so shims cannot
+    # shadow ~/.nix-profile/bin/python3 on the next login.
+    "$mise_bin" uninstall python --all --yes >/dev/null 2>&1 || true
+    ${pkgs.coreutils}/bin/rm -f \
+      "$HOME/.local/share/mise/shims/python" \
+      "$HOME/.local/share/mise/shims/python3"
 
     "$mise_bin" install --yes
     "$mise_bin" upgrade --yes

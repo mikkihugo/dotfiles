@@ -1,3 +1,4 @@
+# shellcheck shell=sh
 # Common environment variables for all shells
 # This file should use POSIX-compatible syntax
 
@@ -17,7 +18,8 @@ export HISTFILESIZE=20000
 # Mise/ASDF compatibility
 export MISE_SHELL="$SHELL"
 export MISE_EXPERIMENTAL=1
-export MISE_ECOSYSTEM_PYTHON=1
+# python3 is nixpkgs (Home Manager + flake), not mise. Do not export an
+# ecosystem-python flag — that made tools prefer the broken mise interpreter.
 
 # Rust
 export CARGO_HOME="$HOME/.cargo"
@@ -38,6 +40,7 @@ export BAT_THEME="OneHalfDark"
 export FD_THREADS=4
 
 # GPG
+# shellcheck disable=SC2155,SC2046
 export GPG_TTY=$(tty)
 
 # XDG Base Directories

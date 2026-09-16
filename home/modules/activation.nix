@@ -17,6 +17,17 @@ in {
     # before attempting closure; dirty lanes then held a fresh lease until TTL.
     # JCode terminal cleanup owns normal lease release, so activation must only
     # remove this legacy timer and never mutate a workspace itself.
+    # Python is nixpkgs (packages.nix + flake). Drop leftover mise python so
+    # shims cannot keep winning PATH after this generation.
+    retireMisePython = lib.hm.dag.entryAfter ["installPackages"] ''
+      if [ -x ${pkgs.mise}/bin/mise ]; then
+        ${pkgs.mise}/bin/mise uninstall python --all --yes >/dev/null 2>&1 || true
+      fi
+      ${pkgs.coreutils}/bin/rm -f \
+        "$HOME/.local/share/mise/shims/python" \
+        "$HOME/.local/share/mise/shims/python3"
+    '';
+
     retireUnsafeJcodeLaneSettle = lib.hm.dag.entryBefore ["reloadSystemd"] ''
       timer_load_state="$(${pkgs.systemd}/bin/systemctl --user show --property=LoadState --value jcode-lane-settle.timer)"
       if [ "$timer_load_state" != "not-found" ]; then

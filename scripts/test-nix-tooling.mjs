@@ -477,13 +477,27 @@ test("Home Manager uses the nixpkgs mise package without a private overlay", asy
   assert.match(updater, /"\$mise_bin" upgrade --yes/);
   assert.match(packages, /^\s*gnumake\b/m);
   assert.match(packages, /^\s*pkg-config\b/m);
-  assert.match(updater, /NIX_CFLAGS_COMPILE/);
-  assert.match(updater, /NIX_LDFLAGS/);
-  assert.match(updater, /-Wl,-rpath,/);
-  assert.match(updater, /PKG_CONFIG_PATH/);
-  assert.match(updater, /share\/pkgconfig/);
-  assert.match(updater, /^\s*tcl\b/m);
+  assert.match(packages, /^\s*python3\b/m);
+  assert.match(updater, /uninstall python --all --yes/);
+  assert.doesNotMatch(updater, /pythonBuildDeps|NIX_CFLAGS_COMPILE|NIX_LDFLAGS/);
   assert.doesNotMatch(updater, /nix develop|just mise-upgrade/);
+});
+
+test("daily python3 is nixpkgs, not mise", async () => {
+  const mise = await source("config/mise/config.toml");
+  const env = await source("config/common/env.sh");
+  const packages = await source("home/modules/packages.nix");
+  const flake = await source("flake.nix");
+  const updater = await source("home/modules/mise-auto-update.nix");
+  const activation = await source("home/modules/activation.nix");
+
+  assert.doesNotMatch(mise, /^\s*python\s*=/m);
+  assert.doesNotMatch(env, /^export MISE_ECOSYSTEM_PYTHON=/m);
+  assert.match(packages, /^\s*python3\b/m);
+  assert.match(flake, /^\s*python3\b/m);
+  assert.match(updater, /uninstall python --all --yes/);
+  assert.match(activation, /retireMisePython/);
+  assert.doesNotMatch(flake, /mise\/python-build|python@latest/);
 });
 
 test("Home Manager activation uses the non-deprecated nix profile command", async () => {

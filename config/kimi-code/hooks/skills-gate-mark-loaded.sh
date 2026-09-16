@@ -12,7 +12,7 @@ set -uo pipefail
 
 input="$(cat)"
 sid="$(printf '%s' "$input" | jq -r '.session_id // ""')"
-name="$(printf '%s' "$input" | jq -r '.tool_input.name // .tool_input.arguments.name // ""')"
+name="$(printf '%s' "$input" | jq -r '.tool_input.name // .tool_input.skill // .tool_input.arguments.name // ""')"
 
 [ -z "$sid" ] && exit 0
 [ -z "$name" ] && exit 0

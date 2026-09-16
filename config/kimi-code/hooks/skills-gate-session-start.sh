@@ -43,7 +43,13 @@ emit_failure() {
 	exit 0
 }
 
-SKILL="${HOME}/.claude/skills/using-skills/SKILL.md"
+# Prefer the Purpose Tool canonical projection (~/.agents/skills, refreshed by
+# purpose-sync-host-skills); fall back to the client-local copy. The managed
+# block doctrine makes ~/.agents the source of truth and client copies
+# projections only — reading the projection first keeps the gate on canonical
+# bytes even when a client copy drifts or is removed.
+SKILL="${HOME}/.agents/skills/using-skills/SKILL.md"
+[ -r "$SKILL" ] || SKILL="${HOME}/.claude/skills/using-skills/SKILL.md"
 
 if [ ! -r "$SKILL" ]; then
 	emit_failure "skills gate: cannot read ${SKILL} — using-skills was NOT injected this session"

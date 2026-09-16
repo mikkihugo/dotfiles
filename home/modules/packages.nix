@@ -54,6 +54,13 @@
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
     gnumake # source builds used by mise backends such as python-build
+    # python3: the host's only interpreter used to be the one mise built from
+    # source, whose `_bz2` extension could not resolve `libbz2.so.1` at dlopen
+    # time (`import bz2` -> ImportError). That broke every mise source build,
+    # because mise's own build scripts import bz2. A nixpkgs python3 is linked
+    # against its own bzip2/lzma/sqlite closure, so its stdlib is complete and
+    # independent of nix-ld search paths.
+    python3
     pkg-config # native library discovery for mise-managed source builds
     go # build local Go tools
     pnpm # fast, disk-efficient Node package manager

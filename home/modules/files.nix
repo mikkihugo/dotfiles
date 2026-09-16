@@ -248,6 +248,21 @@
       executable = true;
       force = true;
     };
+    ".copilot/hooks/skills-gate-pretooluse.sh" = {
+      source = ../../config/copilot/hooks/skills-gate-pretooluse.sh;
+      executable = true;
+      force = true;
+    };
+    ".copilot/hooks/skills-gate-mark-loaded.sh" = {
+      source = ../../config/copilot/hooks/skills-gate-mark-loaded.sh;
+      executable = true;
+      force = true;
+    };
+    ".cursor/hooks/skills-gate-session-start.sh" = {
+      source = ../../config/copilot/hooks/skills-gate-session-start.sh;
+      executable = true;
+      force = true;
+    };
 
     # Claude-only lifecycle hooks. Hand-installed 2026-07/08 and never migrated
     # into HM-managed wiring until now: settings.json referenced them while
@@ -291,8 +306,8 @@
     #
     # Client-agnostic on purpose -- it selects its output shape per harness
     # (SKILLS_GATE_SHAPE=claude|cursor|sdk), so the same file serves every CLI
-    # coder. Only .claude is wired so far; the other clients each need their own
-    # registration in their own config format.
+    # coder. Claude, Copilot, and Cursor SessionStart registrations are live;
+    # remaining clients still need their own config-format wiring.
     ".claude/hooks/skills-gate-session-start.sh" = {
       source = ../../config/claude/hooks/skills-gate-session-start.sh;
       executable = true;
@@ -442,6 +457,10 @@
 
     ".cursor/hooks.json" = {
       source = ../../config/cursor/hooks.json;
+      force = true;
+    };
+    ".cursor/rules/engine-swarm-bus.mdc" = {
+      source = ../../config/cursor/rules/engine-swarm-bus.mdc;
       force = true;
     };
 

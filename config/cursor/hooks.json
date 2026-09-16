@@ -13,6 +13,10 @@
       {
         "command": "test ! -f /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs || node /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs",
         "timeout": 10
+      },
+      {
+        "command": "/home/mhugo/.cursor/hooks/skills-gate-session-start.sh",
+        "timeout": 10
       }
     ],
     "beforeSubmitPrompt": [

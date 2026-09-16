@@ -7,6 +7,12 @@
         "exec": "/home/mhugo/.nix-profile/bin/bash",
         "args": ["/home/mhugo/.copilot/hooks/coordination-mailbox-sweep.sh", "copilot", "sessionStart"],
         "timeoutSec": 10
+      },
+      {
+        "type": "command",
+        "exec": "/home/mhugo/.nix-profile/bin/bash",
+        "args": ["/home/mhugo/.copilot/hooks/skills-gate-session-start.sh"],
+        "timeoutSec": 10
       }
     ],
     "userPromptTransformed": [

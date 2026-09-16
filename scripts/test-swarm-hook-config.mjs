@@ -34,6 +34,11 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
   // {type:command, command, timeout}); wire the assertion accordingly.
   const COPIOT_SHIM = "/home/mhugo/.copilot/hooks/coordination-mailbox-sweep.sh";
   assert.deepEqual(copilot.hooks.sessionStart[0].args, [COPIOT_SHIM, "copilot", "sessionStart"]);
+  assert.equal(
+    copilot.hooks.sessionStart[1].args[0],
+    "/home/mhugo/.copilot/hooks/skills-gate-session-start.sh",
+    "Copilot sessionStart must inject using-skills, not mailbox-only",
+  );
   assert.deepEqual(copilot.hooks.userPromptTransformed[0].args, [COPIOT_SHIM, "copilot", "userPromptTransformed"]);
   assert.doesNotMatch(JSON.stringify(copilot.hooks), /swarm-messages\.mjs copilot/);
 
@@ -43,6 +48,11 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
   // coordination-mailbox-sweep.mjs (same successor codex/claude/kimi/copilot use).
   // Identity is cursor-<short CURSOR_CONVERSATION_ID>, not a sha256 of the full id.
   assert.match(JSON.stringify(cursor.hooks.sessionStart), /coordination-mailbox-sweep\.mjs cursor sessionStart/);
+  assert.match(
+    JSON.stringify(cursor.hooks.sessionStart),
+    /skills-gate-session-start\.sh/,
+    "Cursor sessionStart must run skills-gate (additional_context), not only purpose-tool session-start.mjs",
+  );
   assert.match(JSON.stringify(cursor.hooks.beforeSubmitPrompt), /coordination-mailbox-sweep\.mjs cursor beforeSubmitPrompt/);
   assert.doesNotMatch(JSON.stringify(cursor.hooks), /swarm-messages\.mjs cursor/);
 
@@ -116,6 +126,10 @@ test("copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered
   const userPromptTransformed = JSON.stringify(copilot.hooks.userPromptTransformed);
   const SHIM = "/home/mhugo/.copilot/hooks/coordination-mailbox-sweep.sh";
   assert.deepEqual(copilot.hooks.sessionStart[0].args, [SHIM, "copilot", "sessionStart"]);
+  assert.equal(
+    copilot.hooks.sessionStart[1].args[0],
+    "/home/mhugo/.copilot/hooks/skills-gate-session-start.sh",
+  );
   assert.deepEqual(copilot.hooks.userPromptTransformed[0].args, [SHIM, "copilot", "userPromptTransformed"]);
   assert.doesNotMatch(sessionStart, /swarm-messages\.mjs copilot/);
   assert.doesNotMatch(userPromptTransformed, /swarm-messages\.mjs copilot/);
@@ -564,4 +578,19 @@ test("host-hook mirror no-ops on hash match and replaces on mismatch", async () 
     await rm(engine, { recursive: true, force: true });
     await rm(destHome, { recursive: true, force: true });
   }
+});
+
+test("copilot instructions never teach recipient=all and Home Manager installs Copilot/Cursor skills-gate files", async () => {
+  const instructions = await readFile("config/copilot/copilot-instructions.md", "utf8");
+  assert.match(instructions, /Never default `recipient=all`/);
+  assert.doesNotMatch(
+    instructions,
+    /with\s+`recipient=all`/,
+    "live Copilot prompt must not post recipient=all after the mailbox SSOT forbids it",
+  );
+  const files = await readFile("home/modules/files.nix", "utf8");
+  assert.match(files, /\.copilot\/hooks\/skills-gate-session-start\.sh/);
+  assert.match(files, /\.copilot\/hooks\/skills-gate-pretooluse\.sh/);
+  assert.match(files, /\.copilot\/hooks\/skills-gate-mark-loaded\.sh/);
+  assert.match(files, /\.cursor\/hooks\/skills-gate-session-start\.sh/);
 });

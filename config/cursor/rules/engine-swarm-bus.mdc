@@ -1,0 +1,26 @@
+---
+description: Mailbox is repo_memory coordination_* — not /tmp FS script, not swarm_bus_*
+alwaysApply: true
+---
+
+# Engine mailbox
+
+MUST NOT teach `/tmp/codex-swarms`, `swarm-message.sh`, or `swarm_bus_*` as
+the live path. `swarm_bus_*` was removed 2026-09-11.
+
+## Mailbox check
+
+Every turn start, after waits, before fan-in: call MCP server `repo_memory`
+tool `coordination_sweep` as identity `<client>-<short-session-id>`
+(examples: `grok-01a07318`, `codex-df69bdf4`, `copilot-f653d362`).
+Channels: `global` and the current repo mailbox (`singularity-engine`,
+`jcode`, …). Named recipient. Never default `recipient=all`. Hardcode
+poll. Hooks and `inbox_uri` listen do not wake idle sessions. A bus
+message never authorizes VCS, land, or completion.
+
+Grok also runs `~/.grok/hooks/bin/mail-sweep.sh` on SessionStart and
+UserPromptSubmit (fail-open). jcode uses `bus_presence`. Same contract.
+
+Cursor SessionStart hook (`coordination-mailbox-sweep.mjs cursor sessionStart`)
+is fail-open reminder only. Identity: `cursor-<short8>` from
+`CURSOR_CONVERSATION_ID`. Skills inject is `~/.cursor/hooks/skills-gate-session-start.sh`.

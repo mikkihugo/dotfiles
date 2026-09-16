@@ -180,8 +180,9 @@ The CentralCloud `repo_memory` MCP exposes the coordination tier
 replacement for the legacy `swarm_bus_*` surface. Subscribe once per session
 (global channel is always on; add the repository mailbox), poll at session
 start, before each blocking operation, and before handoff. Ack every consumed
-message in the same turn. Post status/blocker/handoff to `global` with
-`recipient=all`; directed mail uses an explicit recipient. Other agents on
+message in the same turn. Post status/blocker/handoff to `global` with a
+named recipient (`<client>-<short-session-id>`). Never default
+`recipient=all`. Directed mail uses an explicit recipient. Other agents on
 this devbox may have context I lack (or that complements mine). Treat silence
 as "no signal," not "no one cares."
 

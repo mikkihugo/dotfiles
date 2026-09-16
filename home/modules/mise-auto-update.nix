@@ -22,6 +22,13 @@
 
     "$mise_bin" install --yes
     "$mise_bin" upgrade --yes
+
+    # install/upgrade read ~/.config/mise/config.toml, which may still be a
+    # symlink to a stale ~/.dotfiles checkout that pins python=latest.
+    "$mise_bin" uninstall python --all --yes >/dev/null 2>&1 || true
+    ${pkgs.coreutils}/bin/rm -f \
+      "$HOME/.local/share/mise/shims/python" \
+      "$HOME/.local/share/mise/shims/python3"
   '';
 in {
   systemd.user.services.mise-auto-update = {

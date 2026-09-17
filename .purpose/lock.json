@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "updatedAt": "2026-09-07",
-  "memoryBankId": "mhugo-dotfiles",
+  "memoryBankId": "dotfiles",
   "files": {
     "config/codex/AGENTS.md": {
-      "bundleHash": "47440c934104",
-      "instructionHash": "f7f85657c851"
+      "bundleHash": "45158b446bf9",
+      "instructionHash": "08aa3def7d9b"
     }
   }
 }

@@ -1,0 +1,23 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-17-codex-coordination-root-recovery-purpose",
+  "source": { "system": "manual", "repository": ".", "request_id": "2026-09-17-codex-coordination-root-recovery" },
+  "lineage": {
+    "origin": { "kind": "request", "id": "mhugo-2026-09-17-go", "revision": "1" },
+    "objective": { "id": "codex-coordination-recovery", "statement": "Make automatic Codex coordination use its proven owned session and retain secure capability replay.", "measure": "The hook sends its Codex root session rather than the foreign bare principal." },
+    "need": { "id": "foreign-bare-session", "statement": "The automatic hook reuses a foreign-owned bare session.", "stakeholders": ["Codex sessions on cc-se-sto-devbox-01"], "baseline": "Live trace rejected bare session; direct root session succeeded.", "consequence_of_no_action": "Automatic mailbox sweeps remain rejected.", "assumptions": ["The observed root suffix is the intended Codex hook session."], "alternatives_considered": ["Claim the foreign inbox", "Delete the foreign inbox", "Use the observed owned root session"] }
+  },
+  "admission": { "state": "proposed", "producer": { "kind": "agent", "id": "codex-root" }, "reason": "Operator-directed source repair; trusted purpose admission receipt unavailable in this client." },
+  "purpose": "Restore automatic Codex coordination without taking over a foreign inbox.",
+  "consumer": "Codex SessionStart and UserPromptSubmit hooks.",
+  "contract": "When clientLabel is codex, CoordinationBus shall use `${principal}-root` as session and persist/replay capability only for that session.",
+  "failure_boundary": "Hook remains fail-open; it must not log the signed capability or alter foreign bare-session state.",
+  "evidence": [{ "kind": "test", "description": "Codex hook contract test fails on a bare session and passes when subscribe carries the root session." }, { "kind": "runtime", "description": "Activated hook receives a successful root-session sweep without exposing capability text." }],
+  "falsifier": { "claim": "Codex automatic hook uses the owned root session.", "executable_check": { "kind": "test", "command": "node --test config/codex/hooks/coordination-mailbox-sweep.test.mjs", "description": "A bare session assertion or failed root-session test falsifies the contract." } },
+  "non_goals": ["Changing non-Codex clients", "Claiming, deleting, or migrating foreign bare inboxes", "Changing repo-memory server behavior"],
+  "invariants": ["principal remains derived from the Codex identity", "inbox_uri remains secret and is stored in its separate mode-0600 file", "automatic hook stays fail-open"],
+  "assumptions": [{ "statement": "The live successful root session is the intended stable Codex session namespace.", "status": "verified", "doubt": 1, "falsifier": "A focused hook test or live sweep shows root collides or is rejected." }],
+  "run_control": { "autonomous_allowed": true, "risk": "medium", "blast_radius": "local", "reversibility": "easy", "max_active_doubt": 1 },
+  "target_planes": ["tool", "client"],
+  "plane_constraints": ["Home Manager owns deployment; repo-memory owns session authorization."]
+}

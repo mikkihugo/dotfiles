@@ -1,0 +1,17 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-09-17-codex-coordination-root-recovery-work",
+  "purpose_contract_id": "2026-09-17-codex-coordination-root-recovery-purpose",
+  "handover": { "state": "proposed", "producer": { "kind": "agent", "id": "codex-root" }, "reason": "Trusted handover receipt unavailable in this client." },
+  "feature_tree_target": { "kind": "component", "name": "codex-coordination-hook", "status": "in_progress" },
+  "current_spec": { "snapshot_id": "codex-coordination-root-recovery-current-spec", "uri": "current-spec.snapshot.json", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "bee3c0dcf5b19875b4c770b7f4fa1d08ce019113299974df33ba6ddc1e63c7c8" } },
+  "requirement_delta": { "added": [{ "id": "R1", "statement": "When the shared adapter is invoked as Codex, it shall send the root-suffixed owned session for every coordination request.", "acceptance_criteria": ["Subscribe test observes session codex-abcd1234-root", "Other clients retain their bare session"], "requirement_form": { "ears": { "pattern": "ubiquitous", "system": "Codex CoordinationBus", "response": "use root-suffixed session identity" } }, "breaker": { "breaker_id": "B1", "condition": "a Codex request contains bare session", "witness_kind": "contract-test", "expected": "rejected" }, "risk": "medium", "source": "purpose_contract" }], "modified": [], "removed": [], "renamed": [] },
+  "requirements": [{ "id": "R1", "statement": "When the shared adapter is invoked as Codex, it shall send the root-suffixed owned session for every coordination request.", "acceptance_criteria": ["Subscribe test observes session codex-abcd1234-root", "Other clients retain their bare session"], "requirement_form": { "ears": { "pattern": "ubiquitous", "system": "Codex CoordinationBus", "response": "use root-suffixed session identity" } }, "breaker": { "breaker_id": "B1", "condition": "a Codex request contains bare session", "witness_kind": "contract-test", "expected": "rejected" }, "risk": "medium", "source": "purpose_contract" }],
+  "scope": { "allowed": ["docs/work/2026-09-17-codex-coordination-root-recovery/**", "config/codex/hooks/coordination-mailbox-sweep.mjs", "config/codex/hooks/coordination-mailbox-sweep.test.mjs"], "blocked": ["~/.codex/**", "foreign coordination inbox state"], "expected_files": [] },
+  "test_plan": [{ "id": "T1", "requirement_id": "R1", "kind": "contract", "description": "Node fake-client assertion checks Codex root session request shape.", "must_fail_first": true }],
+  "verification_plan": { "commands": ["node --test config/codex/hooks/coordination-mailbox-sweep.test.mjs", "repo test codex-preferences", "repo check"], "evidence_required": ["test", "quality", "falsifier"] },
+  "model_requirements": { "coding": 0.4, "debugging": 0.6 },
+  "run_control": { "autonomous_allowed": true, "approval_required": false, "max_doubt_to_proceed": 1 },
+  "traceability": { "owner": { "kind": "agent", "id": "codex-root" }, "agent_role": "implementer", "source_node_id": "codex-coordination-hook", "target_planes": ["tool", "client"], "dependencies": [], "retry_policy": { "max_attempts": 1, "backoff": "none", "retryable_terminal_reasons": [] }, "dispatch_scope": { "kind": "local" } },
+  "execution_constraints": { "required_capabilities": [], "requested_isolation": "process", "side_effect_policy": "fenced", "expected_artifact_schemas": [], "deterministic_replay_required": true }
+}

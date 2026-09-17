@@ -19,6 +19,7 @@ import {
   dedupeByMessageId,
   deriveIdentity,
   derivePrincipal,
+  deriveCoordinationSession,
   filterUnread,
   isHeartbeat,
   isOwnMessage,
@@ -424,6 +425,11 @@ test("derivePrincipal splits a compound client name (containing its own dash) us
   assert.equal(derivePrincipal(identity, "kimi-code"), "kimicode-abcd1234");
 });
 
+test("deriveCoordinationSession isolates Codex root capability state without changing other clients", () => {
+  assert.equal(deriveCoordinationSession("codex-abcd1234", "codex"), "codex-abcd1234-root");
+  assert.equal(deriveCoordinationSession("claude-abcd1234", "claude"), "claude-abcd1234");
+});
+
 // --- inbox_uri capability persistence ------------------------------------------
 
 test("coordinationInboxPathFor lands in the same directory as cursorPathFor but under a distinct filename", () => {
@@ -557,7 +563,7 @@ function fakeCoordinationClient(responses) {
   };
 }
 
-test("CoordinationBus.subscribe treats ack_watermark-without-inbox_uri as success (the live-observed shape)", async () => {
+test("Codex CoordinationBus.subscribe uses the owned root session and treats ack_watermark-without-inbox_uri as success", async () => {
   const client = fakeCoordinationClient({
     coordination_subscribe: { ack_watermark: 0, channels: ["engine", "global"], created: true, principal: "codex-abcd1234", session: "codex-abcd1234" },
   });
@@ -566,7 +572,7 @@ test("CoordinationBus.subscribe treats ack_watermark-without-inbox_uri as succes
   assert.deepEqual(result, { ack_watermark: 0 });
   assert.equal(client.calls[0].tool, "coordination_subscribe");
   assert.equal(client.calls[0].args.principal, "codex-abcd1234");
-  assert.equal(client.calls[0].args.session, "codex-abcd1234");
+  assert.equal(client.calls[0].args.session, "codex-abcd1234-root");
   assert.ok(!("inbox_uri" in client.calls[0].args), "no inbox_uri hint on the first call -- none is held yet");
 });
 

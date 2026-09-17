@@ -378,8 +378,11 @@ export class CoordinationBus {
     this._channels = new Set(channels);
     this._identity = identity ?? null;
     this._principal = identity ? derivePrincipal(identity, clientLabel) : null;
-    this._session = this._principal; // bare-principal session; see DESIGN's addressing recommendation.
-    this._inboxPath = identity ? coordinationInboxPathFor(identity, env) : null;
+    this._session = deriveCoordinationSession(this._principal, clientLabel);
+    // The capability is bound to one exact session. Codex's historical bare
+    // session may be foreign-owned, so its root session must never reuse that
+    // capability record.
+    this._inboxPath = identity ? coordinationInboxPathFor(this._session, env) : null;
     this._inbox = this._inboxPath ? readCoordinationInbox(this._inboxPath) : emptyCoordinationInbox();
     this._pollCache = null;
     this._pollKnownSession = true;
@@ -390,8 +393,8 @@ export class CoordinationBus {
     this._identity = consumer;
     const label = this._clientLabel ?? consumer.slice(0, Math.max(consumer.indexOf("-"), 0));
     this._principal = derivePrincipal(consumer, label);
-    this._session = this._principal;
-    this._inboxPath = coordinationInboxPathFor(consumer, this.env);
+    this._session = deriveCoordinationSession(this._principal, label);
+    this._inboxPath = coordinationInboxPathFor(this._session, this.env);
     this._inbox = readCoordinationInbox(this._inboxPath);
   }
 
@@ -818,6 +821,17 @@ export function derivePrincipal(identity, client) {
   // dash-strip: a client label like "kimi-code" would otherwise rebuild an
   // invalid "kimi-code-<token>" principal.
   return `${client.replace(/-/g, "")}-${token}`;
+}
+
+/**
+ * Select the exact coordination session owned by one hook consumer.
+ *
+ * Codex's bare principal session is legacy and may belong to another
+ * connection. The root hook session is deliberately separate; every other
+ * client retains its established principal-shaped session.
+ */
+export function deriveCoordinationSession(principal, client) {
+  return client === "codex" ? `${principal}-root` : principal;
 }
 
 // --- cursor persistence (DELIVER 2) -----------------------------------------

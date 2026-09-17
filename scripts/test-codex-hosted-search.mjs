@@ -44,6 +44,9 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
   const activation = await readConfig("home/modules/activation.nix");
   const expectedResidentFiles = [
     "default.toml",
+    "implementer.toml",
+    "reviewer.toml",
+    "scout.toml",
     "singularity-engine-harvester.toml",
     "taxonomy-validator.toml",
     "taxonomy-worker.toml",

@@ -39,6 +39,15 @@ Load `using-skills`, then `purpose-first`. Full doctrine:
 
 Done: named purpose, named consumer, proof run (failed first for a behavior
 change), evidence on disk, named falsifier.
+
+## Subagent routing
+
+At every `spawn_agent` call, select and state the least-cost capable model and
+reasoning effort. Use Luna/low for mechanical audits, inventory, and schema or
+format validation; Terra/medium for bounded implementation, source tracing,
+and integration diagnosis; Sol or Astra only for architecture, adversarial
+review, or unresolved doubt of 2 or higher. Never silently use the default
+model for delegated work.
 """
 # Hosted web search boundary (see config/codex/AGENTS.md): llm-gateway models
 # must set web_search = "disabled" until the gateway has a verified
@@ -77,6 +86,18 @@ memories = false
 [memories]
 use_memories = false
 generate_memories = false
+
+[agents.scout]
+description = "Read-only scout (GPT-5.6 Luna): mechanical inventory, structural audit, and bounded evidence collection."
+config_file = "agents/scout.toml"
+
+[agents.implementer]
+description = "Bounded implementer (GPT-5.6 Terra): path-owned implementation and focused verification."
+config_file = "agents/implementer.toml"
+
+[agents.reviewer]
+description = "Adversarial reviewer (GPT-5.6 Sol): architectural review, risk analysis, and evidence challenge."
+config_file = "agents/reviewer.toml"
 
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "project-name", "git-branch", "run-state", "five-hour-limit", "weekly-limit", "thread-id", "thread-title", "task-progress"]

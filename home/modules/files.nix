@@ -528,6 +528,26 @@
       force = true;
     };
 
+    ".codex/agents/scout.toml" = {
+      source = ../../config/codex/agents/scout.toml;
+      force = true;
+    };
+
+    ".codex/agents/implementer.toml" = {
+      source = ../../config/codex/agents/implementer.toml;
+      force = true;
+    };
+
+    ".codex/agents/reviewer.toml" = {
+      source = ../../config/codex/agents/reviewer.toml;
+      force = true;
+    };
+
+    ".agents/host/codex-device-auth.md" = {
+      source = ../../config/agents/host/codex-device-auth.md;
+      force = true;
+    };
+
     # Gateway-backed profiles are deliberately outside ~/.codex/agents. They
     # are only for codex exec --ephemeral --profile external-<role>.
     ".codex/external-explorer.config.toml" = {

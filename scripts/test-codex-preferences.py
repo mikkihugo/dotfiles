@@ -36,7 +36,9 @@ class CodexPreferencesTest(unittest.TestCase):
                 '[tui]\n'
                 'status_line = ["model"]\n'
                 'terminal_title = ["activity", "project-name"]\n'
-                'status_line_use_colors = true\n'
+                'status_line_use_colors = true\n\n'
+                '[agents.user_specialist]\n'
+                'config_file = "keep-user-specialist.toml"\n'
             )
 
             subprocess.run(
@@ -59,6 +61,7 @@ class CodexPreferencesTest(unittest.TestCase):
             self.assertTrue(parsed["tui"]["status_line_use_colors"])
             self.assertIn('[projects."/home/mhugo"]', rendered)
             self.assertIn('personality = "pragmatic"', rendered)
+            self.assertEqual(parsed["agents"]["user_specialist"]["config_file"], "keep-user-specialist.toml")
 
 
     def test_managed_defaults_match_operator_settings(self):
@@ -79,13 +82,54 @@ class CodexPreferencesTest(unittest.TestCase):
             self.assertIn("ADR-0000 lifecycle", instructions)
             self.assertIn("Contract tests or executable evidence before implementation", instructions)
 
+    def test_subagent_routing_is_explicit_and_least_cost(self):
+        root = SCRIPT.parents[1]
+        for name in ("config.toml", "shared-preferences.toml"):
+            data = tomllib.loads((root / "config/codex" / name).read_text())
+            instructions = data["developer_instructions"]
+            self.assertIn("least-cost capable model", instructions)
+            self.assertIn("Never silently use the default", instructions)
+            self.assertIn("model for delegated work", instructions)
+
+        expected = {
+            "scout": ("gpt-5.6-luna", "low", "read-only"),
+            "implementer": ("gpt-5.6-terra", "medium", "workspace-write"),
+            "reviewer": ("gpt-5.6-sol", "high", "read-only"),
+        }
+        config = tomllib.loads((root / "config/codex/config.toml").read_text())
+        for role, (model, effort, sandbox) in expected.items():
+            self.assertEqual(config["agents"][role]["config_file"], f"agents/{role}.toml")
+            profile = tomllib.loads((root / "config/codex/agents" / f"{role}.toml").read_text())
+            self.assertEqual(profile["model_provider"], "openai")
+            self.assertEqual(profile["model"], model)
+            self.assertEqual(profile["model_reasoning_effort"], effort)
+            self.assertEqual(profile["sandbox_mode"], sandbox)
+
+    def test_apply_manages_first_party_agent_roles_without_erasing_user_roles(self):
+        root = SCRIPT.parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "config.toml"
+            target.write_text(
+                '[agents.scout]\nconfig_file = "stale.toml"\n\n'
+                '[agents.user_specialist]\nconfig_file = "keep-user-specialist.toml"\n'
+            )
+            subprocess.run(
+                [str(SCRIPT), "apply", "--source", str(root / "config/codex/shared-preferences.toml"), "--target", str(target)],
+                check=True,
+            )
+            data = tomllib.loads(target.read_text())
+            for role in ("scout", "implementer", "reviewer"):
+                self.assertEqual(data["agents"][role]["config_file"], f"agents/{role}.toml")
+            self.assertEqual(data["agents"]["user_specialist"]["config_file"], "keep-user-specialist.toml")
+
     def test_roundtrip_managed_features_preserves_unmanaged_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             source, shared, target = (root / name for name in ("source.toml", "shared.toml", "target.toml"))
             source.write_text('model = "gpt-6-astra"\nmodel_reasoning_effort = "medium"\n'
                 '[features]\nmemories = false\ncontext_management = true\n'
-                'step_model_switching = true\nmcp_2026_07_28 = true\nunmanaged = false\n')
+                'step_model_switching = true\nmcp_2026_07_28 = true\nunmanaged = false\n'
+                '[agents.scout]\nconfig_file = "mutable-live-drift.toml"\n')
             target.write_text('model = "gpt-5.6-sol"\nmodel_reasoning_effort = "low"\n'
                 'personality = "pragmatic"\n[features]\ncontext_management = false\n'
                 'step_model_switching = false\nmcp_2026_07_28 = false\nunmanaged = true\n'
@@ -94,6 +138,7 @@ class CodexPreferencesTest(unittest.TestCase):
             subprocess.run([str(SCRIPT), "save", "--source", str(source), "--target", str(shared)], check=True)
             saved = tomllib.loads(shared.read_text())
             self.assertNotIn("unmanaged", saved["features"])
+            self.assertNotIn("agents", saved)
             for feature in ("context_management", "step_model_switching", "mcp_2026_07_28"):
                 self.assertIs(saved["features"][feature], True)
             for _ in range(2):

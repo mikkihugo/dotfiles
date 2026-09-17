@@ -36,6 +36,15 @@ Load `using-skills`, then `purpose-first`. Full doctrine:
 
 Done: named purpose, named consumer, proof run (failed first for a behavior
 change), evidence on disk, named falsifier.
+
+## Subagent routing
+
+At every `spawn_agent` call, select and state the least-cost capable model and
+reasoning effort. Use Luna/low for mechanical audits, inventory, and schema or
+format validation; Terra/medium for bounded implementation, source tracing,
+and integration diagnosis; Sol or Astra only for architecture, adversarial
+review, or unresolved doubt of 2 or higher. Never silently use the default
+model for delegated work.
 """
 web_search = "disabled"
 sandbox_mode = "danger-full-access"
@@ -108,6 +117,18 @@ config_file = "agents/taxonomy-validator.toml"
 [agents.singularity_engine_harvester]
 description = "Singularity Engine harvester (GPT-5.6 Terra): source-grounded architecture and capability harvesting from donor systems."
 config_file = "agents/singularity-engine-harvester.toml"
+
+[agents.scout]
+description = "Read-only scout (GPT-5.6 Luna): mechanical inventory, structural audit, and bounded evidence collection."
+config_file = "agents/scout.toml"
+
+[agents.implementer]
+description = "Bounded implementer (GPT-5.6 Terra): path-owned implementation and focused verification."
+config_file = "agents/implementer.toml"
+
+[agents.reviewer]
+description = "Adversarial reviewer (GPT-5.6 Sol): architectural review, risk analysis, and evidence challenge."
+config_file = "agents/reviewer.toml"
 
 # Belt and braces alongside [features].memories: never generate new local
 # memories, never read the existing ones back into context.

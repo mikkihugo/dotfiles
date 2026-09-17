@@ -43,8 +43,8 @@ Every turn start, after waits, before fan-in: call MCP server `repo_memory`
 tool `coordination_sweep` as identity `<client>-<short-session-id>`
 (examples: `grok-01a07318`, `codex-df69bdf4`, `copilot-f653d362`).
 Channels: `global` and the current repo mailbox (`singularity-engine`,
-`jcode`, …). Named recipient. Never default `recipient=all`. Hardcode
-poll. Hooks and `inbox_uri` listen do not wake idle sessions. A bus
+`jcode`, …). Use a named recipient by default; use `recipient=all` only for
+an explicitly intended broadcast. Hardcode poll. Hooks and `inbox_uri` listen do not wake idle sessions. A bus
 message never authorizes VCS, land, or completion.
 
 Grok also runs `~/.grok/hooks/bin/mail-sweep.sh` on SessionStart and
@@ -52,37 +52,11 @@ UserPromptSubmit (fail-open). jcode uses `bus_presence`. Same contract.
 
 ## Purpose PDD + ADR-0000
 
-Iron law: no behavior change without a PurposeContract and failing or stale
-proof first.
-
-PDD nine fields (mandatory for non-trivial bounded work):
-purpose, consumer, contract, failureBoundary, evidence, falsifier, nonGoals,
-invariants, assumptions (each `doubt=0..4` plus a falsifier).
-
-Evidence is executable (test, command, metric, repro, live-state check, or
-`[MANUAL: reviewer + scenario]`). Prose is not evidence. Do not invent system
-state, command results, API behavior, or successful verification.
-
-ADR-0000 lifecycle:
-1. Capture bounded intent.
-2. Translate it into a PurposeContract/PDD.
-3. Research missing context and expose assumptions.
-4. Run-control: risk, doubt, reversibility, blast radius, cost, approval.
-5. Map to the Feature Tree and generate a WorkSpec.
-6. Contract tests or executable evidence before implementation.
-7. Smallest satisfying change.
-8. Verify tests, quality, runtime, deployment, and falsifier evidence.
-9. Persist an EvidenceBundle, close the work, scoped learning.
-
-Cosmetic self-contained work with no behavior, policy, proof, consumer, or
-public-contract impact is out of scope. Everything else is in.
-
-Load `using-skills`, then `purpose-first`. Full doctrine:
-`~/.agents/skills/purpose-first/SKILL.md`. ADR:
+For non-cosmetic work, load `using-skills`, then its routed Purpose skill
+before acting. Purpose Tool is canonical for PurposeContracts, PDD lifecycle,
+executable evidence, doubt, and falsifiers. Full doctrine:
+`~/.agents/skills/purpose-first/SKILL.md`; design record:
 `docs/adr/0000-purpose-to-software-fabric.md` in singularity-engine.
-
-Done: named purpose, named consumer, proof run (failed first for a behavior
-change), evidence on disk, named falsifier.
 
 ## Live MCP tools
 
@@ -180,6 +154,22 @@ and report readback evidence. Otherwise the coordinator must perform and verify 
 the subagent returns the implemented, verified, and described change.
 
 ---
+
+## Subagent model routing
+
+At every `spawn_agent` call, state the least-cost capable model and reasoning
+effort explicitly. Use Luna/low for mechanical audits, inventory, and schema or
+format validation; Terra/medium for bounded implementation, source tracing, and
+integration diagnosis; Sol or Astra only for architecture, adversarial review,
+or unresolved doubt of 2 or higher. Never silently use the default model.
+
+## Nix entrypoint precedence
+
+For whitelisted `/home/mhugo/code/`, `/srv/infra/`, `/home/mhugo/vendors/`, and
+the exact `~/.dotfiles/.envrc`, run `eval "$(direnv export bash)"`, then verify
+the repository-local `repo` path. Do not run `direnv allow` unless that export
+explicitly reports the RC blocked; its `Fallback disallowed` notice is not an
+allow failure. This host-specific rule takes precedence over generic examples.
 
 ## Make decisions
 
@@ -357,38 +347,10 @@ thread-attached tool surface first. For CentralCloud, then use
 capability unavailable only after the applicable thread-attached direct path
 and routed fallback have both been checked and failed.
 
-## Codex login: destructive `device-auth` behavior
+## Codex login device-auth safety
 
-`codex login --device-auth` deletes `~/.codex/auth.json` before issuing the
-new device code. Verified on Codex CLI 0.154.0 (2026-09-11). Symptom: a
-working ChatGPT OAuth session is lost without rollback; the file is
-removed and `codex login status` flips from "Logged in using ChatGPT" to
-"Not logged in". No `auth.json.bak*` is created automatically.
-
-**Mitigation — copy `auth.json` aside before any login probe:**
-
-```bash
-cp ~/.codex/auth.json ~/.codex/auth.json.pre-probe
-# then run codex login / codex login --device-auth / etc.
-# if the probe succeeds, restore: mv ~/.codex/auth.json.pre-probe ~/.codex/auth.json
-```
-
-**Recovery path:** complete the device-auth in a browser at
-`https://auth.openai.com/codex/device` within 15 minutes (the device code
-expires). The Codex CLI is already holding the PKCE challenge; the human
-half of the flow must complete the OAuth prompt for `~/.codex/auth.json`
-to be re-written. The CentralCloud `llm-gateway` provider is unaffected —
-it uses `LLM_MUX_API_KEY`, not `auth.json`.
-
-**Non-destructive alternatives** (do not delete `auth.json`):
-
-- `codex login` (default flow, browser at `127.0.0.1:1455`)
-- `codex login --with-api-key` (read OPENAI_API_KEY from stdin)
-- `codex login --with-access-token` (read access token from stdin)
-
-Full incident timeline, retention, and verification: see
-`~/.agent-work/plans/codex-default-flip-20260911.md` and the `kind:bug`
-retention in the `singularity-engine` repo_memory bank.
+Read `~/.agents/host/codex-device-auth.md` before any `codex login` probe.
+In particular, back up `~/.codex/auth.json` before `--device-auth`.
 
 ## Managed Tool Instructions
 

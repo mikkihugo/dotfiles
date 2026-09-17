@@ -21,7 +21,7 @@ SHARED_KEYS = [
 # Section-scoped shared keys. ~/.codex/config.toml is mutable and rewritten by
 # Codex itself, so anything that must survive a Codex write has to be re-applied
 # here on every activation rather than seeded once.
-SHARED_SECTION_KEYS = {
+SAVE_SECTION_KEYS = {
     "tui": ["status_line"],
     # Codex's own on-disk memory store stays off: durable agent memory belongs
     # in the repo_memory bank, not a per-client store no other tool can read.
@@ -29,8 +29,18 @@ SHARED_SECTION_KEYS = {
     "memories": ["use_memories", "generate_memories"],
 }
 
+# Role registration is declarative policy. Activation applies it, but the
+# operator-facing save command must never promote mutable live role drift back
+# into the tracked shared-preferences source.
+APPLY_SECTION_KEYS = {
+    **SAVE_SECTION_KEYS,
+    "agents.scout": ["description", "config_file"],
+    "agents.implementer": ["description", "config_file"],
+    "agents.reviewer": ["description", "config_file"],
+}
+
 # Retained for callers that still refer to the tui-only list.
-SHARED_TUI_KEYS = SHARED_SECTION_KEYS["tui"]
+SHARED_TUI_KEYS = SAVE_SECTION_KEYS["tui"]
 
 
 def load_toml(path: Path) -> dict:
@@ -38,6 +48,14 @@ def load_toml(path: Path) -> dict:
         return {}
     with path.open("rb") as f:
         return tomllib.load(f)
+
+
+def section_data(data: dict, section: str) -> dict:
+    """Resolve a TOML section name without flattening unrelated sections."""
+    value = data
+    for component in section.split("."):
+        value = value.get(component, {}) if isinstance(value, dict) else {}
+    return value if isinstance(value, dict) else {}
 
 
 def toml_value(value) -> str:
@@ -56,8 +74,8 @@ def save(args) -> None:
     data = load_toml(source)
     prefs = {key: data[key] for key in SHARED_KEYS if key in data}
     section_prefs = {}
-    for section, keys in SHARED_SECTION_KEYS.items():
-        source_section = data.get(section, {})
+    for section, keys in SAVE_SECTION_KEYS.items():
+        source_section = section_data(data, section)
         picked = {key: source_section[key] for key in keys if key in source_section}
         if picked:
             section_prefs[section] = picked
@@ -72,7 +90,7 @@ def save(args) -> None:
     lines.extend(f"{key} = {toml_value(prefs[key])}" for key in SHARED_KEYS if key in prefs)
     for section, picked in section_prefs.items():
         lines.extend(["", f"[{section}]"])
-        lines.extend(f"{key} = {toml_value(picked[key])}" for key in SHARED_SECTION_KEYS[section] if key in picked)
+        lines.extend(f"{key} = {toml_value(picked[key])}" for key in SAVE_SECTION_KEYS[section] if key in picked)
     target.write_text("\n".join(lines).rstrip() + "\n")
 
     saved = list(prefs) + [
@@ -91,8 +109,8 @@ def apply(args) -> None:
     prefs = {key: value for key, value in load_toml(source).items() if key in SHARED_KEYS}
     source_data = load_toml(source)
     section_prefs = {}
-    for section, keys in SHARED_SECTION_KEYS.items():
-        source_section = source_data.get(section, {})
+    for section, keys in APPLY_SECTION_KEYS.items():
+        source_section = section_data(source_data, section)
         picked = {key: source_section[key] for key in keys if key in source_section}
         if picked:
             section_prefs[section] = picked
@@ -113,7 +131,7 @@ def apply(args) -> None:
         if name not in section_prefs:
             return
         picked = section_prefs[name]
-        for key in SHARED_SECTION_KEYS[name]:
+        for key in APPLY_SECTION_KEYS[name]:
             if key in picked and key not in seen_section[name]:
                 output.append(f"{key} = {toml_value(picked[key])}")
                 seen_section[name].add(key)
@@ -143,7 +161,7 @@ def apply(args) -> None:
         output = insert + ([""] if output and output[0] else []) + output
 
     for name, picked in section_prefs.items():
-        missing = [key for key in SHARED_SECTION_KEYS[name] if key in picked and key not in seen_section[name]]
+        missing = [key for key in APPLY_SECTION_KEYS[name] if key in picked and key not in seen_section[name]]
         if not missing:
             continue
         if output and output[-1]:

@@ -154,6 +154,54 @@ class CodexPreferencesTest(unittest.TestCase):
                 self.assertEqual(data["agents"]["reviewer"]["config_file"], "keep-reviewer.toml")
                 self.assertEqual(data["personality"], "pragmatic")
 
+    def test_save_preserves_canonical_agent_roles_without_importing_live_drift(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source, shared, target = (root / name for name in ("source.toml", "shared.toml", "target.toml"))
+            shared.write_text(
+                'model = "gpt-5.6-sol"\n\n'
+                '[agents.scout]\n'
+                'description = "Canonical scout"\n'
+                'config_file = "agents/scout.toml"\n\n'
+                '[agents.implementer]\n'
+                'description = "Canonical implementer"\n'
+                'config_file = "agents/implementer.toml"\n\n'
+                '[agents.reviewer]\n'
+                'description = "Canonical reviewer"\n'
+                'config_file = "agents/reviewer.toml"\n'
+            )
+            source.write_text(
+                'model = "gpt-6-astra"\n\n'
+                '[agents.scout]\n'
+                'description = "Mutable scout drift"\n'
+                'config_file = "agents/live-scout.toml"\n'
+                'live_only = true\n\n'
+                '[agents.implementer]\n'
+                'description = "Mutable implementer drift"\n'
+                'config_file = "agents/live-implementer.toml"\n\n'
+                '[agents.reviewer]\n'
+                'description = "Mutable reviewer drift"\n'
+                'config_file = "agents/live-reviewer.toml"\n'
+            )
+
+            subprocess.run([str(SCRIPT), "save", "--source", str(source), "--target", str(shared)], check=True)
+            saved = tomllib.loads(shared.read_text())
+            self.assertEqual(saved["model"], "gpt-6-astra")
+            self.assertEqual(saved["agents"]["scout"]["description"], "Canonical scout")
+            self.assertEqual(saved["agents"]["scout"]["config_file"], "agents/scout.toml")
+            self.assertNotIn("live_only", saved["agents"]["scout"])
+            self.assertEqual(saved["agents"]["implementer"]["config_file"], "agents/implementer.toml")
+            self.assertEqual(saved["agents"]["reviewer"]["config_file"], "agents/reviewer.toml")
+
+            target.write_text(source.read_text())
+            subprocess.run([str(SCRIPT), "apply", "--source", str(shared), "--target", str(target)], check=True)
+            applied = tomllib.loads(target.read_text())
+            self.assertEqual(applied["agents"]["scout"]["description"], "Canonical scout")
+            self.assertEqual(applied["agents"]["scout"]["config_file"], "agents/scout.toml")
+            self.assertNotIn("live_only", applied["agents"]["scout"])
+            self.assertEqual(applied["agents"]["implementer"]["config_file"], "agents/implementer.toml")
+            self.assertEqual(applied["agents"]["reviewer"]["config_file"], "agents/reviewer.toml")
+
 
 if __name__ == "__main__":
     unittest.main()

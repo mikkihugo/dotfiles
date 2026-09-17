@@ -28,6 +28,11 @@ SAVE_SECTION_KEYS = {
     "features": ["memories", "context_management", "step_model_switching", "mcp_2026_07_28"],
     "memories": ["use_memories", "generate_memories"],
 }
+# These role registrations are declarative shared source, unlike the mutable
+# live preferences collected by `save`. Keep them source-owned on save, then
+# reapply them verbatim during activation so a local Codex rewrite cannot drift
+# the fleet's role contract.
+SHARED_AGENT_NAMES = ("scout", "implementer", "reviewer")
 
 # Role registration is declarative policy. Activation applies it, but the
 # operator-facing save command must never promote mutable live role drift back
@@ -68,11 +73,24 @@ def toml_value(value) -> str:
     return '"' + str(value).replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
 
 
+def shared_agent_preferences(data: dict) -> dict:
+    agents = data.get("agents", {})
+    if not isinstance(agents, dict):
+        return {}
+    return {name: agents[name] for name in SHARED_AGENT_NAMES if isinstance(agents.get(name), dict)}
+
+
+def render_agent_section(name: str, values: dict) -> list[str]:
+    return [f"[agents.{name}]", *(f"{key} = {toml_value(value)}" for key, value in values.items())]
+
+
 def save(args) -> None:
     source = Path(args.source).expanduser()
     target = Path(args.target).expanduser()
     data = load_toml(source)
+    target_data = load_toml(target)
     prefs = {key: data[key] for key in SHARED_KEYS if key in data}
+    agent_prefs = shared_agent_preferences(target_data)
     section_prefs = {}
     for section, keys in SAVE_SECTION_KEYS.items():
         source_section = section_data(data, section)
@@ -91,6 +109,8 @@ def save(args) -> None:
     for section, picked in section_prefs.items():
         lines.extend(["", f"[{section}]"])
         lines.extend(f"{key} = {toml_value(picked[key])}" for key in SAVE_SECTION_KEYS[section] if key in picked)
+    for name, values in agent_prefs.items():
+        lines.extend(["", *render_agent_section(name, values)])
     target.write_text("\n".join(lines).rstrip() + "\n")
 
     saved = list(prefs) + [
@@ -114,7 +134,8 @@ def apply(args) -> None:
         picked = {key: source_section[key] for key in keys if key in source_section}
         if picked:
             section_prefs[section] = picked
-    if not prefs and not section_prefs:
+    agent_prefs = shared_agent_preferences(source_data)
+    if not prefs and not section_prefs and not agent_prefs:
         return
 
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -125,6 +146,8 @@ def apply(args) -> None:
     top_level_key = re.compile(r"^([A-Za-z0-9_]+)\s*=")
     section_header = re.compile(r"^\s*\[([^]]+)]\s*$")
     section = None
+    skipped_agent_section = None
+    seen_agents = set()
 
     def flush_section(name):
         """Append any managed key the section declared but never contained."""
@@ -141,6 +164,16 @@ def apply(args) -> None:
         if section_match:
             flush_section(section)
             section = section_match.group(1)
+            if section.startswith("agents.") and section.removeprefix("agents.") in agent_prefs:
+                name = section.removeprefix("agents.")
+                output.extend(render_agent_section(name, agent_prefs[name]))
+                seen_agents.add(name)
+                seen_section[section].update(agent_prefs[name])
+                skipped_agent_section = name
+                continue
+            skipped_agent_section = None
+        if skipped_agent_section is not None:
+            continue
         match = top_level_key.match(line)
         if section is None and match and match.group(1) in prefs:
             key = match.group(1)
@@ -161,6 +194,8 @@ def apply(args) -> None:
         output = insert + ([""] if output and output[0] else []) + output
 
     for name, picked in section_prefs.items():
+        if name.startswith("agents.") and name.removeprefix("agents.") in agent_prefs:
+            continue
         missing = [key for key in APPLY_SECTION_KEYS[name] if key in picked and key not in seen_section[name]]
         if not missing:
             continue
@@ -168,6 +203,13 @@ def apply(args) -> None:
             output.append("")
         output.append(f"[{name}]")
         output.extend(f"{key} = {toml_value(picked[key])}" for key in missing)
+
+    for name, values in agent_prefs.items():
+        if name in seen_agents:
+            continue
+        if output and output[-1]:
+            output.append("")
+        output.extend(render_agent_section(name, values))
 
     target.write_text("\n".join(output).rstrip() + "\n")
 

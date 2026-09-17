@@ -24,6 +24,11 @@ Native Grok skill listing (name + description) is the skill index. Load
 Purpose bodies with `load_skill` on `purpose_tool`. Do not paste skill
 catalogs into this file.
 
+Full feature/fix lifecycle: after `load_skill({name:"using-skills"})`,
+load `skill_file_read({name:"using-skills", path:"references/end-to-end-flow.md"})`
+(or `skill://purpose_tool/using-skills/references/end-to-end-flow.md`).
+Follow that map. Do not paste it here.
+
 ## Do not wrap unfinished work and idle
 
 If the objective is still open, either keep working in this turn or arm a

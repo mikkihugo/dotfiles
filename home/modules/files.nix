@@ -20,6 +20,22 @@
       force = true;
     };
 
+    # Grok TUI: small home AGENTS.md (mailbox, wrap-unfinished, PDD, inbox_uri
+    # file). Native skill listing is the catalog; do not dump Codex/Purpose
+    # skill bodies here. force=true so a fat Codex paste cannot linger.
+    ".grok/AGENTS.md" = {
+      source = ../../config/grok/AGENTS.md;
+      force = true;
+    };
+
+    # Grok mail-sweep.mjs: persist coordination_sweep inbox_uri (Purpose #580
+    # for this client). Grok is not in install-swarm-hooks.mjs client list.
+    ".grok/hooks/bin/coordination-mailbox-sweep.mjs" = {
+      source = ../../config/grok/hooks/bin/coordination-mailbox-sweep.mjs;
+      executable = true;
+      force = true;
+    };
+
     # Codex CLI config is seeded by activation.nix as a mutable file. The Codex
     # client owns model/reasoning choices, approvals, notices, and feature
     # toggles at runtime, so this path must not be a Home Manager symlink.

@@ -1,0 +1,7 @@
+{
+  "kind": "repository-check",
+  "command": "repo check",
+  "status": "passed",
+  "observed_at": "2026-09-17T20:16:00Z",
+  "result": "Dotfiles VCS contract and Home Manager evaluation completed successfully; an unrelated unauthorised Cachix cache emitted a warning and Nix continued with a local/remote build."
+}

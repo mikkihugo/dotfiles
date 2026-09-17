@@ -1,0 +1,5 @@
+{
+  "kind": "runtime",
+  "status": "pending-activation",
+  "boundary": "Home Manager activation and a fresh Codex lifecycle hook invocation are required to observe the deployed hook. No signed inbox capability is recorded in this artifact."
+}

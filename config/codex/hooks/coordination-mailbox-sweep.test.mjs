@@ -565,7 +565,7 @@ function fakeCoordinationClient(responses) {
 
 test("Codex CoordinationBus.subscribe uses the owned root session and treats ack_watermark-without-inbox_uri as success", async () => {
   const client = fakeCoordinationClient({
-    coordination_subscribe: { ack_watermark: 0, channels: ["engine", "global"], created: true, principal: "codex-abcd1234", session: "codex-abcd1234" },
+    coordination_subscribe: { ack_watermark: 0, channels: ["engine", "global"], created: true, principal: "codex-abcd1234", session: "codex-abcd1234-root" },
   });
   const bus = new CoordinationBus(client, { identity: "codex-abcd1234", clientLabel: "codex", channels: ["engine", "global"], env: { XDG_STATE_HOME: "/nonexistent" } });
   const result = await bus.subscribe("engine", "codex-abcd1234");
@@ -574,6 +574,18 @@ test("Codex CoordinationBus.subscribe uses the owned root session and treats ack
   assert.equal(client.calls[0].args.principal, "codex-abcd1234");
   assert.equal(client.calls[0].args.session, "codex-abcd1234-root");
   assert.ok(!("inbox_uri" in client.calls[0].args), "no inbox_uri hint on the first call -- none is held yet");
+});
+
+test("Codex CoordinationBus.sweep, the automatic hook path, uses the owned root session", async () => {
+  const client = fakeCoordinationClient({
+    coordination_sweep: { known_session: true, messages: [], ack_watermark: 0, session: "codex-abcd1234-root" },
+  });
+  const bus = new CoordinationBus(client, { identity: "codex-abcd1234", clientLabel: "codex", channels: ["global"], env: { XDG_STATE_HOME: "/nonexistent" } });
+  const buckets = await bus.sweep("codex-abcd1234");
+  assert.equal(buckets.knownConsumer, true);
+  assert.equal(client.calls[0].tool, "coordination_sweep");
+  assert.equal(client.calls[0].args.principal, "codex-abcd1234");
+  assert.equal(client.calls[0].args.session, "codex-abcd1234-root");
 });
 
 test("CoordinationBus.poll partitions the merged inbox and tags the __inbox__ bucket for direct mail, and reuses one cached poll across workspaces in a run", async () => {

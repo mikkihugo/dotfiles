@@ -1,0 +1,8 @@
+{
+  "kind": "contract-test",
+  "command": "node --test config/codex/hooks/coordination-mailbox-sweep.test.mjs",
+  "status": "failed-as-expected",
+  "observed_at": "2026-09-17T20:14:00Z",
+  "failure": "Expected session codex-abcd1234-root but observed codex-abcd1234 in CoordinationBus.subscribe.",
+  "falsifier": "The pre-change bare-session implementation violates R1."
+}

@@ -1,0 +1,7 @@
+{
+  "kind": "contract-test",
+  "command": "node --test config/codex/hooks/coordination-mailbox-sweep.test.mjs",
+  "status": "passed",
+  "observed_at": "2026-09-17T20:18:00Z",
+  "result": "53 tests passed after the root-session implementation."
+}

@@ -379,9 +379,7 @@ export class CoordinationBus {
     this._identity = identity ?? null;
     this._principal = identity ? derivePrincipal(identity, clientLabel) : null;
     this._session = deriveCoordinationSession(this._principal, clientLabel);
-    // The capability is bound to one exact session. Codex's historical bare
-    // session may be foreign-owned, so its root session must never reuse that
-    // capability record.
+    // The capability is bound to the server-derived stable session.
     this._inboxPath = identity ? coordinationInboxPathFor(this._session, env) : null;
     this._inbox = this._inboxPath ? readCoordinationInbox(this._inboxPath) : emptyCoordinationInbox();
     this._pollCache = null;
@@ -826,12 +824,10 @@ export function derivePrincipal(identity, client) {
 /**
  * Select the exact coordination session owned by one hook consumer.
  *
- * Codex's bare principal session is legacy and may belong to another
- * connection. The root hook session is deliberately separate; every other
- * client retains its established principal-shaped session.
+ * The server derives and binds this principal-shaped session for every client.
  */
 export function deriveCoordinationSession(principal, client) {
-  return client === "codex" ? `${principal}-root` : principal;
+  return principal;
 }
 
 // --- cursor persistence (DELIVER 2) -----------------------------------------

@@ -1,0 +1,23 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-18-purpose-session-hook-node-purpose",
+  "source": { "system": "manual", "repository": ".", "request_id": "2026-09-18-purpose-session-hook-node" },
+  "lineage": {
+    "origin": { "kind": "incident", "id": "mhugo-2026-09-18-hook-exit-127", "revision": "1" },
+    "objective": { "id": "purpose-session-hook-path-independent", "statement": "Make Purpose SessionStart synchronization independent of ambient PATH.", "measure": "The installed hook exits zero in a clean environment when its script exists." },
+    "need": { "id": "bare-node-exits-127", "statement": "The managed hook invokes bare node and fails when node is absent from PATH.", "stakeholders": ["Codex and Cursor sessions on cc-se-sto-devbox-01"], "baseline": "env -i reproduced /bin/sh: node: command not found and exit 127.", "consequence_of_no_action": "Purpose host-skill synchronization fails at session start.", "assumptions": ["Codex and Cursor can share one absolute wrapper command."], "alternatives_considered": ["Depend on shell PATH", "Hard-code a current store path in JSON", "Render a wrapper with pkgs.nodejs"] }
+  },
+  "admission": { "state": "proposed", "producer": { "kind": "agent", "id": "codex-root" }, "reason": "Operator-reported runtime defect; trusted admission receipt unavailable in this client." },
+  "purpose": "Prevent Purpose SessionStart synchronization from failing with exit 127 when hook PATH lacks node.",
+  "consumer": "Codex and Cursor lifecycle-hook runners managed by Home Manager.",
+  "contract": "The optional Purpose session-start.mjs shall execute through a Home Manager-rendered wrapper with a Nix-provided absolute Node interpreter.",
+  "failure_boundary": "Only the optional Purpose host-skill refresh hook changes; mailbox coordination and other lifecycle hooks remain unchanged.",
+  "evidence": [{ "kind": "test", "description": "Hook-config test rejects bare-node registration and executes the rendered wrapper contract under a clean PATH." }, { "kind": "runtime", "description": "Activated managed hook exits zero under env -i with its script present." }],
+  "falsifier": { "claim": "Purpose SessionStart no longer relies on ambient node.", "executable_check": { "kind": "test", "command": "node --test scripts/test-swarm-hook-config.mjs", "description": "A bare node command or exit 127 falsifies the contract." } },
+  "non_goals": ["Changing the NixOS host operator", "Changing mailbox coordination", "Changing Purpose Tool server behavior"],
+  "invariants": ["Home Manager remains the owner of installed hooks", "The hook remains optional when session-start.mjs is absent", "Codex and Cursor retain their existing lifecycle event wiring"],
+  "assumptions": [{ "statement": "Codex and Cursor accept the same absolute wrapper command form.", "status": "unverified", "doubt": 1, "falsifier": "A client schema test rejects the shared command path." }],
+  "run_control": { "autonomous_allowed": true, "risk": "low", "blast_radius": "local", "reversibility": "easy", "max_active_doubt": 1 },
+  "target_planes": ["client"],
+  "plane_constraints": ["Home Manager renders Nix store interpreter paths; generated files are not edited directly."]
+}

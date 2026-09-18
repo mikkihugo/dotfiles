@@ -137,6 +137,18 @@
       force = true;
     };
 
+    # Purpose host-skill refresh must not depend on the hook runner's PATH.
+    # Codex and Cursor share this HM-rendered wrapper so both use the pinned
+    # Node interpreter and preserve the optional-hook no-op behavior.
+    ".codex/hooks/purpose-session-start.sh" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/purpose-session-start.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
     # observations-autolog.{sh,mjs} mirrors the canonical stop hook. .mjs
     # entries for codex and kimi-code already exist above (lines 90, 96); only
     # the .sh entries that weren't previously symlinked are added here, plus

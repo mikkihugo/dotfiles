@@ -1,0 +1,9 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "purpose-session-hook-node-current-spec",
+  "source": {
+    "uri": "repository://config/codex/hooks.json",
+    "revision": "de437ddb5f4b37ac16bec661b79c11a40c36f2ab"
+  },
+  "requirements": []
+}

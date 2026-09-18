@@ -1,0 +1,2 @@
+/bin/sh: line 1: node: command not found
+exit_code=127

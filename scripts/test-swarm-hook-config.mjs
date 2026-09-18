@@ -8,6 +8,25 @@ import test from "node:test";
 
 const readJSON = async (path) => JSON.parse(await readFile(path, "utf8"));
 
+test("Purpose SessionStart hooks use a Home Manager-rendered Node wrapper", async () => {
+  const codex = await readJSON("config/codex/hooks.json");
+  const cursor = await readJSON("config/cursor/hooks.json");
+  const codexSessionStart = JSON.stringify(codex.hooks.SessionStart);
+  const cursorSessionStart = JSON.stringify(cursor.hooks.sessionStart);
+  const wrapperPath = "/home/mhugo/.codex/hooks/purpose-session-start.sh";
+
+  assert.match(codexSessionStart, new RegExp(wrapperPath.replaceAll("/", "\\/")));
+  assert.match(cursorSessionStart, new RegExp(wrapperPath.replaceAll("/", "\\/")));
+  assert.doesNotMatch(codexSessionStart, /\|\| node \/home\/mhugo\/\.local\/share\/purpose-tool/);
+  assert.doesNotMatch(cursorSessionStart, /\|\| node \/home\/mhugo\/\.local\/share\/purpose-tool/);
+
+  const wrapper = await readFile("config/codex/hooks/purpose-session-start.sh", "utf8");
+  assert.match(wrapper, /hook=\/home\/mhugo\/\.local\/share\/purpose-tool\/hooks\/session-start\.mjs/);
+  assert.match(wrapper, /exec @node@ "\$hook"/);
+  const files = await readFile("home/modules/files.nix", "utf8");
+  assert.match(files, /replaceVars[\s\S]*config\/codex\/hooks\/purpose-session-start\.sh[\s\S]*node = "\$\{pkgs\.nodejs\}\/bin\/node"/);
+});
+
 test("Home Manager owns schema-valid Codex hooks.json with repo-memory coordination registration", async () => {
   const codex = await readJSON("config/codex/hooks.json");
   assert.equal(codex.version, undefined);
@@ -108,7 +127,7 @@ test("cursor hooks.json wires sessionStart + beforeSubmitPrompt at coordination-
   assert.doesNotMatch(beforeSubmitPrompt, /swarm-messages\.mjs/);
   // Stable-shell + optional purpose-tool session hooks stay on sessionStart.
   assert.match(sessionStart, /fix-stable-shell-chmod\.cjs/);
-  assert.match(sessionStart, /purpose-tool\/hooks\/session-start\.mjs/);
+  assert.match(sessionStart, /\.codex\/hooks\/purpose-session-start\.sh/);
 });
 
 test("copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered coordination-mailbox-sweep.sh shim", async () => {

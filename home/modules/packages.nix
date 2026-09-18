@@ -45,6 +45,7 @@
     # Dev tools — language runtimes and package managers available globally.
     # (project-level runtimes live in per-repo flake devShells via direnv)
     bun # JavaScript runtime/package manager for local tool builds
+    nodejs # `node` on ~/.nix-profile/bin. Grok leader is a systemd user unit whose PATH is the Nix profile, not ~/.local/bin (mise shim). Without this, Stop hooks with `#!/usr/bin/env node` exit 127.
     ccache # C/C++ compiler cache; CMake launcher env is set in home.nix
     # Forgejo-native CLI (binary: `fj`). Packaged upstream avoids maintaining
     # a hand-vendored CLI derivation and per-architecture hashes here.

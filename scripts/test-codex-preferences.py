@@ -129,6 +129,32 @@ class CodexPreferencesTest(unittest.TestCase):
                 self.assertEqual(data["agents"][role]["config_file"], f"agents/{role}.toml")
             self.assertEqual(data["agents"]["user_specialist"]["config_file"], "keep-user-specialist.toml")
 
+    def test_apply_manages_otlp_signal_endpoints_without_erasing_other_otel_fields(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source, target = root / "shared.toml", root / "config.toml"
+            source.write_text(
+                '[otel]\n'
+                'environment = "devbox"\n'
+                'log_user_prompt = false\n'
+                'exporter = {otlp-http = {endpoint = "http://collector:4318/v1/logs", protocol = "binary", headers = {}}}\n'
+                'trace_exporter = {otlp-http = {endpoint = "http://collector:4318/v1/traces", protocol = "binary", headers = {}}}\n'
+            )
+            target.write_text(
+                '[otel]\n'
+                'environment = "wrong"\n'
+                'metrics_exporter = "statsig"\n'
+                'exporter = {otlp-http = {headers = {authorization = "keep-local-secret"}}}\n'
+            )
+            subprocess.run([str(SCRIPT), "apply", "--source", str(source), "--target", str(target)], check=True)
+            data = tomllib.loads(target.read_text())
+            self.assertEqual(data["otel"]["environment"], "devbox")
+            self.assertFalse(data["otel"]["log_user_prompt"])
+            self.assertEqual(data["otel"]["exporter"]["otlp-http"]["endpoint"], "http://collector:4318/v1/logs")
+            self.assertEqual(data["otel"]["trace_exporter"]["otlp-http"]["endpoint"], "http://collector:4318/v1/traces")
+            self.assertEqual(data["otel"]["metrics_exporter"], "statsig")
+            self.assertEqual(data["otel"]["exporter"]["otlp-http"]["headers"]["authorization"], "keep-local-secret")
+
     def test_roundtrip_managed_features_preserves_unmanaged_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

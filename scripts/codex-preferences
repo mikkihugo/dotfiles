@@ -39,6 +39,9 @@ SHARED_AGENT_NAMES = ("scout", "implementer", "reviewer")
 # into the tracked shared-preferences source.
 APPLY_SECTION_KEYS = {
     **SAVE_SECTION_KEYS,
+    # OTLP routing is host policy. Apply it on every activation because Codex
+    # owns and may rewrite its mutable live config; do not import it on `save`.
+    "otel": ["environment", "log_user_prompt", "exporter", "trace_exporter"],
     "agents.scout": ["description", "config_file"],
     "agents.implementer": ["description", "config_file"],
     "agents.reviewer": ["description", "config_file"],
@@ -63,6 +66,21 @@ def section_data(data: dict, section: str) -> dict:
     return value if isinstance(value, dict) else {}
 
 
+def merge_preference_value(current, managed):
+    """Overlay managed nested fields without discarding local credentials."""
+    if isinstance(current, dict) and isinstance(managed, dict):
+        return {
+            key: merge_preference_value(current[key], value) if key in current else value
+            for key, value in {**current, **managed}.items()
+        }
+    return managed
+
+
+def toml_key(key) -> str:
+    text = str(key)
+    return text if re.fullmatch(r"[A-Za-z0-9_-]+", text) else toml_value(text)
+
+
 def toml_value(value) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -70,6 +88,8 @@ def toml_value(value) -> str:
         return str(value)
     if isinstance(value, list) and all(isinstance(item, str) for item in value):
         return "[" + ", ".join(toml_value(item) for item in value) + "]"
+    if isinstance(value, dict):
+        return "{" + ", ".join(f"{toml_key(key)} = {toml_value(item)}" for key, item in value.items()) + "}"
     return '"' + str(value).replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
 
 
@@ -128,10 +148,16 @@ def apply(args) -> None:
     target = Path(args.target).expanduser()
     prefs = {key: value for key, value in load_toml(source).items() if key in SHARED_KEYS}
     source_data = load_toml(source)
+    target_data = load_toml(target)
     section_prefs = {}
     for section, keys in APPLY_SECTION_KEYS.items():
         source_section = section_data(source_data, section)
-        picked = {key: source_section[key] for key in keys if key in source_section}
+        target_section = section_data(target_data, section)
+        picked = {
+            key: merge_preference_value(target_section.get(key), source_section[key])
+            for key in keys
+            if key in source_section
+        }
         if picked:
             section_prefs[section] = picked
     agent_prefs = shared_agent_preferences(source_data)

@@ -87,6 +87,15 @@ memories = false
 use_memories = false
 generate_memories = false
 
+# Signal-specific OTLP/HTTP paths are required by the collector. This block is
+# applied on every activation so mutable ~/.codex/config.toml cannot retain a
+# stale root endpoint that returns 404.
+[otel]
+environment = "devbox"
+log_user_prompt = false
+exporter = {otlp-http = {endpoint = "http://otel-collector.monitoring.svc.cluster.local:4318/v1/logs", protocol = "binary", headers = {}}}
+trace_exporter = {otlp-http = {endpoint = "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces", protocol = "binary", headers = {}}}
+
 [agents.scout]
 description = "Read-only scout (GPT-5.6 Luna): mechanical inventory, structural audit, and bounded evidence collection."
 config_file = "agents/scout.toml"

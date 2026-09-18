@@ -532,7 +532,7 @@ test("just check delegates to the single repository check implementation", async
     "scripts/test-jcode-lane-settle-retirement.mjs",
     "scripts/test-codex-external-harness-skill.mjs",
     "scripts/test-codex-external-run.mjs",
-    "scripts/test-swarm-messages.mjs",
+    "config/codex/hooks/coordination-mailbox-sweep.test.mjs",
     "scripts/test-swarm-hook-config.mjs",
     "scripts/test-nix-tooling.mjs",
   ]) {

@@ -261,7 +261,7 @@ async function installJcode() {
   catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
-  const command = 'session_start = "/home/mhugo/.codex/hooks/swarm-messages.mjs jcode SessionStart"';
+  const command = 'session_start = "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs jcode SessionStart"';
   const lines = content.split("\n");
   const hooksIndex = lines.findIndex((line) => line.trim() === "[hooks]");
   if (hooksIndex < 0) {

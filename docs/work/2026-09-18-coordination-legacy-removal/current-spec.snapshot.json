@@ -1,0 +1,6 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-09-18-coordination-legacy-removal-current-spec",
+  "source": { "uri": "repository://config/codex/hooks/coordination-mailbox-sweep.mjs", "revision": "b69b2069886685b0790a2b41f94969a05bca633b" },
+  "requirements": []
+}

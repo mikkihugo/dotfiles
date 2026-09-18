@@ -2,12 +2,10 @@
 // coordination mailbox sweep — bounded, cursor-based per-turn hook.
 //
 // What: prepends unread coordination-mailbox messages into an agent's turn
-// (UserPromptSubmit) and announces session availability (SessionStart), the
-// same product surface previously named "swarm-messages". This file is the
-// new canonical implementation; config/codex/hooks/swarm-messages.mjs and its
-// wrapper siblings (config/claude/hooks/swarm-messages.sh,
-// config/kimi-code/hooks/swarm-messages.sh) remain in place, unmodified,
-// for one release as compatibility paths -- they are not required to change.
+// (UserPromptSubmit) and announces session availability (SessionStart). It
+// speaks the repo-memory coordination_* tier
+// (coordination_subscribe/poll/ack/post and the atomic coordination_sweep)
+// through the CentralCloud MCP gateway.
 //
 // Budget: at most 25 messages and 16 KiB of message-body bytes surfaced per
 // sweep; a trailing line reports anything hidden by that cap plus a
@@ -35,10 +33,10 @@
 // cursor path, each request's URL and HTTP status, and cursor writes to
 // stderr.
 //
-// Interim rule: poll (`repo swarm poll` / `swarm_bus_poll` directly) remains
-// the authoritative way to read the mailbox. This hook is a convenience that
-// may drop, cap, or miss messages under load or transport failure; it must
-// never block or fail the turn it runs in (it always exits 0).
+// Authoritative reads remain the `repo swarm poll` / direct coordination_poll
+// path. This hook is a convenience that may drop, cap, or miss messages under
+// load or transport failure; it must never block or fail the turn it runs in
+// (it always exits 0).
 import {
   chmodSync,
   existsSync,
@@ -75,12 +73,12 @@ export const CAP_BODY_BYTES = 16 * 1024;
 // returns partial output rather than being killed with nothing.
 export const DEFAULT_DEADLINE_MS = 8_000;
 
-// --- coordination_* migration (feature-flagged, DEFAULT OFF) ---------------
-// See CoordinationBus and selectBus() below, after RepoMemoryBus, for the
-// full adapter and the 2026-09-07 live-probe findings that shaped it.
+// --- coordination_* bus configuration ----------------------------------------
+// See CoordinationBus below for the adapter and the 2026-09-07 live-probe
+// findings that shaped it.
 export const COORDINATION_TOKEN_MIN = 4;
 export const COORDINATION_TOKEN_MAX = 16;
-// swarm_bus_poll requests 100 per mailbox today, up to 3 mailboxes
+// The legacy swarm_bus_poll requested 100 per mailbox, up to 3 mailboxes
 // (workspace + lane + global) = up to 300 messages fetched per sweep across
 // separate calls; coordination_poll answers ONE merged stream, so this asks
 // for the same total ceiling in the single call rather than the tool's own
@@ -233,49 +231,10 @@ export class McpGatewayClient {
   async close() {}
 }
 
-export class RepoMemoryBus {
-  constructor(client) {
-    this.name = "repo-memory";
-    this.client = client;
-  }
-
-  /**
-   * `afterSequence` is passed through to the server as a hint (fan-in where
-   * the API accepts it). Whether the deployed swarm_bus_poll tool honors it
-   * is unverified from this repo -- falsifier: read the tool's schema on the
-   * gateway. Correctness therefore never depends on the server honoring it:
-   * callers must still filter the returned messages against their own local
-   * cursor (see filterUnread below).
-   */
-  async poll(workspace, consumer, { afterSequence, signal } = {}) {
-    const args = { workspace, consumer, limit: 100 };
-    if (Number.isInteger(afterSequence)) args.after_sequence = afterSequence;
-    const result = await this.client.callRepoMemory("swarm_bus_poll", args, signal);
-    const messages = (result.messages ?? []).map((item) => ({ ...item, origin: this.name }));
-    messages.knownConsumer = result.known_consumer !== false;
-    return messages;
-  }
-
-  async subscribe(workspace, consumer, signal) {
-    return this.client.callRepoMemory("swarm_bus_subscribe", { workspace, consumer }, signal);
-  }
-
-  async ack(workspace, consumer, messageId, signal) {
-    await this.client.callRepoMemory("swarm_bus_ack", { workspace, consumer, message_id: messageId }, signal);
-  }
-
-  async post(workspace, message, signal) {
-    await this.client.callRepoMemory("swarm_bus_post", { workspace, ...message }, signal);
-  }
-
-  async close() { await this.client.close(); }
-}
-
+// The coordination tier is the sole supported mailbox wire.
 // --- coordination_* bus (feature-flagged, DEFAULT OFF) ----------------------
 //
-// Gate: REPO_MEMORY_COORDINATION_BUS=1 (exactly that literal string)
-// selects this path via selectBus() below; anything else (unset, "0",
-// "true", ...) keeps RepoMemoryBus above wired byte-for-byte unchanged.
+// The coordination tier is the only supported mailbox wire.
 //
 // LIVE-PROBED 2026-09-07 against the deployed gateway via mcp_tool_call,
 // disposable principal "probe-01ab", mailbox "dotfiles" (both left
@@ -287,35 +246,14 @@ export class RepoMemoryBus {
 //     NO inbox_uri was present in a successful response at all. subscribe()
 //     below treats ack_watermark-without-inbox_uri as success, matching
 //     this observed shape, not as a missing field to retry around.
-//   - Every follow-up call using only principal+session -- coordination_poll,
-//     coordination_post, coordination_ack -- failed identically, including
-//     immediately after a second subscribe reporting created:false (i.e.
-//     the binding already existed): "requires a matching
-//     coordination_subscribe binding or signed inbox_uri capability for
-//     this exact coordination session". mcp_tool_call is a stateless
-//     per-request proxy; "this exact coordination session" plausibly means
-//     a transport-level session that route cannot hold across calls. This
-//     is strong evidence against principal+session-only reachability
-//     THROUGH THAT ROUTE, but not proof against reachability through this
-//     hook's own direct tools/call transport (McpGatewayClient above),
-//     which remains UNTESTED end-to-end. That gap -- not a generic
-//     "be careful" caveat -- is the concrete reason this stays off by
-//     default pending a live run through the hook's real transport.
 //   - Mailboxes are a CLOSED registry, confirmed by rejection: known
 //     mailboxes as of that probe were global, presence, dotfiles, infra,
 //     jcode, singularity-engine. This hook's channel names come from
 //     basename(repoRoot)/basename(worktree) (e.g. a worktree lane like
-//     "eng-swarm-bus") and are NOT guaranteed to be registered, unlike
-//     swarm_bus_* which accepted any workspace string -- and an
+//     "eng-swarm-bus") and are NOT guaranteed to be registered; an
 //     unregistered channel fails the WHOLE subscribe call, not just that
 //     channel. _doSubscribe below retries with the rejected channel
 //     dropped rather than hardcoding this registry, which can grow.
-//
-// Adapter shape matches RepoMemoryBus's external methods exactly
-// (subscribe/poll/ack/post with the same signatures) so runSweep's loop
-// over pollWorkspaces needs no changes for this migration -- see
-// extraPollWorkspaces() for the one deliberate, opt-in exception (the
-// direct-mail catch-all bucket), which is a no-op for RepoMemoryBus.
 // Two distinct rejection wordings observed live for a bad mailbox/channel
 // name: an unregistered-but-otherwise-valid name ("mailbox \"x\" is not
 // registered"), and a malformed-shape name that fails the bare-name check
@@ -397,8 +335,7 @@ export class CoordinationBus {
   }
 
   // The synthetic direct-mail bucket is polled every run alongside whatever
-  // real channels runSweep already enumerates; a no-op for RepoMemoryBus
-  // (undefined), so this changes nothing when the flag is off.
+  // real channels runSweep already enumerates.
   extraPollWorkspaces() {
     return [INBOX_BUCKET];
   }
@@ -455,11 +392,11 @@ export class CoordinationBus {
     this._ensureIdentity(consumer);
     // Unconditional per-run subscribe (DESIGN's per-run-flow step 2), done
     // HERE rather than relying on runSweep's per-workspace cursor gating to
-    // have called subscribe() first: a warm .cursor.json left over from the
-    // swarm_bus_* era has an integer sequence for every workspace already,
-    // so runSweep would never call bus.subscribe() at all, and without this
-    // line poll() would permanently see no capability and return empty
-    // forever -- a silent, undetectable no-op, not a degraded mode.
+    // have called subscribe() first: a warm .cursor.json may have an integer
+    // sequence for every workspace already, so runSweep would never call
+    // bus.subscribe() at all, and without this line poll() would permanently
+    // see no capability and return empty forever -- a silent, undetectable
+    // no-op, not a degraded mode.
     await this._doSubscribe(signal);
     const pollOnce = () => {
       const args = { principal: this._principal, session: this._session, limit: COORDINATION_POLL_LIMIT };
@@ -564,16 +501,9 @@ export class CoordinationBus {
   async close() { await this.client.close(); }
 }
 
-/**
- * Factory selecting the wire path. `options` (identity, channels, env,
- * debug) is only consulted when the flag turns on CoordinationBus; the
- * flag-off branch is exactly today's RepoMemoryBus construction.
- */
-export function selectBus(env, gatewayClient, clientLabel, options = {}) {
-  if (env.REPO_MEMORY_COORDINATION_BUS === "1") {
-    return new CoordinationBus(gatewayClient, { ...options, clientLabel });
-  }
-  return new RepoMemoryBus(gatewayClient);
+/** Construct the sole supported coordination bus. */
+export function selectBus(_env, gatewayClient, clientLabel, options = {}) {
+  return new CoordinationBus(gatewayClient, { ...options, clientLabel });
 }
 
 // --- workspace selection (unchanged from swarm-messages.mjs) ---------------
@@ -865,19 +795,13 @@ export function writeCursor(path, cursor) {
   renameSync(temporary, path);
 }
 
-// --- coordination_* inbox capability persistence (feature-flagged path) ----
+// --- coordination_* inbox capability persistence -----------------------------
 //
 // Deliberately a SEPARATE file from .cursor.json, not a reshape of it:
 // readCursor() above treats anything but a `sequences` object as corrupt
-// (falls back to empty). If a coordination-mode write reshaped that file to
-// carry a single capability instead, unsetting REPO_MEMORY_COORDINATION_BUS
-// would make the swarm_bus_* path see "corrupt" and cold-resubscribe every
-// mailbox for that identity -- accidentally safe only because of the
-// fail-closed subscribe guard elsewhere in this file, not by design. A
-// dedicated file makes the flag toggle losslessly reversible in both
-// directions: swarm_bus_* never reads or writes this file at all, and
-// re-enabling the flag later reuses a still-valid inbox_uri instead of a
-// cold resubscribe.
+// (falls back to empty). The coordination-inbox file stores the signed
+// inbox_uri capability returned by coordination_subscribe so later calls
+// can reuse it without a cold resubscribe.
 export function coordinationInboxPathFor(identity, env = process.env) {
   return join(defaultCursorDir(env), `${safePart(identity)}.coordination-inbox.json`);
 }
@@ -949,8 +873,8 @@ export function writeCoordinationInbox(path, inbox) {
  * list). Stripping exactly one leading dot recovers the real, already-
  * registered channel instead of silently losing it to the retry-drop path.
  * Channel-selection-only: this does not touch the underlying identity used
- * for cursor files or swarm_bus_* workspaces, which have no such
- * restriction and must not be changed by this normalization.
+ * for cursor files, which has no such restriction and must not be changed
+ * by this normalization.
  */
 function normalizeMailboxName(name) {
   return typeof name === "string" && name.startsWith(".") ? name.slice(1) : name;
@@ -960,10 +884,9 @@ export function selectCoordinationChannels(workspace, additionalWorkspaces = [])
   return [...new Set([workspace, ...additionalWorkspaces, "global"].map(normalizeMailboxName))];
 }
 
-// --- flock-based lease, reused verbatim from swarm-messages.mjs ------------
-// (guards the cursor read-modify-write against a concurrent hook invocation
-// for the same identity; see swarm-messages.mjs for the full rationale and
-// measured timings this design is based on.)
+// --- flock-based lease ------------------------------------------------------
+// Guards the cursor read-modify-write against a concurrent hook invocation
+// for the same identity.
 
 function configuredBinary(template, fallback) {
   return /^@[^@]+@$/u.test(template) ? fallback : template;
@@ -1053,7 +976,7 @@ async function acquireCursorLock(cursorPath) {
   return acquireLockAtPath(`${cursorPath}.lock`);
 }
 
-// --- output shaping (unchanged from swarm-messages.mjs) --------------------
+// --- output shaping --------------------------------------------------------
 
 export function clientCanReceive(client, eventName, payload) {
   try {
@@ -1226,9 +1149,7 @@ export async function runSweep({
   // no other mailbox to receive on, and a directive with no specific repo
   // scope is addressed there for every consumer regardless of their own
   // workspace.
-  // bus.extraPollWorkspaces?.() is undefined for RepoMemoryBus, so this is a
-  // no-op there: [...] spread of `?? []` changes nothing about the flag-off
-  // set or its order. CoordinationBus uses it to add the synthetic
+  // CoordinationBus uses extraPollWorkspaces() to add the synthetic
   // direct-mail bucket (see its class header) without runSweep needing to
   // know that bucket exists.
   const pollWorkspaces = [...new Set([workspace, ...additionalWorkspaces, "global", ...(bus.extraPollWorkspaces?.() ?? [])])];
@@ -1257,6 +1178,7 @@ export async function runSweep({
     // acked atomically, so the per-message ack loop and the local cursor
     // advance are skipped.
     let swept = false;
+    let sweepBuckets = null;
 
     if (canReceive) {
       // Fast path: the coordination bus's sweep is one atomic server-side
@@ -1267,6 +1189,7 @@ export async function runSweep({
         try {
           const buckets = await bus.sweep(identity, controller.signal);
           swept = true;
+          sweepBuckets = buckets;
           for (const pollWorkspace of pollWorkspaces) {
             if (controller.signal.aborted) break;
             const bucket = buckets.get(pollWorkspace) ?? [];
@@ -1283,7 +1206,10 @@ export async function runSweep({
           if (isAbortError(error)) {
             deadlineHit = true;
           } else {
-            pollFailures.push({ workspace: pollWorkspaces[0], error: String(error?.message ?? error) });
+            const message = String(error?.message ?? error);
+            for (const pollWorkspace of pollWorkspaces) {
+              pollFailures.push({ workspace: pollWorkspace, error: message });
+            }
           }
         }
       } else {
@@ -1317,7 +1243,7 @@ export async function runSweep({
             // The server lost our cursor (reaped, or never registered) and
             // answered from sequence zero. Discard the batch and re-subscribe
             // at head: a session-scoped identity has no returning reader whose
-            // place we could keep (settled decision — see swarm-messages.mjs).
+            // place we could keep.
             try {
               const subscription = await bus.subscribe(pollWorkspace, identity, controller.signal);
               const watermark = subscription?.ack_watermark;
@@ -1346,6 +1272,15 @@ export async function runSweep({
     // looked identical to a quiet turn.
     if (canReceive && pollWorkspaces.length > 0 && pollFailures.length === pollWorkspaces.length) {
       return { output: null, errors: pollErrors, deadlineHit, unreachable: pollFailures[0].error };
+    }
+
+    if (swept && allPolled.length > 0 && (!sweepBuckets || !Number.isInteger(sweepBuckets.ack_watermark))) {
+      return {
+        output: null,
+        errors: [{ workspace: pollWorkspaces[0], operation: "sweep", error: "sweep returned messages without an ack_watermark; failing closed to avoid replay" }],
+        deadlineHit,
+        unreachable: "sweep returned no ack_watermark",
+      };
     }
 
     // Dedupe by message id across mailboxes BEFORE per-mailbox filtering.
@@ -1535,19 +1470,12 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
   const lane = selected.worktree ? basename(selected.worktree) : null;
   const additionalWorkspaces = lane && lane !== selected.identity ? [lane] : [];
 
-  // Flag-off (default): bus is exactly `new RepoMemoryBus(gatewayClient)`,
-  // byte-for-byte today's construction -- selectBus()'s flag-off branch does
-  // nothing else. The identity/channel derivation below only runs when
-  // REPO_MEMORY_COORDINATION_BUS=1; a derivation failure there is caught by
-  // the same catch block runSweep's own identical derivation would hit
-  // anyway, so this introduces no new failure mode.
-  let bus = new RepoMemoryBus(gatewayClient);
+  // Coordination identity derivation is required for every supported hook.
+  let bus;
   try {
-    if (env.REPO_MEMORY_COORDINATION_BUS === "1") {
-      const identity = deriveIdentity(client, payload, env);
-      const channels = selectCoordinationChannels(selected.identity, additionalWorkspaces);
-      bus = selectBus(env, gatewayClient, client, { identity, channels, env, debug });
-    }
+    const identity = deriveIdentity(client, payload, env);
+    const channels = selectCoordinationChannels(selected.identity, additionalWorkspaces);
+    bus = selectBus(env, gatewayClient, client, { identity, channels, env, debug });
 
     const outcome = await runSweep({
       client,

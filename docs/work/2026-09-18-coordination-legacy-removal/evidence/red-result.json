@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-09-18T06:17:50+00:00",
+  "producer": "codex-01a0b104",
+  "red_proofs": [
+    {
+      "requirement_id": "R1",
+      "command": "node --test --test-name-pattern='Home Manager owns schema-valid Codex hooks.json' scripts/test-swarm-hook-config.mjs",
+      "result": "failed: Codex must describe the coordination tier rather than the retired swarm wire; actual status text was Joining durable repo-memory swarm"
+    },
+    {
+      "requirement_id": "R2",
+      "command": "node --test --test-name-pattern='Home Manager installs every managed hook surface' scripts/test-swarm-hook-config.mjs",
+      "result": "failed: Home Manager installed Kimi's retired coordination-mailbox-sweep.mjs fallback artifact"
+    }
+  ]
+}

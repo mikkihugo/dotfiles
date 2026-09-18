@@ -1,0 +1,42 @@
+{
+  "observed_at": "2026-09-18T06:27:20+00:00",
+  "producer": "codex-01a0b104",
+  "commands": [
+    {
+      "command": "node --test --test-name-pattern='Home Manager owns schema-valid Codex hooks.json' scripts/test-swarm-hook-config.mjs",
+      "phase": "red",
+      "result": "failed as expected: the status text was 'Joining durable repo-memory swarm' rather than coordination wording"
+    },
+    {
+      "command": "node --test --test-name-pattern='Home Manager installs every managed hook surface' scripts/test-swarm-hook-config.mjs",
+      "phase": "red",
+      "result": "failed as expected: Home Manager installed Kimi's retired coordination-mailbox-sweep.mjs fallback artifact"
+    },
+    {
+      "command": "node --test scripts/test-swarm-hook-config.mjs config/codex/hooks/coordination-mailbox-sweep.test.mjs",
+      "phase": "green",
+      "result": "passed: 71 tests, 0 failures"
+    },
+    {
+      "command": "node --test --test-name-pattern='just check delegates to the single repository check implementation' scripts/test-nix-tooling.mjs",
+      "phase": "green",
+      "result": "passed: 1 test, 0 failures"
+    },
+    {
+      "command": "node --test --test-name-pattern='Home Manager uses direnv-instant for interactive shells' scripts/test-stable-shell-path.mjs",
+      "phase": "green",
+      "result": "passed: 1 test, 0 failures"
+    },
+    {
+      "command": "repo check",
+      "phase": "green",
+      "result": "passed: 206 tests, 0 failures, 1 intentional skip; Home Manager activation package built"
+    }
+  ],
+  "review": {
+    "reviewer": "/root/review_coordination_migration",
+    "verdict": "changes-required then addressed",
+    "finding": "Kimi retired fallback artifact was installed by Home Manager",
+    "resolution": "Removed its Home Manager entry and added a deployment assertion."
+  }
+}

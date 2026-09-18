@@ -1,0 +1,251 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-09-18-coordination-legacy-removal-evidence",
+  "workspec_id": "2026-09-18-coordination-legacy-removal-work",
+  "purpose_contract_id": "2026-09-18-coordination-legacy-removal-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "8a81d1b2432d3195f74f54be39b7c79d5a8ea481836ab939796337e7ab1ba03c"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "024af97875021c7cef936446509cf4e381c31471fbd102ce492510623c06bb81"
+  },
+  "workflow_run_id": "2026-09-18-coordination-legacy-removal-run",
+  "execution": {
+    "execution_id": "2026-09-18-coordination-legacy-removal-execution",
+    "tool": {
+      "id": "repo check",
+      "version": "worktree at b69b206 plus reviewed diff"
+    },
+    "result": {
+      "result_id": "2026-09-18-coordination-legacy-removal-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "4c1e1bda1b2534253d5c3b7867018e2f6086e191d1583511026ebbf356ba9a82"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "result",
+        "uri": "evidence/result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "4c1e1bda1b2534253d5c3b7867018e2f6086e191d1583511026ebbf356ba9a82"
+        }
+      },
+      {
+        "artifact_id": "changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "500cc2feaf2b38031343ae9c476aa077dac3ca69c68efdb25caaf20242a25e7e"
+        }
+      },
+      {
+        "artifact_id": "red-result",
+        "uri": "evidence/red-result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "cff4f7adf9fbf0957c1f8af04813e92ec737e31a02f82aaf5600f1167be4120b"
+        }
+      },
+      {
+        "artifact_id": "red-status",
+        "uri": "evidence/red-status.json",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "d7d3672ca9f0b21736869042d8d70481d8c08a8f4b4cb8b22c0f9b1ebc7cca78" }
+      },
+      {
+        "artifact_id": "red-kimi-artifact",
+        "uri": "evidence/red-kimi-artifact.json",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "a1db30239176df1cf26e95cfdeaebe7ee4e63761012e2a9baa2b5567cf32895f" }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-09-18-coordination-legacy-removal-trace",
+    "started_at": "2026-09-18T06:17:50+00:00",
+    "completed_at": "2026-09-18T06:22:04+00:00"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "The canonical selector always uses CoordinationBus and operator status names the coordination tier.",
+      "result_id": "2026-09-18-coordination-legacy-removal-result",
+      "artifact_ids": ["result"],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-09-18T06:27:20+00:00",
+      "red_proof": {
+        "result_id": "2026-09-18-coordination-legacy-removal-red-status",
+        "artifact_id": "red-status",
+        "output_uri": "evidence/red-status.json",
+        "observed_at": "2026-09-18T06:15:00+00:00"
+      }
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "description": "Home Manager does not install Kimi's retired fallback artifact and supported registrations use coordination hooks.",
+      "result_id": "2026-09-18-coordination-legacy-removal-result",
+      "artifact_ids": ["result", "changed-files"],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-09-18T06:27:20+00:00",
+      "red_proof": {
+        "result_id": "2026-09-18-coordination-legacy-removal-red-kimi-artifact",
+        "artifact_id": "red-kimi-artifact",
+        "output_uri": "evidence/red-kimi-artifact.json",
+        "observed_at": "2026-09-18T06:16:00+00:00"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "024af97875021c7cef936446509cf4e381c31471fbd102ce492510623c06bb81"
+      },
+      "artifact_ids": ["result"],
+      "producer": { "kind": "agent", "id": "codex-01a0b104" },
+      "observed_at": "2026-09-18T06:27:20+00:00",
+      "rationale": "The full declared repository gate passed after red-first coordination fixes."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "500cc2feaf2b38031343ae9c476aa077dac3ca69c68efdb25caaf20242a25e7e"
+      },
+      "files": [
+        "config/agent-hooks/install-swarm-hooks.mjs",
+        "config/claude/hooks/coordination-mailbox-sweep.sh",
+        "config/claude/hooks/swarm-messages.sh",
+        "config/codex/hooks.json",
+        "config/codex/hooks/coordination-mailbox-sweep.mjs",
+        "config/codex/hooks/coordination-mailbox-sweep.sh",
+        "config/codex/hooks/coordination-mailbox-sweep.test.mjs",
+        "config/codex/hooks/coordination-mailbox-sweep.transport.test.mjs",
+        "config/codex/hooks/swarm-messages.mjs",
+        "config/copilot/hooks/coordination-mailbox-sweep.json",
+        "config/copilot/hooks/coordination-mailbox-sweep.sh",
+        "config/copilot/hooks/swarm-messages.json",
+        "config/kimi-code/hooks/swarm-messages.sh",
+        "docs/work/2026-09-18-coordination-legacy-removal/current-spec.snapshot.json",
+        "docs/work/2026-09-18-coordination-legacy-removal/evidence/changed-files.json",
+        "docs/work/2026-09-18-coordination-legacy-removal/evidence/red-kimi-artifact.json",
+        "docs/work/2026-09-18-coordination-legacy-removal/evidence/red-result.json",
+        "docs/work/2026-09-18-coordination-legacy-removal/evidence/red-status.json",
+        "docs/work/2026-09-18-coordination-legacy-removal/evidence/result.json",
+        "docs/work/2026-09-18-coordination-legacy-removal/evidence.bundle.json",
+        "docs/work/2026-09-18-coordination-legacy-removal/purpose.contract.json",
+        "docs/work/2026-09-18-coordination-legacy-removal/validation.report.json",
+        "docs/work/2026-09-18-coordination-legacy-removal/work.spec.json",
+        "home/modules/files.nix",
+        "scripts/repo-check.sh",
+        "scripts/test-nix-tooling.mjs",
+        "scripts/test-stable-shell-path.mjs",
+        "scripts/test-swarm-hook-config.mjs",
+        "scripts/test-swarm-messages.mjs"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "The red proofs demonstrated stale status wording and an installed retired Kimi fallback; the focused green suite rejects both regressions.",
+    "output_uri": "evidence/result.json"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false,
+    "review_required": true
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "e109b9ba954ca4d879376b8286ae68cc5dbc786b0151926e29178e82b115d411"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "5bb37cb907409c65e2371919368e00fdad8513657904146fcee6e6f3710ad364"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "6afd36ed2827977694af5bd08220e1539a78655718717959584ddd759eac37e6"
+    },
+    "witness_artifact_id": "result"
+  },
+  "reviews": [
+    {
+      "review_id": "coordination-legacy-removal-review",
+      "reviewer": {
+        "kind": "agent",
+        "id": "/root/review_coordination_migration"
+      },
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "024af97875021c7cef936446509cf4e381c31471fbd102ce492510623c06bb81"
+      },
+      "verdict": "approved",
+      "artifact_id": "result",
+      "observed_at": "2026-09-18T06:22:04+00:00",
+      "independent": true,
+      "rationale": "The reviewer confirmed the installed Kimi fallback was removed and its regression assertion passes; no Critical or Important source findings remain."
+    }
+  ],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "result",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "024af97875021c7cef936446509cf4e381c31471fbd102ce492510623c06bb81"
+      },
+      "observed_at": "2026-09-18T06:17:50+00:00",
+      "rationale": "The status assertion failed before the source correction and passes after it."
+    },
+    {
+      "breaker_id": "B2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "result",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "024af97875021c7cef936446509cf4e381c31471fbd102ce492510623c06bb81"
+      },
+      "observed_at": "2026-09-18T06:17:50+00:00",
+      "rationale": "The deployment assertion failed before removal of the Kimi fallback and passes after it."
+    }
+  ]
+}

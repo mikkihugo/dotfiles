@@ -1,0 +1,23 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-18-coordination-legacy-removal-purpose",
+  "source": { "system": "manual", "repository": ".", "request_id": "2026-09-18-coordination-legacy-removal" },
+  "lineage": {
+    "origin": { "kind": "request", "id": "mhugo-2026-09-18-land-legacy-removal", "revision": "1" },
+    "objective": { "id": "coordination-only-client-hooks", "statement": "Retire the unsupported swarm_bus client implementation.", "measure": "Supported hooks issue coordination_* requests without a feature flag or installed swarm-messages implementation." },
+    "need": { "id": "legacy-client-wire", "statement": "The installed Codex hook and JCode bootstrap can still select swarm_bus_* although the supported mailbox is coordination_*.", "stakeholders": ["Codex, Claude, Copilot, Kimi Code, and JCode hooks on this devbox"], "baseline": "The baseline selector returns RepoMemoryBus whenever REPO_MEMORY_COORDINATION_BUS is absent, and JCode starts swarm-messages.mjs.", "consequence_of_no_action": "A missing wrapper flag or JCode session can use an obsolete mailbox protocol.", "assumptions": ["The canonical deployed implementation is config/codex/hooks/coordination-mailbox-sweep.mjs, as Home Manager maps that source into ~/.codex/hooks."], "alternatives_considered": ["Retain the feature flag and legacy fallback", "Replace the canonical hook with the donor's current coordination-only implementation"] }
+  },
+  "admission": { "state": "proposed", "producer": { "kind": "agent", "id": "codex-coordination-legacy-removal" }, "reason": "Operator authorized bounded recovery into a clean lane." },
+  "purpose": "Ensure all supported agent lifecycle hooks use the coordination mailbox tier.",
+  "consumer": "Home Manager-installed agent hooks and the JCode session bootstrap.",
+  "contract": "The canonical hook selector shall always construct CoordinationBus, JCode shall invoke coordination-mailbox-sweep.mjs, and retired Codex, Claude, and Copilot compatibility artifacts shall not be installed.",
+  "failure_boundary": "Mailbox transport failures remain fail-open; this change must not change skill-gate registration, secret handling, or non-hook client configuration.",
+  "evidence": [{ "kind": "test", "description": "Focused hook configuration and CoordinationBus contract tests prove the coordination-only path." }, { "kind": "other", "description": "The relevant Home Manager activation configuration evaluates." }],
+  "falsifier": { "claim": "Supported hooks cannot select swarm_bus_*.", "executable_check": { "kind": "test", "command": "node --test scripts/test-swarm-hook-config.mjs config/codex/hooks/coordination-mailbox-sweep.test.mjs", "description": "A legacy selector, installed compatibility implementation, or JCode legacy command fails the test." } },
+  "non_goals": ["Changing repo_memory server behavior", "Rewriting unused per-client mirror sources", "Removing the Kimi compatibility filename while it is still the configured path", "Publishing or activating Home Manager"],
+  "invariants": ["Automatic hooks remain fail-open", "Coordination inbox capabilities remain separately stored", "Skills-gate hooks remain registered"],
+  "assumptions": [{ "statement": "The donor's coordination-only hook implementation is current-compatible with main.", "status": "verified", "doubt": 1, "falsifier": "Focused baseline/donor source comparison shows a required main-only behavior would be lost." }, { "statement": "No supported path needs RepoMemoryBus after this change.", "status": "verified", "doubt": 1, "falsifier": "A focused hook configuration or transport test names a supported caller that requires swarm_bus_*." }],
+  "run_control": { "autonomous_allowed": true, "risk": "medium", "blast_radius": "repo", "reversibility": "easy", "max_active_doubt": 1 },
+  "target_planes": ["client", "configuration"],
+  "plane_constraints": ["Home Manager owns deployed hook paths; repo_memory owns coordination protocol behavior."]
+}

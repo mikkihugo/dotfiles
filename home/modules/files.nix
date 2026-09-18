@@ -38,25 +38,6 @@
       force = true;
     };
 
-    ".codex/hooks/swarm-messages.mjs" = {
-      source = pkgs.replaceVars ../../config/codex/hooks/swarm-messages.mjs {
-        node = "${pkgs.nodejs}/bin/node";
-        flock = "${pkgs.util-linux}/bin/flock";
-        bash = "${pkgs.bash}/bin/bash";
-      };
-      executable = true;
-      force = true;
-    };
-
-    ".claude/hooks/swarm-messages.sh" = {
-      source = pkgs.replaceVars ../../config/claude/hooks/swarm-messages.sh {
-        bash = "${pkgs.bash}/bin/bash";
-        node = "${pkgs.nodejs}/bin/node";
-      };
-      executable = true;
-      force = true;
-    };
-
     # install-swarm-hooks.mjs registers SessionStart and UserPromptSubmit
     # against this exact path, so it must be declared here or Claude's managed
     # hooks ENOENT after a wipe while every other client keeps sweeping. Claude
@@ -124,9 +105,10 @@
     };
 
     # coordination-mailbox-sweep is the renamed, bounded, cursor-based
-    # successor to the swarm-messages hook above. The swarm-messages.* paths
-    # above stay as compatibility shims for one release (factory still names
-    # them directly). Codex, Claude, Kimi-Code, Copilot, and Cursor hook
+    # successor to the swarm-messages hook above. The Kimi compatibility
+    # shell remains only while Kimi's configured filename requires it; every
+    # supported client executes the shared Codex coordination implementation.
+    # Codex, Claude, Kimi-Code, Copilot, and Cursor hook
     # registrations point at the coordination-mailbox-sweep names below.
     # The .mjs impls and observations-autolog.*.{sh,mjs} live as a canonical
     # bundle in fabrics/tools/services/purpose-tool/host-hooks/ (engine source
@@ -359,16 +341,6 @@
       force = true;
     };
 
-    ".kimi-code/hooks/coordination-mailbox-sweep.mjs" = {
-      source = pkgs.replaceVars ../../config/kimi-code/hooks/coordination-mailbox-sweep.mjs {
-        node = "${pkgs.nodejs}/bin/node";
-        flock = "${pkgs.util-linux}/bin/flock";
-        bash = "${pkgs.bash}/bin/bash";
-      };
-      executable = true;
-      force = true;
-    };
-
     ".kimi-code/hooks/coordination-mailbox-sweep.sh" = {
       source = pkgs.replaceVars ../../config/kimi-code/hooks/coordination-mailbox-sweep.sh {
         bash = "${pkgs.bash}/bin/bash";
@@ -399,8 +371,8 @@
       force = true;
     };
 
-    ".copilot/hooks/swarm-messages.json" = {
-      source = ../../config/copilot/hooks/swarm-messages.json;
+    ".copilot/hooks/coordination-mailbox-sweep.json" = {
+      source = ../../config/copilot/hooks/coordination-mailbox-sweep.json;
       force = true;
     };
 

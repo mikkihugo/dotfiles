@@ -1,0 +1,7 @@
+{
+  "result_id": "2026-09-18-coordination-legacy-removal-red-status",
+  "status": "failed",
+  "observed_at": "2026-09-18T06:15:00+00:00",
+  "command": "node --test --test-name-pattern='Home Manager owns schema-valid Codex hooks.json' scripts/test-swarm-hook-config.mjs",
+  "result": "Codex must describe the coordination tier rather than the retired swarm wire; actual status text was Joining durable repo-memory swarm"
+}

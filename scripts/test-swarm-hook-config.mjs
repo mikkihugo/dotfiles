@@ -8,7 +8,7 @@ import test from "node:test";
 
 const readJSON = async (path) => JSON.parse(await readFile(path, "utf8"));
 
-test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm registration", async () => {
+test("Home Manager owns schema-valid Codex hooks.json with repo-memory coordination registration", async () => {
   const codex = await readJSON("config/codex/hooks.json");
   assert.equal(codex.version, undefined);
   // Codex SessionStart + UserPromptSubmit point at the coordination-mailbox-sweep
@@ -24,8 +24,13 @@ test("Home Manager owns schema-valid Codex hooks.json with repo-memory swarm reg
   assert.match(JSON.stringify(codex.hooks.SessionStart), /coordination-mailbox-sweep\.sh codex SessionStart/);
   assert.match(JSON.stringify(codex.hooks.UserPromptSubmit), /coordination-mailbox-sweep\.sh codex UserPromptSubmit/);
   assert.match(codex.description, /repo-memory/);
+  assert.match(
+    codex.hooks.SessionStart[0].hooks[0].statusMessage,
+    /durable repo-memory coordination/,
+    "Codex must describe the coordination tier rather than the retired swarm wire",
+  );
 
-  const copilot = await readJSON("config/copilot/hooks/swarm-messages.json");
+  const copilot = await readJSON("config/copilot/hooks/coordination-mailbox-sweep.json");
   assert.equal(copilot.version, 1);
   // Copilot migrated off the legacy swarm-messages.mjs shim onto the
   // HM-rendered coordination-mailbox-sweep.sh shim (mirrors the Claude and
@@ -87,7 +92,7 @@ test("codex hooks.json wires SessionStart + UserPromptSubmit at the HM-rendered 
   const files = await readFile("home/modules/files.nix", "utf8");
   assert.match(files, /replaceVars[\s\S]*config\/codex\/hooks\/coordination-mailbox-sweep\.sh/);
   const shim = await readFile("config/codex/hooks/coordination-mailbox-sweep.sh", "utf8");
-  assert.match(shim, /export REPO_MEMORY_COORDINATION_BUS=1/);
+  assert.doesNotMatch(shim, /REPO_MEMORY_COORDINATION_BUS/);
   assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs/);
 });
 
@@ -121,7 +126,7 @@ test("copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered
   // as the client name. A copilot session under the new wiring must produce
   // a coordination-mailbox-copilot-*.cursor.json under
   // /home/mhugo/.local/state/coordination-mailbox/ on its first poll.
-  const copilot = await readJSON("config/copilot/hooks/swarm-messages.json");
+  const copilot = await readJSON("config/copilot/hooks/coordination-mailbox-sweep.json");
   const sessionStart = JSON.stringify(copilot.hooks.sessionStart);
   const userPromptTransformed = JSON.stringify(copilot.hooks.userPromptTransformed);
   const SHIM = "/home/mhugo/.copilot/hooks/coordination-mailbox-sweep.sh";
@@ -165,26 +170,31 @@ test("factory settings.json wires SessionStart + UserPromptSubmit at the HM-rend
 
 test("Home Manager installs every managed hook surface", async () => {
   const files = await readFile("home/modules/files.nix", "utf8");
-  assert.match(files, /\.copilot\/hooks\/swarm-messages\.json/);
+  assert.match(files, /\.copilot\/hooks\/coordination-mailbox-sweep\.json/);
   assert.match(files, /\.cursor\/hooks\.json/);
-  assert.match(files, /replaceVars[\s\S]*config\/codex\/hooks\/swarm-messages\.mjs/);
+  assert.match(files, /replaceVars[\s\S]*config\/codex\/hooks\/coordination-mailbox-sweep\.mjs/);
   const codexHook = files.slice(
-    files.indexOf('".codex/hooks/swarm-messages.mjs"'),
-    files.indexOf('".claude/hooks/swarm-messages.sh"'),
+    files.indexOf('".codex/hooks/coordination-mailbox-sweep.mjs"'),
+    files.indexOf('".codex/hooks/coordination-mailbox-sweep.sh"'),
   );
   assert.match(codexHook, /flock = "\$\{pkgs\.util-linux\}\/bin\/flock"/);
   assert.match(codexHook, /bash = "\$\{pkgs\.bash\}\/bin\/bash"/);
-  assert.match(files, /replaceVars[\s\S]*config\/claude\/hooks\/swarm-messages\.sh/);
+  assert.doesNotMatch(files, /config\/codex\/hooks\/swarm-messages\.mjs/);
+  assert.doesNotMatch(files, /config\/claude\/hooks\/swarm-messages\.sh/);
+  assert.doesNotMatch(
+    files,
+    /config\/kimi-code\/hooks\/coordination-mailbox-sweep\.mjs/,
+    "Kimi uses the shared Codex coordination implementation through its shell shim; do not install its retired fallback copy",
+  );
   assert.match(files, /replaceVars[\s\S]*config\/kimi-code\/hooks\/swarm-messages\.sh/);
   const activation = await readFile("home/modules/activation.nix", "utf8");
   assert.match(activation, /install-swarm-hooks\.mjs/);
 
-  assert.match(await readFile("config/codex/hooks/swarm-messages.mjs", "utf8"), /^#!@node@/);
-  for (const path of ["config/claude/hooks/swarm-messages.sh", "config/kimi-code/hooks/swarm-messages.sh"]) {
-    const wrapper = await readFile(path, "utf8");
-    assert.match(wrapper, /^#!@bash@/);
-    assert.match(wrapper, /exec @node@/);
-  }
+  assert.match(await readFile("config/codex/hooks/coordination-mailbox-sweep.mjs", "utf8"), /^#!@node@/);
+  const kimiWrapper = await readFile("config/kimi-code/hooks/swarm-messages.sh", "utf8");
+  assert.match(kimiWrapper, /^#!@bash@/);
+  assert.match(kimiWrapper, /exec @node@/);
+  assert.doesNotMatch(kimiWrapper, /REPO_MEMORY_COORDINATION_BUS/);
 });
 
 test("Goose and JCode wrappers export one inherited session identity", async () => {
@@ -320,7 +330,7 @@ test("activation merge installs JCode session bootstrap without replacing unrela
     const updated = await readFile(jcodePath, "utf8");
     assert.match(updated, /turn_end = "notify-finished"/);
     assert.match(updated, /pre_tool_timeout_ms = 1500/);
-    assert.match(updated, /session_start = ".*swarm-messages\.mjs jcode SessionStart"/);
+    assert.match(updated, /session_start = ".*coordination-mailbox-sweep\.mjs jcode SessionStart"/);
     assert.equal((updated.match(/^session_start = /gm) ?? []).length, 1);
   } finally {
     await rm(home, { recursive: true, force: true });
@@ -435,15 +445,10 @@ test("the Claude Stop hook reads the same bus tier as the sweep (dotfiles #28)",
   );
 
   const sweepShim = await readFile("config/claude/hooks/coordination-mailbox-sweep.sh", "utf8");
-  const tierOf = (text) => /export REPO_MEMORY_COORDINATION_BUS=(\S+)/.exec(text)?.[1];
-  assert.equal(
-    tierOf(shim),
-    tierOf(sweepShim),
-    "Stop and sweep must not drift onto different tiers",
-  );
+  assert.doesNotMatch(sweepShim, /REPO_MEMORY_COORDINATION_BUS/);
 
-  // The shim only sets the flag; the hook still has to consult it. Pinning
-  // RepoMemoryBus directly ignores the flag and silently stays on the dead wire.
+  // The Stop shim retains its explicit coordination setting until its separate
+  // implementation is migrated; the sweep no longer depends on this flag.
   const hook = await readFile("config/claude/hooks/stop-continue-if-actionable.mjs", "utf8");
   assert.match(hook, /selectBus\(/, "the Stop hook must choose its bus via selectBus(), not pin one");
   assert.match(hook, /REPO_MEMORY_COORDINATION_BUS === "1"/, "the Stop hook must gate on the tier flag");

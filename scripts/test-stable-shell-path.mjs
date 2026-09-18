@@ -116,7 +116,7 @@ test("Home Manager uses direnv-instant for interactive shells", async () => {
     "utf8",
   );
   const bootstrap = await readFile("nix/bootstrap.sh", "utf8");
-  const swarmHook = await readFile("config/codex/hooks/swarm-messages.mjs", "utf8");
+  const coordinationHook = await readFile("config/codex/hooks/coordination-mailbox-sweep.mjs", "utf8");
 
   assert.match(flake, /direnv-instant\.homeModules\.direnv-instant/);
   assert.match(flake, /inherit sops-nix llm-agents direnv-instant/);
@@ -142,7 +142,7 @@ test("Home Manager uses direnv-instant for interactive shells", async () => {
   assert.match(bootstrap, /fish_add_path --prepend "\$HOME\/\.local\/bin"/);
   assert.match(bootstrap, /if ! grep -q "direnv-instant hook"/);
   assert.doesNotMatch(bootstrap, /grep -Eq "direnv\(-instant\)\? hook"/);
-  assert.match(swarmHook, /delete lockHelperEnv\.BASH_ENV/);
+  assert.match(coordinationHook, /delete lockHelperEnv\.BASH_ENV/);
 });
 
 test("the NixOS devbox is the sole interactive direnv hook authority", {
@@ -753,4 +753,3 @@ fj
     `fj must pass a non-empty --host when FJ_HOST is unset, got: ${JSON.stringify(result.stdout)}`,
   );
 });
-

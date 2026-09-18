@@ -1,0 +1,200 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-09-18-coordination-legacy-removal-work",
+  "purpose_contract_id": "2026-09-18-coordination-legacy-removal-purpose",
+  "handover": {
+    "state": "proposed",
+    "producer": { "kind": "agent", "id": "codex-coordination-legacy-removal" },
+    "reason": "Operator-directed bounded migration."
+  },
+  "feature_tree_target": {
+    "kind": "component",
+    "name": "agent-coordination-hooks",
+    "status": "in_progress"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-09-18-coordination-legacy-removal-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "e109b9ba954ca4d879376b8286ae68cc5dbc786b0151926e29178e82b115d411"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "The canonical supported hook implementation shall use CoordinationBus regardless of REPO_MEMORY_COORDINATION_BUS.",
+        "acceptance_criteria": [
+          "The selector test observes CoordinationBus when the environment flag is absent",
+          "No canonical hook request names swarm_bus_*"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Canonical coordination mailbox hook",
+            "response": "construct CoordinationBus"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "An unset feature flag selects RepoMemoryBus",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "When Home Manager renders supported hook artifacts, it shall install only coordination-named Codex, Claude, and Copilot artifacts and JCode shall start the coordination hook.",
+        "acceptance_criteria": [
+          "Focused configuration test rejects legacy artifact installation",
+          "Focused configuration test rejects JCode swarm-messages command"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Home Manager hook configuration",
+            "trigger": "a supported agent hook is installed",
+            "response": "wire the coordination mailbox implementation"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "A supported deployment artifact names a retired compatibility implementation",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "The canonical supported hook implementation shall use CoordinationBus regardless of REPO_MEMORY_COORDINATION_BUS.",
+      "acceptance_criteria": [
+        "The selector test observes CoordinationBus when the environment flag is absent",
+        "No canonical hook request names swarm_bus_*"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Canonical coordination mailbox hook",
+          "response": "construct CoordinationBus"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "An unset feature flag selects RepoMemoryBus",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "When Home Manager renders supported hook artifacts, it shall install only coordination-named Codex, Claude, and Copilot artifacts and JCode shall start the coordination hook.",
+      "acceptance_criteria": [
+        "Focused configuration test rejects legacy artifact installation",
+        "Focused configuration test rejects JCode swarm-messages command"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Home Manager hook configuration",
+          "trigger": "a supported agent hook is installed",
+          "response": "wire the coordination mailbox implementation"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "A supported deployment artifact names a retired compatibility implementation",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "docs/work/2026-09-18-coordination-legacy-removal/**",
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "config/codex/hooks.json",
+      "config/codex/hooks/coordination-mailbox-sweep.mjs",
+      "config/codex/hooks/coordination-mailbox-sweep.test.mjs",
+      "config/codex/hooks/coordination-mailbox-sweep.transport.test.mjs",
+      "config/*/hooks/coordination-mailbox-sweep.sh",
+      "config/codex/hooks/swarm-messages.mjs",
+      "config/claude/hooks/swarm-messages.sh",
+      "config/copilot/hooks/swarm-messages.json",
+      "config/copilot/hooks/coordination-mailbox-sweep.json",
+      "home/modules/files.nix",
+      "scripts/repo-check.sh",
+      "scripts/test-swarm-hook-config.mjs",
+      "scripts/test-swarm-messages.mjs",
+      "scripts/test-nix-tooling.mjs",
+      "scripts/test-stable-shell-path.mjs",
+      "config/kimi-code/hooks/swarm-messages.sh"
+    ],
+    "blocked": ["~/.codex/**", "repo_memory server", "deployment activation"],
+    "expected_files": []
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Selector test rejects the legacy default.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "Configuration test rejects legacy artifacts and JCode bootstrap.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "node --test scripts/test-swarm-hook-config.mjs config/codex/hooks/coordination-mailbox-sweep.test.mjs",
+      "repo check"
+    ],
+    "evidence_required": ["test", "quality", "falsifier"]
+  },
+  "model_requirements": { "coding": 0.5, "debugging": 0.5 },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": { "kind": "agent", "id": "codex-coordination-legacy-removal" },
+    "agent_role": "implementer",
+    "source_node_id": "agent-coordination-hooks",
+    "target_planes": ["client", "configuration"],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": { "kind": "local" }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "process",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

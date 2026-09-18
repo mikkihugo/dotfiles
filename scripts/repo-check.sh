@@ -90,7 +90,6 @@ main() {
 			scripts/test-sops-trace-guard.mjs \
 			scripts/test-stable-shell-path.mjs \
 			scripts/test-hms-primary-checkout-guard.mjs \
-			scripts/test-swarm-messages.mjs \
 			scripts/test-swarm-hook-config.mjs \
 			scripts/test-skills-gate-hook.mjs \
 			config/codex/hooks/coordination-mailbox-sweep.test.mjs \

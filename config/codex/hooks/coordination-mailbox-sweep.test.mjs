@@ -8,7 +8,6 @@ import {
   CAP_BODY_BYTES,
   CAP_MESSAGE_COUNT,
   CoordinationBus,
-  RepoMemoryBus,
   buildTrailerLine,
   capMessages,
   clientCanReceive,
@@ -325,7 +324,7 @@ test("dedupeByMessageId leaves messages with no id untouched (no id is not a dup
 });
 
 // =============================================================================
-// coordination_* migration (feature-flagged, REPO_MEMORY_COORDINATION_BUS=1)
+// coordination_* is the sole supported mailbox tier.
 // =============================================================================
 //
 // These tests cover the new path's pure logic only (channel selection,
@@ -338,26 +337,15 @@ test("dedupeByMessageId leaves messages with no id untouched (no id is not a dup
 // ("probe-01ab", mailbox "dotfiles") -- see CoordinationBus's own header
 // comment in coordination-mailbox-sweep.mjs for the full probe transcript.
 
-// --- selectBus: flag gating --------------------------------------------------
+// --- selectBus: coordination-only -------------------------------------------
 
-test("selectBus returns RepoMemoryBus when the flag is unset, empty, or any value other than the literal string \"1\"", () => {
+test("selectBus returns CoordinationBus regardless of the retired feature flag", () => {
   const gatewayClient = {};
-  for (const value of [undefined, "", "0", "true", "TRUE", "on", "yes"]) {
+  for (const value of [undefined, "", "0", "true", "TRUE", "on", "yes", "1"]) {
     const env = value === undefined ? {} : { REPO_MEMORY_COORDINATION_BUS: value };
-    const bus = selectBus(env, gatewayClient, "codex");
-    assert.ok(bus instanceof RepoMemoryBus, `expected RepoMemoryBus for REPO_MEMORY_COORDINATION_BUS=${JSON.stringify(value)}`);
+    const bus = selectBus(env, gatewayClient, "codex", { identity: "codex-abcd1234", channels: ["dotfiles", "global"] });
+    assert.ok(bus instanceof CoordinationBus, `expected CoordinationBus for REPO_MEMORY_COORDINATION_BUS=${JSON.stringify(value)}`);
   }
-});
-
-test("selectBus returns CoordinationBus only for the literal string \"1\"", () => {
-  const gatewayClient = {};
-  const bus = selectBus(
-    { REPO_MEMORY_COORDINATION_BUS: "1" },
-    gatewayClient,
-    "codex",
-    { identity: "codex-abcd1234", channels: ["engine", "global"], env: {} },
-  );
-  assert.ok(bus instanceof CoordinationBus);
 });
 
 // --- channel selection --------------------------------------------------------

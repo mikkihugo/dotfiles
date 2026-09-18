@@ -1,0 +1,18 @@
+{
+  "source": "repository-vcs-facade",
+  "files": [
+    "config/codex/skills/external-harness-orchestration/SKILL.md",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/README.md",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/current-spec.snapshot.json",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/evidence.bundle.json",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/evidence/changed-files.json",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/evidence/red-coordination-result.json",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/evidence/red-result.json",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/evidence/review-result.json",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/evidence/result.json",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/purpose.contract.json",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/validation.report.json",
+    "docs/work/2026-09-18-codex-external-profile-orchestration/work.spec.json",
+    "scripts/test-codex-external-harness-skill.mjs"
+  ]
+}

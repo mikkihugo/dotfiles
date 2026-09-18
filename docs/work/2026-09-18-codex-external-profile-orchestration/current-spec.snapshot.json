@@ -1,0 +1,16 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-09-18-codex-external-profile-orchestration-current-spec",
+  "source": { "uri": "repository://config/codex/skills/external-harness-orchestration/SKILL.md", "revision": "2f4345448acbe9b865e8c161dce147d3cde64999" },
+  "requirements": [
+    {
+      "id": "CURRENT-1",
+      "statement": "Codex root coordinates, verifies, and solely publishes work delegated through Kimi CLI or Cursor.",
+      "acceptance_criteria": ["The skill names Codex root as coordinator, verifier, and sole publisher", "Kimi CLI and Cursor launch contracts remain documented"],
+      "requirement_form": { "ears": { "pattern": "ubiquitous", "system": "External harness orchestration", "response": "keep Codex root as coordinator, verifier, and sole publisher" } },
+      "breaker": { "breaker_id": "CURRENT-B1", "condition": "Codex root is no longer the sole publisher", "witness_kind": "contract-test", "expected": "rejected" },
+      "risk": "low",
+      "source": "legacy"
+    }
+  ]
+}

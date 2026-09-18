@@ -1,0 +1,27 @@
+{
+  "result_id": "2026-09-18-codex-external-profile-orchestration-result",
+  "status": "passed",
+  "observed_at": "2026-09-18T07:38:55Z",
+  "commands": [
+    {
+      "command": "node --test scripts/test-codex-external-harness-skill.mjs",
+      "exit_code": 0,
+      "summary": "22 passed, 0 failed"
+    },
+    {
+      "command": "node --test scripts/test-codex-external-harness-skill.mjs scripts/test-codex-external-run.mjs",
+      "exit_code": 0,
+      "summary": "48 passed, 0 failed"
+    },
+    {
+      "command": "uv run --with pyyaml python /home/mhugo/.codex/skills/.system/skill-creator/scripts/quick_validate.py config/codex/skills/external-harness-orchestration",
+      "exit_code": 0,
+      "summary": "Skill is valid"
+    },
+    {
+      "command": "repo check",
+      "exit_code": 0,
+      "summary": "Full dotfiles gate completed; 208 passed, 1 skipped in the main Node suite, plus the devbox-only check passed"
+    }
+  ]
+}

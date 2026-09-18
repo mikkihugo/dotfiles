@@ -1,0 +1,23 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-18-codex-external-profile-orchestration-purpose",
+  "source": { "system": "manual", "repository": ".", "request_id": "2026-09-18-codex-external-profile-orchestration" },
+  "lineage": {
+    "origin": { "kind": "request", "id": "mhugo-2026-09-18-external-profiles", "revision": "1" },
+    "objective": { "id": "codex-external-profile-orchestration", "statement": "Teach Codex root to orchestrate delegated Codex CLI work through explicit gateway profiles.", "measure": "The external-harness skill names the orchestration role, all five external profiles, and the ephemeral one-shot command." },
+    "need": { "id": "missing-codex-gateway-profile-guidance", "statement": "The existing skill documents Kimi CLI and Cursor but not the installed Codex gateway profiles.", "stakeholders": ["Codex root sessions"], "baseline": "The focused contract test has no assertion for explicit Codex external profiles.", "consequence_of_no_action": "Codex may launch external CLI work without an explicit role profile or fail to state that root orchestrates it.", "assumptions": ["The operator-provided profile names and command forms are authoritative."], "alternatives_considered": ["Add a second instruction file", "Extend the existing canonical external-harness skill"] }
+  },
+  "admission": { "state": "proposed", "producer": { "kind": "agent", "id": "codex-root" }, "reason": "Operator-directed instruction update." },
+  "purpose": "Make Codex root consistently orchestrate delegated Codex CLI work through explicit gateway profiles.",
+  "consumer": "Codex root sessions launching bounded external Codex CLI tasks.",
+  "contract": "When Codex root delegates through the Codex CLI, it identifies itself as orchestrator, uses the session-bound repo_memory coordination_* API tier for task status, selects exactly one external-explorer, external-worker, external-reasoner, external-reviewer, or external-verifier profile by role, and uses codex exec --ephemeral --profile <profile> for one-shot tasks.",
+  "failure_boundary": "Do not change profile definitions, provider routing, publication authority, or the existing Kimi/Cursor launch contracts.",
+  "evidence": [{ "kind": "test", "description": "The focused Node contract test fails before the skill names the explicit profiles and passes afterward." }],
+  "falsifier": { "claim": "The installed skill teaches explicit profile-based orchestration.", "executable_check": { "kind": "test", "command": "node --test scripts/test-codex-external-harness-skill.mjs", "description": "A missing orchestration role, profile name, or ephemeral one-shot command falsifies the claim." } },
+  "non_goals": ["Changing external profile model/provider settings", "Launching an external task", "Changing Kimi CLI or Cursor commands", "Publishing unrelated dotfiles changes"],
+  "invariants": ["Codex root remains coordinator, verifier, and sole publisher", "Codex root uses the session-bound repo_memory coordination_* API tier for task status and never the retired swarm_bus_* API", "Every delegated Codex CLI invocation uses an explicit external-* profile", "One-shot tasks use --ephemeral", "Home Manager remains the deployment authority for ~/.codex"],
+  "assumptions": [{ "statement": "The five operator-provided external profile names are installed and canonical.", "status": "verified", "doubt": 0, "falsifier": "The tracked profile mappings or live ~/.codex profile files omit any named profile." }],
+  "run_control": { "autonomous_allowed": true, "risk": "low", "blast_radius": "local", "reversibility": "easy", "max_active_doubt": 0 },
+  "target_planes": ["client", "tool"],
+  "plane_constraints": ["Edit the tracked Home Manager source; do not hand-edit ~/.codex projections."]
+}

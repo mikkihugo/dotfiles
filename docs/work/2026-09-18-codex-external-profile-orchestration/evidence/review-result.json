@@ -1,0 +1,8 @@
+{
+  "review_id": "2026-09-18-codex-external-profile-orchestration-redteam",
+  "reviewer": "redteam/job-f5fe0cda-919c-4338-8bdf-a003bddac662",
+  "observed_at": "2026-09-18T07:29:00Z",
+  "verdict": "changes-requested",
+  "finding": "The durable continuation wording named repo-memory without requiring the session-bound coordination_* tier or prohibiting the retired swarm_bus_* API.",
+  "resolution": "The skill now requires coordination_sweep and coordination_post and explicitly prohibits swarm_bus_*; the focused regression test failed before the correction and passed afterward."
+}

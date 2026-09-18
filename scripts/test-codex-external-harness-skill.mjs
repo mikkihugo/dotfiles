@@ -114,6 +114,44 @@ test("trigger: delegated external work loads skill; Codex remains sole publisher
   );
 });
 
+test("Codex root orchestrates external CLI delegates through explicit gateway profiles", async () => {
+  const skill = await readUtf8(SKILL_MD);
+  const { description, body } = parseFrontmatter(skill);
+  const surface = `${description}\n${body}`;
+
+  requireBehavior(
+    surface,
+    [
+      /Codex root orchestrates/i,
+      /repo_memory`? coordination bus/i,
+      /external-explorer/,
+      /external-worker/,
+      /external-reasoner/,
+      /external-reviewer/,
+      /external-verifier/,
+      /codex --profile external-worker/,
+      /codex exec --ephemeral --profile external-worker "inspect this codebase"/,
+      /select(?:s|ing)? exactly one explicit profile/i,
+    ],
+    "Codex gateway profile orchestration",
+  );
+});
+
+test("durable continuation uses the session-bound coordination API tier", async () => {
+  const skill = await readUtf8(SKILL_MD);
+
+  requireBehavior(
+    skill,
+    [
+      /session-bound `coordination_\*` API tier/i,
+      /`coordination_sweep`/,
+      /`coordination_post`/,
+      /never use (?:the )?retired `swarm_bus_\*`/i,
+    ],
+    "repo_memory coordination API",
+  );
+});
+
 test("near-miss: Default/Plan or v1/v2 wording alone cannot satisfy frontmatter trigger", async () => {
   const skill = await readUtf8(SKILL_MD);
   const { description, body } = parseFrontmatter(skill);

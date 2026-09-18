@@ -1,6 +1,6 @@
 ---
 name: external-harness-orchestration
-description: Use when Codex root must delegate implementation to external workers (Kimi CLI or Cursor) while remaining coordinator, verifier, and sole publisher. Not for Codex-internal Default/Plan UI modes or multi-agent v1/v2 lifecycle alone.
+description: Use when Codex root must delegate bounded work to external workers through explicit Codex CLI gateway profiles, Kimi CLI, or Cursor while remaining orchestrator, verifier, and sole publisher. Not for Codex-internal Default/Plan UI modes or multi-agent v1/v2 lifecycle alone.
 ---
 
 <SUBAGENT-STOP>
@@ -10,13 +10,13 @@ If dispatched as a bounded subagent for a specific task, stop and return to Code
 # External harness orchestration
 
 **Purpose:** Keep Codex root as coordinator, verifier, and sole publisher when work is delegated outside Codex.
-**Consumer:** Codex root sessions that launch bounded Kimi CLI or Cursor workers.
+**Consumer:** Codex root sessions that launch bounded Codex CLI, Kimi CLI, or Cursor workers.
 **Failure consequence:** Workers inherit non-portable Responses state, gain VCS/publication authority, or ship unverified changes.
 **Falsifier:** Cross-provider child-thread history transfer of Responses `encrypted_content` is proven lossless (including inherited child turns and tool calls), or encrypted reasoning can be disabled for the worker path.
 
 ## Roles
 
-- Codex root: coordinator, verifier, and sole publisher. MUST NOT use Codex subagents for delegated work.
+- Codex root orchestrates through the `repo_memory` coordination bus and remains coordinator, verifier, and sole publisher. MUST NOT use Codex subagents for delegated work.
 - This skill activates only in Codex root. External workers cannot load it, so each worker prompt MUST inline its ownership/evidence boundaries. `<SUBAGENT-STOP>` works only when the full skill is loaded, so Codex root MUST NOT dispatch this skill itself to subagents.
 - External workers: receive fresh portable prompts and bounded owned paths. No VCS/publication authority (no commit, land, push, publish, Home Manager activate, secrets edit).
 - The no-VCS/no-publication rule is instruction policy, not a sandbox: Kimi CLI and Cursor can technically mutate/publish. Launch each worker with the strongest available least-privilege boundary and keep publication credentials/commands unavailable where practical. The coordinator treats worker state/report as untrusted and verifies local repo VCS state/diff/tests before publication.
@@ -29,6 +29,30 @@ Provider-bound Responses `encrypted_content` is not assumed portable. Pass uncha
 Codex Default/Plan and multi-agent v1/v2 are lifecycle/UI modes, not protocol fixes.
 
 ## Worker launch
+
+### Codex CLI gateway profiles
+
+Codex root orchestrates each external Codex CLI delegate. Select exactly one explicit profile for the task role; do not rely on the default profile:
+
+- `external-explorer` — bounded read-only reconnaissance.
+- `external-worker` — bounded implementation.
+- `external-reasoner` — bounded reasoning.
+- `external-reviewer` — bounded read-only review.
+- `external-verifier` — bounded adversarial verification.
+
+Interactive launch:
+
+```text
+codex --profile external-worker
+```
+
+One-shot external task:
+
+```text
+codex exec --ephemeral --profile external-worker "inspect this codebase"
+```
+
+Use the `repo_memory` coordination bus for task routing and status. Give every delegate a fresh bounded prompt and the ownership/evidence boundaries below. External Codex CLI delegates have no VCS/publication authority; Codex root independently verifies their output.
 
 ### Kimi CLI (prompt mode)
 
@@ -69,7 +93,7 @@ Fan-out is resource-budgeted and provider-aware, inside operator hard ceilings. 
 
 ## Run provenance launcher
 
-Every external worker launch MUST go through the Codex-only launcher `codex-external-run`, owned at `config/codex/bin/codex-external-run.mjs` and installed only under `~/.codex/bin/codex-external-run` (not `~/.agents`, not global PATH). It wraps exactly the proven Kimi/Cursor commands above; do not invent CLI flags.
+Every Kimi CLI or Cursor worker launch MUST go through the Codex-only launcher `codex-external-run`, owned at `config/codex/bin/codex-external-run.mjs` and installed only under `~/.codex/bin/codex-external-run` (not `~/.agents`, not global PATH). It wraps exactly the proven Kimi/Cursor commands above; do not invent CLI flags. Codex CLI gateway-profile launches use the explicit `codex --profile` or `codex exec --ephemeral --profile` forms above.
 
 ```text
 codex-external-run --harness kimi --root-task-id <root> --parent-task-id <parent> --task-id <task> \
@@ -87,7 +111,7 @@ codex-external-run --harness kimi --root-task-id <root> --parent-task-id <parent
 
 ## Ownership packet
 
-Every worker prompt includes exact owned paths, forbidden paths/actions, no VCS/publication authority, acceptance evidence the coordinator will verify, where to write status for repo-memory continuation, and — because external workers cannot load this skill — the worker's ownership/evidence boundaries inlined in full.
+Every worker prompt includes exact owned paths, forbidden paths/actions, no VCS/publication authority, acceptance evidence the coordinator will verify, where to write status through the `repo_memory` coordination API, and — because external workers cannot load this skill — the worker's ownership/evidence boundaries inlined in full.
 
 ## Worker evidence (fail-closed minimum)
 
@@ -100,4 +124,4 @@ Each worker report MUST include: task/lane id, owned paths touched, commands wit
 
 ## Continuation
 
-Use repo-memory for durable continuation. Do not rely on inherited encrypted reasoning across providers.
+Use the session-bound `coordination_*` API tier in `repo_memory` for durable continuation: `coordination_sweep` for the ordered subscribe/poll/ack path and `coordination_post` for outbound status. Never use the retired `swarm_bus_*` API. Do not rely on inherited encrypted reasoning across providers.

@@ -1,0 +1,8 @@
+{
+  "result_id": "2026-09-18-codex-external-profile-orchestration-red",
+  "status": "failed",
+  "observed_at": "2026-09-18T07:18:33Z",
+  "command": "node --test scripts/test-codex-external-harness-skill.mjs",
+  "exit_code": 1,
+  "summary": "20 passed, 1 failed: the profile-orchestration contract rejected wording that omitted 'Codex root orchestrates'."
+}

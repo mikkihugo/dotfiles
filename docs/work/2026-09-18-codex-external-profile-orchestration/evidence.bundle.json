@@ -1,0 +1,53 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-09-18-codex-external-profile-orchestration-evidence",
+  "workspec_id": "2026-09-18-codex-external-profile-orchestration-work",
+  "purpose_contract_id": "2026-09-18-codex-external-profile-orchestration-purpose",
+  "purpose_subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "89a5e4c1b7929e9de975cb33efeca53acd0ecf3a795ef4d8f66727177fd02038" },
+  "workspec_subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "cc8c90cb1fe17d9a48d220eb4b8bfd425dc3126ade7839bb6467aecf1b9bf6cc" },
+  "workflow_run_id": "2026-09-18-codex-external-profile-orchestration-run",
+  "execution": {
+    "execution_id": "2026-09-18-codex-external-profile-orchestration-execution",
+    "tool": { "id": "codex-root", "version": "2026-09-18" },
+    "result": { "result_id": "2026-09-18-codex-external-profile-orchestration-result", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "ecb8930862d74ece8a3bfa4da0b378916e2ee9d9eb218c5fe518a35f31994524" } },
+    "artifacts": [
+      { "artifact_id": "2026-09-18-codex-external-profile-orchestration-result", "uri": "evidence/result.json", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "ecb8930862d74ece8a3bfa4da0b378916e2ee9d9eb218c5fe518a35f31994524" } },
+      { "artifact_id": "2026-09-18-codex-external-profile-orchestration-red", "uri": "evidence/red-result.json", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "6ca5fe7aa124228ff74218f7ec57267a7b14df194998cd281cd67a8fc03415b9" } },
+      { "artifact_id": "2026-09-18-codex-external-profile-orchestration-red-coordination", "uri": "evidence/red-coordination-result.json", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "923bf6da3630288ab2befc721da1cfd1982f3c29828fda2b4dd2ccf8f349b3d0" } },
+      { "artifact_id": "2026-09-18-codex-external-profile-orchestration-review", "uri": "evidence/review-result.json", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "fceab13b8ae82cd065ccf2a3cf286337b6440e22fb5f95996e415abca75aebba" } },
+      { "artifact_id": "2026-09-18-codex-external-profile-orchestration-changed-files", "uri": "evidence/changed-files.json", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "e6c3885d41a42e140571f56d086e74a93276cf49c3e3ecdf002b5c24de8f0b8b" } }
+    ]
+  },
+  "trace": { "trace_id": "2026-09-18-codex-external-profile-orchestration-trace", "started_at": "2026-09-18T07:18:33Z", "completed_at": "2026-09-18T07:38:55Z" },
+  "tests": [
+    { "id": "T0", "requirement_id": "CURRENT-1", "status": "passed", "description": "Existing Codex root, Kimi CLI, and Cursor contracts remain covered.", "result_id": "2026-09-18-codex-external-profile-orchestration-result", "artifact_ids": ["2026-09-18-codex-external-profile-orchestration-result"], "output_uri": "evidence/result.json", "green_observed_at": "2026-09-18T07:18:44Z" },
+    { "id": "T1", "requirement_id": "R1", "status": "passed", "description": "Explicit profile, orchestration, bus, and ephemeral one-shot contract.", "result_id": "2026-09-18-codex-external-profile-orchestration-result", "artifact_ids": ["2026-09-18-codex-external-profile-orchestration-result", "2026-09-18-codex-external-profile-orchestration-red"], "output_uri": "evidence/result.json", "green_observed_at": "2026-09-18T07:18:44Z", "red_proof": { "result_id": "2026-09-18-codex-external-profile-orchestration-red", "artifact_id": "2026-09-18-codex-external-profile-orchestration-red", "output_uri": "evidence/red-result.json", "observed_at": "2026-09-18T07:18:33Z" } },
+    { "id": "T2", "requirement_id": "R1", "status": "passed", "description": "Session-bound coordination_* continuation contract and retired swarm_bus_* prohibition.", "result_id": "2026-09-18-codex-external-profile-orchestration-result", "artifact_ids": ["2026-09-18-codex-external-profile-orchestration-result", "2026-09-18-codex-external-profile-orchestration-red-coordination"], "output_uri": "evidence/result.json", "green_observed_at": "2026-09-18T07:33:54Z", "red_proof": { "result_id": "2026-09-18-codex-external-profile-orchestration-red-coordination", "artifact_id": "2026-09-18-codex-external-profile-orchestration-red-coordination", "output_uri": "evidence/red-coordination-result.json", "observed_at": "2026-09-18T07:31:00Z" } }
+  ],
+  "gates": [
+    { "gate_id": "quality", "kind": "quality", "status": "passed", "subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "cc8c90cb1fe17d9a48d220eb4b8bfd425dc3126ade7839bb6467aecf1b9bf6cc" }, "artifact_ids": ["2026-09-18-codex-external-profile-orchestration-result"], "producer": { "kind": "agent", "id": "codex-root" }, "observed_at": "2026-09-18T07:38:55Z", "rationale": "Focused, launcher, validator, and full repository checks passed." }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "2026-09-18-codex-external-profile-orchestration-changed-files",
+      "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "e6c3885d41a42e140571f56d086e74a93276cf49c3e3ecdf002b5c24de8f0b8b" },
+      "files": ["config/codex/skills/external-harness-orchestration/SKILL.md", "docs/work/2026-09-18-codex-external-profile-orchestration/README.md", "docs/work/2026-09-18-codex-external-profile-orchestration/current-spec.snapshot.json", "docs/work/2026-09-18-codex-external-profile-orchestration/evidence.bundle.json", "docs/work/2026-09-18-codex-external-profile-orchestration/evidence/changed-files.json", "docs/work/2026-09-18-codex-external-profile-orchestration/evidence/red-coordination-result.json", "docs/work/2026-09-18-codex-external-profile-orchestration/evidence/red-result.json", "docs/work/2026-09-18-codex-external-profile-orchestration/evidence/review-result.json", "docs/work/2026-09-18-codex-external-profile-orchestration/evidence/result.json", "docs/work/2026-09-18-codex-external-profile-orchestration/purpose.contract.json", "docs/work/2026-09-18-codex-external-profile-orchestration/validation.report.json", "docs/work/2026-09-18-codex-external-profile-orchestration/work.spec.json", "scripts/test-codex-external-harness-skill.mjs"]
+    }
+  },
+  "falsifier": { "executed": true, "status": "passed", "evidence": "The focused contract test passed with all five profiles, the orchestration/bus rule, and the ephemeral one-shot command present.", "output_uri": "evidence/result.json" },
+  "contract_preserved": { "status": true, "scope_drift": false, "requirement_drift": false },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "40bc83639f84f749228709ac102b11bd50b0247952f1895a209dbe57b221088c" },
+    "delta_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "f3c25e3bb7e98023b0fa34993c1e9736db07e3a613ec8d9e38f159c10dee9a2e" },
+    "derived_requirement_set_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "611265a992a5de7033273a97f3f6b2459dace6540d17582dfab624a75f1bfb96" },
+    "witness_artifact_id": "2026-09-18-codex-external-profile-orchestration-result"
+  },
+  "reviews": [],
+  "breaker_witnesses": [
+    { "breaker_id": "CURRENT-B1", "requirement_id": "CURRENT-1", "status": "passed", "witness_kind": "contract-test", "observed_outcome": "rejected", "artifact_id": "2026-09-18-codex-external-profile-orchestration-result", "subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "cc8c90cb1fe17d9a48d220eb4b8bfd425dc3126ade7839bb6467aecf1b9bf6cc" }, "observed_at": "2026-09-18T07:33:54Z" },
+    { "breaker_id": "B1", "requirement_id": "R1", "status": "passed", "witness_kind": "contract-test", "observed_outcome": "rejected", "artifact_id": "2026-09-18-codex-external-profile-orchestration-red", "subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "cc8c90cb1fe17d9a48d220eb4b8bfd425dc3126ade7839bb6467aecf1b9bf6cc" }, "observed_at": "2026-09-18T07:18:33Z" }
+  ]
+}

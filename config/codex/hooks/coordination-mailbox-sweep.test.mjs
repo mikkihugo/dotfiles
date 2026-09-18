@@ -576,6 +576,19 @@ test("Codex CoordinationBus.sweep, the automatic hook path, uses the root-owned 
 	assert.equal(client.calls[0].args.session, "codex-abcd1234-root");
 });
 
+test("Codex CoordinationBus.sweep persists the returned root-session capability", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "coordination-sweep-capability-"));
+  try {
+    const bus = new CoordinationBus(fakeCoordinationClient({
+      coordination_sweep: { known_session: true, messages: [], ack_watermark: 0, channels: ["global"], inbox_uri: "repo-memory://test-capability" },
+    }), { identity: "codex-abcd1234", clientLabel: "codex", channels: ["global"], env: { XDG_STATE_HOME: dir } });
+    await bus.sweep("codex-abcd1234");
+    assert.equal(readCoordinationInbox(coordinationInboxPathFor("codex-abcd1234-root", { XDG_STATE_HOME: dir })).inbox_uri, "repo-memory://test-capability");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("CoordinationBus.poll partitions the merged inbox and tags the __inbox__ bucket for direct mail, and reuses one cached poll across workspaces in a run", async () => {
   const client = fakeCoordinationClient({
     coordination_subscribe: { ack_watermark: 10 },

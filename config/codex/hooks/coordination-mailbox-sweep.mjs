@@ -453,6 +453,19 @@ export class CoordinationBus {
     };
     if (this._inbox?.inbox_uri) args.inbox_uri = this._inbox.inbox_uri;
     const result = await this.client.callRepoMemory("coordination_sweep", args, signal);
+    const inboxUri = typeof result?.inbox_uri === "string" && result.inbox_uri ? result.inbox_uri : undefined;
+    if (inboxUri) {
+      this._inbox = {
+        schema: COORDINATION_INBOX_SCHEMA,
+        inbox_uri: inboxUri,
+        channels: Array.isArray(result?.channels) ? [...result.channels] : [...this._channels],
+        principal: this._principal,
+        session: this._session,
+        sequence: Number.isInteger(result?.ack_watermark) ? result.ack_watermark : this._inbox?.sequence,
+        issued_at: new Date().toISOString(),
+      };
+      if (this._inboxPath) writeCoordinationInbox(this._inboxPath, this._inbox);
+    }
     const messages = Array.isArray(result?.messages) ? result.messages : [];
     const buckets = new Map();
     for (const message of messages) {

@@ -1,0 +1,22 @@
+{
+  "schema": "changed-files/v1",
+  "source": "repository-vcs-facade",
+  "files": [
+    "config/codex/hooks.json",
+    "config/codex/hooks/purpose-session-start.sh",
+    "config/cursor/hooks.json",
+    "docs/work/2026-09-18-purpose-session-hook-node/current-spec.snapshot.json",
+    "docs/work/2026-09-18-purpose-session-hook-node/evidence.bundle.json",
+    "docs/work/2026-09-18-purpose-session-hook-node/evidence/baseline-hook-repro.txt",
+    "docs/work/2026-09-18-purpose-session-hook-node/evidence/changed-files.json",
+    "docs/work/2026-09-18-purpose-session-hook-node/evidence/red-result.json",
+    "docs/work/2026-09-18-purpose-session-hook-node/evidence/redteam-review.json",
+    "docs/work/2026-09-18-purpose-session-hook-node/evidence/repo-check.txt",
+    "docs/work/2026-09-18-purpose-session-hook-node/evidence/runtime-hook-repro.txt",
+    "docs/work/2026-09-18-purpose-session-hook-node/purpose.contract.json",
+    "docs/work/2026-09-18-purpose-session-hook-node/validation.report.json",
+    "docs/work/2026-09-18-purpose-session-hook-node/work.spec.json",
+    "home/modules/files.nix",
+    "scripts/test-swarm-hook-config.mjs"
+  ]
+}

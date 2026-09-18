@@ -1,0 +1,8 @@
+{
+  "result_id": "2026-09-18-purpose-session-hook-node-red",
+  "status": "failed",
+  "observed_at": "2026-09-18T07:45:00+00:00",
+  "command": "env -i HOME=/home/mhugo /bin/sh -c 'test ! -f /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs || node /home/mhugo/.local/share/purpose-tool/hooks/session-start.mjs'",
+  "exit_code": 127,
+  "stderr": "/bin/sh: line 1: node: command not found"
+}

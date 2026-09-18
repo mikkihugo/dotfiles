@@ -1,0 +1,157 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-09-18-purpose-session-hook-node-evidence",
+  "workspec_id": "2026-09-18-purpose-session-hook-node-work",
+  "purpose_contract_id": "2026-09-18-purpose-session-hook-node-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "cd41b6e0dbcf6f52772b874eeb5553b76a142e9068ef4cdd86f159085265e601"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "d032951c76f264411f9e9b6eba0376bd115463adc9c9b65b66275a17b956f5f5"
+  },
+  "workflow_run_id": "2026-09-18-purpose-session-hook-node-run",
+  "execution": {
+    "execution_id": "2026-09-18-purpose-session-hook-node-execution",
+    "tool": { "id": "repo check", "version": "dotfiles task workspace at 63a96214 plus runtime evidence" },
+    "result": {
+      "result_id": "2026-09-18-purpose-session-hook-node-result",
+      "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "1f7928dd1aa7626f617e8d59e979ff32d9efc8e9f3a5d3a959c8fb52d24af3ed" }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "baseline",
+        "uri": "evidence/baseline-hook-repro.txt",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "5d7e1e0613d90e0eaa355e49416783092b7348b4bc58b47fae6ff8d67e205e0e" }
+      },
+      {
+        "artifact_id": "red-result",
+        "uri": "evidence/red-result.json",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "dfe7a65c1a38cb29ae5fe84623e66df93e3a8733fde3d570871652a6af8db6e7" }
+      },
+      {
+        "artifact_id": "redteam-review",
+        "uri": "evidence/redteam-review.json",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "eeefe3a60e7c6d7be51f5dfe88060a816027eac4e96d9b11d8e7a4b715939917" }
+      },
+      {
+        "artifact_id": "repo-check",
+        "uri": "evidence/repo-check.txt",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "1f7928dd1aa7626f617e8d59e979ff32d9efc8e9f3a5d3a959c8fb52d24af3ed" }
+      },
+      {
+        "artifact_id": "runtime-hook",
+        "uri": "evidence/runtime-hook-repro.txt",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "f6e923169d03f001953753c274b6fd1986af776e9416e10da4532a3c1bb209ea" }
+      },
+      {
+        "artifact_id": "changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "5c9bf60c6d04a135a99142a853cab7d1fd18e44b5d4da2ae3bdf6778da80e558" }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-09-18-purpose-session-hook-node-trace",
+    "started_at": "2026-09-18T07:45:00+00:00",
+    "completed_at": "2026-09-18T08:05:46+00:00"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Both hook registrations use the Home Manager-rendered wrapper and the wrapper uses substituted Nix Bash and Node paths.",
+      "result_id": "2026-09-18-purpose-session-hook-node-result",
+      "artifact_ids": ["repo-check", "runtime-hook"],
+      "output_uri": "evidence/repo-check.txt",
+      "green_observed_at": "2026-09-18T08:05:46+00:00",
+      "red_proof": {
+        "result_id": "2026-09-18-purpose-session-hook-node-red",
+        "artifact_id": "red-result",
+        "output_uri": "evidence/red-result.json",
+        "observed_at": "2026-09-18T07:45:00+00:00"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "d032951c76f264411f9e9b6eba0376bd115463adc9c9b65b66275a17b956f5f5" },
+      "artifact_ids": ["repo-check", "runtime-hook"],
+      "producer": { "kind": "agent", "id": "codex-root" },
+      "observed_at": "2026-09-18T08:05:46+00:00",
+      "rationale": "The full repository gate passed and the activated hook exited zero under env -i."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "changed-files",
+      "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "5c9bf60c6d04a135a99142a853cab7d1fd18e44b5d4da2ae3bdf6778da80e558" },
+      "files": [
+        "config/codex/hooks.json",
+        "config/codex/hooks/purpose-session-start.sh",
+        "config/cursor/hooks.json",
+        "docs/work/2026-09-18-purpose-session-hook-node/current-spec.snapshot.json",
+        "docs/work/2026-09-18-purpose-session-hook-node/evidence.bundle.json",
+        "docs/work/2026-09-18-purpose-session-hook-node/evidence/baseline-hook-repro.txt",
+        "docs/work/2026-09-18-purpose-session-hook-node/evidence/changed-files.json",
+        "docs/work/2026-09-18-purpose-session-hook-node/evidence/red-result.json",
+        "docs/work/2026-09-18-purpose-session-hook-node/evidence/redteam-review.json",
+        "docs/work/2026-09-18-purpose-session-hook-node/evidence/repo-check.txt",
+        "docs/work/2026-09-18-purpose-session-hook-node/evidence/runtime-hook-repro.txt",
+        "docs/work/2026-09-18-purpose-session-hook-node/purpose.contract.json",
+        "docs/work/2026-09-18-purpose-session-hook-node/validation.report.json",
+        "docs/work/2026-09-18-purpose-session-hook-node/work.spec.json",
+        "home/modules/files.nix",
+        "scripts/test-swarm-hook-config.mjs"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "The baseline returned 127 with bare node; the activated Nix-rendered wrapper returned zero under env -i and neither live hook config contains bare node.",
+    "output_uri": "evidence/runtime-hook-repro.txt"
+  },
+  "contract_preserved": { "status": true, "scope_drift": false, "requirement_drift": false, "review_required": true },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "50b766c2489f9d135106eb92114d20e2f7f1c0c528f7aaeadaf0e4ae3cfe0bc0" },
+    "delta_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "e0bc42ee81f747fe0d5d97be03861dcd918065207e00cb44b7eec232b7a696bb" },
+    "derived_requirement_set_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "40be090eb0c288e12530e415547f031b54d4a4e6d1c0f85ef025a596197f5091" },
+    "witness_artifact_id": "runtime-hook"
+  },
+  "reviews": [
+    {
+      "review_id": "purpose-session-hook-node-inline-review",
+      "reviewer": { "kind": "agent", "id": "codex-root" },
+      "subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "d032951c76f264411f9e9b6eba0376bd115463adc9c9b65b66275a17b956f5f5" },
+      "verdict": "approved",
+      "artifact_id": "redteam-review",
+      "observed_at": "2026-09-18T08:05:46+00:00",
+      "independent": false,
+      "rationale": "Inline fallback review found no Critical or Important source issue. The dedicated reviewer role was unavailable; the detached panel's sole no-ship finding was inability to access the local worktree, recorded in the referenced artifact."
+    }
+  ],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "contained",
+      "artifact_id": "runtime-hook",
+      "subject_digest": { "algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "d032951c76f264411f9e9b6eba0376bd115463adc9c9b65b66275a17b956f5f5" },
+      "observed_at": "2026-09-18T08:05:46+00:00",
+      "rationale": "With ambient PATH absent, the installed wrapper executed the Nix store Node interpreter and exited zero."
+    }
+  ]
+}

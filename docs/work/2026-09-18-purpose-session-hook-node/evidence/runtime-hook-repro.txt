@@ -1,0 +1,10 @@
+observed_at=2026-09-18T08:05:46+00:00
+activation_command=home-manager switch --flake .#cc-se-sto-devbox-01 --option builders ''
+activation_exit=0
+wrapper_target=/nix/store/syk2kqizqlvkbys8a34w2ydmvrdzcmxf-home-manager-files/.codex/hooks/purpose-session-start.sh
+wrapper_shebang=#!/nix/store/pkf547jp8a92k4wmxikkyby58w10pysr-bash-interactive-5.3p9/bin/bash
+wrapper_node=/nix/store/l07gdbxylzfl8pbx9pxy6fyg95w4hjwy-nodejs-24.19.0/bin/node
+codex_command=/home/mhugo/.codex/hooks/purpose-session-start.sh
+cursor_command=/home/mhugo/.codex/hooks/purpose-session-start.sh
+probe=env -i HOME=/home/mhugo /home/mhugo/.codex/hooks/purpose-session-start.sh
+hook_exit=0

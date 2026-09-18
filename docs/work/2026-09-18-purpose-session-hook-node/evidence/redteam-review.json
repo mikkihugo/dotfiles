@@ -1,0 +1,12 @@
+{
+  "job_id": "job-abbd89de-f6a7-4910-9058-db0f2a0707e1",
+  "verdict": "unable-to-review",
+  "requested_mode": "panel",
+  "summary": "The remote review panel could not access the local worktree; provider fallbacks also returned empty responses.",
+  "reported_finding": {
+    "severity": "critical",
+    "title": "Review target worktree missing",
+    "recommendation": "Provide the worktree or diff."
+  },
+  "disposition": "Not a source finding. Independent reviewer role was also unavailable, so the documented inline fallback review was used."
+}

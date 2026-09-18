@@ -1,6 +1,6 @@
 personality = "pragmatic"
-model = "minimax-coding-plan/MiniMax-M3"
-model_provider = "llm-gateway"
+model = "gpt-5.6-sol"
+model_provider = "openai"
 model_reasoning_effort = "medium"
 developer_instructions = """
 ## Purpose PDD + ADR-0000

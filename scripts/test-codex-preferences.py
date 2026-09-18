@@ -67,7 +67,8 @@ class CodexPreferencesTest(unittest.TestCase):
     def test_managed_defaults_match_operator_settings(self):
         for name in ("config.toml", "shared-preferences.toml"):
             data = tomllib.loads((SCRIPT.parents[1] / "config/codex" / name).read_text())
-            self.assertEqual(data["model"], "minimax-coding-plan/MiniMax-M3")
+            self.assertEqual(data["model"], "gpt-5.6-sol")
+            self.assertEqual(data["model_provider"], "openai")
             self.assertEqual(data["model_reasoning_effort"], "medium")
             for feature in ("context_management", "step_model_switching", "mcp_2026_07_28"):
                 self.assertIs(data["features"][feature], True)

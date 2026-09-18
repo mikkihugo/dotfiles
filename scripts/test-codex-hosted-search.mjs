@@ -66,7 +66,7 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
     "external-reasoner.config.toml": "kimi-code/k3",
     "external-reviewer.config.toml": "ollama-cloud/deepseek-v4-pro",
     "external-verifier.config.toml": "ollama-cloud/nemotron-3-ultra",
-    "external-worker.config.toml": "ollama-cloud/glm-5.2",
+    "external-worker.config.toml": "minimax-coding-plan/MiniMax-M3",
   };
   const registeredFiles = [...seed.matchAll(
     /^\[agents\.[^\]]+\][\s\S]*?^config_file\s*=\s*"([^"]+)"$/gm,
@@ -74,15 +74,15 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
     .map(([, file]) => file)
     .sort();
 
-  assert.match(seed, /^model\s*=\s*"minimax-coding-plan\/MiniMax-M3"$/m);
-  assert.match(seed, /^model_provider\s*=\s*"llm-gateway"$/m);
+  assert.match(seed, /^model\s*=\s*"gpt-5\.6-sol"$/m);
+  assert.match(seed, /^model_provider\s*=\s*"openai"$/m);
   assert.match(
     seed,
     /\[model_providers\.llm-gateway\][\s\S]*?^wire_api\s*=\s*"responses"$/m,
     "the Codex gateway provider must retain its native Responses endpoint",
   );
-  assert.match(shared, /^model\s*=\s*"minimax-coding-plan\/MiniMax-M3"$/m);
-  assert.match(shared, /^model_provider\s*=\s*"llm-gateway"$/m);
+  assert.match(shared, /^model\s*=\s*"gpt-5\.6-sol"$/m);
+  assert.match(shared, /^model_provider\s*=\s*"openai"$/m);
   assert.deepEqual(registeredFiles, expectedResidentConfigs);
 
   const residentSourceFiles = (await readdir("config/codex/agents"))

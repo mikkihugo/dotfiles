@@ -3,7 +3,7 @@
 # route this profile through a generic alias that could drift to a different
 # provider. Reasoning effort stays unset until the deployed catalog exposes
 # supported named effort values for this route.
-model = "ollama-cloud/glm-5.2"
+model = "minimax-coding-plan/MiniMax-M3"
 model_provider = "llm-gateway"
 sandbox_mode = "workspace-write"
 web_search = "disabled"

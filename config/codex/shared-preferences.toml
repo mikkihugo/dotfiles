@@ -4,7 +4,6 @@
 
 model = "gpt-5.6-sol"
 model_provider = "openai"
-model_catalog_json = "~/.codex/model-catalogs/minimax-m3.json"
 model_reasoning_effort = "medium"
 developer_instructions = """
 ## Purpose PDD + ADR-0000

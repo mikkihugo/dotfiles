@@ -2,3 +2,8 @@ model = "MiniMax-M3"
 model_provider = "minimax"
 model_context_window = 1000000
 model_reasoning_effort = "high"
+# Catalog pin belongs to this profile only, never to the shared primary
+# preferences: it replaces the whole /model list with MiniMax-M3. Without it
+# Codex omits the reasoning field even though the effort is set (MiniMax docs:
+# supports_reasoning_summaries must come from the catalog).
+model_catalog_json = "~/.codex/model-catalogs/minimax-m3.json"

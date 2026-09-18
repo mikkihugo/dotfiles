@@ -80,10 +80,10 @@ class CodexPreferencesTest(unittest.TestCase):
             data = tomllib.loads((root / "config/codex" / name).read_text())
             self.assertEqual(data["model"], "gpt-5.6-sol")
             self.assertEqual(data["model_provider"], "openai")
-            self.assertEqual(
-                data["model_catalog_json"],
-                "~/.codex/model-catalogs/minimax-m3.json",
-            )
+            # model_catalog_json must NOT be pinned on the primary: a
+            # MiniMax-only catalog makes the picker offer only MiniMax-M3,
+            # which the ChatGPT (openai) provider then rejects with 400.
+            self.assertNotIn("model_catalog_json", data)
             minimax = data["model_providers"]["minimax"]
             self.assertEqual(minimax["base_url"], "https://api.minimax.io/v1")
             self.assertEqual(minimax["env_key"], "MINIMAX_API_KEY")
@@ -130,10 +130,7 @@ class CodexPreferencesTest(unittest.TestCase):
             data = tomllib.loads(target.read_text())
             self.assertEqual(data["model"], "gpt-5.6-sol")
             self.assertEqual(data["model_provider"], "openai")
-            self.assertEqual(
-                data["model_catalog_json"],
-                "~/.codex/model-catalogs/minimax-m3.json",
-            )
+            self.assertNotIn("model_catalog_json", data)
             self.assertEqual(
                 data["model_providers"]["minimax"]["env_key"],
                 "MINIMAX_API_KEY",

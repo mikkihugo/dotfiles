@@ -8,6 +8,7 @@ from pathlib import Path
 SHARED_KEYS = [
     "model",
     "model_provider",
+    "model_catalog_json",
     "model_reasoning_effort",
     "model_reasoning_summary",
     "web_search",
@@ -42,6 +43,9 @@ APPLY_SECTION_KEYS = {
     # OTLP routing is host policy. Apply it on every activation because Codex
     # owns and may rewrite its mutable live config; do not import it on `save`.
     "otel": ["environment", "log_user_prompt", "exporter", "trace_exporter"],
+    # MiniMax is an operator-declared provider. Keep only the environment
+    # variable name in config; the bearer token remains outside TOML.
+    "model_providers.minimax": ["name", "base_url", "env_key", "wire_api"],
     "agents.scout": ["description", "config_file"],
     "agents.implementer": ["description", "config_file"],
     "agents.reviewer": ["description", "config_file"],

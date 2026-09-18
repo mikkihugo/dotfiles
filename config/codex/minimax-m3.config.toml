@@ -1,0 +1,4 @@
+model = "MiniMax-M3"
+model_provider = "minimax"
+model_context_window = 1000000
+model_reasoning_effort = "high"

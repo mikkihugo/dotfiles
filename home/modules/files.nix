@@ -33,6 +33,16 @@
       force = true;
     };
 
+    ".codex/model-catalogs/minimax-m3.json" = {
+      source = ../../config/codex/model-catalogs/minimax-m3.json;
+      force = true;
+    };
+
+    ".codex/minimax-m3.config.toml" = {
+      source = ../../config/codex/minimax-m3.config.toml;
+      force = true;
+    };
+
     ".codex/hooks.json" = {
       source = ../../config/codex/hooks.json;
       force = true;

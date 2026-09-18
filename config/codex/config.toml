@@ -1,6 +1,7 @@
 personality = "pragmatic"
 model = "gpt-5.6-sol"
 model_provider = "openai"
+model_catalog_json = "~/.codex/model-catalogs/minimax-m3.json"
 model_reasoning_effort = "medium"
 developer_instructions = """
 ## Purpose PDD + ADR-0000
@@ -144,6 +145,12 @@ required = true
 name = "CentralCloud LLM Gateway"
 base_url = "http://llm-gateway.svc:80/codex/v1"
 env_key = "LLM_MUX_API_KEY"
+wire_api = "responses"
+
+[model_providers.minimax]
+name = "MiniMax"
+base_url = "https://api.minimax.io/v1"
+env_key = "MINIMAX_API_KEY"
 wire_api = "responses"
 
 # history.jsonl safety cap. NOTE: this governs ONLY history.jsonl -- codex has

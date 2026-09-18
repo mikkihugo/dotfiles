@@ -74,6 +74,75 @@ class CodexPreferencesTest(unittest.TestCase):
                 self.assertIs(data["features"][feature], True)
             self.assertIs(data["features"]["memories"], False)
 
+    def test_minimax_m3_is_selectable_without_replacing_the_openai_default(self):
+        root = SCRIPT.parents[1]
+        for name in ("config.toml", "shared-preferences.toml"):
+            data = tomllib.loads((root / "config/codex" / name).read_text())
+            self.assertEqual(data["model"], "gpt-5.6-sol")
+            self.assertEqual(data["model_provider"], "openai")
+            self.assertEqual(
+                data["model_catalog_json"],
+                "~/.codex/model-catalogs/minimax-m3.json",
+            )
+            minimax = data["model_providers"]["minimax"]
+            self.assertEqual(minimax["base_url"], "https://api.minimax.io/v1")
+            self.assertEqual(minimax["env_key"], "MINIMAX_API_KEY")
+            self.assertEqual(minimax["wire_api"], "responses")
+            self.assertNotIn("experimental_bearer_token", minimax)
+
+        profile = tomllib.loads(
+            (root / "config/codex/minimax-m3.config.toml").read_text()
+        )
+        self.assertEqual(profile["model"], "MiniMax-M3")
+        self.assertEqual(profile["model_provider"], "minimax")
+        self.assertEqual(profile["model_reasoning_effort"], "high")
+
+        catalog = __import__("json").loads(
+            (root / "config/codex/model-catalogs/minimax-m3.json").read_text()
+        )
+        model = catalog["models"][0]
+        self.assertEqual(model["slug"], "MiniMax-M3")
+        self.assertEqual(model["visibility"], "list")
+        self.assertTrue(model["supports_reasoning_summaries"])
+
+    def test_apply_adds_minimax_provider_to_mutable_live_config(self):
+        root = SCRIPT.parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "config.toml"
+            target.write_text(
+                'model = "gpt-5.5"\n'
+                'model_provider = "openai"\n\n'
+                '[model_providers.local]\n'
+                'name = "Keep local provider"\n'
+                'base_url = "http://localhost:1234/v1"\n'
+            )
+            subprocess.run(
+                [
+                    str(SCRIPT),
+                    "apply",
+                    "--source",
+                    str(root / "config/codex/shared-preferences.toml"),
+                    "--target",
+                    str(target),
+                ],
+                check=True,
+            )
+            data = tomllib.loads(target.read_text())
+            self.assertEqual(data["model"], "gpt-5.6-sol")
+            self.assertEqual(data["model_provider"], "openai")
+            self.assertEqual(
+                data["model_catalog_json"],
+                "~/.codex/model-catalogs/minimax-m3.json",
+            )
+            self.assertEqual(
+                data["model_providers"]["minimax"]["env_key"],
+                "MINIMAX_API_KEY",
+            )
+            self.assertEqual(
+                data["model_providers"]["local"]["name"],
+                "Keep local provider",
+            )
+
     def test_otlp_http_exporters_use_signal_specific_collector_paths(self):
         data = tomllib.loads((SCRIPT.parents[1] / "config/codex/config.toml").read_text())
         collector = "http://otel-collector.monitoring.svc.cluster.local:4318"

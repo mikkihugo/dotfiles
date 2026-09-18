@@ -4,6 +4,7 @@
 
 model = "gpt-5.6-sol"
 model_provider = "openai"
+model_catalog_json = "~/.codex/model-catalogs/minimax-m3.json"
 model_reasoning_effort = "medium"
 developer_instructions = """
 ## Purpose PDD + ADR-0000
@@ -95,6 +96,12 @@ environment = "devbox"
 log_user_prompt = false
 exporter = {otlp-http = {endpoint = "http://otel-collector.monitoring.svc.cluster.local:4318/v1/logs", protocol = "binary", headers = {}}}
 trace_exporter = {otlp-http = {endpoint = "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces", protocol = "binary", headers = {}}}
+
+[model_providers.minimax]
+name = "MiniMax"
+base_url = "https://api.minimax.io/v1"
+env_key = "MINIMAX_API_KEY"
+wire_api = "responses"
 
 [agents.scout]
 description = "Read-only scout (GPT-5.6 Luna): mechanical inventory, structural audit, and bounded evidence collection."

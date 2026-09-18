@@ -754,10 +754,11 @@ export function derivePrincipal(identity, client) {
 /**
  * Select the exact coordination session owned by one hook consumer.
  *
- * The server derives and binds this principal-shaped session for every client.
+ * Codex uses its root-owned session so its lifecycle hook never reuses a
+ * foreign bare-principal inbox; other clients keep their established session.
  */
 export function deriveCoordinationSession(principal, client) {
-  return principal;
+  return client === "codex" ? `${principal}-root` : principal;
 }
 
 // --- cursor persistence (DELIVER 2) -----------------------------------------

@@ -591,7 +591,6 @@ test("CoordinationBus.subscribe drops a rejected persisted capability and retrie
     await rm(dir, { recursive: true, force: true });
   }
 });
-
 test("Codex CoordinationBus.sweep, the automatic hook path, uses the isolated hook session", async () => {
   const client = fakeCoordinationClient({
 		coordination_sweep: { known_session: true, messages: [], ack_watermark: 0, session: "codex-abcd1234-hook" },

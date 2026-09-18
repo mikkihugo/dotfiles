@@ -19,7 +19,7 @@
     "tool": { "id": "repo check", "version": "dotfiles task workspace at 63a96214 plus runtime evidence" },
     "result": {
       "result_id": "2026-09-18-purpose-session-hook-node-result",
-      "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "1f7928dd1aa7626f617e8d59e979ff32d9efc8e9f3a5d3a959c8fb52d24af3ed" }
+      "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "4dd4247f88a52b39b3e3a4a0430db0c59fa67918893182de72b4a35b55b45306" }
     },
     "artifacts": [
       {
@@ -40,7 +40,7 @@
       {
         "artifact_id": "repo-check",
         "uri": "evidence/repo-check.txt",
-        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "1f7928dd1aa7626f617e8d59e979ff32d9efc8e9f3a5d3a959c8fb52d24af3ed" }
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "4dd4247f88a52b39b3e3a4a0430db0c59fa67918893182de72b4a35b55b45306" }
       },
       {
         "artifact_id": "runtime-hook",

@@ -1,71 +1,25 @@
-Pseudo-terminal will not be allocated because stdin is not a terminal.
-Pseudo-terminal will not be allocated because stdin is not a terminal.
-Pseudo-terminal will not be allocated because stdin is not a terminal.
-Pseudo-terminal will not be allocated because stdin is not a terminal.
 forgejo-https credential helper: ok
 dotfiles VCS contract: ok
-disabling binary cache 'https://cuda-maintainers.cachix.org' for 60 seconds
-warning: unable to download 'https://cuda-maintainers.cachix.org/nix-cache-info': HTTP error 401
-
-         response body:
-
-         Binary cache cuda-maintainers doesn't exist or you're not authorized to access it. Check the name for typos and/or provide an auth token. Contact support on https://cachix.org if you're stuck.
-these 15 derivations will be built:
-  /nix/store/1wcv34rwf94lpy4k91hq16wn98yinac0-hm-session-vars.sh.drv
-  /nix/store/06lvg0jzzln61gpxyjkmrbrpmi8gg8zg-profile.drv
-  /nix/store/ywi87q9vackafgkxci596hf5vvbg9926-hm-session-vars.fish.drv
-  /nix/store/his44h33vazqhqswa8p816wndg4378s5-man-paths.drv
-  /nix/store/735f86i18bavwxvkl3037j9g359cpfmw-man-cache.drv
-  /nix/store/ah727pazcg8bf3fci4fsbpdjx0c8b45j-hm_.manpath.drv
-  /nix/store/f5yz9w9c4zcdl930mpvhk0r1r8yaszs9-hm_..zshenv.drv
-  /nix/store/i68nl86bpsgkdbzbziz9x27wi5sdzilm-config.fish.drv
-  /nix/store/3lxz25m7rk4v70kzqf4cxhgbnvnviqa4-hm-session-vars.sh-fish-completions.drv
-  /nix/store/5addpzbnc5jz5nfk88j3jbi4z0qgq50p-hm-session-vars.fish-fish-completions.drv
-  /nix/store/m3fjd92lrms6mqm991hlc6ig5hkrbpyb-mhugo-fish-completions.drv
-  /nix/store/13ajp717721shv822xhjyqr1jq830653-home-manager-files.drv
-  /nix/store/grihg4zvwjf424c6c54pg8qwa3lccafb-home-manager-path.drv
-  /nix/store/wrxgvlamcyh9jmny8ihc5p65gasch2ca-activation-script.drv
-  /nix/store/ijnjh1fwvr4vryz0i44z6l0lgfh0f1fl-home-manager-generation.drv
-building '/nix/store/1wcv34rwf94lpy4k91hq16wn98yinac0-hm-session-vars.sh.drv'...
-building '/nix/store/ywi87q9vackafgkxci596hf5vvbg9926-hm-session-vars.fish.drv'...
-building '/nix/store/3lxz25m7rk4v70kzqf4cxhgbnvnviqa4-hm-session-vars.sh-fish-completions.drv'...
-building '/nix/store/f5yz9w9c4zcdl930mpvhk0r1r8yaszs9-hm_..zshenv.drv'...
-building '/nix/store/06lvg0jzzln61gpxyjkmrbrpmi8gg8zg-profile.drv'...
-building '/nix/store/i68nl86bpsgkdbzbziz9x27wi5sdzilm-config.fish.drv' on 'ssh-ng://root@89.167.50.230'...
-building '/nix/store/5addpzbnc5jz5nfk88j3jbi4z0qgq50p-hm-session-vars.fish-fish-completions.drv'...
-building '/nix/store/grihg4zvwjf424c6c54pg8qwa3lccafb-home-manager-path.drv'...
-building '/nix/store/his44h33vazqhqswa8p816wndg4378s5-man-paths.drv'...
-building '/nix/store/m3fjd92lrms6mqm991hlc6ig5hkrbpyb-mhugo-fish-completions.drv'...
-copying 1 paths...
-copying path '/nix/store/ml0mg8nlj8n6km312vnjbl4brlaimfkl-hm-session-vars.fish' to 'ssh-ng://root@89.167.50.230'...
-building '/nix/store/i68nl86bpsgkdbzbziz9x27wi5sdzilm-config.fish.drv'...
-copying 1 paths...
-copying path '/nix/store/j78a9ylmg8xgszrlg47kchrc6dja7nfp-config.fish' from 'ssh-ng://root@89.167.50.230'...
-building '/nix/store/735f86i18bavwxvkl3037j9g359cpfmw-man-cache.drv'...
-building '/nix/store/wrxgvlamcyh9jmny8ihc5p65gasch2ca-activation-script.drv'...
-building '/nix/store/ah727pazcg8bf3fci4fsbpdjx0c8b45j-hm_.manpath.drv'...
-building '/nix/store/13ajp717721shv822xhjyqr1jq830653-home-manager-files.drv'...
-building '/nix/store/ijnjh1fwvr4vryz0i44z6l0lgfh0f1fl-home-manager-generation.drv'...
 ast-grep 0.42.1
 ast-grep 0.42.1
-/tmp/tmp.x7NQwmkH1H/sample.js:1:const answer = 42;
+/tmp/tmp.nTSZ6ecfKa/sample.js:1:const answer = 42;
 export LANG="C.UTF-8"
 export LC_ALL="C.UTF-8"
 ..
 ----------------------------------------------------------------------
-Ran 2 tests in 0.248s
+Ran 2 tests in 0.241s
 
 OK
-......saved model, model_reasoning_effort, features.memories, features.context_management, features.step_model_switching, features.mcp_2026_07_28 to /tmp/tmpv1qh2kb9/shared.toml
-.saved model to /tmp/tmpjv8mz30s/shared.toml
+......saved model, model_reasoning_effort, features.memories, features.context_management, features.step_model_switching, features.mcp_2026_07_28 to /tmp/tmp0hsl4ray/shared.toml
+.saved model to /tmp/tmpc6plg7m3/shared.toml
 ..
 ----------------------------------------------------------------------
-Ran 9 tests in 0.526s
+Ran 9 tests in 0.475s
 
 OK
 ......
 ----------------------------------------------------------------------
-Ran 6 tests in 0.650s
+Ran 6 tests in 0.613s
 
 OK
 ok   exit 0 on add
@@ -111,230 +65,232 @@ ok   a registration matching early in the listing is not treated as an orphan
 ok   a refusal keeps the workspace
 engine-worktree-cleanup contract holds
 sccache profile scope contract: ok
-✔ cursor sessionStart and beforeSubmitPrompt both emit additional_context (15.990692ms)
-✔ grok SessionStart emits Claude-shaped hookSpecificOutput so clientCanReceive is true (0.336637ms)
-✔ identity derivation is the literal first dash-segment, matching identity.rs's worked example -- not a hash (0.619473ms)
-✔ identity derivation takes a UUID session id's first hex group literally (4.181425ms)
-✔ identity derivation uses the whole session id verbatim when it has no dash (matches identity.rs: no forced truncation) (0.419918ms)
-✔ identity derivation falls back to the first 8 normalized characters only when the segment before the first dash is itself empty (0.268305ms)
-✔ identity derivation rejects a bare client name (0.893919ms)
-✔ identity derivation error includes actionable setup hint (REPO_MEMORY_SWARM_CONSUMER + per-client env vars) (0.569022ms)
-✔ validateIdentity rejects every bare client name outright (0.599412ms)
-✔ validateIdentity rejects a missing or empty session segment (5.949641ms)
-✔ validateIdentity empty-string error references the consumer env var so operators can self-serve (0.350047ms)
-✔ validateIdentity malformed-identity error explains the required <client>-<token> shape (0.317587ms)
-✔ an explicit REPO_MEMORY_SWARM_CONSUMER override is validated the same way (0.271795ms)
-✔ cursor path lands under XDG_STATE_HOME/coordination-mailbox, never /tmp (0.380828ms)
-✔ cursor falls back to $HOME/.local/state when XDG_STATE_HOME is unset (0.236804ms)
-✔ cursor persistence: write then read round-trips, and advances monotonically (46.258412ms)
-✔ a corrupt cursor file is treated as absent rather than fatal (3.435699ms)
-✔ filterUnread keeps only messages with sequence greater than the recorded cursor (3.770485ms)
-✔ a presence heartbeat is recognized and counted, a coordination message is not (0.296206ms)
-✔ a status-type heartbeat (the live jcode coordinator shape) is recognized (0.176874ms)
-✔ type available is always suppressed as presence noise, regardless of body (0.159483ms)
-✔ own messages (sender === identity) are recognized for dropping (0.188104ms)
-✔ capMessages keeps at most 25 messages (0.51046ms)
-✔ capMessages keeps at most 16384 bytes of body (0.282866ms)
-✔ buildTrailerLine reports both hidden count and suppressed heartbeats (0.204264ms)
-✔ createContext appends the trailer line when present (3.537532ms)
-✔ same message id from two mailboxes is surfaced once (recipient='all' cross-bucket dedupe) (0.334377ms)
-✔ dedupeByMessageId is stable for empty input and for already-unique input (0.193514ms)
-✔ dedupeByMessageId leaves messages with no id untouched (no id is not a duplicate) (0.350807ms)
-✔ selectBus returns CoordinationBus regardless of the retired feature flag (1.144424ms)
-✔ selectCoordinationChannels mirrors pollWorkspaces: workspace + additional + global, deduped (4.440479ms)
-✔ selectCoordinationChannels strips a leading dot from a hidden-directory-derived identity (0.210794ms)
-✔ extractRejectedMailbox matches both observed live rejection wordings (0.474089ms)
-✔ derivePrincipal keeps an already-conforming identity as-is (token already 4-16 alnum) (0.194995ms)
-✔ derivePrincipal truncates a token over the 16-character ceiling (the no-dash verbatim-session-id case) (0.291775ms)
-✔ derivePrincipal pads a token under the 4-character floor deterministically (0.155063ms)
-✔ derivePrincipal strips non-alphanumeric characters from the token (validateIdentity permits '.' and '_', the coordination schema does not) (0.183824ms)
-✔ derivePrincipal splits a compound client name (containing its own dash) using the known client label, not the first dash in the identity (0.142262ms)
-✔ deriveCoordinationSession gives Codex its root-owned session while preserving other client sessions (0.137223ms)
-✔ coordinationInboxPathFor lands in the same directory as cursorPathFor but under a distinct filename (0.293166ms)
-✔ readCoordinationInbox on a missing file returns an empty/absent shape, not an error (0.493ms)
-✔ a corrupt coordination-inbox file is treated as absent rather than fatal (32.909043ms)
-✔ a coordination-inbox file with no inbox_uri field is treated as absent (inbox_uri is the field that makes the record valid) (4.219196ms)
-✔ coordination-inbox persistence: write then read round-trips every field (2.294636ms)
-✔ coordination-inbox persistence never appears in .cursor.json's directory listing as the same file (flag toggle stays lossless) (1.725344ms)
-✔ partitionMessagesByChannel buckets a message by its channel/mailbox field when it matches an enumerated channel (0.405498ms)
-✔ partitionMessagesByChannel falls back to the __inbox__ catch-all for direct mail matching no enumerated channel (the partition-hole fix) (0.159973ms)
-✔ Codex CoordinationBus.subscribe uses its root-owned session and treats ack_watermark-without-inbox_uri as success (0.866078ms)
-✔ Codex CoordinationBus.sweep, the automatic hook path, uses the root-owned session (0.376128ms)
-✔ Codex CoordinationBus.sweep persists the returned root-session capability (6.727205ms)
-✔ CoordinationBus.poll partitions the merged inbox and tags the __inbox__ bucket for direct mail, and reuses one cached poll across workspaces in a run (0.708925ms)
-✔ CoordinationBus.poll subscribes even when a capability is already loaded, every run (no silent no-op on a warm state) (0.210033ms)
-✔ CoordinationBus.subscribe drops a rejected (unregistered) mailbox and retries rather than failing the whole call (0.462569ms)
-✔ CoordinationBus.ack and .post include inbox_uri only when one is held, and never otherwise (0.49894ms)
-✔ 2026-07-28 transport shape: headers and per-call _meta via CoordinationBus.subscribe (stateless, no handshake) (65.51685ms)
-✔ a _meta missing clientCapabilities is rejected by the gateway with -32602 (regression: this exact shape 400'd in live use) (18.83446ms)
-✔ SSE responses beginning with an empty prime frame are parsed past it (15.472112ms)
-✔ gateway unreachable yields exactly one notice line and exit 0 (135.208223ms)
-✔ abort at the internal deadline yields exit 0 without blocking the turn (879.623435ms)
-✔ a successful sweep writes the cursor file (regression: it was never reached before the transport fix) (133.652424ms)
-✔ COORDINATION_MAILBOX_DEBUG=1 prints identity, request URL, HTTP status, and cursor path to stderr (131.567382ms)
-✔ a cwd outside any .git/.jj checkout falls back to the global mailbox instead of silently doing nothing (regression: $HOME cwd never wrote a cursor) (123.799194ms)
-✔ a fresh identity subscribes at head and never renders the backlog (128.134672ms)
-✔ known_session=false discards the replayed batch and resubscribes at head (128.755114ms)
-✔ an existing local cursor does not block a sweep; the server watermark is authoritative (137.156764ms)
-✔ sweep without an ack_watermark fails closed -- messages are not rendered (127.371336ms)
-✔ a recipient='all' broadcast held in two mailboxes is surfaced once and advances both cursors (277.599854ms)
-✔ Home Manager owns the devbox-scoped exact wrapper logic (8.566403ms)
-✔ wrapper selects the nearest marked Engine root and preserves argv (58.682922ms)
-✔ wrapper rejects an unrelated ancestor flake and uses marked fallback (36.935764ms)
-✔ wrapper recursion fails closed before invoking Nix (22.103665ms)
-✔ the canonical repository check runs the cargo-pgrx wrapper contract (1.48484ms)
-✔ skill frontmatter and openai.yaml exist with Use when / Not for description (20.519913ms)
-✔ main-agent-only SUBAGENT-STOP tells bounded subagent to stop and return to root (2.020651ms)
-✔ trigger: delegated external work loads skill; Codex remains sole publisher (2.586232ms)
-✔ near-miss: Default/Plan or v1/v2 wording alone cannot satisfy frontmatter trigger (3.670223ms)
-✔ alternate phrasing: encrypted_content fails closed or starts fresh portable session (2.070522ms)
-✔ Kimi prompt-mode command uses exact model/flags and forbids --prompt with --auto/--yolo (1.579442ms)
-✔ Cursor preferred subscription models are non-fast only (1.45642ms)
-✔ concurrency enforces operator hard ceilings plus resource-based lower limits (1.766655ms)
-✔ run provenance launcher contract is documented and fail-closed (1.97571ms)
-✔ Home Manager installs the launcher only under ~/.codex (3.699785ms)
-✔ Home Manager maps only this user skill; no singularity-engine-forward mapping (2.334367ms)
-✔ AGENTS handwritten section is a minimal load-skill trigger only (1.394978ms)
-✔ general orchestration runbook is absent (2.502931ms)
-✔ no-VCS rule is instruction policy, not a sandbox; worker state is untrusted (1.858398ms)
-✔ Kimi 0.28.1 prompt-mode behavior is documented (auto permission, handlers, validateOptions) (3.129773ms)
-✔ fail-closed worker evidence minimum and independent coordinator rerun (0.958489ms)
-✔ Cursor implementation and read-only commands are proven; boundary fails closed (1.268986ms)
-✔ skill activates only in Codex root; workers cannot load it; root never dispatches it to subagents (1.607663ms)
-✔ concurrency requires live memory check and stops before swap/memory pressure worsens (1.0085ms)
-✔ skill cites the exact contract-test paths and commands (1.046852ms)
-✔ requires explicit root/parent/task identity; no anonymous default (222.889831ms)
-✔ rejects Kimi agent budget above the per-coordinator ceiling of 10 (264.891628ms)
-✔ writes crash-recoverable record with required provenance and no prompt/argv leakage (95.259068ms)
-✔ falls back to ~/.local/state/codex when XDG_STATE_HOME is unset (88.82927ms)
-✔ records child exit code and failed status; launcher forwards exit code (81.183596ms)
-✔ records signal termination and maps launcher exit to 128+signo (61.145112ms)
-✔ forwards SIGTERM to the child and records signal termination (117.283923ms)
-✔ rejects a duplicate run id instead of overwriting an existing record (137.98295ms)
-✔ preserves nested root/parent ancestry (parent is the immediate lead task) (73.526822ms)
-✔ rejects Kimi prompt mode combined with --auto or --yolo (122.1ms)
-✔ reconciles stale dead-pid records before summing reserved Kimi budget (78.603884ms)
-✔ rejects a launch that would exceed the global 30 Kimi agent ceiling (79.097914ms)
-✔ enforces one writer per workspace lane (67.194035ms)
-✔ serializes concurrent reservations without exceeding the global ceiling (1622.84345ms)
-✔ rejects when one coordinator's aggregated active Kimi reservations would exceed 10 (70.541071ms)
-✔ other coordinators' reservations do not count toward the per-coordinator ceiling (80.719576ms)
-✔ fails closed on an unparsable run record instead of ignoring it (60.116871ms)
-✔ fails closed on a schema-invalid active record instead of treating missing budget as zero (76.309297ms)
-✔ signals the worker process group so grandchildren do not survive launcher termination (118.57407ms)
-✔ cursor harness launches without Kimi budget accounting (75.359568ms)
-✔ recovers a reservation lock whose recorded owner PID is dead (78.166435ms)
-✔ recovers a legacy ownerless lock once it is older than the contention window (73.535462ms)
-✔ recovers a corrupt owner lock once it is older than the contention window (79.951622ms)
-✔ fails closed on a fresh ownerless lock inside the contention window without stealing it (316.015638ms)
-✔ retry-budget overrides never shorten the stale classification window (69.194475ms)
-✔ never steals a lock whose recorded owner PID is alive (321.57065ms)
-✔ root and every gateway-backed Codex role disable hosted search (17.826719ms)
-✔ Codex keeps external gateway profiles profile-only and residents OpenAI-only (13.862669ms)
-✔ detect-secrets filters only canonical Purpose work-packet metadata (4630.780689ms)
-✔ detect-secrets filters host-hook content hashes in hooks.lock.json (792.381667ms)
-✔ hms warns (but still builds) when the primary is not a clean main checkout (52.59323ms)
-✔ hms stays silent on a clean main checkout (49.654651ms)
-✔ Home Manager retires only the unsafe JCode lane-settle artifacts (3.145224ms)
-✔ nix-direnv overlay does not GC-root flake archive inputs (8.853439ms)
-✔ Home Manager preserves the requested Forgejo and fast-Nix toolchain without tea (27.582305ms)
-✔ Home Manager owns nix-index database refresh wiring (2.639723ms)
-✔ Home Manager activation does not launch emergency backup jobs (1.317296ms)
-✔ mutable home sweeps serialize and report bounded lock failures (1.837427ms)
-✔ home emergency backup ssh command keeps long uploads alive on Hetzner Storage Box (0.866398ms)
-✔ borgmatic hot-source backup replaces mutating git snapshots safely (2.146223ms)
-✔ Home Manager gives every managed agent client a deterministic UTF-8 locale (1.369457ms)
-✔ NixOS owns the JCode units; Home Manager must not shadow them (1.077512ms)
-✔ JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gateway fallbacks (4.9455ms)
-✔ shell aliases consume the managed Nix tooling (1.814567ms)
-✔ the Home Manager wrapper preserves an explicitly requested flake (1.261506ms)
-✔ the maintenance shell supplies every executable used by the canonical check (1.698333ms)
-✔ Home Manager does not include the retired Hermes agent (2.839897ms)
-✔ Home Manager uses the nixpkgs mise package without a private overlay (2.003861ms)
-✔ daily python3 is nixpkgs, not mise (1.925279ms)
-✔ Home Manager activation uses the non-deprecated nix profile command (0.719104ms)
-✔ dotfiles flake does not import ace-coder or the GPU worker (2.03111ms)
-✔ just check delegates to the single repository check implementation (1.52327ms)
-✔ global Codex instructions keep publication owned until land completes (1.538971ms)
-✔ otel-env.sh resolves OTLP helpers without mutating caller PATH (1.040731ms)
-✔ cursor-agent and agent share one OTEL wrapper with unified binary resolution (1.244884ms)
-✔ Claude Code remains native-installer-owned outside Home Manager (2.286216ms)
-✔ Home Manager modules keep single ownership of every managed path and bin name (24.518994ms)
-✔ live config does not call retired *.infra.centralcloud.com endpoints (31.6895ms)
+✔ cursor sessionStart and beforeSubmitPrompt both emit additional_context (5.161534ms)
+✔ grok SessionStart emits Claude-shaped hookSpecificOutput so clientCanReceive is true (0.232784ms)
+✔ identity derivation is the literal first dash-segment, matching identity.rs's worked example -- not a hash (0.574302ms)
+✔ identity derivation takes a UUID session id's first hex group literally (0.237725ms)
+✔ identity derivation uses the whole session id verbatim when it has no dash (matches identity.rs: no forced truncation) (0.596212ms)
+✔ identity derivation falls back to the first 8 normalized characters only when the segment before the first dash is itself empty (0.187435ms)
+✔ identity derivation rejects a bare client name (1.259525ms)
+✔ identity derivation error includes actionable setup hint (REPO_MEMORY_SWARM_CONSUMER + per-client env vars) (0.405878ms)
+✔ validateIdentity rejects every bare client name outright (0.909818ms)
+✔ validateIdentity rejects a missing or empty session segment (0.725604ms)
+✔ validateIdentity empty-string error references the consumer env var so operators can self-serve (0.351507ms)
+✔ validateIdentity malformed-identity error explains the required <client>-<token> shape (0.227464ms)
+✔ an explicit REPO_MEMORY_SWARM_CONSUMER override is validated the same way (0.234775ms)
+✔ cursor path lands under XDG_STATE_HOME/coordination-mailbox, never /tmp (0.318757ms)
+✔ cursor falls back to $HOME/.local/state when XDG_STATE_HOME is unset (0.154153ms)
+✔ cursor persistence: write then read round-trips, and advances monotonically (27.524706ms)
+✔ a corrupt cursor file is treated as absent rather than fatal (2.659134ms)
+✔ filterUnread keeps only messages with sequence greater than the recorded cursor (0.437709ms)
+✔ a presence heartbeat is recognized and counted, a coordination message is not (0.200244ms)
+✔ a status-type heartbeat (the live jcode coordinator shape) is recognized (0.128223ms)
+✔ type available is always suppressed as presence noise, regardless of body (0.143123ms)
+✔ own messages (sender === identity) are recognized for dropping (0.135692ms)
+✔ capMessages keeps at most 25 messages (0.296195ms)
+✔ capMessages keeps at most 16384 bytes of body (0.216745ms)
+✔ buildTrailerLine reports both hidden count and suppressed heartbeats (0.116573ms)
+✔ createContext appends the trailer line when present (0.262085ms)
+✔ same message id from two mailboxes is surfaced once (recipient='all' cross-bucket dedupe) (0.220654ms)
+✔ dedupeByMessageId is stable for empty input and for already-unique input (0.123352ms)
+✔ dedupeByMessageId leaves messages with no id untouched (no id is not a duplicate) (0.140292ms)
+✔ selectBus returns CoordinationBus regardless of the retired feature flag (0.676943ms)
+✔ selectCoordinationChannels mirrors pollWorkspaces: workspace + additional + global, deduped (0.197014ms)
+✔ selectCoordinationChannels strips a leading dot from a hidden-directory-derived identity (0.109141ms)
+✔ extractRejectedMailbox matches both observed live rejection wordings (0.320677ms)
+✔ derivePrincipal keeps an already-conforming identity as-is (token already 4-16 alnum) (0.114573ms)
+✔ derivePrincipal truncates a token over the 16-character ceiling (the no-dash verbatim-session-id case) (0.199535ms)
+✔ derivePrincipal pads a token under the 4-character floor deterministically (0.120693ms)
+✔ derivePrincipal strips non-alphanumeric characters from the token (validateIdentity permits '.' and '_', the coordination schema does not) (0.094132ms)
+✔ derivePrincipal splits a compound client name (containing its own dash) using the known client label, not the first dash in the identity (0.094372ms)
+✔ deriveCoordinationSession gives Codex its root-owned session while preserving other client sessions (0.124683ms)
+✔ coordinationInboxPathFor lands in the same directory as cursorPathFor but under a distinct filename (0.166314ms)
+✔ readCoordinationInbox on a missing file returns an empty/absent shape, not an error (0.115442ms)
+✔ a corrupt coordination-inbox file is treated as absent rather than fatal (7.843258ms)
+✔ a coordination-inbox file with no inbox_uri field is treated as absent (inbox_uri is the field that makes the record valid) (3.439849ms)
+✔ coordination-inbox persistence: write then read round-trips every field (4.43974ms)
+✔ coordination-inbox persistence never appears in .cursor.json's directory listing as the same file (flag toggle stays lossless) (1.891349ms)
+✔ partitionMessagesByChannel buckets a message by its channel/mailbox field when it matches an enumerated channel (0.352998ms)
+✔ partitionMessagesByChannel falls back to the __inbox__ catch-all for direct mail matching no enumerated channel (the partition-hole fix) (0.159963ms)
+✔ Codex CoordinationBus.subscribe uses its root-owned session and treats ack_watermark-without-inbox_uri as success (0.818076ms)
+✔ Codex CoordinationBus.sweep, the automatic hook path, uses the root-owned session (0.54869ms)
+✔ Codex CoordinationBus.sweep persists the returned root-session capability (3.159064ms)
+✔ CoordinationBus.poll partitions the merged inbox and tags the __inbox__ bucket for direct mail, and reuses one cached poll across workspaces in a run (0.579093ms)
+✔ CoordinationBus.poll subscribes even when a capability is already loaded, every run (no silent no-op on a warm state) (0.251745ms)
+✔ CoordinationBus.subscribe drops a rejected (unregistered) mailbox and retries rather than failing the whole call (0.736305ms)
+✔ CoordinationBus.ack and .post include inbox_uri only when one is held, and never otherwise (0.389519ms)
+✔ 2026-07-28 transport shape: headers and per-call _meta via CoordinationBus.subscribe (stateless, no handshake) (62.81765ms)
+✔ a _meta missing clientCapabilities is rejected by the gateway with -32602 (regression: this exact shape 400'd in live use) (15.090295ms)
+✔ SSE responses beginning with an empty prime frame are parsed past it (37.324445ms)
+✔ gateway unreachable yields exactly one notice line and exit 0 (126.247772ms)
+✔ abort at the internal deadline yields exit 0 without blocking the turn (875.82526ms)
+✔ a successful sweep writes the cursor file (regression: it was never reached before the transport fix) (135.746162ms)
+✔ COORDINATION_MAILBOX_DEBUG=1 prints identity, request URL, HTTP status, and cursor path to stderr (146.642004ms)
+✔ a cwd outside any .git/.jj checkout falls back to the global mailbox instead of silently doing nothing (regression: $HOME cwd never wrote a cursor) (139.581741ms)
+✔ a fresh identity subscribes at head and never renders the backlog (135.186982ms)
+✔ known_session=false discards the replayed batch and resubscribes at head (152.238817ms)
+✔ an existing local cursor does not block a sweep; the server watermark is authoritative (128.67141ms)
+✔ sweep without an ack_watermark fails closed -- messages are not rendered (145.004811ms)
+✔ a recipient='all' broadcast held in two mailboxes is surfaced once and advances both cursors (278.293973ms)
+✔ Home Manager owns the devbox-scoped exact wrapper logic (13.642476ms)
+✔ wrapper selects the nearest marked Engine root and preserves argv (38.746142ms)
+✔ wrapper rejects an unrelated ancestor flake and uses marked fallback (28.828183ms)
+✔ wrapper recursion fails closed before invoking Nix (21.179208ms)
+✔ the canonical repository check runs the cargo-pgrx wrapper contract (1.102133ms)
+✔ skill frontmatter and openai.yaml exist with Use when / Not for description (24.482124ms)
+✔ main-agent-only SUBAGENT-STOP tells bounded subagent to stop and return to root (1.810806ms)
+✔ trigger: delegated external work loads skill; Codex remains sole publisher (2.43628ms)
+✔ Codex root orchestrates external CLI delegates through explicit gateway profiles (1.777166ms)
+✔ durable continuation uses the session-bound coordination API tier (1.734586ms)
+✔ near-miss: Default/Plan or v1/v2 wording alone cannot satisfy frontmatter trigger (2.172223ms)
+✔ alternate phrasing: encrypted_content fails closed or starts fresh portable session (1.185535ms)
+✔ Kimi prompt-mode command uses exact model/flags and forbids --prompt with --auto/--yolo (1.402158ms)
+✔ Cursor preferred subscription models are non-fast only (2.249476ms)
+✔ concurrency enforces operator hard ceilings plus resource-based lower limits (2.343378ms)
+✔ run provenance launcher contract is documented and fail-closed (1.287167ms)
+✔ Home Manager installs the launcher only under ~/.codex (1.202044ms)
+✔ Home Manager maps only this user skill; no singularity-engine-forward mapping (0.970659ms)
+✔ AGENTS handwritten section is a minimal load-skill trigger only (1.677614ms)
+✔ general orchestration runbook is absent (1.884899ms)
+✔ no-VCS rule is instruction policy, not a sandbox; worker state is untrusted (0.643773ms)
+✔ Kimi 0.28.1 prompt-mode behavior is documented (auto permission, handlers, validateOptions) (0.97917ms)
+✔ fail-closed worker evidence minimum and independent coordinator rerun (0.98991ms)
+✔ Cursor implementation and read-only commands are proven; boundary fails closed (1.246545ms)
+✔ skill activates only in Codex root; workers cannot load it; root never dispatches it to subagents (0.664482ms)
+✔ concurrency requires live memory check and stops before swap/memory pressure worsens (0.636863ms)
+✔ skill cites the exact contract-test paths and commands (1.071481ms)
+✔ requires explicit root/parent/task identity; no anonymous default (237.311496ms)
+✔ rejects Kimi agent budget above the per-coordinator ceiling of 10 (283.366346ms)
+✔ writes crash-recoverable record with required provenance and no prompt/argv leakage (78.916804ms)
+✔ falls back to ~/.local/state/codex when XDG_STATE_HOME is unset (73.684269ms)
+✔ records child exit code and failed status; launcher forwards exit code (76.281892ms)
+✔ records signal termination and maps launcher exit to 128+signo (69.26795ms)
+✔ forwards SIGTERM to the child and records signal termination (118.707049ms)
+✔ rejects a duplicate run id instead of overwriting an existing record (135.628561ms)
+✔ preserves nested root/parent ancestry (parent is the immediate lead task) (79.939585ms)
+✔ rejects Kimi prompt mode combined with --auto or --yolo (130.836854ms)
+✔ reconciles stale dead-pid records before summing reserved Kimi budget (90.447198ms)
+✔ rejects a launch that would exceed the global 30 Kimi agent ceiling (74.497456ms)
+✔ enforces one writer per workspace lane (71.013545ms)
+✔ serializes concurrent reservations without exceeding the global ceiling (1591.02416ms)
+✔ rejects when one coordinator's aggregated active Kimi reservations would exceed 10 (67.241709ms)
+✔ other coordinators' reservations do not count toward the per-coordinator ceiling (81.042348ms)
+✔ fails closed on an unparsable run record instead of ignoring it (67.811421ms)
+✔ fails closed on a schema-invalid active record instead of treating missing budget as zero (68.597216ms)
+✔ signals the worker process group so grandchildren do not survive launcher termination (117.875871ms)
+✔ cursor harness launches without Kimi budget accounting (80.933196ms)
+✔ recovers a reservation lock whose recorded owner PID is dead (80.71523ms)
+✔ recovers a legacy ownerless lock once it is older than the contention window (69.969213ms)
+✔ recovers a corrupt owner lock once it is older than the contention window (80.506548ms)
+✔ fails closed on a fresh ownerless lock inside the contention window without stealing it (316.901393ms)
+✔ retry-budget overrides never shorten the stale classification window (63.901351ms)
+✔ never steals a lock whose recorded owner PID is alive (313.849962ms)
+✔ root and every gateway-backed Codex role disable hosted search (21.564276ms)
+✔ Codex keeps external gateway profiles profile-only and residents OpenAI-only (10.86076ms)
+✔ detect-secrets filters only canonical Purpose work-packet metadata (4381.882146ms)
+✔ detect-secrets filters host-hook content hashes in hooks.lock.json (782.38989ms)
+✔ hms warns (but still builds) when the primary is not a clean main checkout (75.194289ms)
+✔ hms stays silent on a clean main checkout (41.883036ms)
+✔ Home Manager retires only the unsafe JCode lane-settle artifacts (4.737946ms)
+✔ nix-direnv overlay does not GC-root flake archive inputs (9.076564ms)
+✔ Home Manager preserves the requested Forgejo and fast-Nix toolchain without tea (24.002494ms)
+✔ Home Manager owns nix-index database refresh wiring (2.805846ms)
+✔ Home Manager activation does not launch emergency backup jobs (1.124064ms)
+✔ mutable home sweeps serialize and report bounded lock failures (1.44172ms)
+✔ home emergency backup ssh command keeps long uploads alive on Hetzner Storage Box (0.820437ms)
+✔ borgmatic hot-source backup replaces mutating git snapshots safely (2.073422ms)
+✔ Home Manager gives every managed agent client a deterministic UTF-8 locale (1.397467ms)
+✔ NixOS owns the JCode units; Home Manager must not shadow them (1.079022ms)
+✔ JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gateway fallbacks (5.923581ms)
+✔ shell aliases consume the managed Nix tooling (1.664764ms)
+✔ the Home Manager wrapper preserves an explicitly requested flake (1.210645ms)
+✔ the maintenance shell supplies every executable used by the canonical check (1.360208ms)
+✔ Home Manager does not include the retired Hermes agent (5.231416ms)
+✔ Home Manager uses the nixpkgs mise package without a private overlay (1.816706ms)
+✔ daily python3 is nixpkgs, not mise (1.641773ms)
+✔ Home Manager activation uses the non-deprecated nix profile command (0.606652ms)
+✔ dotfiles flake does not import ace-coder or the GPU worker (1.699163ms)
+✔ just check delegates to the single repository check implementation (1.559221ms)
+✔ global Codex instructions keep publication owned until land completes (1.100583ms)
+✔ otel-env.sh resolves OTLP helpers without mutating caller PATH (0.762135ms)
+✔ cursor-agent and agent share one OTEL wrapper with unified binary resolution (1.365928ms)
+✔ Claude Code remains native-installer-owned outside Home Manager (1.831308ms)
+✔ Home Manager modules keep single ownership of every managed path and bin name (24.223519ms)
+✔ live config does not call retired *.infra.centralcloud.com endpoints (43.955818ms)
 ▶ skills gate SessionStart hook
-  ✔ injects the gate as SessionStart additionalContext (28.939483ms)
-  ✔ injects ONLY the gate sections, not the whole router (24.932993ms)
-  ✔ tells the agent how to reach the full router and the other skills (21.522614ms)
-  ✔ fails VISIBLY when the router is missing (18.832619ms)
-  ✔ fails VISIBLY when the router loses a gate section (29.74009ms)
-  ✔ emits parseable JSON even when the router contains JSON metacharacters (19.483693ms)
-  ✔ does not truncate a section at a '## ' line inside a code fence (20.611465ms)
-  ✔ never emits an unbalanced code fence (41.996586ms)
-✔ skills gate SessionStart hook (208.784327ms)
+  ✔ injects the gate as SessionStart additionalContext (27.473583ms)
+  ✔ injects ONLY the gate sections, not the whole router (22.128217ms)
+  ✔ tells the agent how to reach the full router and the other skills (25.887222ms)
+  ✔ fails VISIBLY when the router is missing (18.628977ms)
+  ✔ fails VISIBLY when the router loses a gate section (26.486265ms)
+  ✔ emits parseable JSON even when the router contains JSON metacharacters (23.292561ms)
+  ✔ does not truncate a section at a '## ' line inside a code fence (19.098057ms)
+  ✔ never emits an unbalanced code fence (45.440358ms)
+✔ skills gate SessionStart hook (211.013844ms)
 ▶ skills gate harness shape selection
-  ✔ defaults to the Claude shape when no harness is detected (18.560734ms)
-  ✔ selects the SDK shape for Copilot via COPILOT_CLI_DIST_DIR (18.428881ms)
-  ✔ selects the SDK shape for Copilot via COPILOT_CLI_BINARY_VERSION (18.554553ms)
-  ✔ selects the SDK shape for Copilot via COPILOT_CLI_RESOLVED_DIST_DIR (20.793569ms)
-  ✔ selects the SDK shape for Copilot via COPILOT_CLI (19.234898ms)
-  ✔ selects the Cursor shape via CURSOR_TRACE_ID (21.737569ms)
-  ✔ SKILLS_GATE_SHAPE=claude overrides auto-detection (19.967163ms)
-  ✔ SKILLS_GATE_SHAPE=cursor overrides auto-detection (22.939063ms)
-  ✔ SKILLS_GATE_SHAPE=sdk overrides auto-detection (44.697881ms)
-✔ skills gate harness shape selection (206.172293ms)
-(node:2612815) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+  ✔ defaults to the Claude shape when no harness is detected (25.378802ms)
+  ✔ selects the SDK shape for Copilot via COPILOT_CLI_DIST_DIR (21.30776ms)
+  ✔ selects the SDK shape for Copilot via COPILOT_CLI_BINARY_VERSION (21.286849ms)
+  ✔ selects the SDK shape for Copilot via COPILOT_CLI_RESOLVED_DIST_DIR (36.64017ms)
+  ✔ selects the SDK shape for Copilot via COPILOT_CLI (20.720668ms)
+  ✔ selects the Cursor shape via CURSOR_TRACE_ID (20.826351ms)
+  ✔ SKILLS_GATE_SHAPE=claude overrides auto-detection (26.556367ms)
+  ✔ SKILLS_GATE_SHAPE=cursor overrides auto-detection (20.144587ms)
+  ✔ SKILLS_GATE_SHAPE=sdk overrides auto-detection (18.321071ms)
+✔ skills gate harness shape selection (212.35182ms)
+(node:2840659) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-✔ the shell startup secret loaders are untraceable (10.499341ms)
-✔ the untraceable prologue actually suppresses a traced leak (53.387825ms)
-✔ mikki-bunker-windows uses the verified Tailscale admin route (2.150773ms)
-✔ ssh_config declares cc-se-sto-core-01 so fleet loops can reach it (1.645693ms)
-✔ stable shell preserves the caller PATH ahead of Home Manager defaults (17.520694ms)
-✔ SHELL points directly at an immutable store wrapper (7.591734ms)
-✔ stable-shell delegates non-interactive direnv loading to BASH_ENV (1.291646ms)
-✔ ordinary non-interactive shells enter direnv once with a bounded wait (130.183143ms)
-✔ Home Manager uses direnv-instant for interactive shells (3.033341ms)
-﹣ the NixOS devbox is the sole interactive direnv hook authority (0.257495ms) # SKIP
-✔ Home Manager exports BASH_ENV for login and systemd user sessions (2.229406ms)
-✔ BASH_ENV path hook enters direnv once for Claude/Codex bash -c (107.22327ms)
-✔ dump cache hit evals without direnv allow or export (135.98601ms)
-✔ fill runs direnv allow only when the envrc proves blocked (232.556885ms)
-✔ enter-once sentinel is scoped to the repository root (70.821478ms)
-✔ directories without an envrc skip direnv entirely (10.968991ms)
-✔ dump fill strips one-line DIRENV_DIFF and DIRENV_WATCHES (122.638222ms)
-✔ dump whose recorded root no longer has envrc is not reused (186.221062ms)
-✔ dump miss drops leftover flock locks without a matching dump (112.073978ms)
-✔ a dump that froze a truncated PATH cannot strip the caller's tool dirs (90.184436ms)
-✔ an interactive direnv-instant apply cannot strip the caller's tool dirs (89.699637ms)
-✔ the interactive and non-interactive PATH restores stay one rule (1.822537ms)
-✔ fj wrapper falls back to FJ_HOST_DEFAULT when FJ_HOST is unset (7.909889ms)
-✔ Purpose SessionStart hooks use a Home Manager-rendered Node wrapper (12.787488ms)
-✔ Home Manager owns schema-valid Codex hooks.json with repo-memory coordination registration (4.385399ms)
-✔ codex hooks.json wires SessionStart + UserPromptSubmit at the HM-rendered coordination-mailbox-sweep.sh shim, not the legacy swarm-messages.mjs shim (3.033961ms)
-✔ cursor hooks.json wires sessionStart + beforeSubmitPrompt at coordination-mailbox-sweep.mjs, not the legacy swarm-messages.mjs shim (1.154873ms)
-✔ copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered coordination-mailbox-sweep.sh shim (5.767156ms)
-✔ factory settings.json wires SessionStart + UserPromptSubmit at the HM-rendered coordination-mailbox-sweep.sh shim (2.772825ms)
-✔ Home Manager installs every managed hook surface (2.550261ms)
-✔ Goose and JCode wrappers export one inherited session identity (2.408248ms)
-✔ Home Manager enables only Summon delegation with ten background tasks (2.218855ms)
-✔ Goose uses Kimi K3 as main and MiniMax M3 as planner (2.430639ms)
-✔ activation merge preserves unrelated Claude settings and Kimi provider content (139.823928ms)
-✔ activation merge installs JCode session bootstrap without replacing unrelated hooks (69.074261ms)
-✔ repo-memory hook timeouts match the 30s fleet standard (dotfiles #28) (71.849087ms)
-✔ a second install does not duplicate managed hook blocks (dotfiles #28) (152.260797ms)
-✔ the Claude Stop hook reads the same bus tier as the sweep (dotfiles #28) (3.566463ms)
-✔ the installer evicts the renamed legacy hook from an existing config (dotfiles #28) (72.355538ms)
-✔ home modules declare every hook path the installer registers (dotfiles #28) (3.803207ms)
-✔ host-hook mirror no-ops on hash match and replaces on mismatch (266.532961ms)
-✔ copilot instructions never teach recipient=all and Home Manager installs Copilot/Cursor skills-gate files (1.342167ms)
-ℹ tests 209
+✔ the shell startup secret loaders are untraceable (12.577595ms)
+✔ the untraceable prologue actually suppresses a traced leak (44.398288ms)
+✔ mikki-bunker-windows uses the verified Tailscale admin route (1.858577ms)
+✔ ssh_config declares cc-se-sto-core-01 so fleet loops can reach it (1.667833ms)
+✔ stable shell preserves the caller PATH ahead of Home Manager defaults (11.485623ms)
+✔ SHELL points directly at an immutable store wrapper (2.894819ms)
+✔ stable-shell delegates non-interactive direnv loading to BASH_ENV (0.933269ms)
+✔ ordinary non-interactive shells enter direnv once with a bounded wait (107.677945ms)
+✔ Home Manager uses direnv-instant for interactive shells (3.196255ms)
+﹣ the NixOS devbox is the sole interactive direnv hook authority (0.266424ms) # SKIP
+✔ Home Manager exports BASH_ENV for login and systemd user sessions (1.524341ms)
+✔ BASH_ENV path hook enters direnv once for Claude/Codex bash -c (117.905933ms)
+✔ dump cache hit evals without direnv allow or export (113.713178ms)
+✔ fill runs direnv allow only when the envrc proves blocked (172.050997ms)
+✔ enter-once sentinel is scoped to the repository root (59.726348ms)
+✔ directories without an envrc skip direnv entirely (12.064264ms)
+✔ dump fill strips one-line DIRENV_DIFF and DIRENV_WATCHES (118.394543ms)
+✔ dump whose recorded root no longer has envrc is not reused (167.371592ms)
+✔ dump miss drops leftover flock locks without a matching dump (86.762403ms)
+✔ a dump that froze a truncated PATH cannot strip the caller's tool dirs (76.844782ms)
+✔ an interactive direnv-instant apply cannot strip the caller's tool dirs (80.080949ms)
+✔ the interactive and non-interactive PATH restores stay one rule (1.813246ms)
+✔ fj wrapper falls back to FJ_HOST_DEFAULT when FJ_HOST is unset (7.579253ms)
+✔ Purpose SessionStart hooks use a Home Manager-rendered Node wrapper (22.979554ms)
+✔ Home Manager owns schema-valid Codex hooks.json with repo-memory coordination registration (5.099323ms)
+✔ codex hooks.json wires SessionStart + UserPromptSubmit at the HM-rendered coordination-mailbox-sweep.sh shim, not the legacy swarm-messages.mjs shim (3.723235ms)
+✔ cursor hooks.json wires sessionStart + beforeSubmitPrompt at coordination-mailbox-sweep.mjs, not the legacy swarm-messages.mjs shim (1.300216ms)
+✔ copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered coordination-mailbox-sweep.sh shim (2.389199ms)
+✔ factory settings.json wires SessionStart + UserPromptSubmit at the HM-rendered coordination-mailbox-sweep.sh shim (2.725555ms)
+✔ Home Manager installs every managed hook surface (4.213676ms)
+✔ Goose and JCode wrappers export one inherited session identity (1.126404ms)
+✔ Home Manager enables only Summon delegation with ten background tasks (1.860688ms)
+✔ Goose uses Kimi K3 as main and MiniMax M3 as planner (2.922529ms)
+✔ activation merge preserves unrelated Claude settings and Kimi provider content (147.559762ms)
+✔ activation merge installs JCode session bootstrap without replacing unrelated hooks (84.932036ms)
+✔ repo-memory hook timeouts match the 30s fleet standard (dotfiles #28) (77.083038ms)
+✔ a second install does not duplicate managed hook blocks (dotfiles #28) (139.723134ms)
+✔ the Claude Stop hook reads the same bus tier as the sweep (dotfiles #28) (2.760767ms)
+✔ the installer evicts the renamed legacy hook from an existing config (dotfiles #28) (75.148299ms)
+✔ home modules declare every hook path the installer registers (dotfiles #28) (5.167585ms)
+✔ host-hook mirror no-ops on hash match and replaces on mismatch (296.383019ms)
+✔ copilot instructions never teach recipient=all and Home Manager installs Copilot/Cursor skills-gate files (1.494171ms)
+ℹ tests 211
 ℹ suites 2
-ℹ pass 208
+ℹ pass 210
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 1
 ℹ todo 0
-ℹ duration_ms 5549.762536
-✔ the NixOS devbox is the sole interactive direnv hook authority (6477.519989ms)
+ℹ duration_ms 5281.418213
+✔ the NixOS devbox is the sole interactive direnv hook authority (6234.068581ms)
 ℹ tests 1
 ℹ suites 0
 ℹ pass 1
@@ -342,50 +298,43 @@ sccache profile scope contract: ok
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 6570.106926
+ℹ duration_ms 6325.976529
 disabling binary cache 'https://cuda-maintainers.cachix.org' for 60 seconds
 warning: unable to download 'https://cuda-maintainers.cachix.org/nix-cache-info': HTTP error 401
 
          response body:
 
          Binary cache cuda-maintainers doesn't exist or you're not authorized to access it. Check the name for typos and/or provide an auth token. Contact support on https://cachix.org if you're stuck.
-warning: unable to download 'https://cache.flakecache.com/default/8343ps6wqvws1ldrf9dw0haj65x9qrq0.narinfo': Timeout was reached (28) Operation timed out after 5000 milliseconds with 0 bytes received; retrying in 258 ms (attempt 1/5)
-warning: unable to download 'https://cache.flakecache.com/default/8mq583fgfb0y531315g682mfbbzlrkkk.narinfo': Timeout was reached (28) Operation timed out after 5000 milliseconds with 0 bytes received; retrying in 312 ms (attempt 1/5)
 these 15 derivations will be built:
-  /nix/store/qw9216b2pshw0gqiw5yfpqnyf9kwc52j-hm-session-vars.sh.drv
-  /nix/store/5dznas9d4k1j2x90i6j6d0jd0qh135aq-hm_..zshenv.drv
-  /nix/store/83jq1dhilm26cvc8w42kizqiryp0y324-hm-session-vars.fish.drv
-  /nix/store/id7iz8iws4naq3wxc7d7cyih478nr8kr-config.fish.drv
-  /nix/store/6yxnnvah225b8gpzv8l515v595x06jhv-hm-session-vars.sh-fish-completions.drv
-  /nix/store/mwsxdk3r7hc7liagh778w2my0hn4hzcm-hm-session-vars.fish-fish-completions.drv
-  /nix/store/mi01yc7al94hyz8zsrnyxgr5w2l13jfn-mhugo-fish-completions.drv
-  /nix/store/4klpkq5lbiy1k8vd56zrz74pmm44zhmw-man-paths.drv
-  /nix/store/qic4f81aznj83b6ag6lckmc6kg1v66p1-man-cache.drv
-  /nix/store/nlgyh2ghkr9c4lhrp4hrn2n6dz4dr5wr-hm_.manpath.drv
-  /nix/store/xqaprap55jcms727cqca7l2qcpl0jckf-profile.drv
-  /nix/store/29jxwi9xxk1gp5gpbm9q8ykys3n59n6g-home-manager-files.drv
-  /nix/store/xa6bfdv2761vgvwksk46f0bmns38xhx8-home-manager-path.drv
-  /nix/store/wm1bk37wgq47szxnpxl8s6yvxv8ihlq6-activation-script.drv
-  /nix/store/bnz12z32sbha2bb6ac11abm783nlxx5s-home-manager-generation.drv
-building '/nix/store/qw9216b2pshw0gqiw5yfpqnyf9kwc52j-hm-session-vars.sh.drv'...
-building '/nix/store/83jq1dhilm26cvc8w42kizqiryp0y324-hm-session-vars.fish.drv'...
-building '/nix/store/6yxnnvah225b8gpzv8l515v595x06jhv-hm-session-vars.sh-fish-completions.drv'...
-building '/nix/store/5dznas9d4k1j2x90i6j6d0jd0qh135aq-hm_..zshenv.drv'...
-building '/nix/store/xqaprap55jcms727cqca7l2qcpl0jckf-profile.drv'...
-building '/nix/store/id7iz8iws4naq3wxc7d7cyih478nr8kr-config.fish.drv' on 'ssh-ng://root@89.167.50.230'...
-building '/nix/store/mwsxdk3r7hc7liagh778w2my0hn4hzcm-hm-session-vars.fish-fish-completions.drv'...
-building '/nix/store/xa6bfdv2761vgvwksk46f0bmns38xhx8-home-manager-path.drv'...
-building '/nix/store/4klpkq5lbiy1k8vd56zrz74pmm44zhmw-man-paths.drv'...
-building '/nix/store/mi01yc7al94hyz8zsrnyxgr5w2l13jfn-mhugo-fish-completions.drv'...
-copying 1 paths...
-copying path '/nix/store/p72ni0nwx87cv2flnfddlf4k4h50jg6r-hm-session-vars.fish' to 'ssh-ng://root@89.167.50.230'...
-building '/nix/store/id7iz8iws4naq3wxc7d7cyih478nr8kr-config.fish.drv'...
-copying 1 paths...
-copying path '/nix/store/8mq583fgfb0y531315g682mfbbzlrkkk-config.fish' from 'ssh-ng://root@89.167.50.230'...
-building '/nix/store/qic4f81aznj83b6ag6lckmc6kg1v66p1-man-cache.drv'...
-building '/nix/store/wm1bk37wgq47szxnpxl8s6yvxv8ihlq6-activation-script.drv'...
-building '/nix/store/nlgyh2ghkr9c4lhrp4hrn2n6dz4dr5wr-hm_.manpath.drv'...
-building '/nix/store/29jxwi9xxk1gp5gpbm9q8ykys3n59n6g-home-manager-files.drv'...
-building '/nix/store/bnz12z32sbha2bb6ac11abm783nlxx5s-home-manager-generation.drv'...
+  /nix/store/f30vg5rrihhn6dhpn8hvql0spj72hzd2-hm-session-vars.sh.drv
+  /nix/store/g0nrl76d364as2s0rahi0ybdx7c8hg5q-hm-session-vars.fish.drv
+  /nix/store/0xkmglsk5zf46zzr62i6r249lwpsbxa0-config.fish.drv
+  /nix/store/0xmaa3ybd7y3wh0ay37xms6rm5nj56b4-man-paths.drv
+  /nix/store/9nkjd61l9r9mbvah2aa67gq5bm9vv3yg-hm-session-vars.sh-fish-completions.drv
+  /nix/store/n70ikqm56vh3l8wrjjl2d5xv36c49v32-hm-session-vars.fish-fish-completions.drv
+  /nix/store/xrh5zfp0ckgy1zjhjjxgy3001yhzi65x-home-manager-path.drv
+  /nix/store/vs9b9vl49kix4jkgncrv676gvqak3cxi-activation-script.drv
+  /nix/store/7sp3jh9frmlhmq5c9padk33120hizi3l-mhugo-fish-completions.drv
+  /nix/store/abqxzzz5jpjazsyp5cdc8i5kfj00hwzg-profile.drv
+  /nix/store/a7rw8p00f64kdk5rnpiw1m8xji7d2w4a-man-cache.drv
+  /nix/store/j1apjz6izcy67zlwc4zb0s92xb05blwd-hm_.manpath.drv
+  /nix/store/rf6rshrjb9x7aqgq8h0kxyhz94gnm7q4-hm_..zshenv.drv
+  /nix/store/xrqy2fi0i5r441rnbh12hs8242k9s5xq-home-manager-files.drv
+  /nix/store/2ai9y1hqkvbs0wbf8wsz0w5s2f6v2rlh-home-manager-generation.drv
+building '/nix/store/f30vg5rrihhn6dhpn8hvql0spj72hzd2-hm-session-vars.sh.drv'...
+building '/nix/store/g0nrl76d364as2s0rahi0ybdx7c8hg5q-hm-session-vars.fish.drv'...
+building '/nix/store/9nkjd61l9r9mbvah2aa67gq5bm9vv3yg-hm-session-vars.sh-fish-completions.drv'...
+building '/nix/store/rf6rshrjb9x7aqgq8h0kxyhz94gnm7q4-hm_..zshenv.drv'...
+building '/nix/store/abqxzzz5jpjazsyp5cdc8i5kfj00hwzg-profile.drv'...
+building '/nix/store/0xkmglsk5zf46zzr62i6r249lwpsbxa0-config.fish.drv'...
+building '/nix/store/n70ikqm56vh3l8wrjjl2d5xv36c49v32-hm-session-vars.fish-fish-completions.drv'...
+building '/nix/store/xrh5zfp0ckgy1zjhjjxgy3001yhzi65x-home-manager-path.drv'...
+building '/nix/store/0xmaa3ybd7y3wh0ay37xms6rm5nj56b4-man-paths.drv'...
+building '/nix/store/7sp3jh9frmlhmq5c9padk33120hizi3l-mhugo-fish-completions.drv'...
+building '/nix/store/a7rw8p00f64kdk5rnpiw1m8xji7d2w4a-man-cache.drv'...
+building '/nix/store/vs9b9vl49kix4jkgncrv676gvqak3cxi-activation-script.drv'...
+building '/nix/store/j1apjz6izcy67zlwc4zb0s92xb05blwd-hm_.manpath.drv'...
+building '/nix/store/xrqy2fi0i5r441rnbh12hs8242k9s5xq-home-manager-files.drv'...
+building '/nix/store/2ai9y1hqkvbs0wbf8wsz0w5s2f6v2rlh-home-manager-generation.drv'...
 
 repo_check_exit=0

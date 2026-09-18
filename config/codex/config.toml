@@ -1,5 +1,5 @@
 personality = "pragmatic"
-model = "gpt-5.6-sol"
+model = "gpt-5.6-terra"
 model_provider = "openai"
 model_reasoning_effort = "medium"
 developer_instructions = """

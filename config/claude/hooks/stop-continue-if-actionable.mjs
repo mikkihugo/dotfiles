@@ -35,7 +35,7 @@ import { homedir } from "node:os";
 import { pathToFileURL } from "node:url";
 import {
   McpGatewayClient,
-  RepoMemoryBus,
+  CoordinationBus,
   deriveIdentity,
   runSweep,
   selectBus,
@@ -198,12 +198,12 @@ async function main() {
   const gatewayClient = new McpGatewayClient(env.MCP_GATEWAY_URL, timeout, globalThis.fetch, "claude", debug);
 
   // Pick the wire the same way the sweep's main() does, instead of pinning
-  // RepoMemoryBus. Both hooks read the SAME mailbox, so when the sweep runs on
+  // CoordinationBus. Both hooks read the SAME mailbox, so when the sweep runs on
   // the coordination tier and this one does not, they keep separate watermarks:
   // coordination_poll reports nothing unacked while this hook keeps re-surfacing
   // legacy per-bucket copies it can never see acked. That split is what made a
   // Stop block replay month-old messages a coordination inbox had already drained.
-  let bus = new RepoMemoryBus(gatewayClient);
+  let bus = new CoordinationBus(gatewayClient);
   if (env.REPO_MEMORY_COORDINATION_BUS === "1") {
     try {
       const identity = deriveIdentity("claude", payload, env);

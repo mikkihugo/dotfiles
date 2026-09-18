@@ -232,3 +232,24 @@ test("writeCounter preserves blockedIds already in the file (read-merge-write, n
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("module imports cleanly: the upstream coordination-mailbox-sweep still provides every symbol the hook consumes", async () => {
+  // Regression test for the exact incident that broke the Stop hook:
+  // `RepoMemoryBus` was renamed upstream to `CoordinationBus` and the
+  // hook kept importing the old name, crashing at module load with
+  // `SyntaxError: ... does not provide an export named 'RepoMemoryBus'`,
+  // Node exited 1, the harness reported "stop hook failed, ignored".
+  // This test fails the build if any imported symbol disappears.
+  const mod = await import("/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs");
+  for (const name of [
+    "McpGatewayClient",
+    "CoordinationBus",
+    "deriveIdentity",
+    "runSweep",
+    "selectBus",
+    "selectCoordinationChannels",
+    "selectWorkspace",
+  ]) {
+    assert.equal(typeof mod[name], name === "McpGatewayClient" || name === "CoordinationBus" ? "function" : "function", `upstream must export ${name}`);
+  }
+});

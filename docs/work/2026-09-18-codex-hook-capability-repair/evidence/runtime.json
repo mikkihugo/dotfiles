@@ -1,0 +1,10 @@
+{
+  "observed_at": "2026-09-18T09:12:00+00:00",
+  "command": "COORDINATION_MAILBOX_DEBUG=1 node config/codex/hooks/coordination-mailbox-sweep.mjs codex UserPromptSubmit",
+  "exit_code": 0,
+  "http_status": 200,
+  "principal": "codex-01a0b352",
+  "session": "codex-01a0b352-hook",
+  "capability_persisted": true,
+  "capability_exposed": false
+}

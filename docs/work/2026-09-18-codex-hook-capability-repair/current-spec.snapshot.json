@@ -1,0 +1,6 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "codex-hook-capability-repair-current-spec",
+  "source": { "uri": "repository://config/codex/hooks/coordination-mailbox-sweep.mjs", "revision": "acbb0ee81a243668daae8bd33bb0305ec9e4e58b" },
+  "requirements": []
+}

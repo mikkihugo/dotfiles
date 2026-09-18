@@ -1,0 +1,7 @@
+{
+  "observed_at": "2026-09-18T09:27:00+00:00",
+  "focused": { "command": "node --test config/codex/hooks/coordination-mailbox-sweep.test.mjs config/codex/hooks/coordination-mailbox-sweep.transport.test.mjs", "exit_code": 0, "tests": 69, "passed": 69, "failed": 0 },
+  "preferences": { "command": "repo test codex-preferences", "exit_code": 0, "tests": 9, "passed": 9, "failed": 0 },
+  "quality": { "command": "repo check", "exit_code": 0, "node_tests": 210, "passed": 209, "failed": 0, "skipped": 1, "separate_tests": 1, "separate_passed": 1 },
+  "warnings": ["cuda-maintainers.cachix.org returned HTTP 401; Nix disabled that cache and completed the build locally/remotely."]
+}

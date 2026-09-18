@@ -1,0 +1,23 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-18-codex-hook-capability-repair-purpose",
+  "source": { "system": "manual", "repository": ".", "request_id": "2026-09-18-codex-hook-capability-repair" },
+  "lineage": {
+    "origin": { "kind": "request", "id": "mhugo-2026-09-18-codex-mailbox", "revision": "1" },
+    "objective": { "id": "codex-hook-mailbox-recovery", "statement": "Make the Codex turn-boundary hook consume coordination mail reliably without sharing the interactive reader session.", "measure": "Unit and transport tests use the isolated hook session; a rejected stored capability is replaced after one bounded retry." },
+    "need": { "id": "stale-root-capability", "statement": "The installed hook still uses the superseded root session and a rejected stored capability can poison later sweeps.", "stakeholders": ["Codex sessions on cc-se-sto-devbox-01"], "baseline": "Live sweeps report a foreign-principal rejection for codex-01a0b352-root; the transport contract still expects root while canonical source uses hook.", "consequence_of_no_action": "Every turn emits a mailbox failure and coordination messages are not consumed.", "assumptions": ["The documented principal-lane session form supports a stable hook suffix."], "alternatives_considered": ["Share the interactive session", "Delete server-side inbox state", "Use an isolated hook session and renew rejected local capability"] }
+  },
+  "admission": { "state": "proposed", "producer": { "kind": "agent", "id": "codex-01a0b352" }, "reason": "Operator-directed repair; trusted admission receipt unavailable." },
+  "purpose": "Restore reliable Codex coordination sweeps while keeping the hook reader isolated from the interactive reader.",
+  "consumer": "Codex SessionStart and UserPromptSubmit hooks and operators relying on repo_memory delivery.",
+  "contract": "Every turn-boundary hook shall use `${principal}-hook`; when a persisted inbox capability is rejected for ownership, subscribe shall retry once without it and persist the replacement.",
+  "failure_boundary": "The hook remains fail-open, never logs the signed capability, never mutates foreign server-side inbox state, and performs at most one capability retry.",
+  "evidence": [{ "kind": "test", "description": "Unit tests prove hook-session isolation and one bounded stale-capability retry." }, { "kind": "test", "description": "Transport test proves the wire session is principal-hook." }, { "kind": "runtime", "description": "After Home Manager activation, the next live hook sweep no longer reports the root-session rejection." }],
+  "falsifier": { "claim": "Codex hook coordination is isolated and self-healing.", "executable_check": { "kind": "test", "command": "node --test config/codex/hooks/coordination-mailbox-sweep.test.mjs config/codex/hooks/coordination-mailbox-sweep.transport.test.mjs", "description": "Any root-session assertion or rejected-capability retry failure falsifies the contract." } },
+  "non_goals": ["Changing repo-memory server authorization", "Claiming or deleting foreign inboxes", "Changing interactive Codex coordination identity"],
+  "invariants": ["principal remains derived from the Codex thread identity", "inbox_uri remains secret and mode-0600", "hook remains fail-open", "retry count remains bounded"],
+  "assumptions": [{ "statement": "The server accepts a principal-hook session for the same principal.", "status": "unverified", "doubt": 1, "falsifier": "A live post-activation sweep rejects principal-hook without a persisted capability." }],
+  "run_control": { "autonomous_allowed": true, "risk": "medium", "blast_radius": "local", "reversibility": "easy", "max_active_doubt": 1 },
+  "target_planes": ["tool", "client"],
+  "plane_constraints": ["Home Manager owns deployment; repo-memory owns authorization."]
+}

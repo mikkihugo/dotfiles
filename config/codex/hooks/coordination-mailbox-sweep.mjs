@@ -281,6 +281,13 @@ export function extractRejectedMailbox(error) {
   return null;
 }
 
+function isRejectedInboxCapability(error) {
+  const message = String(error?.message ?? error).toLowerCase();
+  return message.includes("coordination inbox") && (
+    message.includes("owned by a different principal") || message.includes("does not own")
+  );
+}
+
 /**
  * Partition a coordination_poll response's messages by which enumerated
  * channel they arrived on. A message naming no matching channel -- direct
@@ -342,7 +349,8 @@ export class CoordinationBus {
 
   async _doSubscribe(signal) {
     let channels = [...this._channels];
-    const inboxUriHint = this._inbox?.inbox_uri;
+    let inboxUriHint = this._inbox?.inbox_uri;
+    let retriedWithoutInboxCapability = false;
     let response;
     // Bounded retry: drop one rejected (unregistered) mailbox per attempt
     // rather than hardcoding the closed registry observed live (see class
@@ -356,6 +364,15 @@ export class CoordinationBus {
         break;
       } catch (error) {
         if (isAbortError(error)) throw error;
+        // A capability can outlive the server-side session that minted it.
+        // Retry once without it so subscribe can prove principal/session
+        // ownership and mint a replacement for subsequent turns.
+        if (inboxUriHint && !retriedWithoutInboxCapability && isRejectedInboxCapability(error)) {
+          inboxUriHint = undefined;
+          retriedWithoutInboxCapability = true;
+          this._inbox = emptyCoordinationInbox();
+          continue;
+        }
         const rejected = extractRejectedMailbox(error);
         if (!rejected || !channels.includes(rejected) || channels.length <= 1) throw error;
         channels = channels.filter((channel) => channel !== rejected);
@@ -452,7 +469,17 @@ export class CoordinationBus {
       limit: COORDINATION_POLL_LIMIT,
     };
     if (this._inbox?.inbox_uri) args.inbox_uri = this._inbox.inbox_uri;
-    const result = await this.client.callRepoMemory("coordination_sweep", args, signal);
+    let result;
+    try {
+      result = await this.client.callRepoMemory("coordination_sweep", args, signal);
+    } catch (error) {
+      if (isAbortError(error)) throw error;
+      if (!args.inbox_uri || !isRejectedInboxCapability(error)) throw error;
+      this._inbox = emptyCoordinationInbox();
+      const retryArgs = { ...args };
+      delete retryArgs.inbox_uri;
+      result = await this.client.callRepoMemory("coordination_sweep", retryArgs, signal);
+    }
     const inboxUri = typeof result?.inbox_uri === "string" && result.inbox_uri ? result.inbox_uri : undefined;
     if (inboxUri) {
       this._inbox = {

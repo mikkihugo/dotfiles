@@ -1,0 +1,11 @@
+{
+  "result_id": "2026-09-18-codex-hook-capability-repair-red",
+  "status": "failed",
+  "observed_at": "2026-09-18T09:18:00+00:00",
+  "command": "node --test config/codex/hooks/coordination-mailbox-sweep.test.mjs",
+  "exit_code": 1,
+  "tests": 56,
+  "passed": 55,
+  "failed": 1,
+  "failure": "CoordinationBus.sweep did not retry after a persisted capability was rejected for ownership."
+}

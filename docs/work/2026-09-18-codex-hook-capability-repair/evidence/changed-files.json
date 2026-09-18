@@ -1,0 +1,18 @@
+{
+  "source": "repository-vcs-facade",
+  "files": [
+    "config/codex/hooks/coordination-mailbox-sweep.mjs",
+    "config/codex/hooks/coordination-mailbox-sweep.test.mjs",
+    "config/codex/hooks/coordination-mailbox-sweep.transport.test.mjs",
+    "docs/work/2026-09-18-codex-hook-capability-repair/current-spec.snapshot.json",
+    "docs/work/2026-09-18-codex-hook-capability-repair/evidence/changed-files.json",
+    "docs/work/2026-09-18-codex-hook-capability-repair/evidence/green.json",
+    "docs/work/2026-09-18-codex-hook-capability-repair/evidence/red.json",
+    "docs/work/2026-09-18-codex-hook-capability-repair/evidence/review.json",
+    "docs/work/2026-09-18-codex-hook-capability-repair/evidence/runtime.json",
+    "docs/work/2026-09-18-codex-hook-capability-repair/evidence.bundle.json",
+    "docs/work/2026-09-18-codex-hook-capability-repair/purpose.contract.json",
+    "docs/work/2026-09-18-codex-hook-capability-repair/validation.report.json",
+    "docs/work/2026-09-18-codex-hook-capability-repair/work.spec.json"
+  ]
+}

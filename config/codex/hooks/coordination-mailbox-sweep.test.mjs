@@ -564,6 +564,34 @@ test("Codex CoordinationBus.subscribe uses its isolated hook session and treats 
   assert.ok(!("inbox_uri" in client.calls[0].args), "no inbox_uri hint on the first call -- none is held yet");
 });
 
+test("CoordinationBus.subscribe drops a rejected persisted capability and retries once without it", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "coordination-stale-capability-"));
+  try {
+    writeCoordinationInbox(coordinationInboxPathFor("codex-abcd1234-hook", { XDG_STATE_HOME: dir }), {
+      inbox_uri: "repo-memory://stale-capability",
+      channels: ["global"],
+      principal: "codex-abcd1234",
+      session: "codex-abcd1234-hook",
+    });
+    let attempt = 0;
+    const client = fakeCoordinationClient({
+      coordination_subscribe: (args) => {
+        attempt += 1;
+        if (args.inbox_uri) throw new Error("coordination inbox owned by a different principal: session codex-abcd1234-hook");
+        return { ack_watermark: 7, channels: ["global"], inbox_uri: "repo-memory://fresh-capability" };
+      },
+    });
+    const bus = new CoordinationBus(client, { identity: "codex-abcd1234", clientLabel: "codex", channels: ["global"], env: { XDG_STATE_HOME: dir } });
+    await bus.subscribe("global", "codex-abcd1234");
+    assert.equal(attempt, 2);
+    assert.equal(client.calls[0].args.inbox_uri, "repo-memory://stale-capability");
+    assert.ok(!("inbox_uri" in client.calls[1].args));
+    assert.equal(readCoordinationInbox(coordinationInboxPathFor("codex-abcd1234-hook", { XDG_STATE_HOME: dir })).inbox_uri, "repo-memory://fresh-capability");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("Codex CoordinationBus.sweep, the automatic hook path, uses the isolated hook session", async () => {
   const client = fakeCoordinationClient({
 		coordination_sweep: { known_session: true, messages: [], ack_watermark: 0, session: "codex-abcd1234-hook" },
@@ -584,6 +612,34 @@ test("Codex CoordinationBus.sweep persists the returned hook-session capability"
     }), { identity: "codex-abcd1234", clientLabel: "codex", channels: ["global"], env: { XDG_STATE_HOME: dir } });
     await bus.sweep("codex-abcd1234");
     assert.equal(readCoordinationInbox(coordinationInboxPathFor("codex-abcd1234-hook", { XDG_STATE_HOME: dir })).inbox_uri, "repo-memory://test-capability");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("Codex CoordinationBus.sweep drops a rejected persisted capability and retries once without it", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "coordination-stale-sweep-capability-"));
+  try {
+    writeCoordinationInbox(coordinationInboxPathFor("codex-abcd1234-hook", { XDG_STATE_HOME: dir }), {
+      inbox_uri: "repo-memory://stale-sweep-capability",
+      channels: ["global"],
+      principal: "codex-abcd1234",
+      session: "codex-abcd1234-hook",
+    });
+    let attempt = 0;
+    const client = fakeCoordinationClient({
+      coordination_sweep: (args) => {
+        attempt += 1;
+        if (args.inbox_uri) throw new Error("coordination inbox does not own session codex-abcd1234-hook");
+        return { known_session: true, messages: [], ack_watermark: 9, channels: ["global"], inbox_uri: "repo-memory://fresh-sweep-capability" };
+      },
+    });
+    const bus = new CoordinationBus(client, { identity: "codex-abcd1234", clientLabel: "codex", channels: ["global"], env: { XDG_STATE_HOME: dir } });
+    await bus.sweep("codex-abcd1234");
+    assert.equal(attempt, 2);
+    assert.equal(client.calls[0].args.inbox_uri, "repo-memory://stale-sweep-capability");
+    assert.ok(!("inbox_uri" in client.calls[1].args));
+    assert.equal(readCoordinationInbox(coordinationInboxPathFor("codex-abcd1234-hook", { XDG_STATE_HOME: dir })).inbox_uri, "repo-memory://fresh-sweep-capability");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

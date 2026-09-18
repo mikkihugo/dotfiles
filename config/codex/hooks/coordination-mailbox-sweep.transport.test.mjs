@@ -87,7 +87,7 @@ test("2026-07-28 transport shape: headers and per-call _meta via CoordinationBus
   assert.equal(toolCall.headers.name, "mcp_tool_call");
   assert.equal(toolCall.tool, "coordination_subscribe");
   assert.equal(toolCall.args.principal, "codex-abcd1234");
-  assert.equal(toolCall.args.session, "codex-abcd1234-root");
+  assert.equal(toolCall.args.session, "codex-abcd1234-hook");
   assert.deepEqual(toolCall.args.channels, ["engine", "global"]);
   assert.equal(toolCall.meta["io.modelcontextprotocol/protocolVersion"], "2026-07-28");
   assert.deepEqual(toolCall.meta["io.modelcontextprotocol/clientCapabilities"], {});

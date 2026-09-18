@@ -182,6 +182,13 @@ Version control:
       1. Run `repo vcs sync-main`.
       2. Read back repository state through `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs converge-main
+    What: Rebase committed local main changes onto origin/main without dropping them
+    When: Canonical main has both local-only and upstream-only commits.
+    Steps:
+      1. Run `repo vcs converge-main`.
+      2. Read back repository state through `repo vcs` before publication.
+    Falsifier: A non-zero exit or conflict means the convergence is incomplete.
   repo vcs test
     What: Verify the repository VCS facade contract
     When: Before choosing a repository lifecycle transition.
@@ -270,6 +277,7 @@ elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'rebase' ]]; then shift 2; if [[ 
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'show' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'show' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'status' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'status' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'sync-main' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'sync-main' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'converge-main' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'converge-main' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'test' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'contract-test' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-abandon' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-abandon' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-create' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-create' "$@"

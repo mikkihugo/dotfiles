@@ -74,6 +74,12 @@ class CodexPreferencesTest(unittest.TestCase):
                 self.assertIs(data["features"][feature], True)
             self.assertIs(data["features"]["memories"], False)
 
+    def test_otlp_http_exporters_use_signal_specific_collector_paths(self):
+        data = tomllib.loads((SCRIPT.parents[1] / "config/codex/config.toml").read_text())
+        collector = "http://otel-collector.monitoring.svc.cluster.local:4318"
+        self.assertEqual(data["otel"]["exporter"]["otlp-http"]["endpoint"], f"{collector}/v1/logs")
+        self.assertEqual(data["otel"]["trace_exporter"]["otlp-http"]["endpoint"], f"{collector}/v1/traces")
+
     def test_base_developer_instructions_are_pdd_and_adr_0000(self):
         for name in ("config.toml", "shared-preferences.toml"):
             data = tomllib.loads((SCRIPT.parents[1] / "config/codex" / name).read_text())

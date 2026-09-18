@@ -765,13 +765,16 @@ export function derivePrincipal(identity, client) {
 }
 
 /**
- * Select the exact coordination session owned by one hook consumer.
+ * Select the coordination session owned by this turn-boundary hook.
  *
- * Codex uses its root-owned session so its lifecycle hook never reuses a
- * foreign bare-principal inbox; other clients keep their established session.
+ * A hook is an independent reader from the interactive Codex client.  It
+ * must not share the canonical principal session: either reader could advance
+ * its durable acknowledgement watermark and hide mail from the other.  The
+ * server documents `principal-<lane>` as the supported isolation boundary.
  */
 export function deriveCoordinationSession(principal, client) {
-  return client === "codex" ? `${principal}-root` : principal;
+	void client;
+	return `${principal}-hook`;
 }
 
 // --- cursor persistence (DELIVER 2) -----------------------------------------

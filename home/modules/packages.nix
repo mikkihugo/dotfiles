@@ -67,6 +67,16 @@
     '')
     mold # linker selected via -fuse-ld=mold
     cmake # native dependency builds (llama-cpp-sys and similar -sys crates)
+    # agentgrep (github.com/tony/agentgrep): read-only cross-client search of
+    # local agent traces (Claude/Codex/Cursor/Grok/Kimi...), used to answer
+    # "which agent session touched this branch/path". CLI only: the MCP form
+    # confused Grok, and ccgw runs in-cluster so it cannot read devbox traces.
+    # The clean env avoids the profile python3's pydantic shadowing uvx's
+    # bundled one (ModuleNotFoundError pydantic_core._pydantic_core).
+    (writeShellScriptBin "agentgrep" ''
+      exec env -i HOME="$HOME" PATH="$PATH" TERM="''${TERM:-dumb}" \
+        ${uv}/bin/uvx --no-config agentgrep==0.1.0a52 "$@"
+    '')
     # Daily python3 is nixpkgs, not mise. Linked against its own bzip2/lzma
     # closure so `import bz2` works without nix-ld search-path hacks.
     python3

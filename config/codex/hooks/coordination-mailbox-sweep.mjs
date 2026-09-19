@@ -928,6 +928,17 @@ export function selectCoordinationChannels(workspace, additionalWorkspaces = [])
   return [...new Set([workspace, ...additionalWorkspaces, "global"].map(normalizeMailboxName))];
 }
 
+/**
+ * Extra mailboxes when the hook runs outside a repo (cwd=$HOME).
+ * Host wrappers set COORDINATION_HOME_MAILBOXES; Purpose Tool does not
+ * hard-code consumer banks.
+ */
+export function homeMailboxesFromEnv(env = process.env) {
+  const raw = env.COORDINATION_HOME_MAILBOXES;
+  if (!raw || typeof raw !== "string") return [];
+  return raw.split(",").map((name) => name.trim()).filter(Boolean);
+}
+
 // --- flock-based lease ------------------------------------------------------
 // Guards the cursor read-modify-write against a concurrent hook invocation
 // for the same identity.
@@ -1512,7 +1523,11 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
   const gatewayUrl = env.MCP_GATEWAY_URL || DEFAULT_GATEWAY_URL;
   const gatewayClient = new McpGatewayClient(gatewayUrl, timeout, globalThis.fetch, client, debug);
   const lane = selected.worktree ? basename(selected.worktree) : null;
-  const additionalWorkspaces = lane && lane !== selected.identity ? [lane] : [];
+  const homeMailboxes = selected.identity === "global" ? homeMailboxesFromEnv(env) : [];
+  const additionalWorkspaces = [
+    ...(lane && lane !== selected.identity ? [lane] : []),
+    ...homeMailboxes,
+  ];
 
   // Coordination identity derivation is required for every supported hook.
   let bus;

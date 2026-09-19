@@ -28,6 +28,7 @@ import {
   renderClientOutput,
   selectBus,
   selectCoordinationChannels,
+  homeMailboxesFromEnv,
   extractRejectedMailbox,
   validateIdentity,
   writeCoordinationInbox,
@@ -358,6 +359,22 @@ test("selectCoordinationChannels mirrors pollWorkspaces: workspace + additional 
   assert.deepEqual(selectCoordinationChannels("engine", ["engine"]), ["engine", "global"]);
 });
 
+test("homeMailboxesFromEnv splits COORDINATION_HOME_MAILBOXES and ignores blanks", () => {
+  assert.deepEqual(
+    homeMailboxesFromEnv({ COORDINATION_HOME_MAILBOXES: "infra, jcode,singularity-engine,dotfiles" }),
+    ["infra", "jcode", "singularity-engine", "dotfiles"],
+  );
+  assert.deepEqual(homeMailboxesFromEnv({}), []);
+  assert.deepEqual(homeMailboxesFromEnv({ COORDINATION_HOME_MAILBOXES: "  ,," }), []);
+});
+
+test("selectCoordinationChannels on global plus home banks keeps global once", () => {
+  assert.deepEqual(
+    selectCoordinationChannels("global", ["infra", "jcode"]),
+    ["global", "infra", "jcode"],
+  );
+});
+
 test("selectCoordinationChannels strips a leading dot from a hidden-directory-derived identity", () => {
   // /home/mhugo/.dotfiles -> basename ".dotfiles" is not a valid mailbox
   // name server-side, but the bare "dotfiles" is one of the actually
@@ -416,6 +433,7 @@ test("derivePrincipal splits a compound client name (containing its own dash) us
 test("deriveCoordinationSession gives every hook an isolated stable reader session", () => {
 	assert.equal(deriveCoordinationSession("codex-abcd1234", "codex"), "codex-abcd1234-hook");
   assert.equal(deriveCoordinationSession("claude-abcd1234", "claude"), "claude-abcd1234-hook");
+  assert.equal(deriveCoordinationSession("grok-01a0b343", "grok"), "grok-01a0b343-hook");
 });
 
 // --- inbox_uri capability persistence ------------------------------------------

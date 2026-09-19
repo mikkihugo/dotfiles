@@ -136,6 +136,26 @@
       force = true;
     };
 
+    # Grok TUI used a stale private copy that shared the agent session
+    # (no deriveCoordinationSession). Install the same Codex sweep here.
+    ".grok/hooks/bin/coordination-mailbox-sweep.mjs" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.mjs {
+        node = "${pkgs.nodejs}/bin/node";
+        flock = "${pkgs.util-linux}/bin/flock";
+        bash = "${pkgs.bash}/bin/bash";
+      };
+      executable = true;
+      force = true;
+    };
+    ".grok/hooks/bin/mail-sweep.sh" = {
+      source = pkgs.replaceVars ../../config/grok/hooks/mail-sweep.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
+
     # Codex hooks.json names the .sh shim (it exports REPO_MEMORY_COORDINATION_BUS=1
     # then execs the .mjs). Without this entry the path in hooks.json is ENOENT.
     ".codex/hooks/coordination-mailbox-sweep.sh" = {

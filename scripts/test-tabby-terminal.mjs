@@ -9,11 +9,14 @@ test("Home Manager imports the Tabby terminal module without replacing WezTerm",
   assert.match(home, /\.\/modules\/wezterm\.nix/);
 });
 
-test("Tabby is installed with the supported xterm-256color environment contract", async () => {
+test("Eugeny Tabby is hash-pinned without installing the unrelated TabbyML server", async () => {
   const module = await readFile("home/modules/tabby.nix", "utf8");
   const config = await readFile("config/tabby/config.yaml", "utf8");
 
-  assert.match(module, /pkgs\.tabby/);
+  assert.match(module, /pkgs\.appimageTools\.wrapType2/);
+  assert.match(module, /pname\s*=\s*"tabby-terminal"/);
+  assert.match(module, /github\.com\/Eugeny\/tabby\/releases/);
+  assert.doesNotMatch(module, /home\.packages\s*=\s*\[\s*pkgs\.tabby\b/);
   assert.match(module, /\.config\/tabby\/config\.yaml/);
   assert.match(config, /terminal:\s*\n(?:[^\n]*\n)*?\s+environment:\s*\n(?:[^\n]*\n)*?\s+TERM:\s*xterm-256color/m);
 });

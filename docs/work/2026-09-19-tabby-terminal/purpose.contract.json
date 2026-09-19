@@ -7,7 +7,7 @@
     "objective": {
       "id": "tabby-terminal",
       "statement": "Make Tabby a declarative Home Manager terminal client without creating a nonstandard terminal capability contract.",
-      "measure": "Tabby is installed and its projected local-session environment explicitly preserves TERM=xterm-256color."
+      "measure": "Eugeny/Tabby is installed from a hash-pinned upstream client release and its projected local-session environment explicitly preserves TERM=xterm-256color."
     },
     "need": {
       "id": "tabby-terminal-unmanaged",
@@ -26,10 +26,10 @@
   },
   "purpose": "Provide a declarative Tabby terminal client whose local sessions use the existing supported xterm-256color terminfo contract.",
   "consumer": "Interactive TUI users on cc-se-sto-devbox-01, including JCode and tmux sessions launched from Tabby.",
-  "contract": "Home Manager installs and projects Tabby configuration that explicitly keeps TERM=xterm-256color; the host has a working 256-color terminfo capability without a custom tabby entry.",
+  "contract": "Home Manager installs the hash-pinned Eugeny/Tabby terminal client and projects configuration that explicitly keeps TERM=xterm-256color; the host has a working 256-color terminfo capability without a custom tabby entry.",
   "failure_boundary": "The change must not alter global shell TERM policy, remove WezTerm, or claim a custom tabby terminfo entry exists.",
   "evidence": [
-    { "kind": "test", "description": "A dotfiles source contract fails before a Tabby module/config exists and passes only when it installs Tabby and declares TERM=xterm-256color." },
+    { "kind": "test", "description": "A dotfiles source contract fails before an Eugeny/Tabby module/config exists and passes only when it pins that client and declares TERM=xterm-256color." },
     { "kind": "runtime", "description": "After Home Manager activation, Tabby is on PATH and TERM=xterm-256color terminfo reports 256 colors." }
   ],
   "falsifier": {
@@ -43,7 +43,7 @@
   "non_goals": ["Creating TERM=tabby", "Replacing WezTerm", "Changing system-wide terminfo packages", "Changing shell TERM policy"],
   "invariants": ["Tabby uses the established xterm-256color terminal identity", "Existing WezTerm configuration remains available", "Home Manager is the owner of the Tabby package and config projection"],
   "assumptions": [
-    { "statement": "Nixpkgs exposes the Tabby terminal package.", "status": "verified", "doubt": 0, "falsifier": "The locked Nixpkgs evaluation cannot resolve legacyPackages.x86_64-linux.tabby." },
+    { "statement": "Nixpkgs provides appimageTools and fetchurl to declaratively package the verified Eugeny/Tabby release.", "status": "verified", "doubt": 0, "falsifier": "The Home Manager activation package cannot evaluate the appimageTools-based terminal derivation." },
     { "statement": "Tabby config.yaml accepts terminal.environment.TERM for local session environment.", "status": "verified", "doubt": 1, "falsifier": "The documented Tabby local session source or configuration schema rejects the terminal.environment TERM mapping." }
   ],
   "run_control": { "autonomous_allowed": true, "risk": "low", "blast_radius": "local", "reversibility": "easy", "max_active_doubt": 1 },

@@ -1,0 +1,52 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-19-tabby-terminal-purpose",
+  "source": { "system": "manual", "repository": ".", "request_id": "2026-09-19-tabby-terminal" },
+  "lineage": {
+    "origin": { "kind": "request", "id": "mhugo-tabby-terminfo", "revision": "1" },
+    "objective": {
+      "id": "tabby-terminal",
+      "statement": "Make Tabby a declarative Home Manager terminal client without creating a nonstandard terminal capability contract.",
+      "measure": "Tabby is installed and its projected local-session environment explicitly preserves TERM=xterm-256color."
+    },
+    "need": {
+      "id": "tabby-terminal-unmanaged",
+      "statement": "Interactive TUI users have no declarative Tabby client or configuration, even though their existing terminfo contract is xterm-256color.",
+      "stakeholders": ["interactive JCode and tmux users", "Home Manager operators"],
+      "baseline": "Tabby is absent from the host and dotfiles; TERM=tabby has no terminfo entry, while TERM=xterm-256color supports 256 colors.",
+      "consequence_of_no_action": "Users must configure Tabby manually or risk advertising an unsupported terminal type to TUIs.",
+      "assumptions": ["Tabby local Linux sessions support a terminal.environment TERM override."],
+      "alternatives_considered": ["Keep WezTerm only", "Create a custom tabby terminfo entry", "Configure Tabby to use the existing xterm-256color contract"]
+    }
+  },
+  "admission": {
+    "state": "proposed",
+    "producer": { "kind": "agent", "id": "codex-01a0af94" },
+    "reason": "Operator requested Tabby terminal and terminfo setup under Nix/Home Manager."
+  },
+  "purpose": "Provide a declarative Tabby terminal client whose local sessions use the existing supported xterm-256color terminfo contract.",
+  "consumer": "Interactive TUI users on cc-se-sto-devbox-01, including JCode and tmux sessions launched from Tabby.",
+  "contract": "Home Manager installs and projects Tabby configuration that explicitly keeps TERM=xterm-256color; the host has a working 256-color terminfo capability without a custom tabby entry.",
+  "failure_boundary": "The change must not alter global shell TERM policy, remove WezTerm, or claim a custom tabby terminfo entry exists.",
+  "evidence": [
+    { "kind": "test", "description": "A dotfiles source contract fails before a Tabby module/config exists and passes only when it installs Tabby and declares TERM=xterm-256color." },
+    { "kind": "runtime", "description": "After Home Manager activation, Tabby is on PATH and TERM=xterm-256color terminfo reports 256 colors." }
+  ],
+  "falsifier": {
+    "claim": "Tabby local sessions use a terminfo contract that the host supports.",
+    "executable_check": {
+      "kind": "command",
+      "command": "env TERM=xterm-256color infocmp -x xterm-256color && test \"$(env TERM=xterm-256color tput colors)\" = 256",
+      "description": "A missing xterm-256color entry or non-256 color result falsifies the contract."
+    }
+  },
+  "non_goals": ["Creating TERM=tabby", "Replacing WezTerm", "Changing system-wide terminfo packages", "Changing shell TERM policy"],
+  "invariants": ["Tabby uses the established xterm-256color terminal identity", "Existing WezTerm configuration remains available", "Home Manager is the owner of the Tabby package and config projection"],
+  "assumptions": [
+    { "statement": "Nixpkgs exposes the Tabby terminal package.", "status": "verified", "doubt": 0, "falsifier": "The locked Nixpkgs evaluation cannot resolve legacyPackages.x86_64-linux.tabby." },
+    { "statement": "Tabby config.yaml accepts terminal.environment.TERM for local session environment.", "status": "verified", "doubt": 1, "falsifier": "The documented Tabby local session source or configuration schema rejects the terminal.environment TERM mapping." }
+  ],
+  "run_control": { "autonomous_allowed": true, "risk": "low", "blast_radius": "local", "reversibility": "easy", "max_active_doubt": 1 },
+  "target_planes": ["client"],
+  "plane_constraints": ["A terminal emulator configuration is a client projection, not a NixOS system terminfo policy."]
+}

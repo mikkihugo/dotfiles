@@ -1,0 +1,63 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-09-19-tabby-terminal-work",
+  "purpose_contract_id": "2026-09-19-tabby-terminal-purpose",
+  "handover": { "state": "proposed", "producer": { "kind": "agent", "id": "codex-01a0af94" }, "reason": "Operator-directed Home Manager configuration." },
+  "feature_tree_target": { "kind": "component", "name": "tabby-terminal-client", "status": "in_progress" },
+  "current_spec": { "snapshot_id": "2026-09-19-tabby-terminal-current-spec", "uri": "current-spec.snapshot.json", "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "aea52c15922a82e98601b179fa37e2a04c10359546edeb1d8a3ac6d35b8469f4" } },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "The Home Manager configuration shall install Tabby and project a Tabby config.yaml declaring terminal.environment.TERM as xterm-256color.",
+        "acceptance_criteria": ["A source contract recognizes the Tabby package and config projection", "The rendered config declares TERM=xterm-256color", "The existing WezTerm module remains imported"],
+        "requirement_form": { "ears": { "pattern": "ubiquitous", "system": "Home Manager Tabby client configuration", "response": "install Tabby and project config.yaml with terminal.environment.TERM=xterm-256color" } },
+        "breaker": { "breaker_id": "B1", "condition": "Tabby is projected without an xterm-256color environment contract", "witness_kind": "contract-test", "expected": "rejected" },
+        "risk": "low",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "When the Home Manager configuration is activated, the host shall retain a usable xterm-256color terminfo entry with 256 colors.",
+        "acceptance_criteria": ["infocmp -x xterm-256color succeeds", "tput colors returns 256 under TERM=xterm-256color"],
+        "requirement_form": { "ears": { "pattern": "event-driven", "system": "activated Home Manager terminal environment", "trigger": "a TUI starts with TERM=xterm-256color", "response": "resolve the terminfo entry and report 256 colors" } },
+        "breaker": { "breaker_id": "B2", "condition": "xterm-256color is absent or reports a non-256 color capability", "witness_kind": "runtime-probe", "expected": "rejected" },
+        "risk": "low",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "The Home Manager configuration shall install Tabby and project a Tabby config.yaml declaring terminal.environment.TERM as xterm-256color.",
+      "acceptance_criteria": ["A source contract recognizes the Tabby package and config projection", "The rendered config declares TERM=xterm-256color", "The existing WezTerm module remains imported"],
+      "requirement_form": { "ears": { "pattern": "ubiquitous", "system": "Home Manager Tabby client configuration", "response": "install Tabby and project config.yaml with terminal.environment.TERM=xterm-256color" } },
+      "breaker": { "breaker_id": "B1", "condition": "Tabby is projected without an xterm-256color environment contract", "witness_kind": "contract-test", "expected": "rejected" },
+      "risk": "low",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "When the Home Manager configuration is activated, the host shall retain a usable xterm-256color terminfo entry with 256 colors.",
+      "acceptance_criteria": ["infocmp -x xterm-256color succeeds", "tput colors returns 256 under TERM=xterm-256color"],
+      "requirement_form": { "ears": { "pattern": "event-driven", "system": "activated Home Manager terminal environment", "trigger": "a TUI starts with TERM=xterm-256color", "response": "resolve the terminfo entry and report 256 colors" } },
+      "breaker": { "breaker_id": "B2", "condition": "xterm-256color is absent or reports a non-256 color capability", "witness_kind": "runtime-probe", "expected": "rejected" },
+      "risk": "low",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": { "allowed": ["docs/work/2026-09-19-tabby-terminal/**", "home/home.nix", "home/modules/tabby.nix", "config/tabby/config.yaml", "scripts/repo-check.sh", "scripts/test-nix-tooling.mjs", "scripts/test-tabby-terminal.mjs"], "blocked": ["shell/bash/bashrc", ".config/fish/config.fish", "home/modules/wezterm.nix", "NixOS system configuration"], "expected_files": [] },
+  "test_plan": [
+    { "id": "T1", "requirement_id": "R1", "kind": "contract", "description": "Source contract fails until Tabby installation/config projection is present.", "must_fail_first": true },
+    { "id": "T2", "requirement_id": "R2", "kind": "smoke", "description": "Activated terminfo contract resolves xterm-256color and 256 colors.", "must_fail_first": false }
+  ],
+  "verification_plan": { "commands": ["node --test scripts/test-tabby-terminal.mjs", "env TERM=xterm-256color infocmp -x xterm-256color", "test \"$(env TERM=xterm-256color tput colors)\" = 256", "repo check"], "evidence_required": ["test", "quality", "runtime", "falsifier"] },
+  "model_requirements": { "coding": 0.3, "debugging": 0.4 },
+  "run_control": { "autonomous_allowed": true, "approval_required": false, "max_doubt_to_proceed": 1 },
+  "traceability": { "owner": { "kind": "agent", "id": "codex-01a0af94" }, "agent_role": "implementer", "source_node_id": "tabby-terminal-client", "target_planes": ["client"], "dependencies": [], "retry_policy": { "max_attempts": 1, "backoff": "none", "retryable_terminal_reasons": [] }, "dispatch_scope": { "kind": "local" } },
+  "execution_constraints": { "required_capabilities": [], "requested_isolation": "process", "side_effect_policy": "fenced", "expected_artifact_schemas": [], "deterministic_replay_required": true }
+}

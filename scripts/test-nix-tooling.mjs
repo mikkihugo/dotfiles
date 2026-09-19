@@ -527,6 +527,7 @@ test("just check delegates to the single repository check implementation", async
   for (const expected of [
     "scripts/test-repo-vcs.sh",
     "scripts/test-codex-preferences.py",
+    "scripts/test-tabby-terminal.mjs",
     "scripts/test-codex-hosted-search.mjs",
     "scripts/test-detect-secrets-work-packet-filter.mjs",
     "scripts/test-jcode-lane-settle-retirement.mjs",

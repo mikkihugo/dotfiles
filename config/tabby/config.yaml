@@ -1,0 +1,5 @@
+# Tabby merges this with its platform defaults. Use the host's established
+# terminfo identity rather than advertising a Tabby-specific TERM value.
+terminal:
+  environment:
+    TERM: xterm-256color

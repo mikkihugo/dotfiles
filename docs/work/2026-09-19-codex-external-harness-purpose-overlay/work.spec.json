@@ -1,0 +1,46 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-09-19-codex-external-harness-purpose-overlay-work",
+  "purpose_contract_id": "2026-09-19-codex-external-harness-purpose-overlay-purpose",
+  "handover": {"state": "proposed", "producer": {"kind": "agent", "id": "codex-root"}},
+  "feature_tree_target": {"kind": "unknown", "name": "2026-09-19-codex-external-harness-purpose-overlay", "status": "planned"},
+  "current_spec": {
+    "snapshot_id": "2026-09-19-codex-external-harness-purpose-overlay-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "25673c8abde1cc7b55037fe0b41e5501299294abb0f4a79927366af1cf75f33e"}
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "WHEN the canonical external-harness-orchestration skill is released by Purpose Tool, THE dotfiles Codex client SHALL NOT own or force-map a duplicate skill and SHALL retain its explicit profile, launcher, and root-orchestration trigger.",
+        "acceptance_criteria": ["The duplicate skill directory and Home Manager mapping are absent", "Five explicit role profiles and the launcher remain mapped", "AGENTS names Codex root as orchestrator and directs use of the canonical skill", "Focused and full repository gates pass"],
+        "requirement_form": {"ears": {"pattern": "event-driven", "system": "dotfiles Codex client overlay", "trigger": "Purpose Tool releases the canonical external harness skill", "response": "drop the duplicate skill mapping while retaining tested Codex-specific profiles, launcher, and root trigger"}},
+        "breaker": {"breaker_id": "B1", "condition": "Home Manager still force-maps the old skill or the verifier profile does not specify effort none", "witness_kind": "contract-test", "expected": "rejected"},
+        "risk": "medium", "source": "purpose_contract"
+      }
+    ],
+    "modified": [], "removed": [], "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "WHEN the canonical external-harness-orchestration skill is released by Purpose Tool, THE dotfiles Codex client SHALL NOT own or force-map a duplicate skill and SHALL retain its explicit profile, launcher, and root-orchestration trigger.",
+      "acceptance_criteria": ["The duplicate skill directory and Home Manager mapping are absent", "Five explicit role profiles and the launcher remain mapped", "AGENTS names Codex root as orchestrator and directs use of the canonical skill", "Focused and full repository gates pass"],
+      "requirement_form": {"ears": {"pattern": "event-driven", "system": "dotfiles Codex client overlay", "trigger": "Purpose Tool releases the canonical external harness skill", "response": "drop the duplicate skill mapping while retaining tested Codex-specific profiles, launcher, and root trigger"}},
+      "breaker": {"breaker_id": "B1", "condition": "Home Manager still force-maps the old skill or the verifier profile does not specify effort none", "witness_kind": "contract-test", "expected": "rejected"},
+      "risk": "medium", "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": ["docs/work/2026-09-19-codex-external-harness-purpose-overlay/**", "config/codex/skills/external-harness-orchestration/**", "config/codex/AGENTS.md", "home/modules/files.nix", "scripts/test-codex-external-harness-skill.mjs"],
+    "blocked": ["secrets/**", "/home/mhugo/.codex/skills/**", "/home/mhugo/code/singularity-engine/**"],
+    "expected_files": []
+  },
+  "test_plan": [{"id": "T1", "requirement_id": "R1", "kind": "contract", "description": "Contract test rejects duplicate skill ownership and proves explicit profile/launcher preservation.", "must_fail_first": true}],
+  "verification_plan": {"commands": ["node --test scripts/test-codex-external-harness-skill.mjs scripts/test-codex-hosted-search.mjs scripts/test-codex-external-run.mjs", "repo check"], "evidence_required": ["test", "quality", "falsifier"]},
+  "model_requirements": {"coding": 0.6, "debugging": 0.4},
+  "run_control": {"autonomous_allowed": true, "approval_required": false, "max_doubt_to_proceed": 1},
+  "traceability": {"owner": {"kind": "agent", "id": "codex-root"}, "agent_role": "implementer", "source_node_id": "2026-09-19-codex-external-harness-purpose-overlay", "target_planes": ["client", "tool"], "dependencies": ["singularity-engine:external-harness-contract-20260918"], "retry_policy": {"max_attempts": 1, "backoff": "none", "retryable_terminal_reasons": []}, "dispatch_scope": {"kind": "local"}},
+  "execution_constraints": {"required_capabilities": [], "requested_isolation": "process", "side_effect_policy": "fenced", "expected_artifact_schemas": [], "deterministic_replay_required": true}
+}

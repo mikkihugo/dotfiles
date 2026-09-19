@@ -147,10 +147,14 @@ Do not apply v2 resident-agent eviction, mailbox, follow-up drain, or reusable
 identity semantics.
 
 Codex Default/Plan and multi-agent v1/v2 are lifecycle/UI modes, not protocol fixes.
-When delegating implementation work to external workers (Kimi CLI or Cursor),
-load `$external-harness-orchestration` (or read
-`~/.codex/skills/external-harness-orchestration/SKILL.md`) and follow it.
-Do not expand the launch policy inline here.
+Codex root orchestrates external workers. For delegated external work, load
+`external-harness-orchestration` from Purpose Tool and follow it; dotfiles owns
+only the explicit `external-explorer`, `external-worker`, `external-reasoner`,
+`external-reviewer`, and `external-verifier` Codex profiles and the
+`~/.codex/bin/codex-external-run` launcher. Interactive example:
+`codex --profile external-worker`. One-shot example:
+`codex exec --ephemeral --profile external-worker "inspect this codebase"`.
+Do not duplicate the generic launch policy here.
 
 When `spawn_agent` reports a thread limit, inspect the exposed agent status,
 wait for active tasks to finish, and close or release completed tasks only when

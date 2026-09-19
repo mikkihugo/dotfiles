@@ -1,0 +1,10 @@
+{
+  "result_id": "2026-09-19-codex-external-harness-purpose-overlay-red",
+  "status": "failed",
+  "observed_at": "2026-09-19T01:50:00Z",
+  "command": "node --test scripts/test-codex-external-harness-skill.mjs",
+  "tests": 4,
+  "passed": 2,
+  "failed": 2,
+  "failure": "The old duplicate skill still existed and the handwritten Codex-root orchestration trigger was absent."
+}

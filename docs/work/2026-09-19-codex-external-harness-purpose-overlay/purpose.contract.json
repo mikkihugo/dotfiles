@@ -1,0 +1,45 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-19-codex-external-harness-purpose-overlay-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-09-19-codex-external-harness-purpose-overlay"
+  },
+  "lineage": {
+    "origin": {"kind": "request", "id": "2026-09-19-codex-external-harness-purpose-overlay", "revision": "operator-canonical-purpose-skill-decision"},
+    "objective": {
+      "id": "2026-09-19-codex-external-harness-purpose-overlay-objective",
+      "statement": "Make the Codex external harness a client-specific overlay of the released Purpose Tool skill.",
+      "measure": "The duplicate Home Manager skill mapping and source are absent; five explicit profiles and the launcher remain tested; verifier effort is none."
+    },
+    "need": {
+      "id": "2026-09-19-codex-external-harness-purpose-overlay-need",
+      "statement": "The dotfiles-owned skill duplicates the new canonical Purpose Tool skill and its forced Home Manager mapping can prevent a released skill projection from remaining in sync.",
+      "stakeholders": ["Codex root coordinators", "Purpose Tool host-skill installer"],
+      "baseline": "home/modules/files.nix force-maps config/codex/skills/external-harness-orchestration into ~/.codex/skills; the existing contract test requires this duplicate.",
+      "consequence_of_no_action": "Codex can load stale policy from the client copy after Purpose Tool releases a different canonical skill.",
+      "assumptions": [],
+      "alternatives_considered": ["Keep two full skills synchronized manually", "Remove the Codex profiles and launcher along with the duplicate skill"]
+    }
+  },
+  "admission": {"state": "proposed", "producer": {"kind": "agent", "id": "codex-root"}},
+  "purpose": "Reconcile the Codex client overlay with the canonical Purpose Tool external harness skill.",
+  "consumer": "Codex root coordinators on this devbox and the Purpose Tool host-skill installer.",
+  "contract": "Remove the dotfiles-owned duplicate skill and forced Home Manager mapping; keep the five explicit external Codex profiles, launcher, and minimal root-orchestrator trigger. The external-verifier profile must set model_reasoning_effort to none. The released Purpose Tool skill owns generic policy.",
+  "failure_boundary": "Do not edit the live ~/.codex/skills projection by hand, change the managed AGENTS block, weaken the launcher or profile tests, activate Home Manager before the released Engine skill is confirmed, or delegate land/push.",
+  "evidence": [{"kind": "test", "description": "node --test scripts/test-codex-external-harness-skill.mjs scripts/test-codex-hosted-search.mjs scripts/test-codex-external-run.mjs rejects duplicate ownership and proves role profiles and launcher.", "status": "expected"}],
+  "falsifier": {
+    "claim": "Codex remains a working external harness client without owning a fork of the Purpose Tool skill.",
+    "executable_check": {"kind": "test", "description": "Run focused contract tests and repository check; a duplicate mapping, missing explicit profile, or verifier effort other than none falsifies the claim.", "command": "node --test scripts/test-codex-external-harness-skill.mjs scripts/test-codex-hosted-search.mjs scripts/test-codex-external-run.mjs"}
+  },
+  "non_goals": ["Change provider/model routing", "Alter launcher execution behavior", "Edit generated host projections", "Change JCode or infra", "Deploy production workloads"],
+  "invariants": ["Codex root orchestrates and remains sole publication authority", "Profiles and launcher remain Home Manager-managed", "Purpose Tool alone owns the reusable skill source", "Economical verifier effort is none"],
+  "assumptions": [
+    {"statement": "Engine will release the canonical external-harness-orchestration skill before host sync.", "status": "unverified", "doubt": 1, "falsifier": "Engine land fails or Forgejo main lacks the canonical skill."},
+    {"statement": "The dotfiles worktree is isolated and owned for this objective.", "status": "verified", "doubt": 0, "falsifier": "repo vcs worktree-list no longer lists the named branch/path."}
+  ],
+  "run_control": {"autonomous_allowed": true, "risk": "medium", "blast_radius": "repo", "reversibility": "easy", "max_active_doubt": 1},
+  "target_planes": ["client", "tool"],
+  "plane_constraints": ["Purpose Tool in Engine owns the canonical base skill; dotfiles owns only Codex client-specific profiles, launcher, and trigger."]
+}

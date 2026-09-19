@@ -1,0 +1,26 @@
+{
+  "red": {
+    "command": "node --test scripts/test-codex-external-harness-skill.mjs",
+    "exit_code": 1,
+    "tests": 4,
+    "passed": 2,
+    "failed": 2,
+    "observed_failures": [
+      "duplicate skill source still existed",
+      "Codex root orchestrator wording was missing"
+    ]
+  },
+  "green": {
+    "command": "node --test scripts/test-codex-external-harness-skill.mjs scripts/test-codex-hosted-search.mjs scripts/test-codex-external-run.mjs",
+    "exit_code": 0,
+    "tests": 32,
+    "passed": 32,
+    "failed": 0
+  },
+  "quality": {
+    "command": "repo check",
+    "exit_code": 0,
+    "observations": ["dotfiles VCS contract: ok", "Codex overlay contract green", "Home Manager generations built", "test suites 197 with 196 pass, 1 skip, 0 fail; separate one-test suite 1 pass"]
+  },
+  "limitation": "The full gate emitted a non-fatal cuda-maintainers.cachix.org HTTP 401 warning; source did not change this cache configuration."
+}

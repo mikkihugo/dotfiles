@@ -1,0 +1,28 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-09-19-codex-external-harness-purpose-overlay-evidence",
+  "workspec_id": "2026-09-19-codex-external-harness-purpose-overlay-work",
+  "purpose_contract_id": "2026-09-19-codex-external-harness-purpose-overlay-purpose",
+  "purpose_subject_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "96f11d133aa2c4b3638f884a7f69c4b9851b11d9a8f5fc261de9ab2b7a2cc270"},
+  "workspec_subject_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "4d4cc16ea5c08063ff35bce3f317a1fe385803a0429fae82cd4b8c0532b22985"},
+  "workflow_run_id": "codex-01a0b338-purpose-overlay",
+  "execution": {
+    "execution_id": "2026-09-19-codex-external-harness-purpose-overlay-execution",
+    "tool": {"id": "node-test-and-dotfiles-repo-check", "version": "2026-09-19"},
+    "result": {"result_id": "2026-09-19-codex-external-harness-purpose-overlay-result", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "a0cae35b5b0cf064b5db24259835846b635248d15abd3bbf4ab926d87116ce46"}},
+    "artifacts": [
+      {"artifact_id": "overlay-proof", "uri": "evidence/result.json", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "a0cae35b5b0cf064b5db24259835846b635248d15abd3bbf4ab926d87116ce46"}},
+      {"artifact_id": "overlay-changed-files", "uri": "evidence/changed-files.json", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "c3f956be6fba68f73609ba8c5614e9750d232e3b544f7c6883dcb3d5348dda21"}},
+      {"artifact_id": "overlay-red", "uri": "evidence/red.json", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "a99a00a5d55bc3fe337ae275941843149f1b3570cc88df0c673e4c3bd738c09d"}}
+    ]
+  },
+  "trace": {"trace_id": "2026-09-19-codex-external-harness-purpose-overlay-trace", "started_at": "2026-09-19T01:48:00Z", "completed_at": "2026-09-19T01:59:09Z"},
+  "tests": [{"id": "T1", "requirement_id": "R1", "status": "passed", "description": "RED duplicate-skill/root trigger failures and GREEN 32/32 focused contracts, followed by full repo check exit zero.", "result_id": "2026-09-19-codex-external-harness-purpose-overlay-result", "artifact_ids": ["overlay-proof"], "output_uri": "evidence/result.json", "green_observed_at": "2026-09-19T01:59:09Z", "red_proof": {"result_id": "2026-09-19-codex-external-harness-purpose-overlay-red", "artifact_id": "overlay-red", "output_uri": "evidence/red.json", "observed_at": "2026-09-19T01:50:00Z"}}],
+  "gates": [{"gate_id": "dotfiles-repo-check", "kind": "quality", "status": "passed", "subject_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "4d4cc16ea5c08063ff35bce3f317a1fe385803a0429fae82cd4b8c0532b22985"}, "artifact_ids": ["overlay-proof"], "producer": {"kind": "agent", "id": "codex-root"}, "observed_at": "2026-09-19T01:59:09Z", "rationale": "repo check exit 0 with focused contract and Home Manager build passing."}],
+  "runtime": {"status": "completed", "changed_file_manifest": {"source": "repository-vcs-facade", "artifact_id": "overlay-changed-files", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "c3f956be6fba68f73609ba8c5614e9750d232e3b544f7c6883dcb3d5348dda21"}, "files": ["config/codex/AGENTS.md", "config/codex/skills/external-harness-orchestration/SKILL.md", "config/codex/skills/external-harness-orchestration/agents/openai.yaml", "home/modules/files.nix", "scripts/test-codex-external-harness-skill.mjs", "docs/work/2026-09-19-codex-external-harness-purpose-overlay/README.md", "docs/work/2026-09-19-codex-external-harness-purpose-overlay/current-spec.snapshot.json", "docs/work/2026-09-19-codex-external-harness-purpose-overlay/purpose.contract.json", "docs/work/2026-09-19-codex-external-harness-purpose-overlay/work.spec.json", "docs/work/2026-09-19-codex-external-harness-purpose-overlay/evidence/result.json", "docs/work/2026-09-19-codex-external-harness-purpose-overlay/evidence/red.json", "docs/work/2026-09-19-codex-external-harness-purpose-overlay/evidence/changed-files.json", "docs/work/2026-09-19-codex-external-harness-purpose-overlay/evidence.bundle.json", "docs/work/2026-09-19-codex-external-harness-purpose-overlay/validation.report.json"]}},
+  "falsifier": {"executed": true, "status": "passed", "evidence": "The duplicate source/mapping is absent; explicit profiles, launcher, and verifier effort none remain proven by the focused suites and full repository gate.", "output_uri": "evidence/result.json"},
+  "contract_preserved": {"status": true, "scope_drift": false, "requirement_drift": false},
+  "reconciliation": {"status": "reconciled", "snapshot_digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "25673c8abde1cc7b55037fe0b41e5501299294abb0f4a79927366af1cf75f33e"}, "delta_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "40859625458a331efd5f43909263309a51387bf60a2988765cf440f5a203dc9a"}, "derived_requirement_set_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "14593bed362b825d362125720948464f25cf76ac7ec68a48773bbe72f2c0221c"}, "witness_artifact_id": "overlay-proof"},
+  "reviews": [],
+  "breaker_witnesses": [{"breaker_id": "B1", "requirement_id": "R1", "status": "passed", "witness_kind": "contract-test", "observed_outcome": "rejected", "artifact_id": "overlay-proof", "subject_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "4d4cc16ea5c08063ff35bce3f317a1fe385803a0429fae82cd4b8c0532b22985"}, "observed_at": "2026-09-19T01:59:09Z", "rationale": "The test rejected duplicate source and missing root wording before the fix, then accepted the reconciled overlay."}]
+}

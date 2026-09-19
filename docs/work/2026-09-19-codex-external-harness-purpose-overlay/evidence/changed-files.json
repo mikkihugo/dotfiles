@@ -1,0 +1,19 @@
+{
+  "source": "repository-vcs-facade",
+  "files": [
+    "config/codex/AGENTS.md",
+    "config/codex/skills/external-harness-orchestration/SKILL.md",
+    "config/codex/skills/external-harness-orchestration/agents/openai.yaml",
+    "home/modules/files.nix",
+    "scripts/test-codex-external-harness-skill.mjs",
+    "docs/work/2026-09-19-codex-external-harness-purpose-overlay/README.md",
+    "docs/work/2026-09-19-codex-external-harness-purpose-overlay/current-spec.snapshot.json",
+    "docs/work/2026-09-19-codex-external-harness-purpose-overlay/purpose.contract.json",
+    "docs/work/2026-09-19-codex-external-harness-purpose-overlay/work.spec.json",
+    "docs/work/2026-09-19-codex-external-harness-purpose-overlay/evidence/result.json",
+    "docs/work/2026-09-19-codex-external-harness-purpose-overlay/evidence/red.json",
+    "docs/work/2026-09-19-codex-external-harness-purpose-overlay/evidence/changed-files.json",
+    "docs/work/2026-09-19-codex-external-harness-purpose-overlay/evidence.bundle.json",
+    "docs/work/2026-09-19-codex-external-harness-purpose-overlay/validation.report.json"
+  ]
+}

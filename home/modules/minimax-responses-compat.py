@@ -16,6 +16,7 @@ import tomllib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
+import re
 
 
 UPSTREAM = os.environ.get("MINIMAX_RESPONSES_UPSTREAM", "https://api.minimax.io/v1")
@@ -54,6 +55,70 @@ def normalize_payload(value):
     if isinstance(value, list):
         return [normalize_payload(item) for item in value]
     return value
+
+
+def normalize_request_payload(value):
+    """Repair Grok's replayed tool correlation before MiniMax validates it.
+
+    Grok preserves historical function calls with provider call IDs, but its
+    replayed outputs may use unrelated ``grok-call-N`` IDs.  Responses
+    requires each output's ``call_id`` to match the corresponding
+    ``function_call``.  Keep valid IDs, give blank/duplicate calls stable
+    local IDs, and map the known replay form by function-call order.
+    """
+    if not isinstance(value, dict) or not isinstance(value.get("input"), list):
+        return value
+
+    normalized = dict(value)
+    items = [dict(item) if isinstance(item, dict) else item for item in value["input"]]
+    calls = []
+    seen = set()
+    for item in items:
+        if not isinstance(item, dict) or item.get("type") != "function_call":
+            continue
+        original = item.get("call_id")
+        canonical = str(original).strip() if original is not None else ""
+        if not canonical:
+            canonical = f"grok-replay-call-{len(calls)}"
+        elif canonical in seen:
+            suffix = 2
+            candidate = f"{canonical}-{suffix}"
+            while candidate in seen:
+                suffix += 1
+                candidate = f"{canonical}-{suffix}"
+            canonical = candidate
+        item["call_id"] = canonical
+        calls.append(canonical)
+        seen.add(canonical)
+
+    next_unmatched = 0
+    for item in items:
+        if not isinstance(item, dict) or item.get("type") != "function_call_output":
+            continue
+        output_id = item.get("call_id")
+        if output_id in calls:
+            continue
+        mapped = None
+        match = re.fullmatch(r"grok-call-(\d+)", str(output_id or ""))
+        if match:
+            index = int(match.group(1)) - 1
+            if 0 <= index < len(calls):
+                mapped = calls[index]
+        if mapped is None:
+            while next_unmatched < len(calls) and any(
+                prior.get("call_id") == calls[next_unmatched]
+                for prior in items
+                if isinstance(prior, dict) and prior.get("type") == "function_call_output"
+            ):
+                next_unmatched += 1
+            if next_unmatched < len(calls):
+                mapped = calls[next_unmatched]
+                next_unmatched += 1
+        if mapped is not None:
+            item["call_id"] = mapped
+
+    normalized["input"] = items
+    return normalized
 
 
 def normalize_sse_line(line):
@@ -120,6 +185,15 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(length) if length else b""
+        if self.path.rstrip("/").endswith("/v1/responses"):
+            try:
+                request = json.loads(body)
+                repaired = normalize_request_payload(request)
+                if repaired != request:
+                    body = json.dumps(repaired, separators=(",", ":")).encode()
+                    logging.info("repaired replayed Responses tool correlation ids")
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                pass
         self.proxy(body)
 
     def proxy(self, body):

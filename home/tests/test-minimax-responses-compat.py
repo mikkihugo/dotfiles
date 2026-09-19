@@ -65,6 +65,40 @@ class ResponsesCompatTests(unittest.TestCase):
             "priority",
         )
 
+    def test_repairs_replayed_tool_output_ids_by_function_call_order(self):
+        compat = load_module()
+        payload = {
+            "input": [
+                {"type": "function_call", "call_id": "call-a"},
+                {"type": "function_call_output", "call_id": "grok-call-1", "output": "a"},
+                {"type": "function_call", "call_id": "call-b"},
+                {"type": "function_call_output", "call_id": "grok-call-2", "output": "b"},
+            ]
+        }
+        normalized = compat.normalize_request_payload(payload)
+        self.assertEqual(
+            [item["call_id"] for item in normalized["input"] if item["type"] == "function_call_output"],
+            ["call-a", "call-b"],
+        )
+
+    def test_repairs_empty_and_duplicate_function_call_ids(self):
+        compat = load_module()
+        payload = {
+            "input": [
+                {"type": "function_call", "call_id": ""},
+                {"type": "function_call", "call_id": "same"},
+                {"type": "function_call", "call_id": "same"},
+                {"type": "function_call_output", "call_id": "grok-call-1", "output": "a"},
+                {"type": "function_call_output", "call_id": "grok-call-2", "output": "b"},
+                {"type": "function_call_output", "call_id": "grok-call-3", "output": "c"},
+            ]
+        }
+        normalized = compat.normalize_request_payload(payload)
+        calls = [item["call_id"] for item in normalized["input"] if item["type"] == "function_call"]
+        outputs = [item["call_id"] for item in normalized["input"] if item["type"] == "function_call_output"]
+        self.assertEqual(calls, ["grok-replay-call-0", "same", "same-2"])
+        self.assertEqual(outputs, calls)
+
 
 if __name__ == "__main__":
     unittest.main()

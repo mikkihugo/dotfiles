@@ -39,12 +39,25 @@ These apply to all Codex sessions for this user. Project-level `AGENTS.md` files
 
 ## Mailbox check
 
-Every turn start, after waits, before fan-in: call MCP server `repo_memory`
-tool `coordination_sweep` as identity `<client>-<short-session-id>`
-(examples: `grok-01a07318`, `codex-df69bdf4`, `copilot-f653d362`).
-Channels: `global` and the current repo mailbox (`singularity-engine`,
-`jcode`, …). Use a named recipient by default; use `recipient=all` only for
-an explicitly intended broadcast. Hardcode poll. Hooks and `inbox_uri` listen do not wake idle sessions. A bus
+The Home Manager hook is the Codex mailbox reader. It derives principal
+`<client>-<short-session-id>` (examples: `grok-01a07318`, `codex-df69bdf4`,
+`copilot-f653d362`), owns `<principal>-hook`, and persists its signed
+`inbox_uri` capability. It reads `global` and the current repo mailbox
+(`singularity-engine`, `jcode`, …). Do not share its inbox or acknowledgement
+watermark with another reader.
+
+Do not call attached `coordination_sweep` from an interactive Codex turn unless
+the client adapter supplies that reader's own persisted `inbox_uri`. A direct
+stateless call can bootstrap once but cannot safely reuse a server-side session
+without its capability. For an adapter-owned interactive reader, use a distinct
+role- and thread-scoped session such as
+`<principal>-codex-root-<CODEX_THREAD_ID>`; every delegate needs another
+role-qualified lane. On an ownership error, do not retry, claim, delete, or
+replace a foreign inbox. Treat `inbox_uri` as a signed secret capability for
+its exact session.
+
+Use a named recipient by default; use `recipient=all` only for an explicitly
+intended broadcast. Hooks and inbox listeners do not wake idle sessions. A bus
 message never authorizes VCS, land, or completion.
 
 Grok also runs `~/.grok/hooks/bin/mail-sweep.sh` on SessionStart and

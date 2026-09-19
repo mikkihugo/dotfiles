@@ -1,0 +1,8 @@
+{
+  "observed_at": "2026-09-19T00:13:00Z",
+  "operation": "coordination_sweep",
+  "principal": "codex-01a0af94",
+  "session_shape": "codex-01a0af94-codex-agent-<lowercase-thread-id>",
+  "result": "subscribed with no ownership error",
+  "security": "The returned signed inbox capability was intentionally not recorded in this artifact."
+}

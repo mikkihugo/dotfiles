@@ -1,0 +1,22 @@
+{
+  "observed_at": "2026-09-19T00:37:00Z",
+  "kind": "adversarial-review",
+  "result": "unavailable",
+  "attempts": [
+    {
+      "job_id": "job-d9ed012d-547f-40ea-a473-379fd130c980",
+      "result": "needs-attention",
+      "reason": "review input could not include the dotfiles worktree because it is outside Redteam's allowed filesystem roots"
+    },
+    {
+      "job_id": "job-b548edad-43bb-4002-aac6-585682e10c1a",
+      "result": "needs-attention",
+      "reason": "all configured model fallbacks returned empty responses"
+    }
+  ],
+  "local_reviewer": {
+    "result": "unavailable",
+    "reason": "the current Codex agent surface refused the reviewer role as unavailable"
+  },
+  "boundary": "No review-clean claim is made. The implementation proof is independent: focused tests, the 56-test hook suite, and repo check passed."
+}

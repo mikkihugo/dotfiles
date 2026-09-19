@@ -1,0 +1,86 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-09-19-codex-agent-mailbox-session-work",
+  "purpose_contract_id": "2026-09-19-codex-agent-mailbox-session-purpose",
+  "handover": {
+    "state": "proposed",
+    "producer": { "kind": "agent", "id": "codex-01a0af94" },
+    "reason": "Operator-directed repair."
+  },
+  "feature_tree_target": { "kind": "component", "name": "codex-coordination-client", "status": "in_progress" },
+  "current_spec": {
+    "snapshot_id": "2026-09-19-codex-agent-mailbox-session-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "5dcf46a66f73ee73d43e3745894c2ed82e474568e56cacda685feeff447248c2" }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "When an interactive Codex turn calls coordination_sweep, it shall send a session composed from the matching principal, the codex-agent role, and its stable thread identifier.",
+        "acceptance_criteria": ["Codex instructions name a thread-scoped direct-reader lane", "A live thread-scoped sweep succeeds", "The instructions do not direct the client to take over a foreign inbox"],
+        "requirement_form": { "ears": { "pattern": "event-driven", "system": "Interactive Codex mailbox client", "trigger": "a turn-boundary coordination_sweep", "response": "use the thread-scoped direct-reader session with the matching principal" } },
+        "breaker": { "breaker_id": "B1", "condition": "the direct reader sends an unsuffixed or static shared session", "witness_kind": "contract-test", "expected": "rejected" },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "When the automatic Home Manager hook checks mail, it shall retain its isolated principal-hook session rather than sharing the direct-reader watermark.",
+        "acceptance_criteria": ["Codex instructions distinguish the thread-scoped direct reader from hook principal-hook", "Existing hook tests still observe principal-hook"],
+        "requirement_form": { "ears": { "pattern": "state-driven", "system": "Codex mailbox integration", "precondition": "both an interactive reader and a lifecycle hook exist", "response": "keep their sessions and acknowledgement watermarks isolated" } },
+        "breaker": { "breaker_id": "B2", "condition": "the instructions or hook share one session", "witness_kind": "contract-test", "expected": "rejected" },
+        "risk": "medium",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "When an interactive Codex turn calls coordination_sweep, it shall send a session composed from the matching principal, the codex-agent role, and its stable thread identifier.",
+      "acceptance_criteria": ["Codex instructions name a thread-scoped direct-reader lane", "A live thread-scoped sweep succeeds", "The instructions do not direct the client to take over a foreign inbox"],
+      "requirement_form": { "ears": { "pattern": "event-driven", "system": "Interactive Codex mailbox client", "trigger": "a turn-boundary coordination_sweep", "response": "use the thread-scoped direct-reader session with the matching principal" } },
+      "breaker": { "breaker_id": "B1", "condition": "the direct reader sends an unsuffixed or static shared session", "witness_kind": "contract-test", "expected": "rejected" },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "When the automatic Home Manager hook checks mail, it shall retain its isolated principal-hook session rather than sharing the direct-reader watermark.",
+      "acceptance_criteria": ["Codex instructions distinguish the thread-scoped direct reader from hook principal-hook", "Existing hook tests still observe principal-hook"],
+      "requirement_form": { "ears": { "pattern": "state-driven", "system": "Codex mailbox integration", "precondition": "both an interactive reader and a lifecycle hook exist", "response": "keep their sessions and acknowledgement watermarks isolated" } },
+      "breaker": { "breaker_id": "B2", "condition": "the instructions or hook share one session", "witness_kind": "contract-test", "expected": "rejected" },
+      "risk": "medium",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": ["docs/work/2026-09-19-codex-agent-mailbox-session/**", "config/codex/AGENTS.md", "scripts/test-codex-mailbox-instructions.mjs"],
+    "blocked": ["~/.codex/**", "repo-memory server", "foreign coordination inbox state"],
+    "expected_files": ["config/codex/AGENTS.md", "scripts/test-codex-mailbox-instructions.mjs"]
+  },
+  "test_plan": [
+    { "id": "T1", "requirement_id": "R1", "kind": "contract", "description": "Instruction contract fails before thread-scoped direct-reader guidance exists.", "must_fail_first": true },
+    { "id": "T2", "requirement_id": "R2", "kind": "regression", "description": "Existing hook-session test preserves principal-hook isolation.", "must_fail_first": false }
+  ],
+  "verification_plan": {
+    "commands": ["node --test scripts/test-codex-mailbox-instructions.mjs", "node --test config/codex/hooks/coordination-mailbox-sweep.test.mjs", "repo test codex-preferences", "repo check"],
+    "evidence_required": ["test", "quality", "runtime", "falsifier"]
+  },
+  "model_requirements": { "coding": 0.3, "debugging": 0.7 },
+  "run_control": { "autonomous_allowed": true, "approval_required": false, "max_doubt_to_proceed": 1 },
+  "traceability": {
+    "owner": { "kind": "agent", "id": "codex-01a0af94" },
+    "agent_role": "implementer",
+    "source_node_id": "codex-coordination-client",
+    "target_planes": ["client", "tool"],
+    "dependencies": [],
+    "retry_policy": { "max_attempts": 1, "backoff": "none", "retryable_terminal_reasons": [] },
+    "dispatch_scope": { "kind": "local" }
+  },
+  "execution_constraints": { "required_capabilities": [], "requested_isolation": "worktree", "side_effect_policy": "fenced", "expected_artifact_schemas": [], "deterministic_replay_required": true }
+}

@@ -1,0 +1,7 @@
+{
+  "observed_at": "2026-09-19T00:20:00Z",
+  "command": "purpose_tool.validate_work(repo_root=/home/mhugo/.dotfiles-worktrees/coordination-identity-all, work_dir=docs/work/2026-09-19-codex-agent-mailbox-session)",
+  "result": "not run",
+  "reason": "The hosted validator rejected the dotfiles worktree as outside its allowed roots.",
+  "impact": "The packet has executable test and repository-gate evidence but no hosted validation.report.json."
+}

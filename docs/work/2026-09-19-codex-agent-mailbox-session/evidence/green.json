@@ -1,0 +1,12 @@
+{
+  "observed_at": "2026-09-19T00:34:00Z",
+  "commands": [
+    "node --test scripts/test-codex-mailbox-instructions.mjs",
+    "node --test config/codex/hooks/coordination-mailbox-sweep.test.mjs"
+  ],
+  "result": "passed after the direct capability-reuse falsifier changed the instruction contract to the managed hook reader",
+  "witness": {
+    "instruction_contract": { "passed": 2, "failed": 0 },
+    "hook_regression": { "passed": 56, "failed": 0 }
+  }
+}

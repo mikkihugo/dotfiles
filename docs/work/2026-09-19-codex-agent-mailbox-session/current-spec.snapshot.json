@@ -1,0 +1,11 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-09-19-codex-agent-mailbox-session-current-spec",
+  "requirements": [],
+  "requirement_delta": {
+    "added": [],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  }
+}

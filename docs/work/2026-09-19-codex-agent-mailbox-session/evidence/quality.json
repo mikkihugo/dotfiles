@@ -1,0 +1,13 @@
+{
+  "observed_at": "2026-09-19T00:19:00Z",
+  "commands": ["repo test codex-preferences", "repo check"],
+  "result": "passed",
+  "witness": {
+    "codex_preferences": { "passed": 11, "failed": 0 },
+    "repository_check": { "passed": 212, "failed": 0, "skipped": 1 }
+  },
+  "notes": [
+    "Nix continued after an unauthenticated cuda-maintainers substituter warning by building/copying required derivations.",
+    "The warning did not cause either command to fail."
+  ]
+}

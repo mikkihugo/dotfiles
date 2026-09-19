@@ -1,0 +1,78 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-19-codex-agent-mailbox-session-purpose",
+  "source": {
+    "system": "manual",
+    "repository": ".",
+    "request_id": "2026-09-19-codex-agent-mailbox-session"
+  },
+  "lineage": {
+    "origin": { "kind": "request", "id": "mhugo-2026-09-19-mailbox-bug", "revision": "1" },
+    "objective": {
+      "id": "codex-agent-mailbox-session",
+      "statement": "Restore durable repo-memory mailbox access for Codex without sharing or taking over the hook inbox.",
+      "measure": "The persisted Home Manager hook is the Codex mailbox reader; instructions prohibit capability-less direct MCP sweeps."
+    },
+    "need": {
+      "id": "unsuffixed-reader-collision",
+      "statement": "The attached Codex MCP tool surface loses the signed inbox capability between calls. Reusing any server-side direct-reader session without it is correctly refused.",
+      "stakeholders": ["Codex turns that need coordination context", "the Home Manager Codex hook"],
+      "baseline": "An unsuffixed session and a prior role-qualified direct session were refused as foreign. A fresh role-qualified direct session bootstrapped once, then its capability-less reuse was refused. The managed hook has a tested persisted-capability path.",
+      "consequence_of_no_action": "Instructions direct Codex to issue a non-durable mailbox operation that fails after bootstrap and risks confusing a safe authorization refusal for a server defect.",
+      "assumptions": ["The managed Codex hook is installed and invoked at SessionStart and UserPromptSubmit."],
+      "alternatives_considered": ["Claim or delete the foreign inbox", "Reuse the hook inbox from direct MCP calls", "Create a fresh direct-reader session every turn", "Use the existing persisted Home Manager hook reader"]
+    }
+  },
+  "admission": {
+    "state": "proposed",
+    "producer": { "kind": "agent", "id": "codex-01a0af94" },
+    "reason": "Operator identified the reproducible mailbox failure and directed its repair."
+  },
+  "purpose": "Restore durable Codex mailbox access without weakening foreign-inbox ownership protection.",
+  "consumer": "Codex turns receiving coordination context through the installed Home Manager hook.",
+  "contract": "The Home Manager hook is the Codex mailbox reader and persists its principal-hook capability. Instructions prohibit a capability-less attached coordination_sweep call. An adapter that owns a separate persisted capability may use a role- and thread-scoped session without sharing the hook inbox.",
+  "failure_boundary": "No client may disclose, fabricate, or reuse another reader's inbox_uri; change server ownership; or share an acknowledgement watermark with the hook.",
+  "evidence": [
+    {
+      "kind": "contract-test",
+      "description": "A source-contract test fails while Codex instructions require a capability-less direct sweep and passes after the persistent hook reader and direct-call boundary are explicit."
+    },
+    {
+      "kind": "runtime",
+      "description": "Live direct sweeps establish that a signed capability is required for reuse; hook regression tests prove capability persistence and isolated hook sessions."
+    }
+  ],
+  "falsifier": {
+    "claim": "Codex uses a durable hook mailbox without interfering with other readers.",
+    "executable_check": {
+      "kind": "test",
+      "command": "node --test scripts/test-codex-mailbox-instructions.mjs",
+      "description": "The test fails if the instruction requires a capability-less direct sweep, omits the persistent hook reader, or permits claiming a foreign inbox."
+    }
+  },
+  "non_goals": ["Changing repo-memory server authorization", "Changing other clients", "Recovering, deleting, or claiming the foreign unsuffixed inbox"],
+  "invariants": ["The server remains the owner of inbox authorization", "the hook persists only its own signed capability", "hook and adapter readers have separate sessions and watermarks", "inbox_uri remains secret", "a direct reader never retries an ownership refusal without its own persisted capability"],
+  "assumptions": [
+    {
+      "statement": "The managed Codex hook uses an isolated principal-hook session and persists its returned signed capability for subsequent calls.",
+      "status": "verified",
+      "doubt": 1,
+      "falsifier": "The hook regression reports a missing capability, reused hook session, or failed capability persistence."
+    },
+    {
+      "statement": "The activated Codex hook delivers its mailbox context to the interactive client at its configured lifecycle events.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "After Home Manager activation, a Codex SessionStart or UserPromptSubmit fails to run the managed sweep hook or does not provide its context."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "medium",
+    "blast_radius": "local Codex client configuration",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": ["client", "tool"],
+  "plane_constraints": ["Home Manager owns the Codex instruction projection; repo-memory owns inbox authorization."]
+}

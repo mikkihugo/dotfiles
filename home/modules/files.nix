@@ -120,12 +120,12 @@
     # supported client executes the shared Codex coordination implementation.
     # Codex, Claude, Kimi-Code, Copilot, and Cursor hook
     # registrations point at the coordination-mailbox-sweep names below.
-    # The .mjs impls and observations-autolog.*.{sh,mjs} live as a canonical
-    # bundle in fabrics/tools/services/purpose-tool/host-hooks/ (engine source
-    # of truth). The installer in config/agent-hooks/install-swarm-hooks.mjs
-    # mirrors them into config/<client>/hooks/ at every hms, and the entries
-    # below symlink them into $HOME. Mirror step uses replaceVars to substitute
-    # @bash@/@node@ placeholders at Nix build time.
+    # The .mjs impls and observations-autolog.*.{sh,mjs} are tracked here in
+    # config/<client>/hooks/ and edited directly; nothing mirrors them in from
+    # an engine lane any more (the mirror was removed, engine #677, which moves
+    # these scripts to server-served install info). The entries below install
+    # them into $HOME, with replaceVars substituting @bash@/@node@ at Nix
+    # build time. install-swarm-hooks.mjs only wires client configs.
     ".codex/hooks/coordination-mailbox-sweep.mjs" = {
       source = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.mjs {
         node = "${pkgs.nodejs}/bin/node";

@@ -1,12 +1,18 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { chmod, mkdtemp, readdir, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
 const readJSON = async (path) => JSON.parse(await readFile(path, "utf8"));
+
+// Installer runs must never see the operator's real
+// ~/.config/agent-hooks/server-managed markers: once a client is opted out on
+// this host, a non-hermetic suite would fail and invite deleting the markers
+// that protect live wiring. Every spawn inherits this empty config home.
+process.env.XDG_CONFIG_HOME = await mkdtemp(join(tmpdir(), "swarm-hook-xdg-"));
 
 test("Purpose SessionStart hooks use a Home Manager-rendered Node wrapper", async () => {
   const codex = await readJSON("config/codex/hooks.json");
@@ -543,64 +549,125 @@ test("home modules declare every hook path the installer registers (dotfiles #28
   assert.deepEqual(missing, [], `installer registers hook paths that files.nix never installs: ${missing.join(", ")}`);
 });
 
-test("host-hook mirror no-ops on hash match and replaces on mismatch", async () => {
+test("installer never copies engine scripts into the dotfiles tree", async () => {
+  // The mirror step overwrote dotfiles hook sources from an unregistered engine
+  // lane on every hms. Scripts are server-owned install info now (engine #677);
+  // the installer only wires client configs.
   const engine = await mkdtemp(join(tmpdir(), "host-hooks-src-"));
   const destHome = await mkdtemp(join(tmpdir(), "host-hooks-dst-"));
   try {
     await writeFile(join(engine, "AGENTS.md"), "# host-hooks\n");
-    const body = "#!/bin/sh\necho canonical-hook\n";
-    await writeFile(join(engine, "skills-gate-session-start.sh"), body);
-    await chmod(join(engine, "skills-gate-session-start.sh"), 0o755);
-    for (const name of [
-      "coordination-mailbox-sweep.sh",
-      "coordination-mailbox-sweep.mjs",
-      "observations-autolog.sh",
-      "observations-autolog.mjs",
-      "skills-gate-pretooluse.sh",
-      "skills-gate-mark-loaded.sh",
-    ]) {
-      await writeFile(join(engine, name), `placeholder ${name}\n`);
+    for (const name of ["coordination-mailbox-sweep.sh", "coordination-mailbox-sweep.mjs", "skills-gate-session-start.sh"]) {
+      await writeFile(join(engine, name), `engine copy ${name}\n`);
     }
-
-    const run = () => spawnSync(process.execPath, [
+    const result = spawnSync(process.execPath, [
       "config/agent-hooks/install-swarm-hooks.mjs",
       "--engine-host-hooks", engine,
-      "--dotfiles-root", destHome,
       "--claude-settings", join(destHome, "claude.json"),
       "--kimi-config", join(destHome, "kimi.toml"),
-    ], { encoding: "utf8" });
-
-    assert.equal(run().status, 0, "first mirror must copy");
-    const dest = join(destHome, ".dotfiles/config/claude/hooks/skills-gate-session-start.sh");
-    const first = await stat(dest);
-    await utimes(dest, first.atime, first.mtime);
-    const frozen = await stat(dest);
-    assert.equal(run().status, 0, "second mirror must no-op on hash match");
-    const second = await stat(dest);
-    assert.equal(
-      second.mtimeMs,
-      frozen.mtimeMs,
-      "matching content hash must not rewrite the dest hook",
-    );
-
-    await writeFile(join(engine, "skills-gate-session-start.sh"), "#!/bin/sh\necho upgraded-hook\n");
-    assert.equal(run().status, 0, "mismatch must replace");
-    const upgraded = await readFile(dest, "utf8");
-    assert.match(upgraded, /upgraded-hook/);
-    const expected = createHash("sha256").update(await readFile(join(engine, "skills-gate-session-start.sh"))).digest("hex");
-    const lock = JSON.parse(await readFile("config/agent-hooks/hooks.lock.json", "utf8"));
-    assert.equal(
-      lock.hooks["skills-gate-session-start.sh"].uri,
-      "skill://purpose_tool/host-hooks/skills-gate-session-start.sh",
-    );
-    const sourceHash = createHash("sha256")
-      .update(await readFile("config/claude/hooks/skills-gate-session-start.sh"))
-      .digest("hex");
-    assert.equal(lock.hooks["skills-gate-session-start.sh"].sha256, sourceHash);
-    assert.equal(expected.length, 64);
+      "--jcode-config", join(destHome, "jcode.toml"),
+    ], { encoding: "utf8", env: { ...process.env, HOME: destHome, XDG_CONFIG_HOME: join(destHome, "xdg") } });
+    // A stale --engine-host-hooks from an older activation must stay harmless.
+    assert.equal(result.status, 0, result.stderr);
+    // HOME is the temp dir, so a reintroduced mirror writing to the default
+    // $HOME/.dotfiles lands where this assertion looks.
+    await assert.rejects(stat(join(destHome, ".dotfiles")), "installer must not write under the dotfiles tree");
+    await assert.rejects(readFile("config/agent-hooks/hooks.lock.json"), "hooks.lock.json pinned an unregistered lane and must be gone");
   } finally {
     await rm(engine, { recursive: true, force: true });
     await rm(destHome, { recursive: true, force: true });
+  }
+});
+
+test("server-managed clients keep their wiring across hms (marker file and --skip-client)", async () => {
+  // A client migrated to server-served hooks (engine #677 step 4) must not be
+  // rewritten back to Home Manager paths by the next hms.
+  const home = await mkdtemp(join(tmpdir(), "repo-memory-hook-optout-"));
+  try {
+    const xdg = join(home, "xdg");
+    await mkdir(join(xdg, "agent-hooks", "server-managed"), { recursive: true });
+    await writeFile(join(xdg, "agent-hooks", "server-managed", "claude"), "");
+    const claudeBefore = JSON.stringify({ hooks: { SessionStart: [{ hooks: [{ type: "command", command: "/home/mhugo/.local/share/agent-hooks/repo-memory/coordination-mailbox-sweep.sh claude SessionStart" }] }] } });
+    await writeFile(join(home, "claude.json"), claudeBefore);
+    const jcodeBefore = "[hooks]\nsession_start = \"/home/mhugo/.local/share/agent-hooks/repo-memory/sweep.mjs jcode SessionStart\"\n";
+    await writeFile(join(home, "jcode.toml"), jcodeBefore);
+    const run = () => spawnSync(process.execPath, [
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "--claude-settings", join(home, "claude.json"),
+      "--kimi-config", join(home, "kimi.toml"),
+      "--jcode-config", join(home, "jcode.toml"),
+      "--skip-client", "jcode",
+    ], { encoding: "utf8", env: { ...process.env, XDG_CONFIG_HOME: xdg } });
+    for (const pass of [1, 2]) {
+      const result = run();
+      assert.equal(result.status, 0, `pass ${pass}: ${result.stderr}`);
+      assert.equal(await readFile(join(home, "claude.json"), "utf8"), claudeBefore, `pass ${pass}: marker-managed claude must stay byte-identical`);
+      assert.equal(await readFile(join(home, "jcode.toml"), "utf8"), jcodeBefore, `pass ${pass}: --skip-client jcode must stay byte-identical`);
+    }
+    const kimi = await readFile(join(home, "kimi.toml"), "utf8");
+    assert.match(kimi, /coordination-mailbox-sweep\.sh kimi-code/, "unmanaged kimi still gets HM wiring");
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test("--skip-client rejects missing, option-shaped and unknown values; unknown markers warn", async () => {
+  const home = await mkdtemp(join(tmpdir(), "repo-memory-hook-skip-"));
+  try {
+    const run = (...extra) => spawnSync(process.execPath, [
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "--claude-settings", join(home, "claude.json"),
+      "--kimi-config", join(home, "kimi.toml"),
+      "--jcode-config", join(home, "jcode.toml"),
+      ...extra,
+    ], { encoding: "utf8" });
+    for (const extra of [["--skip-client"], ["--skip-client", "--claude-settings", join(home, "c2.json")], ["--skip-client", "kimi"]]) {
+      const result = run(...extra);
+      assert.notEqual(result.status, 0, `must refuse ${extra.join(" ")}`);
+      await assert.rejects(stat(join(home, "claude.json")), `refused run must not wire anything (${extra.join(" ")})`);
+    }
+    const xdg = join(home, "xdg");
+    await mkdir(join(xdg, "agent-hooks", "server-managed"), { recursive: true });
+    await writeFile(join(xdg, "agent-hooks", "server-managed", "kimi"), "");
+    const warned = spawnSync(process.execPath, [
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "--claude-settings", join(home, "claude.json"),
+      "--kimi-config", join(home, "kimi.toml"),
+      "--jcode-config", join(home, "jcode.toml"),
+    ], { encoding: "utf8", env: { ...process.env, XDG_CONFIG_HOME: xdg } });
+    assert.equal(warned.status, 0, warned.stderr);
+    assert.match(warned.stderr, /ignoring marker .*kimi: unknown client/);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test("a non-directory agent-hooks path or dangling marker never aborts activation", async () => {
+  const home = await mkdtemp(join(tmpdir(), "repo-memory-hook-enotdir-"));
+  try {
+    const run = (xdg) => spawnSync(process.execPath, [
+      "config/agent-hooks/install-swarm-hooks.mjs",
+      "--claude-settings", join(home, "claude.json"),
+      "--kimi-config", join(home, "kimi.toml"),
+      "--jcode-config", join(home, "jcode.toml"),
+    ], { encoding: "utf8", env: { ...process.env, XDG_CONFIG_HOME: xdg } });
+    const fileXdg = join(home, "file-xdg");
+    await mkdir(fileXdg, { recursive: true });
+    await writeFile(join(fileXdg, "agent-hooks"), "not a directory");
+    const enotdir = run(fileXdg);
+    assert.equal(enotdir.status, 0, enotdir.stderr);
+    assert.match(await readFile(join(home, "claude.json"), "utf8"), /coordination-mailbox-sweep/);
+
+    const linkXdg = join(home, "link-xdg");
+    await mkdir(join(linkXdg, "agent-hooks", "server-managed"), { recursive: true });
+    await symlink("/nonexistent-marker-target", join(linkXdg, "agent-hooks", "server-managed", "jcode"));
+    const jcodeBefore = "[hooks]\nsession_start = \"/served/sweep.mjs jcode SessionStart\"\n";
+    await writeFile(join(home, "jcode.toml"), jcodeBefore);
+    const dangling = run(linkXdg);
+    assert.equal(dangling.status, 0, dangling.stderr);
+    assert.equal(await readFile(join(home, "jcode.toml"), "utf8"), jcodeBefore, "a dangling-symlink marker still marks jcode server-managed");
+  } finally {
+    await rm(home, { recursive: true, force: true });
   }
 });
 

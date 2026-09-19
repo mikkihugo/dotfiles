@@ -84,8 +84,7 @@ in {
     # state. Merge only the repo-memory hook groups and preserve every other
     # field or TOML table byte-for-byte.
     installRepoMemorySwarmHooks = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      ${pkgs.nodejs}/bin/node ${../../config/agent-hooks/install-swarm-hooks.mjs} \
-        --engine-host-hooks "/home/mhugo/code/worktrees/jj/singularity-engine/purpose-tool-host-hooks-origin/fabrics/tools/services/purpose-tool/host-hooks"
+      ${pkgs.nodejs}/bin/node ${../../config/agent-hooks/install-swarm-hooks.mjs}
     '';
 
     # programs.gh and programs.jujutsu own these files as nix-store symlinks.

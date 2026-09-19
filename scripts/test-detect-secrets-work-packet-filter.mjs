@@ -369,8 +369,10 @@ print("ok")
   try {
     assert.equal(pythonProbe.status, 0, pythonProbe.stderr || pythonProbe.stdout);
     assert.match(pythonProbe.stdout, /ok/);
-    const results = await scan([allowed, dirty, "config/agent-hooks/hooks.lock.json"], baseline);
-    assert.equal(results["config/agent-hooks/hooks.lock.json"], undefined, "tracked hook lock hashes must be filtered");
+    // The tracked config/agent-hooks/hooks.lock.json was retired with the
+    // host-hook mirror (engine #677); the filter is still exercised through
+    // the fixtures below.
+    const results = await scan([allowed, dirty], baseline);
     assert.equal(
       results[relative(repoRoot, allowed)],
       undefined,
@@ -383,7 +385,7 @@ print("ok")
       results[relative(repoRoot, dirty)]?.length,
       "a real high-entropy token in this same directory must still be flagged",
     );
-    const allowedHook = hookScan(["config/agent-hooks/hooks.lock.json"], hookBaseline);
+    const allowedHook = hookScan([relative(repoRoot, allowed)], hookBaseline);
     assert.equal(allowedHook.status, 0, allowedHook.stderr || allowedHook.stdout);
   } finally {
     await rm(lockRoot, { recursive: true, force: true });

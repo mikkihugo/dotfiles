@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-import { createHash } from "node:crypto";
-import { chmod, mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { chmod, lstat, mkdir, readdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -9,74 +8,79 @@ const option = (name, fallback) => {
   return index >= 0 ? args[index + 1] : fallback;
 };
 
-// Single-source-of-truth: the engine's purpose-tool package. The mirror
-// step below copies scripts from here into the dotfiles tree so home-manager
-// can symlink them into $HOME. Editing the engine moves every client; editing
-// here (this file) only changes what gets *wired into client configs*.
-const engineHostHooks = option(
-  "--engine-host-hooks",
-  process.env.PURPOSE_TOOL_HOST_HOOKS ??
-    "/home/mhugo/code/worktrees/jj/singularity-engine/purpose-tool-host-hooks-origin/fabrics/tools/services/purpose-tool/host-hooks",
-);
-
 const home = process.env.HOME;
 const claudePath = option("--claude-settings", join(home, ".claude", "settings.json"));
 const kimiPath = option("--kimi-config", join(home, ".kimi-code", "config.toml"));
 const jcodePath = option("--jcode-config", join(home, ".jcode", "config.toml"));
 
-const dotfilesRoot = option("--dotfiles-root", home);
+// Clients whose hooks are served by an MCP server (engine #677) are left
+// untouched: their wiring points at server-installed files, and rewriting it
+// back to Home Manager paths on every hms would silently undo the migration.
+// A client is server-managed when a marker file
+// ${XDG_CONFIG_HOME:-~/.config}/agent-hooks/server-managed/<client> exists or
+// `--skip-client <client>` is passed (repeatable).
+// Scope: this covers only the clients this installer wires (claude,
+// kimi-code, jcode). Codex, Copilot, Cursor and Grok wiring are Home Manager
+// files in home/modules/files.nix and need their own gating there before they
+// can move to server-served hooks.
+const MANAGED_CLIENTS = ["claude", "kimi-code", "jcode"];
+const configHome = process.env.XDG_CONFIG_HOME || join(home, ".config");
+const markerDir = join(configHome, "agent-hooks", "server-managed");
 
-function sha256(buf) {
-  return createHash("sha256").update(buf).digest("hex");
+function fail(message) {
+  console.error(`[install-swarm-hooks] ${message}`);
+  process.exit(2);
 }
 
-async function copyIfHashMismatch(src, dst) {
-  const srcBuf = await readFile(src);
+const skipped = new Set();
+for (let index = 0; index < args.length; index += 1) {
+  if (args[index] !== "--skip-client") continue;
+  const value = args[index + 1];
+  if (value === undefined || value.startsWith("--")) fail("--skip-client needs a client name");
+  if (!MANAGED_CLIENTS.includes(value)) {
+    fail(`--skip-client ${value}: unknown client (expected one of ${MANAGED_CLIENTS.join(", ")})`);
+  }
+  skipped.add(value);
+}
+
+// lstat, not stat: a marker is its own directory entry, so a dangling
+// symlink still counts. A path component that is not a directory
+// (ENOTDIR) means no marker, not a reason to abort Home Manager activation.
+async function markerExists(path) {
   try {
-    const dstBuf = await readFile(dst);
-    if (sha256(dstBuf) === sha256(srcBuf)) return "unchanged";
+    await lstat(path);
+    return true;
   } catch (error) {
-    if (error.code !== "ENOENT") throw error;
+    if (error.code === "ENOENT" || error.code === "ENOTDIR") return false;
+    throw error;
   }
-  await mkdir(dirname(dst), { recursive: true });
-  await writeFile(dst, srcBuf);
-  await chmod(dst, 0o755);
-  return "replaced";
 }
 
-// Mirror every script in the engine's host-hooks/ dir into the per-client
-// dotfiles hook dirs (as vendored mirrors, not symlinks — so the dotfiles
-// stays a self-contained source tree for home-manager).
-async function mirrorScripts() {
-  const entries = await readFile(join(engineHostHooks, "AGENTS.md"), "utf8").catch(() => null);
-  if (entries === null) {
-    console.warn(
-      `[mirror] engine host-hooks not found at ${engineHostHooks} — ` +
-        `skipping mirror (existing dotfiles source will be used). ` +
-        `pass --engine-host-hooks or set PURPOSE_TOOL_HOST_HOOKS to enable.`,
-    );
-    return;
+async function serverManaged(client) {
+  return skipped.has(client) || markerExists(join(markerDir, client));
+}
+
+// A marker named after no known client (e.g. "kimi" for "kimi-code") would
+// protect nothing while looking like it does; say so instead of staying silent.
+async function warnUnknownMarkers() {
+  let names = [];
+  try { names = await readdir(markerDir); }
+  catch (error) {
+    if (error.code !== "ENOENT" && error.code !== "ENOTDIR") throw error;
   }
-  const clients = ["kimi-code", "codex", "claude", "factory", "copilot"];
-  const scripts = [
-    "coordination-mailbox-sweep.sh",
-    "coordination-mailbox-sweep.mjs",
-    "observations-autolog.sh",
-    "observations-autolog.mjs",
-    "skills-gate-session-start.sh",
-    "skills-gate-pretooluse.sh",
-    "skills-gate-mark-loaded.sh",
-  ];
-  for (const client of clients) {
-    const targetDir = join(dotfilesRoot, ".dotfiles", "config", client, "hooks");
-    await mkdir(targetDir, { recursive: true });
-    for (const script of scripts) {
-      const src = join(engineHostHooks, script);
-      const dst = join(targetDir, script);
-      await copyIfHashMismatch(src, dst);
+  for (const name of names) {
+    if (!MANAGED_CLIENTS.includes(name)) {
+      console.warn(`[install-swarm-hooks] ignoring marker ${join(markerDir, name)}: unknown client (expected one of ${MANAGED_CLIENTS.join(", ")})`);
     }
   }
-  console.log(`[mirror] copied ${scripts.length} scripts from ${engineHostHooks} -> ${clients.length} client hook dirs`);
+}
+
+async function unlessServerManaged(client, install) {
+  if (await serverManaged(client)) {
+    console.log(`[install-swarm-hooks] ${client}: server-managed, wiring left untouched`);
+    return;
+  }
+  await install();
 }
 
 async function existingMode(path) {
@@ -277,7 +281,7 @@ async function installJcode() {
   await atomicWrite(jcodePath, lines.join("\n"));
 }
 
-await mirrorScripts();
-await installClaude();
-await installKimi();
-await installJcode();
+await warnUnknownMarkers();
+await unlessServerManaged("claude", installClaude);
+await unlessServerManaged("kimi-code", installKimi);
+await unlessServerManaged("jcode", installJcode);

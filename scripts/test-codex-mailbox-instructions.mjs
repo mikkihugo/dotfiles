@@ -9,8 +9,13 @@ const handwritten = agents.slice(0, managedStart);
 test("Codex uses the persistent hook reader instead of a capability-less direct sweep", () => {
   assert.match(
     handwritten,
-    /Home Manager hook.*mailbox reader/i,
-    "the managed hook must be the interactive Codex mailbox reader",
+    /Codex hook.*mailbox reader/is,
+    "the per-CLI Codex hook must be the interactive Codex mailbox reader",
+  );
+  assert.doesNotMatch(
+    handwritten,
+    /Home Manager hook/i,
+    "hooks are per-CLI files; Home Manager no longer installs them",
   );
   assert.match(
     handwritten,

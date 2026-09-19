@@ -72,6 +72,31 @@ Never classify `rules/`, `skills/`, `prompts/`, `AGENTS.md`, or `CLAUDE.md` as
 memory — including `~/.codex/memories/skills/`, which is the authored
 instruction plane despite its path. Disabling memory never means deleting them.
 
+## Agent hooks — not managed here
+
+Operator decision 2026-09-19: agent hooks are owned per CLI, not by this repo.
+
+- Hook scripts and hook registrations live as plain files in each CLI's own
+  home: `~/.claude/hooks`, `~/.codex/hooks` + `~/.codex/hooks.json`,
+  `~/.cursor/hooks` + `~/.cursor/hooks.json`, `~/.copilot/hooks`,
+  `~/.factory/hooks`, `~/.kimi-code/hooks`, `~/.jcode/hooks`,
+  `~/.grok/hooks/bin`, `~/.config/opencode/hooks` and
+  `~/.config/opencode/plugins`.
+- Home Manager neither installs those files nor registers hooks in any CLI
+  settings file (`~/.claude/settings.json`, `~/.kimi-code/config.toml`,
+  `~/.jcode/config.toml`, `~/.factory/settings.json`, …). Edit hooks in place
+  in the CLI's home.
+- `~/.factory/settings.json` is likewise a per-CLI file now (it carries the
+  Factory hook registration), not a Home Manager link.
+- Long-term source: EVERY MCP server serves its own install info -- hook
+  scripts, instruction text and timer/poll instructions -- and each CLI
+  installs from it (repo-memory `install_hooks`, Purpose `install_skills`,
+  the fleet shim's `install_instructions` for the rest). One canonical source
+  per script: the server that owns the behaviour (singularity-engine
+  #677/#678).
+- Do not re-add hook scripts, hook registrations, or hook-install activation
+  to `.dotfiles`.
+
 ## Secrets
 
 - Encrypted with SOPS + age. Key at `~/.config/sops/age/keys.txt`, config

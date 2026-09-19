@@ -71,6 +71,6 @@ per-invocation brief.
 - `../copilot-instructions.md` — global instructions loaded every
   session.
 - `../hooks/` — event-driven hooks (mailbox-sweep, observations,
-  remind-skills, swarm-messages).
+  remind-skills). Plain per-CLI files; not managed by `.dotfiles`.
 - `../../AGENTS.md` — devbox-wide agent doctrine (model tiers,
   forbidden alternatives, operator authority).

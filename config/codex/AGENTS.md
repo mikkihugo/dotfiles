@@ -39,7 +39,8 @@ These apply to all Codex sessions for this user. Project-level `AGENTS.md` files
 
 ## Mailbox check
 
-The Home Manager hook is the Codex mailbox reader. It derives principal
+The Codex hook in `~/.codex/hooks` (a per-CLI file, not installed by Home
+Manager) is the Codex mailbox reader. It derives principal
 `<client>-<short-session-id>` (examples: `grok-01a07318`, `codex-df69bdf4`,
 `copilot-f653d362`), owns `<principal>-hook`, and persists its signed
 `inbox_uri` capability. It reads `global` and the current repo mailbox

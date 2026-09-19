@@ -11,10 +11,10 @@ config in user config.
 | OTLP collector deployment                | `/srv/infra`                          | `clusters/default/observability/otel-ingest.yaml`                                  |
 | OTLP endpoint, service name, defaults    | `/srv/infra`                          | `hosts/_shared/otel-defaults.nix` (proposed; renders `/etc/otel/defaults.env`)     |
 | Public OTLP ingest (`otel-ingest.centralcloud.net`) | `/srv/infra` (operator)        | `clusters/default/observability/AGENTS.md`; BasicAuth at `kv/otel-ingest`            |
-| kimi-code SessionStart hook              | `~/.dotfiles` (per-user session attrs) | `config/kimi-code/hooks/otel-resource-attrs.sh`                                    |
+| kimi-code SessionStart hook              | per-CLI file, NOT `~/.dotfiles` (2026-09-19) | `~/.kimi-code/hooks/otel-resource-attrs.sh`, edited in place (see AGENTS.md "Agent hooks — not managed here") |
 | kimi-code shell env bridge               | `~/.dotfiles` (per-user)              | `config/kimi-code/init-otel.sh` → sources `/etc/otel/defaults.env`                  |
 | JSON sidecar (`${XDG_RUNTIME_DIR}/kimi-otel/${session_id}.json`) | `~/.dotfiles` (per-user state) | written by the hook; operator observes via `observability-mcp.observability_trace_session` |
-| `KIMI_HOOK_SESSION_START`                | `~/.dotfiles` (per-user path)         | `home.sessionVariables` in `home/modules/kimi-code-otel.nix`                       |
+| `KIMI_HOOK_SESSION_START`                | `~/.dotfiles` (per-user path)         | default exported by `config/kimi-code/init-otel.sh`                                 |
 
 ## Why the split
 
@@ -79,7 +79,7 @@ What the per-user side genuinely owns:
 | Where does `OTEL_RESOURCE_ATTRIBUTES` get its BASE static defaults?                | Same path — the operator file.                                                                                                               |
 | Where do session-scoped keys (`kimi.session.id`, `kimi.workspace.path`, etc.) come from? | The `~/.kimi-code/hooks/otel-resource-attrs.sh` SessionStart hook; appended at runtime; idempotent strip+append on re-run.       |
 | Where does the JSON sidecar go?                                                    | `${XDG_RUNTIME_DIR:-/run/user/$UID}/kimi-otel/${session_id}.json`. Per-user.                                                              |
-| Where is the hook registered?                                                      | `~/.kimi-code/config.toml` via `config/agent-hooks/install-swarm-hooks.mjs` SessionStart entry.                                              |
+| Where is the hook registered?                                                      | `~/.kimi-code/config.toml`, maintained per CLI; `.dotfiles` no longer registers hooks (2026-09-19).                                           |
 | Who fixes a missing OTLP endpoint?                                                 | `/srv/infra` — the operator file path applies the host module.                                                                              |
 | Who fixes a missing JSON sidecar?                                                  | `~/.dotfiles` — the hook fires at SessionStart. Check `kimi-code --no-session` or `~/.kimi-code/config.toml` SessionStart event list.   |
 

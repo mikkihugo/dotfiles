@@ -19,9 +19,6 @@
 # - Prefer enter-once: if IN_NIX_SHELL is already set, do not re-run direnv
 #   (nested `#!/usr/bin/env bash` → this wrapper must not re-eval $PWD's flake).
 # - DIRENV_DISABLE=1 is a rare escape hatch; direnv is also capped at 15s.
-#
-# Cursor-only: ~/.cursor/hooks/fix-stable-shell-chmod.cjs recovers when a
-# Cursor agent Write replaces the wrapper with mode 644.
 {
   config,
   lib,
@@ -32,7 +29,7 @@
   bashBin = "${bash}/bin/bash";
   stableBashRel = ".local/share/stable-shell/bash";
 
-  # Shared body used by declarative wrapper, refresh script, and Node recovery hook.
+  # Shared body used by declarative wrapper and refresh script.
   # Enter Nix once: skip direnv when already in a flake/Nix shell so nested bash
   # (repo shebang, scripts) does not cold-eval a jj worktree flake again.
   # NixOS programs.direnv owns DIRENV_CONFIG=/etc/direnv (nix-direnv 3.2.0).
@@ -149,66 +146,6 @@
       "''${XDG_DATA_HOME:-$HOME/.local/share}/gcroots/bash-interactive"
     echo "stable-shell -> wrapper around $target (direnv delegated once to BASH_ENV; mode 0755)"
   '';
-
-  # CommonJS (.cjs): Node 24 treats .mjs as ESM and rejects require().
-  hookCjsText = ''
-    #!/usr/bin/env node
-    "use strict";
-    const fs = require("node:fs");
-    const path = require("node:path");
-    const home = process.env.HOME || "${config.home.homeDirectory}";
-    const stable = path.join(home, ".local/share/stable-shell/bash");
-    const localBin = path.join(home, ".local/bin/bash");
-    const refresh = path.join(home, ".local/bin/refresh-stable-shell");
-    const bashStore = "${bashBin}";
-    const out = path.join(home, ".cursor/tmp/stable-shell-hook.out");
-    const wrapper = [
-      "#!" + bashStore,
-      "# Agent shell wrapper (HM + Node hook).",
-      "# Enter Nix once: skip direnv when IN_NIX_SHELL is already set.",
-      "# Escape: DIRENV_DISABLE=1. Direnv is also capped at 15s.",
-      '_stable_shell_caller_path="$PATH"',
-      'if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then',
-      "  unset __HM_SESS_VARS_SOURCED",
-      '  . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"',
-      "fi",
-      'IFS=: read -r -a _stable_shell_path_entries <<< "$_stable_shell_caller_path:$PATH"',
-      'PATH=""',
-      '_stable_shell_seen=":"',
-      'for _stable_shell_entry in "''${_stable_shell_path_entries[@]}"; do',
-      '  [[ -n "$_stable_shell_entry" ]] || continue',
-      '  case "$_stable_shell_seen" in',
-      '    *":$_stable_shell_entry:"*) ;;',
-      '    *) PATH="''${PATH:+$PATH:}$_stable_shell_entry"; _stable_shell_seen="$_stable_shell_seen$_stable_shell_entry:" ;;',
-      "  esac",
-      "done",
-      "export PATH",
-      "unset _stable_shell_caller_path _stable_shell_path_entries _stable_shell_seen _stable_shell_entry",
-      '# Agent shells skip ~/.bashrc; load CentralCloud OTLP env.',
-      '[ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"',
-      'export BASH_ENV="$HOME/.dotfiles/shell/bash/noninteractive-path.sh"',
-      'exec ' + bashStore + ' "$@"',
-      "",
-    ].join("\n");
-    function log(line) {
-      try {
-        fs.mkdirSync(path.dirname(out), { recursive: true });
-        fs.appendFileSync(out, new Date().toISOString() + " " + line + "\n");
-      } catch (_) {}
-    }
-    try {
-      fs.mkdirSync(path.dirname(stable), { recursive: true });
-      fs.writeFileSync(stable, wrapper, { mode: 0o755 });
-      fs.chmodSync(stable, 0o755);
-      try { fs.unlinkSync(localBin); } catch (_) {}
-      fs.symlinkSync(stable, localBin);
-      if (fs.existsSync(refresh)) fs.chmodSync(refresh, 0o755);
-      log("rewrote+chmod 0755 " + stable);
-    } catch (e) {
-      log("error: " + e.message);
-    }
-    process.stdout.write(JSON.stringify({ continue: true }));
-  '';
 in {
   # Single `home = { ... }` — statix forbids repeated `home.*` keys.
   home = {
@@ -236,60 +173,6 @@ in {
         executable = true;
         force = true;
         text = refreshScript;
-      };
-
-      # Cursor Agent recovery: Node hook can chmod without spawning $SHELL (chicken/egg).
-      # Use .cjs — Node 24 rejects require() inside .mjs (ESM).
-      ".cursor/hooks/fix-stable-shell-chmod.cjs" = {
-        executable = true;
-        force = true;
-        text = hookCjsText;
-      };
-
-      # Compat shim: old hooks.json entries pointing at .mjs still work.
-      # Absolute HOME path — HM places .mjs/.cjs in separate store derivations, so
-      # a relative ./fix-….cjs next to the .mjs store path does not exist.
-      ".cursor/hooks/fix-stable-shell-chmod.mjs" = {
-        executable = true;
-        force = true;
-        text = ''
-          #!/usr/bin/env node
-          // Deprecated shim — prefer fix-stable-shell-chmod.cjs.
-          import { createRequire } from "node:module";
-          import { join } from "node:path";
-          import { homedir } from "node:os";
-          createRequire(import.meta.url)(
-            join(homedir(), ".cursor/hooks/fix-stable-shell-chmod.cjs"),
-          );
-        '';
-      };
-
-      # Merge-friendly stub: operators still own full hooks.json; document required entry.
-      ".cursor/hooks/stable-shell-README.md" = {
-        force = true;
-        text = ''
-          # Cursor recovery for the shared agent stable-shell
-
-          The wrapper is host-wide (`~/.local/share/stable-shell/bash`). This
-          Cursor hook only recovers when a Cursor agent Write replaces it with
-          mode 644.
-
-          Ensure `~/.cursor/hooks.json` (or project `.cursor/hooks.json`) includes:
-
-          ```json
-          {
-            "hooks": {
-              "sessionStart": [{ "command": "node $HOME/.cursor/hooks/fix-stable-shell-chmod.cjs", "timeout": 10 }],
-              "afterFileEdit": [{ "command": "node $HOME/.cursor/hooks/fix-stable-shell-chmod.cjs", "timeout": 10 }]
-            }
-          }
-          ```
-
-          Non-interactive bash enters Nix once through BASH_ENV and
-          `shell/bash/noninteractive-path.sh`; the wrapper only exports that
-          path before exec. Interactive bash and zsh use direnv-instant.
-          Escape hatch: `DIRENV_DISABLE=1`.
-        '';
       };
     };
 

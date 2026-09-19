@@ -121,6 +121,21 @@ def normalize_request_payload(value):
     return normalized
 
 
+def request_tool_metadata(value):
+    """Return bounded, non-content metadata for diagnosing upstream rejects."""
+    if not isinstance(value, dict) or not isinstance(value.get("input"), list):
+        return []
+    return [
+        {
+            key: item[key]
+            for key in ("type", "id", "call_id", "name")
+            if key in item
+        }
+        for item in value["input"]
+        if isinstance(item, dict) and item.get("type") in {"function_call", "function_call_output"}
+    ][:200]
+
+
 def normalize_sse_line(line):
     newline = ""
     if line.endswith("\r\n"):
@@ -185,6 +200,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(length) if length else b""
+        request = None
         if self.path.rstrip("/").endswith("/v1/responses"):
             try:
                 request = json.loads(body)
@@ -192,11 +208,12 @@ class Handler(BaseHTTPRequestHandler):
                 if repaired != request:
                     body = json.dumps(repaired, separators=(",", ":")).encode()
                     logging.info("repaired replayed Responses tool correlation ids")
+                    request = repaired
             except (UnicodeDecodeError, json.JSONDecodeError):
                 pass
-        self.proxy(body)
+        self.proxy(body, request)
 
-    def proxy(self, body):
+    def proxy(self, body, request=None):
         parsed, path = upstream_target(self.path)
         headers = {
             key: value
@@ -237,6 +254,8 @@ class Handler(BaseHTTPRequestHandler):
                 raw = response.read()
                 if response.status >= 400:
                     logging.warning("MiniMax upstream %s: %s", response.status, raw[:2000].decode("utf-8", "replace"))
+                    if request is not None:
+                        logging.warning("rejected Responses tool metadata=%s", request_tool_metadata(request))
                 try:
                     raw = json.dumps(normalize_payload(json.loads(raw))).encode()
                 except (UnicodeDecodeError, json.JSONDecodeError):

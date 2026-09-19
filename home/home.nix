@@ -58,6 +58,7 @@ in {
     ./modules/sshid-key-sync.nix
     ./modules/mise-auto-update.nix
     ./modules/grok-leader.nix
+    ./modules/minimax-responses-compat.nix
     ./modules/tailscale.nix
     ./modules/tabby.nix
     ./modules/wezterm.nix

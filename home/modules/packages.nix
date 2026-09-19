@@ -55,6 +55,18 @@
     git-lfs # large file storage extension for git
     gcc # provides `cc` for local source builds during HM activation
     gnumake # native builds for non-Python mise backends and local compiles
+    # Native linker toolchain on the profile PATH. singularity-engine's
+    # .cargo/config.toml selects `linker = "clang"` + `-fuse-ld=mold`; a shell
+    # that has not (fully) loaded the repo devShell -- a fresh lane's first
+    # direnv load, agent `bash -c` tool shells, hooks, timers -- otherwise dies
+    # with "linker `clang` not found". Only `clang`/`clang++` are linked: the
+    # full clang wrapper also ships cc/c++/ld.bfd, which collide with gcc's.
+    (runCommand "clang-driver-only" {} ''
+      mkdir -p $out/bin
+      ln -s ${clang}/bin/clang ${clang}/bin/clang++ $out/bin/
+    '')
+    mold # linker selected via -fuse-ld=mold
+    cmake # native dependency builds (llama-cpp-sys and similar -sys crates)
     # Daily python3 is nixpkgs, not mise. Linked against its own bzip2/lzma
     # closure so `import bz2` works without nix-ld search-path hacks.
     python3

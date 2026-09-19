@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   ACTIONABLE_TYPES,
   BLOCKED_ID_CAP,
@@ -240,7 +241,9 @@ test("module imports cleanly: the upstream coordination-mailbox-sweep still prov
   // `SyntaxError: ... does not provide an export named 'RepoMemoryBus'`,
   // Node exited 1, the harness reported "stop hook failed, ignored".
   // This test fails the build if any imported symbol disappears.
-  const mod = await import("/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs");
+  const mod = await import(
+    pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), "coordination-mailbox-sweep.mjs")).href
+  );
   for (const name of [
     "McpGatewayClient",
     "CoordinationBus",

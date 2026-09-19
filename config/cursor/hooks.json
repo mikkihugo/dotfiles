@@ -7,11 +7,11 @@
         "timeout": 10
       },
       {
-        "command": "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs cursor sessionStart",
+        "command": "/home/mhugo/.cursor/hooks/coordination-mailbox-sweep.mjs cursor sessionStart",
         "timeout": 12
       },
       {
-        "command": "/home/mhugo/.codex/hooks/purpose-session-start.sh",
+        "command": "/home/mhugo/.cursor/hooks/purpose-session-start.sh",
         "timeout": 10
       },
       {
@@ -21,7 +21,7 @@
     ],
     "beforeSubmitPrompt": [
       {
-        "command": "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs cursor beforeSubmitPrompt",
+        "command": "/home/mhugo/.cursor/hooks/coordination-mailbox-sweep.mjs cursor beforeSubmitPrompt",
         "timeout": 12
       }
     ]

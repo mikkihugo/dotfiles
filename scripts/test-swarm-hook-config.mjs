@@ -20,9 +20,10 @@ test("Purpose SessionStart hooks use a Home Manager-rendered Node wrapper", asyn
   const codexSessionStart = JSON.stringify(codex.hooks.SessionStart);
   const cursorSessionStart = JSON.stringify(cursor.hooks.sessionStart);
   const wrapperPath = "/home/mhugo/.codex/hooks/purpose-session-start.sh";
+  const cursorWrapperPath = "/home/mhugo/.cursor/hooks/purpose-session-start.sh";
 
   assert.match(codexSessionStart, new RegExp(wrapperPath.replaceAll("/", "\\/")));
-  assert.match(cursorSessionStart, new RegExp(wrapperPath.replaceAll("/", "\\/")));
+  assert.match(cursorSessionStart, new RegExp(cursorWrapperPath.replaceAll("/", "\\/")));
   assert.doesNotMatch(codexSessionStart, /\|\| node \/home\/mhugo\/\.local\/share\/purpose-tool/);
   assert.doesNotMatch(cursorSessionStart, /\|\| node \/home\/mhugo\/\.local\/share\/purpose-tool/);
 
@@ -122,18 +123,19 @@ test("codex hooks.json wires SessionStart + UserPromptSubmit at the HM-rendered 
 });
 
 test("cursor hooks.json wires sessionStart + beforeSubmitPrompt at coordination-mailbox-sweep.mjs, not the legacy swarm-messages.mjs shim", async () => {
-  // Cursor uses the HM-installed ~/.codex/hooks/coordination-mailbox-sweep.mjs
-  // (same binary as Codex) with client name `cursor` and Cursor event names.
+  // Cursor runs sweep and purpose-session-start from ~/.cursor/hooks only.
   const cursor = await readJSON("config/cursor/hooks.json");
   const sessionStart = JSON.stringify(cursor.hooks.sessionStart);
   const beforeSubmitPrompt = JSON.stringify(cursor.hooks.beforeSubmitPrompt);
-  assert.match(sessionStart, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs cursor sessionStart/);
-  assert.match(beforeSubmitPrompt, /\/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs cursor beforeSubmitPrompt/);
+  assert.match(sessionStart, /\/home\/mhugo\/\.cursor\/hooks\/coordination-mailbox-sweep\.mjs cursor sessionStart/);
+  assert.match(beforeSubmitPrompt, /\/home\/mhugo\/\.cursor\/hooks\/coordination-mailbox-sweep\.mjs cursor beforeSubmitPrompt/);
   assert.doesNotMatch(sessionStart, /swarm-messages\.mjs/);
   assert.doesNotMatch(beforeSubmitPrompt, /swarm-messages\.mjs/);
+  assert.doesNotMatch(sessionStart, /\.codex\/hooks/);
+  assert.doesNotMatch(beforeSubmitPrompt, /\.codex\/hooks/);
   // Stable-shell + optional purpose-tool session hooks stay on sessionStart.
   assert.match(sessionStart, /fix-stable-shell-chmod\.cjs/);
-  assert.match(sessionStart, /\.codex\/hooks\/purpose-session-start\.sh/);
+  assert.match(sessionStart, /\.cursor\/hooks\/purpose-session-start\.sh/);
 });
 
 test("copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered coordination-mailbox-sweep.sh shim", async () => {
@@ -168,7 +170,7 @@ test("copilot hooks wire sessionStart + userPromptTransformed at the HM-rendered
   assert.match(files, /replaceVars[\s\S]*config\/copilot\/hooks\/coordination-mailbox-sweep\.sh/);
   const shim = await readFile("config/copilot/hooks/coordination-mailbox-sweep.sh", "utf8");
   assert.match(shim, /^#!@bash@/);
-  assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs "\$\{1:-kimi-code\}"/);
+  assert.match(shim, /exec @node@ \/home\/mhugo\/\.copilot\/hooks\/coordination-mailbox-sweep\.mjs "\$\{1:-copilot\}"/);
 });
 
 test("factory settings.json wires SessionStart + UserPromptSubmit at the HM-rendered coordination-mailbox-sweep.sh shim", async () => {
@@ -190,7 +192,7 @@ test("factory settings.json wires SessionStart + UserPromptSubmit at the HM-rend
   assert.match(files, /replaceVars[\s\S]*config\/factory\/hooks\/coordination-mailbox-sweep\.sh/);
   const shim = await readFile("config/factory/hooks/coordination-mailbox-sweep.sh", "utf8");
   assert.match(shim, /^#!@bash@/);
-  assert.match(shim, /exec @node@ \/home\/mhugo\/\.codex\/hooks\/coordination-mailbox-sweep\.mjs "\$\{1:-kimi-code\}"/);
+  assert.match(shim, /exec @node@ \/home\/mhugo\/\.factory\/hooks\/coordination-mailbox-sweep\.mjs "\$\{1:-factory\}"/);
 });
 
 test("Home Manager installs every managed hook surface", async () => {
@@ -198,18 +200,20 @@ test("Home Manager installs every managed hook surface", async () => {
   assert.match(files, /\.copilot\/hooks\/coordination-mailbox-sweep\.json/);
   assert.match(files, /\.cursor\/hooks\.json/);
   assert.match(files, /replaceVars[\s\S]*config\/codex\/hooks\/coordination-mailbox-sweep\.mjs/);
-  const codexHook = files.slice(
-    files.indexOf('".codex/hooks/coordination-mailbox-sweep.mjs"'),
-    files.indexOf('".codex/hooks/coordination-mailbox-sweep.sh"'),
-  );
-  assert.match(codexHook, /flock = "\$\{pkgs\.util-linux\}\/bin\/flock"/);
-  assert.match(codexHook, /bash = "\$\{pkgs\.bash\}\/bin\/bash"/);
+  assert.match(files, /codexSweepMjs = pkgs\.replaceVars/);
+  assert.match(files, /flock = "\$\{pkgs\.util-linux\}\/bin\/flock"/);
+  assert.match(files, /\.cursor\/hooks\/coordination-mailbox-sweep\.mjs/);
+  assert.match(files, /\.copilot\/hooks\/coordination-mailbox-sweep\.mjs/);
+  assert.match(files, /\.claude\/hooks\/coordination-mailbox-sweep\.mjs/);
+  assert.match(files, /\.kimi-code\/hooks\/coordination-mailbox-sweep\.mjs/);
+  assert.match(files, /\.factory\/hooks\/coordination-mailbox-sweep\.mjs/);
+  assert.match(files, /\.jcode\/hooks\/coordination-mailbox-sweep\.mjs/);
   assert.doesNotMatch(files, /config\/codex\/hooks\/swarm-messages\.mjs/);
   assert.doesNotMatch(files, /config\/claude\/hooks\/swarm-messages\.sh/);
-  assert.doesNotMatch(
+  assert.match(
     files,
-    /config\/kimi-code\/hooks\/coordination-mailbox-sweep\.mjs/,
-    "Kimi uses the shared Codex coordination implementation through its shell shim; do not install its retired fallback copy",
+    /\.kimi-code\/hooks\/coordination-mailbox-sweep\.mjs/,
+    "Kimi installs the sweep into ~/.kimi-code/hooks, not by execing ~/.codex/hooks",
   );
   assert.match(files, /replaceVars[\s\S]*config\/kimi-code\/hooks\/swarm-messages\.sh/);
   const activation = await readFile("home/modules/activation.nix", "utf8");
@@ -218,8 +222,11 @@ test("Home Manager installs every managed hook surface", async () => {
   assert.match(await readFile("config/codex/hooks/coordination-mailbox-sweep.mjs", "utf8"), /^#!@node@/);
   const kimiWrapper = await readFile("config/kimi-code/hooks/swarm-messages.sh", "utf8");
   assert.match(kimiWrapper, /^#!@bash@/);
-  assert.match(kimiWrapper, /exec @node@/);
+  assert.match(kimiWrapper, /exec @node@ \/home\/mhugo\/\.kimi-code\/hooks\/coordination-mailbox-sweep\.mjs/);
   assert.doesNotMatch(kimiWrapper, /REPO_MEMORY_COORDINATION_BUS/);
+  const grokSweep = await readFile("config/grok/hooks/mail-sweep.sh", "utf8");
+  assert.match(grokSweep, /\$\{HOME\}\/\.grok\/hooks\/bin\/coordination-mailbox-sweep\.mjs/);
+  assert.doesNotMatch(grokSweep, /SWEEP="\$\{HOME\}\/\.codex\/hooks/);
 });
 
 test("Goose and JCode wrappers export one inherited session identity", async () => {

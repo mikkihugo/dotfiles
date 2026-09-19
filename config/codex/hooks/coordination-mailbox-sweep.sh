@@ -5,4 +5,4 @@
 # path instead of the legacy swarm_bus_* fallback. Universal shim — pass
 # client label as $1 (e.g. kimi-code, codex, claude, factory, copilot) and
 # event name as $2 (UserPromptSubmit / SessionStart).
-exec @node@ /home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs "${1:-kimi-code}" "${2:-UserPromptSubmit}"
+exec @node@ /home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs "${1:-codex}" "${2:-UserPromptSubmit}"

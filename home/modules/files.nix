@@ -3,7 +3,18 @@
 # Files that tools expect at specific $HOME paths, kept in version control
 # and updated atomically on every `hms`. force=true overwrites any manually
 # edited copy so the repo stays the source of truth.
-{pkgs, ...}: {
+{pkgs, ...}: let
+  sweepVars = {
+    node = "${pkgs.nodejs}/bin/node";
+    flock = "${pkgs.util-linux}/bin/flock";
+    bash = "${pkgs.bash}/bin/bash";
+  };
+  # Same sweep implementation, installed into each CLI's own hooks directory.
+  # Runtime paths must not cross CLI homes (no Cursor/Copilot/Grok exec of
+  # ~/.codex/hooks).
+  codexSweepMjs = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.mjs sweepVars;
+  claudeSweepMjs = pkgs.replaceVars ../../config/claude/hooks/coordination-mailbox-sweep.mjs sweepVars;
+in {
   home.file = {
     ".config/ripgrep/config" = {
       source = ../../config/ripgreprc;
@@ -127,23 +138,49 @@
     # them into $HOME, with replaceVars substituting @bash@/@node@ at Nix
     # build time. install-swarm-hooks.mjs only wires client configs.
     ".codex/hooks/coordination-mailbox-sweep.mjs" = {
-      source = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.mjs {
-        node = "${pkgs.nodejs}/bin/node";
-        flock = "${pkgs.util-linux}/bin/flock";
-        bash = "${pkgs.bash}/bin/bash";
-      };
+      source = codexSweepMjs;
       executable = true;
       force = true;
     };
 
-    # Grok TUI used a stale private copy that shared the agent session
-    # (no deriveCoordinationSession). Install the same Codex sweep here.
+    # Grok TUI: own copy under ~/.grok/hooks, never exec ~/.codex/hooks.
     ".grok/hooks/bin/coordination-mailbox-sweep.mjs" = {
-      source = pkgs.replaceVars ../../config/codex/hooks/coordination-mailbox-sweep.mjs {
-        node = "${pkgs.nodejs}/bin/node";
-        flock = "${pkgs.util-linux}/bin/flock";
-        bash = "${pkgs.bash}/bin/bash";
-      };
+      source = codexSweepMjs;
+      executable = true;
+      force = true;
+    };
+    ".claude/hooks/coordination-mailbox-sweep.mjs" = {
+      source = claudeSweepMjs;
+      executable = true;
+      force = true;
+    };
+    ".cursor/hooks/coordination-mailbox-sweep.mjs" = {
+      source = codexSweepMjs;
+      executable = true;
+      force = true;
+    };
+    ".copilot/hooks/coordination-mailbox-sweep.mjs" = {
+      source = codexSweepMjs;
+      executable = true;
+      force = true;
+    };
+    ".factory/hooks/coordination-mailbox-sweep.mjs" = {
+      source = codexSweepMjs;
+      executable = true;
+      force = true;
+    };
+    ".kimi-code/hooks/coordination-mailbox-sweep.mjs" = {
+      source = codexSweepMjs;
+      executable = true;
+      force = true;
+    };
+    ".jcode/hooks/coordination-mailbox-sweep.mjs" = {
+      source = codexSweepMjs;
+      executable = true;
+      force = true;
+    };
+    ".config/opencode/hooks/coordination-mailbox-sweep.mjs" = {
+      source = codexSweepMjs;
       executable = true;
       force = true;
     };
@@ -479,6 +516,14 @@
       force = true;
     };
 
+    ".cursor/hooks/purpose-session-start.sh" = {
+      source = pkgs.replaceVars ../../config/codex/hooks/purpose-session-start.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        node = "${pkgs.nodejs}/bin/node";
+      };
+      executable = true;
+      force = true;
+    };
     ".cursor/hooks.json" = {
       source = ../../config/cursor/hooks.json;
       force = true;

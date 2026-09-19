@@ -38,7 +38,7 @@
 
 const SWEEP_PATH =
   process.env.COORDINATION_MAILBOX_SWEEP_PATH ||
-  "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs";
+  "/home/mhugo/.config/opencode/hooks/coordination-mailbox-sweep.mjs";
 
 /**
  * Mirror of deriveIdentity()'s short-token extraction in

@@ -30,10 +30,17 @@
 //     block again for that same id - see blockedIds below.
 import { basename, dirname, join, resolve } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
-import { pathToFileURL } from "node:url";
-import {
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const siblingSweep = join(here, "coordination-mailbox-sweep.mjs");
+const installedSweep = join(homedir(), ".claude/hooks/coordination-mailbox-sweep.mjs");
+const sweepModule = await import(
+  pathToFileURL(existsSync(siblingSweep) ? siblingSweep : installedSweep).href
+);
+const {
   McpGatewayClient,
   CoordinationBus,
   deriveIdentity,
@@ -41,7 +48,7 @@ import {
   selectBus,
   selectCoordinationChannels,
   selectWorkspace,
-} from "/home/mhugo/.codex/hooks/coordination-mailbox-sweep.mjs";
+} = sweepModule;
 
 export const MAX_CONSECUTIVE_BLOCKS = 3;
 export const ACTIONABLE_TYPES = new Set(["question", "blocker"]);

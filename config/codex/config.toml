@@ -140,6 +140,12 @@ generate_memories = false
 url = "http://mcp-gateway.svc/mcp"
 required = true
 
+# Direct sibling MCP server for transcript and code-search queries. This is
+# intentionally not routed through ccgw/Fleet.
+[mcp_servers.agentgrep]
+command = "uvx"
+args = ["--from", "agentgrep", "agentgrep-mcp"]
+
 [model_providers.llm-gateway]
 name = "CentralCloud LLM Gateway"
 base_url = "http://llm-gateway.svc:80/codex/v1"

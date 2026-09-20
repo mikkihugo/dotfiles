@@ -36,7 +36,10 @@ in
         Type = "simple";
         ExecCondition = "${noLiveLeader}";
         # Wrapper unsets XAI_API_KEY and execs ~/.grok/bin/grok (OIDC).
-        ExecStart = "%h/.local/bin/grok agent leader --no-exit-on-disconnect --no-auto-update --relay-on-demand";
+        # Flags mirror the live invocation (2026-09-20): relay for headless/IDE
+        # clients, grok.com code-agent ws; auto-update deliberately on so a
+        # service-owned leader tracks the same channel the TUI does.
+        ExecStart = "%h/.local/bin/grok agent leader --no-exit-on-disconnect --relay-on-demand --grok-ws-url wss://code.grok.com/ws/code-agent --grok-ws-origin https://grok.com";
         Restart = "on-failure";
         RestartSec = 10;
       };

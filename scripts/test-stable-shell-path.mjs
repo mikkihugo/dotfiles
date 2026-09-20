@@ -751,3 +751,96 @@ fj
     `fj must pass a non-empty --host when FJ_HOST is unset, got: ${JSON.stringify(result.stdout)}`,
   );
 });
+
+// --- agent-shell wrapper: interpreter and exec target must be absolute -------
+//
+// 2026-09-20 outage (mhugo/dotfiles#48): the wrapper was rewritten with the
+// literal shebang `#!bash` and `exec bash "$@"`. The kernel cannot exec a
+// relative shebang, so every agent hook on the devbox died with
+// "bash: bad interpreter: No such file or directory". Worse, ~/.local/bin/bash
+// IS the wrapper and IS on PATH, so repairing only the shebang would have made
+// `exec bash` re-exec the wrapper forever.
+//
+// The writer was ~/.cursor/hooks/fix-stable-shell-chmod.cjs, which the repo no
+// longer owns (AGENTS.md "Agent hooks — not managed here", 2026-09-19). A test
+// over home/modules/stable-shell.nix alone therefore cannot catch a recurrence:
+// the invariant has to be asserted over the artifact, whoever wrote it.
+
+import { accessSync, constants, existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+
+// Returns the reasons `text` is not a safely executable wrapper. Pure over the
+// text plus an executable-file predicate, so it is exercised by the fixtures
+// below whether or not a deployed wrapper exists on this host.
+export function wrapperDefects(text, isExecutable) {
+  const defects = [];
+  const [shebang = ""] = text.split("\n", 1);
+  if (!shebang.startsWith("#!")) {
+    defects.push("no shebang");
+  } else {
+    const interp = shebang.slice(2).trim().split(/\s+/)[0] ?? "";
+    if (!interp.startsWith("/")) defects.push(`relative interpreter: ${interp}`);
+    else if (!isExecutable(interp)) defects.push(`interpreter not executable: ${interp}`);
+  }
+  // The final exec hands off to the real bash; a relative target re-enters the
+  // wrapper through PATH instead of leaving it.
+  const execLine = text
+    .split("\n")
+    .filter((l) => /^\s*exec\s/.test(l))
+    .pop();
+  if (!execLine) defects.push("no exec line");
+  else {
+    const target = (execLine.match(/^\s*exec\s+"?([^"\s]+)"?/) ?? [])[1] ?? "";
+    if (!target.startsWith("/")) defects.push(`relative exec target: ${target}`);
+  }
+  return defects;
+}
+
+const BROKEN_2026_09_20 = '#!bash\nexec bash "$@"\n';
+const HEALTHY_SAMPLE = '#!/nix/store/x-bash/bin/bash\nexec "/nix/store/x-bash/bin/bash" "$@"\n';
+
+test("wrapper validator rejects the exact shape that caused the 2026-09-20 outage", () => {
+  const defects = wrapperDefects(BROKEN_2026_09_20, () => true);
+  assert.deepEqual(defects, [
+    "relative interpreter: bash",
+    "relative exec target: bash",
+  ]);
+});
+
+test("wrapper validator accepts an absolute interpreter and exec target", () => {
+  assert.deepEqual(wrapperDefects(HEALTHY_SAMPLE, () => true), []);
+});
+
+test("wrapper validator rejects a shebang pointing at a missing interpreter", () => {
+  // Guards the garbage-collection case: an absolute path is not enough if the
+  // store path it names has been collected.
+  assert.deepEqual(wrapperDefects(HEALTHY_SAMPLE, () => false), [
+    "interpreter not executable: /nix/store/x-bash/bin/bash",
+  ]);
+});
+
+test("the deployed agent-shell wrapper is executable on this host", () => {
+  const stable = join(homedir(), ".local/share/stable-shell/bash");
+  if (!existsSync(stable)) {
+    // Absent in CI and in sandboxes; the fixtures above still exercise the rule.
+    return;
+  }
+  const defects = wrapperDefects(readFileSync(stable, "utf8"), (p) => {
+    try {
+      accessSync(p, constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  assert.deepEqual(defects, [], `${stable} is not safely executable`);
+});
+
+test("stable-shell.nix generators never emit a relative interpreter", async () => {
+  const source = await readFile("home/modules/stable-shell.nix", "utf8");
+  // Both in-repo generators (declarative wrapper text and refresh script) must
+  // interpolate an absolute path, never a bare command name.
+  assert.doesNotMatch(source, /^\s*#!\s*bash\s*$/m, "wrapper shebang must not be a bare command name");
+  assert.match(source, /#!\$\{bashBin\}/, "declarative wrapper must interpolate the store bash");
+  assert.match(source, /exec \$\{bashBin\} "\$@"/, "declarative wrapper must exec the store bash by absolute path");
+});

@@ -669,7 +669,7 @@ in {
         # these packages compile from source — disable per-host as needed.
         # Claude Code is owned by its native installer outside Home Manager.
         # Cursor Agent is resolved by the wrapper below without a raw profile bin.
-        # llm-pkgs.codex is enabled per-arch below, outside this list.
+        # codex is npm-managed only (see the note after this list).
         # opencode is managed globally by mise.
         # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
         # droid is managed globally by mise (wrapped below for OTEL).
@@ -687,32 +687,24 @@ in {
       ]
       ++ lib.optionals (!isSwarmDevbox) [
         jcodeGatewayWrapper # binary: jcode -> llm-gateway.svc /v1 (+ strip ambient provider keys)
-      ]
-      # codex from llm-agents, x86_64-linux only.
-      #
-      # Two reasons, not one. The aarch64 laptop still has to rebuild this from
-      # source (numtide's prebuilt cache is x86_64-only), so it stays off there.
-      # On x86_64 it also puts codex in ~/.nix-profile/bin, and that directory
-      # survives entering a repository devShell where ~/.npm-global/bin does not:
-      # an interactive shell in ~/code/jcode resolves direnv-instant (nix-profile)
-      # but not codex (npm-global), because the environment direnv applies there
-      # drops the Home Manager session PATH entries. Owning codex here makes it
-      # resolve in those shells regardless.
-      #
-      # Version skew, measured not assumed: the derivation is named codex-0.149.1
-      # but `codex --version` from it reports codex-cli 0.148.0, while the npm
-      # package reports 0.149.1. So the two are NOT identical builds. On a healthy
-      # PATH ~/.npm-global/bin still precedes ~/.nix-profile/bin, so ordinary
-      # shells keep getting the npm 0.149.1; only shells that lost the session
-      # PATH entries fall through to this 0.148.0. Bump llm-agents when that skew
-      # matters. Verified this package ships the codex-code-mode-host sidecar, so
-      # it does not reproduce the aqua-registry breakage noted in mise config.
-      #
-      # This is deliberately NOT a fix for that PATH drop -- the root cause is
-      # still open. It removes codex from the blast radius, nothing more.
-      ++ pkgs.lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
-        llm-pkgs.codex # binary: codex (+ codex-code-mode-host sidecar)
       ];
+
+    # codex is deliberately NOT installed from llm-agents.
+    #
+    # It was, on x86_64 only, as a fallback for repository devShells believed
+    # to drop ~/.npm-global/bin from PATH. Measured 2026-09-20 inside
+    # ~/code/jcode's devShell: ~/.npm-global/bin IS present, so the fallback is
+    # unnecessary -- but ~/.nix-profile/bin preceded it, so `codex` resolved to
+    # the nix build (codex-cli 0.148.0) while the app-server daemon and
+    # ~/.codex/state_5.sqlite ran 0.155.0-alpha.16. Every agent working under
+    # ~/code/* was driving a seven-minor-older CLI against a newer store.
+    #
+    # Codex is npm-managed only (`npm i -g @openai/codex`), the same decision
+    # already recorded in ~/.config/mise/config.toml for the aqua registry.
+    # One install, one version, no PATH-order dependence.
+    #
+    # Falsifier: `command -v codex` inside a repo devShell returns anything
+    # other than ~/.npm-global/bin/codex.
 
     file = {
       # Laptop/generic hosts: shadow update/mise install so llm-gateway SOPS

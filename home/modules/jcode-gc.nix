@@ -3,14 +3,33 @@
     set -u
     J="$HOME/.jcode"
 
-    # --- builds: keep server symlink target + 9 most recent versions; CI
-    # prunes to 10 on deploy, but run GC as a safety net for local builds ---
-    server_target="$(${pkgs.coreutils}/bin/readlink -f "$J/server/jcode" 2>/dev/null || true)"
+    # --- builds: never delete a version that a live reference points at;
+    # prune the rest after 3 days. CI prunes to 10 on deploy, but run GC as a
+    # safety net for local builds ---
+    #
+    # FOUR things reference builds/versions, not one. Guarding only the server
+    # symlink deleted the dirs behind the CLI launcher and all three channel
+    # markers (dotfiles#49): the server stayed healthy precisely because it was
+    # the single protected path. readlink -f still yields the intended target
+    # for an already-dangling link, which is what we want -- a broken reference
+    # must not make its target eligible for deletion.
+    protected="$(
+        for ref in "$J/server/jcode" "$J/builds/current/jcode"; do
+            ${pkgs.coreutils}/bin/readlink -f "$ref" 2>/dev/null || true
+        done
+        for marker in current-version stable-version shared-server-version; do
+            marker_version="$(${pkgs.coreutils}/bin/cat "$J/builds/$marker" 2>/dev/null || true)"
+            if [ -n "$marker_version" ]; then
+                ${pkgs.coreutils}/bin/printf '%s\n' "$J/builds/versions/$marker_version/jcode"
+            fi
+        done
+    )"
     if [ -d "$J/builds/versions" ]; then
-        # Delete versions older than 3 days that are not the live target
+        # Delete versions older than 3 days that no live reference points at
         for d in "$J"/builds/versions/*; do
             [ -d "$d" ] || continue
-            if [ "$d/jcode" = "$server_target" ]; then continue; fi
+            if ${pkgs.coreutils}/bin/printf '%s\n' "$protected" \
+                | ${pkgs.gnugrep}/bin/grep -Fxq "$d/jcode"; then continue; fi
             if [ "$(${pkgs.findutils}/bin/find "$d" -maxdepth 0 -mtime +3 2>/dev/null)" ]; then
                 ${pkgs.coreutils}/bin/rm -rf "$d"
             fi
@@ -59,8 +78,9 @@ in {
   # versions, rotated logs, session .bak snapshots, scratch workspaces) plus
   # /tmp/jcode-* test/diag debris.
   # Retention: 3d for builds/logs/baks/scratch/quarantine//tmp debris, 30d for
-  # full session files; the active build version is never deleted, and the
-  # shared /tmp/jcode-ws-target build cache is always kept.
+  # full session files; any build version referenced by the server symlink, the
+  # CLI launcher (builds/current), or a channel marker is never deleted, and
+  # the shared /tmp/jcode-ws-target build cache is always kept.
   systemd.user.services.jcode-gc = {
     Unit = {
       Description = "Prune accumulated ~/.jcode artifacts (old builds, logs, session baks, scratch)";

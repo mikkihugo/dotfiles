@@ -803,8 +803,16 @@ test("Home Manager modules keep single ownership of every managed path and bin n
   // Sentinel: the scanner also reaches a `++ lib.optionals … [ … ]` segment.
   // Without this, an arch-guarded package is invisible to the bin-ownership
   // assertions below and a duplicate bin there would ship unnoticed.
+  //
+  // WEAKENED 2026-09-20: this used to point at `llm-pkgs.codex`, the only
+  // arch-guarded (`x86_64-linux`) entry. Codex is now npm-managed only, so the
+  // sole remaining `++ lib.optionals` segment is the !isSwarmDevbox one — the
+  // same entry the multi-line sentinel above already covers. The assertion
+  // still proves what it claims (the scanner reaches optionals segments) but is
+  // no longer independent of the sentinel above. Repoint it at the next
+  // genuinely arch- or host-guarded package that lands.
   assert.ok(
-    listedVariables.has("llm-pkgs.codex"),
+    listedVariables.has("jcodeGatewayWrapper"),
     "packages scan no longer sees ++ lib.optionals package segments",
   );
 

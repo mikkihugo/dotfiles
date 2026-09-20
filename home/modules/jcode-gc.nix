@@ -7,15 +7,25 @@
     # prune the rest after 3 days. CI prunes to 10 on deploy, but run GC as a
     # safety net for local builds ---
     #
-    # FOUR things reference builds/versions, not one. Guarding only the server
+    # MANY things reference builds/versions, not one. Guarding only the server
     # symlink deleted the dirs behind the CLI launcher and all three channel
     # markers (dotfiles#49): the server stayed healthy precisely because it was
     # the single protected path. readlink -f still yields the intended target
     # for an already-dangling link, which is what we want -- a broken reference
     # must not make its target eligible for deletion.
+    #
+    # Enumerate channel dirs by glob rather than by name. builds/ holds one
+    # directory per channel (current, stable, ...), each with a jcode symlink,
+    # and jcode's auto-deploy pins them independently -- so a hardcoded list
+    # goes stale the moment a channel is added. That is the same mistake one
+    # layer down: the first fix named current and missed stable.
     protected="$(
-        for ref in "$J/server/jcode" "$J/builds/current/jcode"; do
-            ${pkgs.coreutils}/bin/readlink -f "$ref" 2>/dev/null || true
+        ${pkgs.coreutils}/bin/readlink -f "$J/server/jcode" 2>/dev/null || true
+        for channel in "$J"/builds/*/; do
+            case "$(${pkgs.coreutils}/bin/basename "$channel")" in
+                versions) continue ;;
+            esac
+            ${pkgs.coreutils}/bin/readlink -f "$channel/jcode" 2>/dev/null || true
         done
         for marker in current-version stable-version shared-server-version; do
             marker_version="$(${pkgs.coreutils}/bin/cat "$J/builds/$marker" 2>/dev/null || true)"

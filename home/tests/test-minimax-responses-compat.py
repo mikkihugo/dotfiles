@@ -99,6 +99,39 @@ class ResponsesCompatTests(unittest.TestCase):
         self.assertEqual(calls, ["grok-replay-call-0", "same", "same-2"])
         self.assertEqual(outputs, calls)
 
+    def test_strips_reasoning_items_from_nonstream_output(self):
+        compat = load_module()
+        payload = {
+            "id": "resp_x",
+            "output": [
+                {"type": "reasoning", "summary": [], "content": [{"type": "reasoning_text", "text": "thinking"}]},
+                {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "answer"}]},
+            ],
+        }
+        normalized = compat.strip_minimax_reasoning_items(payload)
+        self.assertEqual([item["type"] for item in normalized["output"]], ["message"])
+
+    def test_reasoning_strip_keeps_payload_without_output(self):
+        compat = load_module()
+        payload = {"id": "resp_y", "service_tier": "standard"}
+        self.assertEqual(compat.strip_minimax_reasoning_items(payload), payload)
+
+    def test_sse_reasoning_text_events_are_dropped(self):
+        compat = load_module()
+        self.assertIsNone(
+            compat.normalize_sse_line(
+                'data: {"type": "response.reasoning_text.delta", "delta": "hmm"}\n'
+            )
+        )
+        self.assertIsNone(
+            compat.normalize_sse_line(
+                'data: {"type": "response.reasoning_text.done", "text": "done thinking"}\n'
+            )
+        )
+        kept = compat.normalize_sse_line('data: {"type": "response.output_text.delta", "delta": "hi"}\n')
+        self.assertIsNotNone(kept)
+        self.assertEqual(json.loads(kept[6:])["type"], "response.output_text.delta")
+
 
 if __name__ == "__main__":
     unittest.main()

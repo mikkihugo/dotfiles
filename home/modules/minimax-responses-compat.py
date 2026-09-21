@@ -136,6 +136,29 @@ def request_tool_metadata(value):
     ][:200]
 
 
+def strip_minimax_reasoning_items(value):
+    """Drop reasoning output items before Grok parses the payload.
+
+    MiniMax emits Responses ``reasoning`` items whose content is
+    ``{"type": "reasoning_text", "text": ...}`` with no ``signature``.  Grok's
+    strict Responses schema rejects such items with ``serialization error:
+    missing field `signature```, so any MiniMax turn that thinks fails to
+    deserialize (observed 2026-09-21: every reasoning-producing turn of the
+    leader's minimax-m3-responses profile failed; text-only turns passed).
+    MiniMax accepts multi-turn replay without the prior reasoning items, so
+    dropping them loses only the not-replayed thinking visibility.
+    """
+    if isinstance(value, dict):
+        output = value.get("output")
+        if isinstance(output, list):
+            filtered = [item for item in output if not (isinstance(item, dict) and item.get("type") == "reasoning")]
+            if len(filtered) != len(output):
+                value = dict(value)
+                value["output"] = filtered
+        return value
+    return value
+
+
 def normalize_sse_line(line):
     newline = ""
     if line.endswith("\r\n"):
@@ -156,6 +179,9 @@ def normalize_sse_line(line):
         payload = json.loads(data)
     except json.JSONDecodeError:
         return line + newline
+    event_type = payload.get("type") if isinstance(payload, dict) else None
+    if event_type in {"response.reasoning_text.delta", "response.reasoning_text.done"}:
+        return None
     return prefix + json.dumps(normalize_payload(payload), separators=(",", ":")) + newline
 
 
@@ -257,7 +283,7 @@ class Handler(BaseHTTPRequestHandler):
                     if request is not None:
                         logging.warning("rejected Responses tool metadata=%s", request_tool_metadata(request))
                 try:
-                    raw = json.dumps(normalize_payload(json.loads(raw))).encode()
+                    raw = json.dumps(strip_minimax_reasoning_items(normalize_payload(json.loads(raw)))).encode()
                 except (UnicodeDecodeError, json.JSONDecodeError):
                     pass
                 self.send_header("Content-Length", str(len(raw)))
@@ -283,9 +309,14 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 pending = ""
             for line in lines:
-                self.write_chunk(normalize_sse_line(line).encode())
+                normalized = normalize_sse_line(line)
+                if normalized is None:
+                    continue
+                self.write_chunk(normalized.encode())
         if pending:
-            self.write_chunk(normalize_sse_line(pending).encode())
+            normalized = normalize_sse_line(pending)
+            if normalized is not None:
+                self.write_chunk(normalized.encode())
         self.wfile.write(b"0\r\n\r\n")
         self.wfile.flush()
 

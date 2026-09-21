@@ -93,7 +93,7 @@ _direnv_cleanup() {
 	unset -f _direnv_take_slot _direnv_await_cache 2>/dev/null || true
 	unset -f _direnv_restore_caller_path 2>/dev/null || true
 	unset -f _direnv_skip_enter _direnv_cleanup _direnv_envrc_root \
-		_direnv_cache_key _direnv_eval_hit _direnv_fill_cache \
+		_direnv_cache_key _direnv_store_paths_exist _direnv_eval_hit _direnv_fill_cache \
 		_direnv_prune_dead_dumps _direnv_do_enter 2>/dev/null || true
 }
 
@@ -199,9 +199,27 @@ _direnv_cache_key() {
 	} | sha256sum
 }
 
+_direnv_store_paths_exist() {
+	_direnv_store_paths=$(rg -o '/nix/store/[[:alnum:].+_-]+' "$1" 2>/dev/null || true)
+	while IFS= read -r _direnv_store_path; do
+		[ -z "$_direnv_store_path" ] || [ -e "$_direnv_store_path" ] || {
+			unset _direnv_store_paths _direnv_store_path
+			return 1
+		}
+	done <<EOF
+$_direnv_store_paths
+EOF
+	unset _direnv_store_paths _direnv_store_path
+	return 0
+}
+
 _direnv_eval_hit() {
 	_direnv_file="${_direnv_cache_dir}/${_direnv_key}.bash"
 	[ -s "$_direnv_file" ] || return 1
+	_direnv_store_paths_exist "$_direnv_file" || {
+		rm -f -- "$_direnv_file"
+		return 1
+	}
 	IFS= read -r _direnv_hdr <"$_direnv_file" || true
 	case "$_direnv_hdr" in
 	"# agent-direnv-envrc-root:"*)

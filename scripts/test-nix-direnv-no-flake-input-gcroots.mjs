@@ -25,3 +25,18 @@ test("nix-direnv overlay does not GC-root flake archive inputs", async () => {
     "patch must not re-add per-input gcroots",
   );
 });
+
+test("agent direnv cache rejects exports with deleted Nix store paths", async () => {
+  const exporter = await read("shell/bash/direnv-export.sh");
+
+  assert.match(
+    exporter,
+    /_direnv_store_paths_exist\(\)/,
+    "the cached export needs a store-path validity predicate",
+  );
+  assert.match(
+    exporter,
+    /_direnv_store_paths_exist "\$_direnv_file" \|\| \{[\s\S]*rm -f -- "\$_direnv_file"/,
+    "a missing cached store path must evict the dump before it is sourced",
+  );
+});

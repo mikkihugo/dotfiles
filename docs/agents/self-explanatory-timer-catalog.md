@@ -36,7 +36,8 @@ question without leaving the terminal.
 | `engine-workspace-reconcile.timer` | 24h | engine | workspace | reconcile | Reconciles `engine-git-bind-mount` and lane registry rows; closes the `engine-workspace-reconcile` sweep cycle |
 | `purpose-first-audit.timer` | 24h | purpose-first | (drift) | audit | Audits every repo's `.purpose/lock.json` against the live managed block and reports drift |
 | `jcode-gc.timer` | 24h | jcode | (build artifacts) | gc | Garbage-collects jcode session/build artifacts |
-| `nix-gc-sweep.timer` | 24h | nix | gc roots | sweep | Sweeps the Nix store GC roots that the devbox no longer needs |
+| `nix-gc-sweep.timer` | 24h | nix | gc roots | sweep | Prunes nix-direnv gc roots, `nix-collect-garbage --delete-older-than 1d`, then `nix-gc-reprovision` (direnv warm for Engine/jcode/`/srv/infra` + `se_repo_vcs_bin.sh` on Engine) |
+| `nix-gc-reprovision.service` | (OnSuccess) | nix | dev shells | reprovision | Standalone warm step; also runs after `nix-gc.service` and at end of `nix-gc-sweep` |
 | `systemd-tmpfiles-clean.timer` | 24h | systemd | tmpfiles | clean | Runs `systemd-tmpfiles --clean` for `/tmp` age-out |
 | `mise-auto-update.timer` | 24h | mise | (toolchain) | auto-update | Refreshes `mise` runtime shims to the latest pinned toolchain |
 | `long-term-cleanup.timer` | weekly (Sun 04:00) | nix | long-term cache | cleanup | Weekly Nix-managed long-term cache cleanup (Sunday 04:00) |

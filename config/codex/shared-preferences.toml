@@ -2,7 +2,8 @@
 # Update from a machine with: codex-preferences save
 # Applied to each machine by Home Manager activation.
 
-model = "gpt-5.6-terra"
+# Operator 2026-09-22: default to Luna Reserve (gpt-reserve); terra/sol only when a task needs them.
+model = "gpt-reserve"
 model_provider = "openai"
 model_reasoning_effort = "medium"
 developer_instructions = """

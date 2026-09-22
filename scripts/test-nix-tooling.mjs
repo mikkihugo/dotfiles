@@ -116,6 +116,20 @@ test("home emergency backup ssh command keeps long uploads alive on Hetzner Stor
     /sshCommand\s*=\s*"[^"]*-o\s+ServerAliveInterval/m,
   );
 });
+test("home emergency backup ssh command never shares an ssh connection with sibling jobs", async () => {
+  const emergencyBackup = await source("home/modules/home-emergency-backup.nix");
+  // home-emergency-backup-* and hot-source-* use this sshCommand against the
+  // same Storage Box accounts, and ~/.ssh/config's `Host *` enables
+  // ControlMaster auto + ControlPersist. A shared master lets one job's exit
+  // tear down the sibling's session: fsn1 failed 13/13 runs 2026-09-11 →
+  // 2026-09-22 with "Connection closed by remote host", each within 0-134s of
+  // a same-account hot-source cycle boundary.
+  assert.match(
+    emergencyBackup,
+    /sshCommand\s*=\s*"[^"]*-o\s+ControlMaster=no[^"]*-o\s+ControlPath=none/m,
+    "sshCommand must disable ssh connection sharing (ControlMaster=no, ControlPath=none)",
+  );
+});
 
 
 test("borgmatic hot-source backup replaces mutating git snapshots safely", async () => {

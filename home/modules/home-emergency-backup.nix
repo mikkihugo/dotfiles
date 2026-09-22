@@ -15,7 +15,7 @@
     else shortHost;
   homeDir = "/home/mhugo";
   keyPath = "${homeDir}/.ssh/storagebox-backup";
-  sshCommand = "${pkgs.openssh}/bin/ssh -i ${keyPath} -p 23 -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4";
+  sshCommand = "${pkgs.openssh}/bin/ssh -i ${keyPath} -p 23 -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ControlMaster=no -o ControlPath=none -o ControlPersist=no";
   hotSourcePassphrasePath = config.sops.secrets.borg_hot_source_passphrase.path;
   commonConfig = {
     source_directories = [homeDir];

@@ -1,0 +1,28 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-09-23-purpose-backbone-evidence",
+  "workspec_id": "2026-09-23-purpose-backbone-work",
+  "purpose_contract_id": "2026-09-23-purpose-backbone-purpose",
+  "workflow_run_id": "codex-ergosphere-purpose-backbone-20260923",
+  "execution": {
+    "execution_id": "2026-09-23-purpose-backbone-execution",
+    "tool": {"id": "purpose-backbone-contract-and-dotfiles-check", "version": "2026-09-23"},
+    "artifacts": [
+      {"artifact_id": "red-proof", "uri": "evidence/red-proof.txt"},
+      {"artifact_id": "green-proof", "uri": "evidence/green-proof.txt"},
+      {"artifact_id": "changed-files", "uri": "evidence/changed-files.json"}
+    ]
+  },
+  "trace": {"trace_id": "2026-09-23-purpose-backbone-trace", "started_at": "2026-09-23T03:05:30Z", "completed_at": "2026-09-23T03:17:57Z"},
+  "tests": [
+    {"id": "T1", "requirement_id": "R1", "status": "passed", "description": "Focused contract proof failed before implementation and passed after implementation.", "red_proof": {"artifact_id": "red-proof", "output_uri": "evidence/red-proof.txt"}, "green_proof": {"artifact_id": "green-proof", "output_uri": "evidence/green-proof.txt"}}
+  ],
+  "gates": [
+    {"gate_id": "dotfiles-repo-check", "kind": "quality", "status": "passed", "artifact_id": "green-proof", "observed_at": "2026-09-23T03:17:57Z"},
+    {"gate_id": "purpose-tool-validation", "kind": "schema", "status": "not-run", "rationale": "MCP validator refused the client worktree as outside its allowed roots; local JSON parsing and executable gates were run instead."}
+  ],
+  "runtime": {"status": "verified-build-only", "changed_file_manifest": {"source": "repository-vcs-facade", "artifact_id": "changed-files", "uri": "evidence/changed-files.json"}},
+  "falsifier": {"executed": true, "status": "passed", "evidence": "The focused contract test rejects missing overlay/deprecated routing on baseline and passes after implementation; Nix activation build and full repository check also pass.", "output_uri": "evidence/green-proof.txt"},
+  "reviews": [{"reviewer": "redteam job job-c0fd6352-87e0-4e3c-9926-5b64f5a650df", "status": "pending-at-capture", "falsifier": "Any stored redteam finding contradicting canonical source, activation rendering, routing, or proof would block land."}],
+  "contract_preserved": {"status": true, "scope_drift": false, "requirement_drift": false}
+}

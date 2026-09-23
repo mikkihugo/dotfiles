@@ -1,0 +1,42 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-09-23-purpose-backbone-work",
+  "purpose_contract_id": "2026-09-23-purpose-backbone-purpose",
+  "handover": {"state": "proposed", "producer": {"kind": "agent", "id": "codex-ergosphere"}},
+  "feature_tree_target": {"kind": "client-backbone", "name": "purpose-backbone-20260923", "status": "planned"},
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "WHEN Home Manager activates the managed agent clients, THE system SHALL derive the jcode prompt overlay and Codex developer instructions from one canonical Purpose doctrine and SHALL omit the deprecated umans route.",
+        "acceptance_criteria": ["Focused contract test passes after failing before implementation", "Nix module installs .jcode/prompt-overlay.md from canonical source plus mindset", "Codex preference application canonicalizes developer_instructions", "swarm-prompt.md contains no umans route"],
+        "requirement_form": {"ears": {"pattern": "event-driven", "system": "dotfiles managed agent clients", "trigger": "Home Manager activation renders client instruction surfaces", "response": "render the canonical doctrine into Codex and jcode and apply current routing policy"}},
+        "breaker": {"breaker_id": "B1", "condition": "canonical text is missing from a client projection or deprecated routing remains", "witness_kind": "contract-test", "expected": "rejected"},
+        "risk": "medium", "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "WHEN Home Manager activates the managed agent clients, THE system SHALL derive the jcode prompt overlay and Codex developer instructions from one canonical Purpose doctrine and SHALL omit the deprecated umans route.",
+      "acceptance_criteria": ["Focused contract test passes after failing before implementation", "Nix module installs .jcode/prompt-overlay.md from canonical source plus mindset", "Codex preference application canonicalizes developer_instructions", "swarm-prompt.md contains no umans route"],
+      "requirement_form": {"ears": {"pattern": "event-driven", "system": "dotfiles managed agent clients", "trigger": "Home Manager activation renders client instruction surfaces", "response": "render the canonical doctrine into Codex and jcode and apply current routing policy"}},
+      "breaker": {"breaker_id": "B1", "condition": "canonical text is missing from a client projection or deprecated routing remains", "witness_kind": "contract-test", "expected": "rejected"},
+      "risk": "medium", "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": ["config/agents/purpose-backbone.md", "config/codex/config.toml", "config/codex/shared-preferences.toml", "config/jcode/swarm-prompt.md", "home/modules/jcode-providers.nix", "scripts/codex-preferences", "scripts/test-purpose-backbone.py", "scripts/test-codex-preferences.py", "scripts/test-nix-tooling.mjs", "scripts/repo-check.sh", "docs/work/2026-09-23-purpose-backbone/**"],
+    "blocked": ["secrets/**", "/home/mhugo/.codex/**", "/home/mhugo/.jcode/**", "/home/mhugo/code/**"],
+    "expected_files": ["config/agents/purpose-backbone.md", "scripts/test-purpose-backbone.py", "docs/work/2026-09-23-purpose-backbone/purpose.contract.json", "docs/work/2026-09-23-purpose-backbone/work.spec.json"]
+  },
+  "test_plan": [{"id": "T1", "requirement_id": "R1", "kind": "contract", "description": "Focused purpose-backbone test rejects the baseline and passes after implementation.", "must_fail_first": true}],
+  "verification_plan": {"commands": ["python3 scripts/test-purpose-backbone.py", "python3 scripts/test-codex-preferences.py", "node --test scripts/test-nix-tooling.mjs", "repo check", "nix build --no-link path:.#homeConfigurations.<profile>.activationPackage"], "evidence_required": ["red", "test", "quality", "falsifier"]},
+  "run_control": {"autonomous_allowed": true, "approval_required": false, "max_doubt_to_proceed": 1},
+  "traceability": {"owner": {"kind": "agent", "id": "codex-ergosphere"}, "agent_role": "implementer", "source_node_id": "purpose-backbone-20260923", "target_planes": ["client", "tool"], "dependencies": [], "retry_policy": {"max_attempts": 1, "backoff": "none", "retryable_terminal_reasons": []}, "dispatch_scope": {"kind": "local"}},
+  "execution_constraints": {"required_capabilities": [], "requested_isolation": "worktree", "side_effect_policy": "fenced", "expected_artifact_schemas": ["purpose-contract/v2", "workspec/v4", "evidence.bundle/v1"], "deterministic_replay_required": true}
+}

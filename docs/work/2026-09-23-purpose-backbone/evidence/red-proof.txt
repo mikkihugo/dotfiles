@@ -1,0 +1,6 @@
+Command: python3 scripts/test-purpose-backbone.py
+Observed exit: 1
+Observed failures before implementation:
+- canonical_doctrine_is_in_codex_and_overlay_projection: jcode-providers.nix lacked canonical overlay wiring
+- swarm_prompt_has_current_routes_and_no_umans: swarm-prompt.md contained the deprecated Umans route
+This is the required RED witness for R1.

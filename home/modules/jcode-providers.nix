@@ -8,6 +8,20 @@
 }: let
   homeDir = config.home.homeDirectory;
   providerDir = "${homeDir}/.config/jcode";
+  purposeBackbone = builtins.readFile ../../config/agents/purpose-backbone.md;
+  purposeOverlay =
+    purposeBackbone
+    + ''
+
+      ## Operating mindset
+
+      - Act, don't ask, on approved or mechanically specified work. Ask only for intent, destructive actions, or outward authorization.
+      - Verify live state before claiming, and never relay an unverified status.
+      - Before non-trivial code, research with 2-4 parallel subagents holding different views, plus one adversarial reviewer that tries to refute, using web search and DeepWiki where available.
+      - State the model and effort on every spawn; use the least-cost capable model. Use strong models only for adversarial review or doubt >= 2.
+      - Use facade-only VCS; a refusal means stop. Never read secrets from config files. Never invent identity.
+      - Done means delivered to main with evidence, not "completed".
+    '';
   configureJcodeProviders = pkgs.writeShellApplication {
     name = "configure-jcode-providers";
     runtimeInputs = [pkgs.coreutils pkgs.python3];
@@ -92,6 +106,11 @@ in {
   home.file.".jcode/swarm-prompt.md" = {
     force = true;
     source = ../../config/jcode/swarm-prompt.md;
+  };
+
+  home.file.".jcode/prompt-overlay.md" = {
+    force = true;
+    text = purposeOverlay;
   };
 
   # J-Code keeps UI, keybinding, hook, and safety state in mutable config.toml.

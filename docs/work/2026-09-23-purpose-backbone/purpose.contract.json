@@ -1,0 +1,49 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-23-purpose-backbone-purpose",
+  "source": {
+    "system": "operator decision",
+    "repository": ".dotfiles",
+    "request_id": "purpose-backbone-20260923"
+  },
+  "lineage": {
+    "origin": {"kind": "operator-decision", "id": "2026-09-23-purpose-in-backbone"},
+    "objective": {
+      "id": "2026-09-23-purpose-backbone-objective",
+      "statement": "Put the Purpose/ADR-0000 doctrine and operating mindset in every managed agent backbone while keeping one canonical doctrine source.",
+      "measure": "Focused contract proof verifies canonical-text inclusion in Codex and the installed jcode overlay, and rejects deprecated umans routing."
+    },
+    "need": {
+      "id": "2026-09-23-purpose-backbone-need",
+      "statement": "jcode receives routing-only swarm instructions and no Purpose backbone, while its route still names deprecated Umans models.",
+      "stakeholders": ["jcode coordinators and workers", "Codex sessions", "operator"],
+      "baseline": "config/agents/purpose-backbone.md and ~/.jcode/prompt-overlay.md are absent; config/jcode/swarm-prompt.md contains the Umans route.",
+      "consequence_of_no_action": "jcode agents can run without the shared doctrine and can select a deprecated provider route.",
+      "assumptions": [],
+      "alternatives_considered": ["Maintain separate client-specific doctrine copies", "Install a static overlay unrelated to the Codex source"]
+    }
+  },
+  "admission": {"state": "proposed", "producer": {"kind": "agent", "id": "codex-ergosphere"}},
+  "purpose": "Give Codex and jcode the same Purpose/ADR-0000 doctrine from one durable source.",
+  "consumer": "jcode coordinators and workers, Codex sessions, and the operator.",
+  "contract": "The canonical doctrine file is the source for Codex developer_instructions and the Home Manager-installed jcode prompt overlay; the overlay also carries the specified operating mindset; the swarm prompt routes only through current Kimi/MiniMax/Ollama policy and contains no umans route.",
+  "failureBoundary": "Do not edit live home projections, run home-manager switch, read secrets, alter unrelated provider credentials, or change the Codex doctrine text except for the explicit canonical-source wiring and requested mindset/routing extension.",
+  "evidence": [
+    {"kind": "test", "description": "python3 scripts/test-purpose-backbone.py proves RED/GREEN canonical inclusion, overlay generation wiring, and no umans route."},
+    {"kind": "test", "description": "python3 scripts/test-codex-preferences.py and node --test scripts/test-nix-tooling.mjs prove regressions remain green."},
+    {"kind": "command", "description": "nix build --no-link path:.#homeConfigurations.<profile>.activationPackage evaluates the Home Manager configuration."}
+  ],
+  "falsifier": {
+    "claim": "A Home Manager activation can install a jcode overlay containing the canonical doctrine while Codex continues to use the same doctrine and deprecated umans routing is absent.",
+    "executable_check": {"kind": "test", "command": "python3 scripts/test-purpose-backbone.py", "expected": "non-zero before implementation; zero after implementation"}
+  },
+  "nonGoals": ["Run home-manager switch", "Change live ~/.codex or ~/.jcode files", "Modify secrets or provider credentials", "Change Claude or infrastructure repositories"],
+  "invariants": ["Codex developer_instructions retain the existing doctrine text byte-for-byte", "Canonical doctrine has one tracked source", "Home Manager owns ~/.jcode/prompt-overlay.md", "Umans is not a routing option"],
+  "assumptions": [
+    {"statement": "Home Manager Nix evaluation can read the tracked canonical Markdown file with builtins.readFile.", "status": "inferred", "doubt": 1, "falsifier": "The declared home configuration fails Nix evaluation because the path cannot be read."},
+    {"statement": "The dotfiles facade's worktree-create command is the current equivalent of the requested workspace-create command.", "status": "verified", "doubt": 0, "falsifier": "Live facade help exposes a workspace-create command and rejects worktree-create."}
+  ],
+  "run_control": {"autonomous_allowed": true, "risk": "medium", "blast_radius": "managed instruction and provider-routing surfaces", "reversibility": "easy", "max_active_doubt": 1},
+  "target_planes": ["client", "tool"],
+  "plane_constraints": ["Canonical doctrine lives in dotfiles; generated projections remain Home Manager/Codex-managed."]
+}

@@ -8,8 +8,8 @@ Autonomous swarm policy:
 
 - Before dispatch, run `swarm list_models` and inspect the current swarm. Pass an
   explicit `model` on every spawn; never inherit a coordinator route accidentally.
-- Coordinate primarily with
-  `llm-gateway:umans-ai-coding-plan/umans-glm-5.2`.
+- Coordinate with direct `kimi:k3` or `ollama-cloud:glm-5.2`; never use a
+  deprecated provider route.
 - Treat one exact jj workspace root as one mutable coordination domain. A shared
   `.jj/repo` store does not grant ownership of sibling workspaces.
 - Allow exactly one live root coordinator per exact workspace. Keep all spawned
@@ -19,12 +19,10 @@ Autonomous swarm policy:
 
 Worker routing and capacity:
 
-- Dispatch available Umans coding-plan models first, up to 4 weighted
-  concurrent units. GLM/Coder/K2.7 workers cost 1 unit; small Qwen or Flash
-  workers cost 0.5. Unknown Umans models cost 1. Treat Umans usage as
-  unmetered; enforce concurrency, not a quota cooldown.
-- Use `llm-gateway:umans-ai-coding-plan/umans-kimi-k2.7` for tasks that
-  benefit from K2.7 reasoning. Never exceed 2 concurrent K2.7 workers.
+- Use direct `minimax:MiniMax-M3` as the bounded worker workhorse, up to 7
+  concurrent workers. Use direct `kimi:k3` for exploration, difficult
+  implementation, debugging, and independent synthesis. Use direct
+  `ollama-cloud:glm-5.2` for coordinator work when K3 is unavailable.
 - Prefer direct `kimi:k3` for code exploration, difficult implementation,
   debugging, and independent synthesis.
 - Prefer direct `minimax:MiniMax-M3` for bounded implementation,
@@ -46,9 +44,9 @@ Quota and failure handling:
   retry during the open circuit, and never invent a fixed reset window.
 - For Kimi, use observed provider errors and documented reset signals only.
   Do not invent or guess a subscription quota endpoint.
-- If the Umans GLM route fails while the root process is live, switch that same
-  root session to direct `kimi:k3`, preserve the plan and exact-workspace
-  identity, and resend once. Do not spawn a second coordinator.
+- If the coordinator route fails while the root process is live, switch that
+  same root session to the other approved direct route, preserve the plan and
+  exact-workspace identity, and resend once. Do not spawn a second coordinator.
 - If the root process is dead, permit K3 takeover only after process/socket
   liveness proves the old owner is gone and releases the coordinator slot.
 - Do not preempt a live K3 coordinator when GLM recovers. Hand back only at a

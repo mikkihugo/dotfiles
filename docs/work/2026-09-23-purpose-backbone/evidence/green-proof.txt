@@ -1,0 +1,8 @@
+Focused proof:
+- python3 scripts/test-purpose-backbone.py — exit 0, 3 tests OK
+- python3 scripts/test-codex-preferences.py — exit 0, 11 tests OK
+- node --test scripts/test-nix-tooling.mjs — exit 0, 24 passed, 0 failed
+- nix build --no-link path:/home/mhugo/.dotfiles-worktrees/purpose-backbone-20260923#homeConfigurations.cc-se-sto-devbox-01.activationPackage — exit 0
+- built generation inspection — `.jcode/prompt-overlay.md` exists; Iron law count 1; Operating mindset count 1; generated swarm prompt umans count 0
+- facade check nix — dotfiles exact-root Nix environment: ok
+- final facade check — exit 0; full gate 98 passed, 1 skipped, 0 failed, separate NixOS test 1 passed

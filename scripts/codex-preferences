@@ -62,6 +62,16 @@ def load_toml(path: Path) -> dict:
         return tomllib.load(f)
 
 
+def managed_source_data(source: Path, backbone: str | None = None) -> dict:
+    """Use the tracked Purpose backbone for managed Codex instructions."""
+    data = load_toml(source)
+    canonical = Path(backbone).expanduser() if backbone else source.parent.parent / "agents" / "purpose-backbone.md"
+    if canonical.is_file():
+        data = dict(data)
+        data["developer_instructions"] = canonical.read_text()
+    return data
+
+
 def section_data(data: dict, section: str) -> dict:
     """Resolve a TOML section name without flattening unrelated sections."""
     value = data
@@ -111,7 +121,7 @@ def render_agent_section(name: str, values: dict) -> list[str]:
 def save(args) -> None:
     source = Path(args.source).expanduser()
     target = Path(args.target).expanduser()
-    data = load_toml(source)
+    data = managed_source_data(source, args.backbone)
     target_data = load_toml(target)
     prefs = {key: data[key] for key in SHARED_KEYS if key in data}
     agent_prefs = shared_agent_preferences(target_data)
@@ -150,8 +160,8 @@ def save(args) -> None:
 def apply(args) -> None:
     source = Path(args.source).expanduser()
     target = Path(args.target).expanduser()
-    prefs = {key: value for key, value in load_toml(source).items() if key in SHARED_KEYS}
-    source_data = load_toml(source)
+    source_data = managed_source_data(source, args.backbone)
+    prefs = {key: value for key, value in source_data.items() if key in SHARED_KEYS}
     target_data = load_toml(target)
     section_prefs = {}
     for section, keys in APPLY_SECTION_KEYS.items():
@@ -255,11 +265,13 @@ def main() -> None:
     save_parser = sub.add_parser("save", help="copy whitelisted preferences from live Codex config to dotfiles")
     save_parser.add_argument("--source", default=str(default_live))
     save_parser.add_argument("--target", default=str(default_shared))
+    save_parser.add_argument("--backbone", default=str(home / ".dotfiles/config/agents/purpose-backbone.md"))
     save_parser.set_defaults(func=save)
 
     apply_parser = sub.add_parser("apply", help="apply shared dotfiles preferences to live Codex config")
     apply_parser.add_argument("--source", default=str(default_shared))
     apply_parser.add_argument("--target", default=str(default_live))
+    apply_parser.add_argument("--backbone", default=str(home / ".dotfiles/config/agents/purpose-backbone.md"))
     apply_parser.set_defaults(func=apply)
 
     args = parser.parse_args()

@@ -132,7 +132,8 @@ in {
 
     applySharedCodexPreferences = lib.hm.dag.entryAfter ["seedMutableCodexConfig"] ''
       ${pkgs.python3}/bin/python3 "${../../scripts/codex-preferences}" apply \
-        --source "${../../config/codex/shared-preferences.toml}"
+        --source "${../../config/codex/shared-preferences.toml}" \
+        --backbone "${../../config/agents/purpose-backbone.md}"
       chmod 600 "$HOME/.codex/config.toml"
     '';
 

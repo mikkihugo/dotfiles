@@ -203,6 +203,21 @@
     keep_daily = 14;
     keep_weekly = 8;
     keep_monthly = 12;
+    # Hot-source has no database hooks, so borgmatic's unconditional
+    # pre-create validation pass (borgmatic/borg/create.py
+    # validate_planned_backup_paths -> "borg create --dry-run --list",
+    # meant only to confirm the runtime hook directory survives excludes)
+    # buys nothing here. On these large trees (code/, /srv/infra) it
+    # re-walks the whole source set a second time before the real create
+    # even starts: observed 2026-09-24 as a ~21min gap between borgmatic's
+    # "Creating archive" log line and borg's own "Creating archive at ..."
+    # banner in one hot-source-hel1 cycle, and a separate ~53min gap
+    # (service start to the real `borg create` process appearing in ps) in
+    # another. That is most of the 60min RuntimeMaxSec budget spent before
+    # the real create even begins, which is why every observed cycle ended
+    # "Failed with result 'timeout'" (journalctl --user -u
+    # hot-source-hel1.service). Skip the redundant pass.
+    unsafe_skip_path_validation_before_create = true;
   };
   hotConfigPath = name: "${homeDir}/.config/borgmatic.d/hot-source-${name}.yaml";
   hotSourceRunner = name:
@@ -344,7 +359,19 @@ in
             ExecStartPre = "${restoreKeyPackage}/bin/storagebox-backup-key-restore";
             ExecStart = "${hotSourceRunner name}";
             SuccessExitStatus = [75];
-            RuntimeMaxSec = "60min";
+            # Was 60min: even with the pre-create validation walk removed
+            # (unsafe_skip_path_validation_before_create above), the first
+            # cold-cache "create" of these large trees observed 2026-09-24
+            # still ran 36+ min before hitting the old ceiling without
+            # finishing, so create/prune/compact has apparently never
+            # completed once. hotSourceRunner's flock is shared by both
+            # hel1 and fsn1 (same lock path for both), so a longer ceiling
+            # means whichever target is running can hold that shared lock,
+            # and so starve the other, for longer -- that tradeoff is
+            # accepted here because the starvation only ends once some
+            # create finally completes and seeds the chunk cache, after
+            # which subsequent incremental creates should be far faster.
+            RuntimeMaxSec = "115min";
             Nice = 19;
             IOSchedulingClass = "idle";
             CPUWeight = 10;

@@ -41,8 +41,14 @@ class CodexPreferencesTest(unittest.TestCase):
                 'config_file = "keep-user-specialist.toml"\n'
             )
 
+            # Hermetic: --backbone otherwise defaults to the host's
+            # ~/.dotfiles/config/agents/purpose-backbone.md and replaces the
+            # fixture instructions (backbone behaviour: test-purpose-backbone.py).
             subprocess.run(
-                [str(SCRIPT), "apply", "--source", str(shared), "--target", str(live)],
+                [
+                    str(SCRIPT), "apply", "--source", str(shared), "--target", str(live),
+                    "--backbone", str(Path(tmp) / "no-backbone.md"),
+                ],
                 check=True,
             )
 

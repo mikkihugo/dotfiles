@@ -67,15 +67,20 @@
     '')
     mold # linker selected via -fuse-ld=mold
     cmake # native dependency builds (llama-cpp-sys and similar -sys crates)
-    # agentgrep (github.com/tony/agentgrep): read-only cross-client search of
-    # local agent traces (Claude/Codex/Cursor/Grok/Kimi...), used to answer
-    # "which agent session touched this branch/path". CLI only: the MCP form
-    # confused Grok, and ccgw runs in-cluster so it cannot read devbox traces.
-    # The clean env avoids the profile python3's pydantic shadowing uvx's
-    # bundled one (ModuleNotFoundError pydantic_core._pydantic_core).
+    # agentgrep (github.com/tony/agentgrep, PyPI): read-only search of local
+    # agent HISTORY (prompts, transcripts, tool output) across clients. Not the
+    # same tool as 1jehuang/agentgrep, which jcode links as a Rust crate for
+    # CODE search (crates/jcode-app-core/Cargo.toml) and which never shells out
+    # to this binary. Upstream 0.1.0a52 has no Kimi Code / Qoder / jcode stores;
+    # ./agentgrep/ carries a local-only wheel built from 0.1.0a52 plus
+    # agentgrep-local-stores.patch (operator decision 2026-09-24: no upstream PR).
+    # Tool-output hits need `--scope conversations`. Needs Python >= 3.14 (uv
+    # provisions it). CLI only: the MCP form confused Grok, and ccgw runs
+    # in-cluster so it cannot read devbox traces. The clean env avoids the
+    # profile python3's pydantic shadowing uvx's bundled one.
     (writeShellScriptBin "agentgrep" ''
       exec env -i HOME="$HOME" PATH="$PATH" TERM="''${TERM:-dumb}" \
-        ${uv}/bin/uvx --no-config agentgrep==0.1.0a52 "$@"
+        ${uv}/bin/uvx --no-config --from ${./agentgrep}/agentgrep-0.1.0a52-py3-none-any.whl agentgrep "$@"
     '')
     # Daily python3 is nixpkgs, not mise. Linked against its own bzip2/lzma
     # closure so `import bz2` works without nix-ld search-path hacks.

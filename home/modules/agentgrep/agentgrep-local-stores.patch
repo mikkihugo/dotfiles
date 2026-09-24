@@ -1,0 +1,1602 @@
+diff -ruN '--exclude=__pycache__' a/agentgrep/__init__.py b/agentgrep/__init__.py
+--- a/agentgrep/__init__.py	2026-09-24 19:04:04.363402495 +0000
++++ b/agentgrep/__init__.py	2026-09-24 19:04:04.373402690 +0000
+@@ -185,11 +185,17 @@
+     parse_grok_session_search_db,
+     parse_grok_subagents,
+     parse_hooks_summary_file,
++    parse_jcode_prompt_history,
++    parse_jcode_session_file,
++    parse_kimi_session_transcript,
++    parse_kimi_tool_activity,
+     parse_json_summary_file,
+     parse_opencode_db,
+     parse_opencode_prompt_history,
+     parse_pi_context_mode_db,
+     parse_pi_session_file,
++    parse_qoder_conversation_history_file,
++    parse_qoder_session_file,
+     parse_text_store_file,
+     parse_toml_summary_file,
+     parse_vscode_chat_session,
+@@ -226,8 +232,11 @@
+     discover_from_catalog,
+     discover_gemini_sources,
+     discover_grok_sources,
++    discover_jcode_sources,
++    discover_kimi_code_sources,
+     discover_opencode_sources,
+     discover_pi_sources,
++    discover_qoder_sources,
+     discover_sources,
+     discover_vscode_sources,
+     format_timestamp_tig,
+@@ -771,8 +780,11 @@
+     "discover_from_catalog",
+     "discover_gemini_sources",
+     "discover_grok_sources",
++    "discover_jcode_sources",
++    "discover_kimi_code_sources",
+     "discover_opencode_sources",
+     "discover_pi_sources",
++    "discover_qoder_sources",
+     "discover_sources",
+     "discover_sources_for_search",
+     "discover_vscode_sources",
+@@ -860,12 +872,18 @@
+     "parse_grok_session_search_db",
+     "parse_grok_subagents",
+     "parse_hooks_summary_file",
++    "parse_jcode_prompt_history",
++    "parse_jcode_session_file",
++    "parse_kimi_session_transcript",
++    "parse_kimi_tool_activity",
+     "parse_json_summary_file",
+     "parse_opencode_db",
+     "parse_opencode_prompt_history",
+     "parse_output_mode",
+     "parse_pi_context_mode_db",
+     "parse_pi_session_file",
++    "parse_qoder_conversation_history_file",
++    "parse_qoder_session_file",
+     "parse_text_store_file",
+     "parse_toml_summary_file",
+     "parse_vscode_chat_session",
+diff -ruN '--exclude=__pycache__' a/agentgrep/adapters/__init__.py b/agentgrep/adapters/__init__.py
+--- a/agentgrep/adapters/__init__.py	2026-09-24 19:04:04.365402534 +0000
++++ b/agentgrep/adapters/__init__.py	2026-09-24 19:04:04.375402729 +0000
+@@ -108,6 +108,16 @@
+     parse_grok_session_search_db,
+     parse_grok_subagents,
+ )
++from agentgrep.adapters.jcode import (
++    _JCODE_PARSERS,
++    parse_jcode_prompt_history,
++    parse_jcode_session_file,
++)
++from agentgrep.adapters.kimi_code import (
++    _KIMI_CODE_PARSERS,
++    parse_kimi_session_transcript,
++    parse_kimi_tool_activity,
++)
+ from agentgrep.adapters.opencode import (
+     _OPENCODE_PARSERS,
+     parse_opencode_db,
+@@ -118,6 +128,11 @@
+     parse_pi_context_mode_db,
+     parse_pi_session_file,
+ )
++from agentgrep.adapters.qoder import (
++    _QODER_PARSERS,
++    parse_qoder_conversation_history_file,
++    parse_qoder_session_file,
++)
+ from agentgrep.adapters.vscode import (
+     _VSCODE_PARSERS,
+     _vscode_uri_to_path as _vscode_uri_to_path,
+@@ -182,11 +197,17 @@
+     "parse_grok_session_search_db",
+     "parse_grok_subagents",
+     "parse_hooks_summary_file",
++    "parse_jcode_prompt_history",
++    "parse_jcode_session_file",
++    "parse_kimi_session_transcript",
++    "parse_kimi_tool_activity",
+     "parse_json_summary_file",
+     "parse_opencode_db",
+     "parse_opencode_prompt_history",
+     "parse_pi_context_mode_db",
+     "parse_pi_session_file",
++    "parse_qoder_conversation_history_file",
++    "parse_qoder_session_file",
+     "parse_text_store_file",
+     "parse_toml_summary_file",
+     "parse_vscode_chat_session",
+@@ -204,8 +225,11 @@
+     _CURSOR_IDE_PARSERS,
+     _GEMINI_PARSERS,
+     _GROK_PARSERS,
++    _JCODE_PARSERS,
++    _KIMI_CODE_PARSERS,
+     _OPENCODE_PARSERS,
+     _PI_PARSERS,
++    _QODER_PARSERS,
+     _VSCODE_PARSERS,
+ )
+ """``adapter_id`` -> parser spec, merged from every per-agent fragment.
+diff -ruN '--exclude=__pycache__' a/agentgrep/adapters/jcode.py b/agentgrep/adapters/jcode.py
+--- a/agentgrep/adapters/jcode.py	1970-01-01 00:00:00.000000000 +0000
++++ b/agentgrep/adapters/jcode.py	2026-09-24 19:04:04.376402749 +0000
+@@ -0,0 +1,94 @@
++"""jcode swarm CLI store parsers and registry fragment."""
++
++from __future__ import annotations
++
++import collections.abc as cabc
++import typing as t
++
++from agentgrep.adapters._common import (
++    _path_like_str,
++    _record_origin,
++)
++from agentgrep.adapters._extract import (
++    build_search_record,
++    candidate_from_mapping,
++)
++from agentgrep.adapters._registry import AnyParserSpec, ParserSpec
++from agentgrep.readers import (
++    as_optional_str,
++    iter_jsonl,
++    read_json_file,
++)
++from agentgrep.records import (
++    SearchRecord,
++    SourceHandle,
++)
++
++
++def parse_jcode_prompt_history(source: SourceHandle) -> cabc.Iterator[SearchRecord]:
++    """Parse jcode's ``prompt-history.jsonl`` append-only prompt audit log.
++
++    Each line is a bare JSON string -- the prompt text -- not an object, and
++    carries no timestamp, session id, or cwd of its own.
++    """
++    for value in iter_jsonl(source.path):
++        prompt = value if isinstance(value, str) else None
++        if not prompt or not prompt.strip():
++            continue
++        yield SearchRecord(
++            kind="prompt",
++            agent=source.agent,
++            store=source.store,
++            adapter_id=source.adapter_id,
++            path=source.path,
++            text=prompt.strip(),
++            title="jcode prompt history",
++            role="user",
++        )
++
++
++def parse_jcode_session_file(source: SourceHandle) -> cabc.Iterator[SearchRecord]:
++    """Parse one jcode ``sessions/session_<word>_<epoch_ms>_<hash>.json`` (or ``.bak``) file.
++
++    The session object's own top-level ``id`` and per-message ``id`` collide
++    (both use the key ``id``), so this walks ``messages`` explicitly with the
++    session id and ``working_dir`` supplied as the message-candidate's session
++    id / origin rather than delegating to the fully-recursive
++    :func:`~agentgrep.adapters._extract.iter_message_candidates`, which has no
++    fallback parameter for session id and would otherwise pick up each
++    message's own id instead of the session's.
++    """
++    payload = read_json_file(source.path)
++    if not isinstance(payload, dict):
++        return
++    session = t.cast("dict[str, object]", payload)
++    session_id = as_optional_str(session.get("id")) or source.path.stem
++    title = as_optional_str(session.get("title"))
++    model = as_optional_str(session.get("model"))
++    origin = _record_origin(cwd=_path_like_str(session.get("working_dir")))
++    messages = session.get("messages")
++    if not isinstance(messages, list):
++        return
++    for message in t.cast("list[object]", messages):
++        if not isinstance(message, dict):
++            continue
++        candidate = candidate_from_mapping(
++            t.cast("dict[str, object]", message),
++            timestamp=None,
++            model=model,
++            session_id=session_id,
++            conversation_id=session_id,
++            origin=origin,
++        )
++        if candidate is None:
++            continue
++        if candidate.title is None:
++            candidate.title = title
++        yield build_search_record(source, candidate)
++
++
++_JCODE_PARSERS: tuple[AnyParserSpec, ...] = (
++    ParserSpec("jcode.prompt_history_jsonl.v1", parse_jcode_prompt_history),
++    ParserSpec("jcode.sessions_json.v1", parse_jcode_session_file),
++)
++"""Dispatch rows for every ``jcode.*`` adapter id."""
+diff -ruN '--exclude=__pycache__' a/agentgrep/adapters/kimi_code.py b/agentgrep/adapters/kimi_code.py
+--- a/agentgrep/adapters/kimi_code.py	1970-01-01 00:00:00.000000000 +0000
++++ b/agentgrep/adapters/kimi_code.py	2026-09-24 19:04:04.376402749 +0000
+@@ -0,0 +1,264 @@
++"""Kimi Code CLI store parsers and registry fragment."""
++
++from __future__ import annotations
++
++import collections.abc as cabc
++import datetime
++import json
++import pathlib
++import typing as t
++
++from agentgrep.adapters._common import (
++    _path_like_str,
++    _record_origin,
++)
++from agentgrep.adapters._extract import (
++    flatten_content_value,
++)
++from agentgrep.adapters._generic import (
++    parse_text_store_file,
++)
++from agentgrep.adapters._registry import AnyParserSpec, ParserSpec, StreamParserSpec
++from agentgrep.readers import (
++    _iter_jsonl,
++    as_optional_str,
++    isoformat_from_mtime_ns,
++    read_json_file,
++)
++from agentgrep.records import (
++    JSONValue,
++    RawJsonlSkipLine,
++    RecordOrigin,
++    SearchRecord,
++    SourceHandle,
++)
++
++_SESSION_DIR_DEPTH = 3
++"""``<session_dir>/agents/<agentId>/wire.jsonl`` -> 3 ``.parent`` hops to the session dir."""
++
++
++def _kimi_session_dir(path: pathlib.Path) -> pathlib.Path:
++    """Return the ``session_<uuid>`` directory owning a ``wire.jsonl`` path."""
++    return path.parents[_SESSION_DIR_DEPTH - 1]
++
++
++def _kimi_session_state(session_dir: pathlib.Path) -> dict[str, object] | None:
++    """Read the sibling ``state.json`` for one Kimi Code session, if present."""
++    payload = read_json_file(session_dir / "state.json")
++    return t.cast("dict[str, object]", payload) if isinstance(payload, dict) else None
++
++
++def _kimi_session_origin(state: dict[str, object] | None) -> RecordOrigin | None:
++    """Build the ``cwd`` origin for a Kimi Code session from its ``state.json``."""
++    if state is None:
++        return None
++    return _record_origin(cwd=_path_like_str(state.get("cwd")))
++
++
++def _kimi_session_title(state: dict[str, object] | None) -> str | None:
++    """Read the session title Kimi Code records in ``state.json``."""
++    return as_optional_str(state.get("title")) if state is not None else None
++
++
++def _kimi_events(
++    source: SourceHandle,
++    *,
++    raw_skip_line: RawJsonlSkipLine | None,
++    reverse: bool,
++) -> cabc.Iterator[JSONValue]:
++    if raw_skip_line is not None:
++        return _iter_jsonl(
++            source.path,
++            skip_line=raw_skip_line,
++            skip_line_mode="line",
++            reverse=reverse,
++        )
++    return _iter_jsonl(source.path, reverse=reverse)
++
++
++def parse_kimi_session_transcript(
++    source: SourceHandle,
++    *,
++    raw_skip_line: RawJsonlSkipLine | None = None,
++    reverse: bool = False,
++) -> cabc.Iterator[SearchRecord]:
++    """Parse the visible user/assistant transcript out of a Kimi Code ``wire.jsonl``.
++
++    Two ``wire.jsonl`` line shapes carry conversation text agentgrep treats as
++    the primary transcript: ``context.append_message`` (every user prompt,
++    including injected ``<system-reminder>`` turns -- no assistant record of
++    this shape was ever observed) and ``context.append_loop_event`` rows whose
++    ``event.type`` is ``content.part`` with ``event.part.type == "text"`` (the
++    assistant's streamed reply). Reasoning (``event.part.type == "think"``)
++    and tool traffic are read by :func:`parse_kimi_tool_activity` instead, so
++    this transcript stays free of tool payloads the way ``grok.sessions``
++    excludes reasoning summaries.
++    """
++    session_dir = _kimi_session_dir(source.path)
++    agent_id = source.path.parent.name
++    conversation_id = session_dir.name
++    state = _kimi_session_state(session_dir)
++    origin = _kimi_session_origin(state)
++    title = _kimi_session_title(state)
++    fallback_timestamp = isoformat_from_mtime_ns(source.mtime_ns)
++    for event in _kimi_events(source, raw_skip_line=raw_skip_line, reverse=reverse):
++        if not isinstance(event, dict):
++            continue
++        mapping = t.cast("dict[str, object]", event)
++        event_type = mapping.get("type")
++        timestamp = _kimi_millis_to_isoformat(mapping.get("time")) or fallback_timestamp
++        if event_type == "context.append_message":
++            message = mapping.get("message")
++            if not isinstance(message, dict):
++                continue
++            message_mapping = t.cast("dict[str, object]", message)
++            role = as_optional_str(message_mapping.get("role"))
++            text = flatten_content_value(t.cast("JSONValue | None", message_mapping.get("content")))
++            if not role or not text:
++                continue
++            yield SearchRecord(
++                kind="prompt" if role == "user" else "history",
++                agent=source.agent,
++                store=source.store,
++                adapter_id=source.adapter_id,
++                path=source.path,
++                text=text,
++                title=title,
++                role=role,
++                timestamp=timestamp,
++                session_id=conversation_id,
++                conversation_id=conversation_id,
++                origin=origin,
++                metadata={"agent_id": agent_id} if agent_id != "main" else {},
++            )
++        elif event_type == "context.append_loop_event":
++            loop_event = mapping.get("event")
++            if not isinstance(loop_event, dict):
++                continue
++            loop_mapping = t.cast("dict[str, object]", loop_event)
++            if loop_mapping.get("type") != "content.part":
++                continue
++            part = loop_mapping.get("part")
++            if not isinstance(part, dict):
++                continue
++            part_mapping = t.cast("dict[str, object]", part)
++            if part_mapping.get("type") != "text":
++                continue
++            text = as_optional_str(part_mapping.get("text"))
++            if not text:
++                continue
++            yield SearchRecord(
++                kind="history",
++                agent=source.agent,
++                store=source.store,
++                adapter_id=source.adapter_id,
++                path=source.path,
++                text=text,
++                title=title,
++                role="assistant",
++                timestamp=timestamp,
++                session_id=conversation_id,
++                conversation_id=conversation_id,
++                origin=origin,
++                metadata={"agent_id": agent_id} if agent_id != "main" else {},
++            )
++
++
++def parse_kimi_tool_activity(
++    source: SourceHandle,
++    *,
++    raw_skip_line: RawJsonlSkipLine | None = None,
++    reverse: bool = False,
++) -> cabc.Iterator[SearchRecord]:
++    """Parse tool calls, tool results, and reasoning out of a Kimi Code ``wire.jsonl``.
++
++    ``event.type == "tool.result"`` is where a live incident string (a leaked
++    IP, a suspicious hostname a shell command printed) most often first shows
++    up, since it is the raw text a command or MCP tool returned.
++    """
++    session_dir = _kimi_session_dir(source.path)
++    agent_id = source.path.parent.name
++    conversation_id = session_dir.name
++    state = _kimi_session_state(session_dir)
++    origin = _kimi_session_origin(state)
++    title = _kimi_session_title(state)
++    fallback_timestamp = isoformat_from_mtime_ns(source.mtime_ns)
++    for event in _kimi_events(source, raw_skip_line=raw_skip_line, reverse=reverse):
++        if not isinstance(event, dict):
++            continue
++        mapping = t.cast("dict[str, object]", event)
++        if mapping.get("type") != "context.append_loop_event":
++            continue
++        loop_event = mapping.get("event")
++        if not isinstance(loop_event, dict):
++            continue
++        loop_mapping = t.cast("dict[str, object]", loop_event)
++        loop_type = loop_mapping.get("type")
++        timestamp = _kimi_millis_to_isoformat(mapping.get("time")) or fallback_timestamp
++        text: str | None = None
++        role = "tool"
++        metadata: dict[str, object] = {}
++        if agent_id != "main":
++            metadata["agent_id"] = agent_id
++        if loop_type == "tool.call":
++            name = as_optional_str(loop_mapping.get("name"))
++            args = loop_mapping.get("args")
++            args_text = json.dumps(args, default=str, sort_keys=True) if args else ""
++            text = f"{name}({args_text})" if name else args_text or None
++            if name:
++                metadata["tool_name"] = name
++        elif loop_type == "tool.result":
++            result = loop_mapping.get("result")
++            if isinstance(result, dict):
++                text = as_optional_str(t.cast("dict[str, object]", result).get("output"))
++        elif loop_type == "content.part":
++            part = loop_mapping.get("part")
++            if isinstance(part, dict):
++                part_mapping = t.cast("dict[str, object]", part)
++                if part_mapping.get("type") == "think":
++                    text = as_optional_str(part_mapping.get("think"))
++                    role = "assistant"
++                    metadata["reasoning"] = True
++        if not text:
++            continue
++        call_id = as_optional_str(loop_mapping.get("toolCallId"))
++        if call_id:
++            metadata["tool_call_id"] = call_id
++        yield SearchRecord(
++            kind="history",
++            agent=source.agent,
++            store=source.store,
++            adapter_id=source.adapter_id,
++            path=source.path,
++            text=text,
++            title=title,
++            role=role,
++            timestamp=timestamp,
++            session_id=conversation_id,
++            conversation_id=conversation_id,
++            origin=origin,
++            metadata=metadata,
++        )
++
++
++def _kimi_millis_to_isoformat(value: object) -> str | None:
++    """Convert Kimi Code's unix-millisecond ``time`` field to ISO-8601 UTC."""
++    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
++        return None
++    try:
++        return (
++            datetime.datetime.fromtimestamp(value / 1000, tz=datetime.UTC)
++            .isoformat()
++            .replace("+00:00", "Z")
++        )
++    except (ValueError, OSError, OverflowError):
++        return None
++
++
++_KIMI_CODE_PARSERS: tuple[AnyParserSpec, ...] = (
++    StreamParserSpec("kimi_code.sessions_jsonl.v1", parse_kimi_session_transcript),
++    StreamParserSpec("kimi_code.tool_activity_jsonl.v1", parse_kimi_tool_activity),
++    ParserSpec("kimi_code.tool_result_text.v1", parse_text_store_file),
++    ParserSpec("kimi_code.task_output_text.v1", parse_text_store_file),
++)
++"""Dispatch rows for every ``kimi_code.*`` adapter id."""
+diff -ruN '--exclude=__pycache__' a/agentgrep/adapters/qoder.py b/agentgrep/adapters/qoder.py
+--- a/agentgrep/adapters/qoder.py	1970-01-01 00:00:00.000000000 +0000
++++ b/agentgrep/adapters/qoder.py	2026-09-24 19:04:04.376402749 +0000
+@@ -0,0 +1,92 @@
++"""Qoder CLI/IDE store parsers and registry fragment."""
++
++from __future__ import annotations
++
++import collections.abc as cabc
++
++from agentgrep.adapters._extract import (
++    build_search_record,
++    iter_message_candidates,
++)
++from agentgrep.adapters._registry import AnyParserSpec, StreamParserSpec
++from agentgrep.readers import (
++    _iter_jsonl,
++)
++from agentgrep.records import (
++    RawJsonlSkipLine,
++    SearchRecord,
++    SourceHandle,
++)
++
++
++
++def parse_qoder_session_file(
++    source: SourceHandle,
++    *,
++    raw_skip_line: RawJsonlSkipLine | None = None,
++    reverse: bool = False,
++) -> cabc.Iterator[SearchRecord]:
++    """Parse a Qoder CLI ``~/.qoder/projects/<dash-encoded-cwd>/<uuid>.jsonl`` transcript.
++
++    Each line already carries ``sessionId`` and (on conversational lines)
++    ``cwd`` directly -- unlike Grok or Cursor CLI, no directory-name decode is
++    needed. The shape otherwise mirrors ``claude.projects`` closely enough
++    that the generic :func:`~agentgrep.adapters._extract.iter_message_candidates`
++    walk handles it without a bespoke field reader.
++    """
++    conversation_id = source.path.stem
++    seen: set[tuple[str | None, str, str | None, str | None]] = set()
++    events = (
++        _iter_jsonl(
++            source.path,
++            skip_line=raw_skip_line,
++            skip_line_mode="line",
++            reverse=reverse,
++        )
++        if raw_skip_line is not None
++        else _iter_jsonl(source.path, reverse=reverse)
++    )
++    for event in events:
++        for candidate in iter_message_candidates(event, fallback_conversation_id=conversation_id):
++            key = (candidate.role, candidate.text, candidate.timestamp, candidate.conversation_id)
++            if key in seen:
++                continue
++            seen.add(key)
++            yield build_search_record(source, candidate)
++
++
++def parse_qoder_conversation_history_file(
++    source: SourceHandle,
++    *,
++    raw_skip_line: RawJsonlSkipLine | None = None,
++    reverse: bool = False,
++) -> cabc.Iterator[SearchRecord]:
++    """Parse a Qoder IDE ``conversation-history/<id>/<id>.jsonl`` chat log.
++
++    Lines are ``{"role": "user"|"assistant", "message": {"content": [...]}}``
++    with no per-line session id or cwd. The parent directory name doubles as
++    the conversation id -- ``<hash8>`` project-directory suffixes did not
++    match md5/sha1/sha256 of the absolute project path in a quick check, so no
++    ``cwd`` origin is recovered here.
++    """
++    conversation_id = source.path.parent.name
++    events = (
++        _iter_jsonl(
++            source.path,
++            skip_line=raw_skip_line,
++            skip_line_mode="line",
++            reverse=reverse,
++        )
++        if raw_skip_line is not None
++        else _iter_jsonl(source.path, reverse=reverse)
++    )
++    for event in events:
++        for candidate in iter_message_candidates(event, fallback_conversation_id=conversation_id):
++            yield build_search_record(source, candidate)
++
++
++_QODER_PARSERS: tuple[AnyParserSpec, ...] = (
++    StreamParserSpec("qoder.sessions_jsonl.v1", parse_qoder_session_file),
++    StreamParserSpec("qoder.conversation_history_jsonl.v1", parse_qoder_conversation_history_file),
++)
++"""Dispatch rows for every ``qoder.*`` adapter id."""
+diff -ruN '--exclude=__pycache__' a/agentgrep/discovery.py b/agentgrep/discovery.py
+--- a/agentgrep/discovery.py	2026-09-24 19:04:04.363402495 +0000
++++ b/agentgrep/discovery.py	2026-09-24 19:04:04.374402710 +0000
+@@ -225,6 +225,45 @@
+                     ),
+                 ),
+             )
++        elif agent == "kimi-code":
++            discovered.extend(
++                discover_kimi_code_sources(
++                    home,
++                    backends,
++                    include_non_default=include_non_default,
++                    version_detail=version_detail,
++                    store_roles=store_roles,
++                    allow_conversation_content_role_fallback=(
++                        allow_conversation_content_role_fallback
++                    ),
++                ),
++            )
++        elif agent == "qoder":
++            discovered.extend(
++                discover_qoder_sources(
++                    home,
++                    backends,
++                    include_non_default=include_non_default,
++                    version_detail=version_detail,
++                    store_roles=store_roles,
++                    allow_conversation_content_role_fallback=(
++                        allow_conversation_content_role_fallback
++                    ),
++                ),
++            )
++        elif agent == "jcode":
++            discovered.extend(
++                discover_jcode_sources(
++                    home,
++                    backends,
++                    include_non_default=include_non_default,
++                    version_detail=version_detail,
++                    store_roles=store_roles,
++                    allow_conversation_content_role_fallback=(
++                        allow_conversation_content_role_fallback
++                    ),
++                ),
++            )
+     discovered.sort(key=lambda item: (item.agent, item.store, str(item.path)))
+     return discovered
+ 
+@@ -1418,6 +1457,102 @@
+         base,
+         backends,
+         include_non_default=include_non_default,
++        version_detail=version_detail,
++        store_roles=store_roles,
++        allow_conversation_content_role_fallback=allow_conversation_content_role_fallback,
++    )
++
++
++def discover_kimi_code_sources(
++    home: pathlib.Path,
++    backends: BackendSelection,
++    *,
++    include_non_default: bool = False,
++    version_detail: DiscoveryVersionDetail = "shape",
++    store_roles: DiscoveryStoreRoles = None,
++    allow_conversation_content_role_fallback: bool = True,
++) -> list[SourceHandle]:
++    """Discover Kimi Code CLI session transcripts and tool output.
++
++    No home-override environment variable has been verified for Kimi Code;
++    this always resolves against ``${HOME}/.kimi-code``. Path roots, globs,
++    and adapter metadata come from the ``kimi-code.*`` rows of
++    :data:`agentgrep.store_catalog.CATALOG`.
++    """
++    base = home / ".kimi-code"
++    if not base.exists():
++        return []
++    return discover_from_catalog(
++        home,
++        "kimi-code",
++        base,
++        backends,
++        include_non_default=include_non_default,
++        version_detail=version_detail,
++        store_roles=store_roles,
++        allow_conversation_content_role_fallback=allow_conversation_content_role_fallback,
++    )
++
++
++def discover_qoder_sources(
++    home: pathlib.Path,
++    backends: BackendSelection,
++    *,
++    include_non_default: bool = False,
++    version_detail: DiscoveryVersionDetail = "shape",
++    store_roles: DiscoveryStoreRoles = None,
++    allow_conversation_content_role_fallback: bool = True,
++) -> list[SourceHandle]:
++    """Discover Qoder CLI and Qoder IDE session/conversation stores.
++
++    No home-override environment variable has been verified for Qoder; this
++    always resolves against ``${HOME}/.qoder``. ``~/.qoder-cli``,
++    ``~/.qoder-cn``, and ``~/.qoder-server`` were inspected and hold no
++    searchable conversation content (ai-stats receipts, skills, and a VS
++    Code-server data tree respectively), so only ``~/.qoder`` is walked. Path
++    roots, globs, and adapter metadata come from the ``qoder.*`` rows of
++    :data:`agentgrep.store_catalog.CATALOG`.
++    """
++    base = home / ".qoder"
++    if not base.exists():
++        return []
++    return discover_from_catalog(
++        home,
++        "qoder",
++        base,
++        backends,
++        include_non_default=include_non_default,
++        version_detail=version_detail,
++        store_roles=store_roles,
++        allow_conversation_content_role_fallback=allow_conversation_content_role_fallback,
++    )
++
++
++def discover_jcode_sources(
++    home: pathlib.Path,
++    backends: BackendSelection,
++    *,
++    include_non_default: bool = False,
++    version_detail: DiscoveryVersionDetail = "shape",
++    store_roles: DiscoveryStoreRoles = None,
++    allow_conversation_content_role_fallback: bool = True,
++) -> list[SourceHandle]:
++    """Discover jcode swarm CLI session transcripts and prompt history.
++
++    Honours the ``JCODE_HOME`` environment variable; falls back to
++    ``${HOME}/.jcode`` when unset or empty. Path roots, globs, file lists, and
++    adapter metadata come from the ``jcode.*`` rows of
++    :data:`agentgrep.store_catalog.CATALOG`.
++    """
++    base = resolve_env_root("JCODE_HOME", home / ".jcode")
++    if not base.exists():
++        return []
++    return discover_from_catalog(
++        home,
++        "jcode",
++        base,
++        backends,
++        include_non_default=include_non_default,
+         version_detail=version_detail,
+         store_roles=store_roles,
+         allow_conversation_content_role_fallback=allow_conversation_content_role_fallback,
+diff -ruN '--exclude=__pycache__' a/agentgrep/records.py b/agentgrep/records.py
+--- a/agentgrep/records.py	2026-09-24 19:04:04.364402514 +0000
++++ b/agentgrep/records.py	2026-09-24 19:04:04.374402710 +0000
+@@ -87,6 +87,9 @@
+     "antigravity-cli",
+     "antigravity-ide",
+     "grok",
++    "kimi-code",
++    "qoder",
++    "jcode",
+     "pi",
+     "opencode",
+     "windsurf",
+@@ -129,6 +132,9 @@
+     "antigravity-cli",
+     "antigravity-ide",
+     "grok",
++    "kimi-code",
++    "qoder",
++    "jcode",
+     "pi",
+     "opencode",
+     "vscode",
+@@ -219,6 +225,14 @@
+         "grok.subagents_json.v1",
+         "grok.plans_text.v1",
+         "grok.memory_text.v1",
++        "jcode.prompt_history_jsonl.v1",
++        "jcode.sessions_json.v1",
++        "kimi_code.sessions_jsonl.v1",
++        "kimi_code.task_output_text.v1",
++        "kimi_code.tool_activity_jsonl.v1",
++        "kimi_code.tool_result_text.v1",
++        "qoder.conversation_history_jsonl.v1",
++        "qoder.sessions_jsonl.v1",
+         "pi.sessions_jsonl.v1",
+         "pi.context_mode_sqlite.v1",
+         "opencode.db_sqlite.v1",
+diff -ruN '--exclude=__pycache__' a/agentgrep/store_catalog/__init__.py b/agentgrep/store_catalog/__init__.py
+--- a/agentgrep/store_catalog/__init__.py	2026-09-24 19:04:04.367402573 +0000
++++ b/agentgrep/store_catalog/__init__.py	2026-09-24 19:04:04.378402788 +0000
+@@ -16,14 +16,17 @@
+ from agentgrep.store_catalog.cursor_ide import _CURSOR_IDE_STORES
+ from agentgrep.store_catalog.gemini import _GEMINI_STORES
+ from agentgrep.store_catalog.grok import _GROK_STORES
++from agentgrep.store_catalog.jcode import _JCODE_STORES
++from agentgrep.store_catalog.kimi_code import _KIMI_CODE_STORES
+ from agentgrep.store_catalog.opencode import _OPENCODE_STORES
+ from agentgrep.store_catalog.pi import _PI_STORES
++from agentgrep.store_catalog.qoder import _QODER_STORES
+ from agentgrep.store_catalog.vscode import _VSCODE_STORES
+ from agentgrep.store_catalog.windsurf import _WINDSURF_STORES
+ from agentgrep.stores import StoreCatalog
+ 
+ CATALOG = StoreCatalog(
+-    catalog_version=40,
++    catalog_version=41,
+     captured_at=_CATALOG_CAPTURED_AT,
+     stores=(
+         *_CLAUDE_STORES,
+@@ -34,6 +37,9 @@
+         *_ANTIGRAVITY_CLI_STORES,
+         *_ANTIGRAVITY_IDE_STORES,
+         *_GROK_STORES,
++        *_KIMI_CODE_STORES,
++        *_QODER_STORES,
++        *_JCODE_STORES,
+         *_PI_STORES,
+         *_OPENCODE_STORES,
+         *_WINDSURF_STORES,
+diff -ruN '--exclude=__pycache__' a/agentgrep/store_catalog/_common.py b/agentgrep/store_catalog/_common.py
+--- a/agentgrep/store_catalog/_common.py	2026-09-24 19:04:04.367402573 +0000
++++ b/agentgrep/store_catalog/_common.py	2026-09-24 19:04:04.378402788 +0000
+@@ -25,6 +25,13 @@
+ _CODEX_OBSERVED_AT = datetime.date(2026, 9, 11)
+ _VSCODE_OBSERVED_AT = datetime.date(2026, 9, 11)
+ 
++# Kimi Code, Qoder, and jcode were observed live on this devbox on
++# 2026-09-24 (not against a scripted observations/ fixture like the rows
++# above -- there is no observe_stores.py entry for them yet).
++_KIMI_CODE_OBSERVED_AT = datetime.date(2026, 9, 24)
++_QODER_OBSERVED_AT = datetime.date(2026, 9, 24)
++_JCODE_OBSERVED_AT = datetime.date(2026, 9, 24)
++
+ # Windsurf is catalogued but not installed here: the ${HOME}/.codeium/windsurf
+ # tree exists and was walked, so the date is a real observation of the layout,
+ # but no app version was readable to stamp against it.
+diff -ruN '--exclude=__pycache__' a/agentgrep/store_catalog/jcode.py b/agentgrep/store_catalog/jcode.py
+--- a/agentgrep/store_catalog/jcode.py	1970-01-01 00:00:00.000000000 +0000
++++ b/agentgrep/store_catalog/jcode.py	2026-09-24 19:04:04.379402808 +0000
+@@ -0,0 +1,108 @@
++"""jcode (jcode swarm CLI) store descriptors for the agentgrep catalogue."""
++
++from __future__ import annotations
++
++from agentgrep.store_catalog._common import _JCODE_OBSERVED_AT
++from agentgrep.stores import (
++    DiscoverySpec,
++    StoreCoverage,
++    StoreDescriptor,
++    StoreFormat,
++    StoreRole,
++)
++
++_JCODE_OBSERVED_VERSION = "jcode v0.58.5 (devbox live tree, 2026-09-24)"
++"""Captured from a live filesystem walk on this devbox, not a scripted
++``observations/`` fixture. Version string read off a session's own
++``env_snapshots[0].jcode_version``.
++"""
++
++
++_JCODE_STORES: tuple[StoreDescriptor, ...] = (
++    StoreDescriptor(
++        agent="jcode",
++        store_id="jcode.prompt_history",
++        role=StoreRole.PROMPT_HISTORY,
++        format=StoreFormat.JSONL,
++        path_pattern="${JCODE_HOME or ${HOME}/.jcode}/prompt-history.jsonl",
++        env_overrides=("JCODE_HOME",),
++        observed_version=_JCODE_OBSERVED_VERSION,
++        observed_at=_JCODE_OBSERVED_AT,
++        schema_notes=(
++            "JSONL per-prompt audit log, append-only across all sessions. "
++            "Each line is a bare JSON string -- the prompt text -- not an "
++            "object; there is no per-line timestamp, session id, or cwd."
++        ),
++        sample_record='"<redacted>"',
++        distinguishes_from=("jcode.sessions",),
++        search_by_default=True,
++        discovery=(
++            DiscoverySpec(
++                store="jcode.prompt_history",
++                adapter_id="jcode.prompt_history_jsonl.v1",
++                path_kind="history_file",
++                source_kind="jsonl",
++                files=("prompt-history.jsonl",),
++            ),
++        ),
++    ),
++    StoreDescriptor(
++        agent="jcode",
++        store_id="jcode.sessions",
++        role=StoreRole.PRIMARY_CHAT,
++        format=StoreFormat.JSON_OBJECT,
++        path_pattern="${JCODE_HOME or ${HOME}/.jcode}/sessions/session_<word>_<epoch_ms>_<hash16>.json",
++        env_overrides=("JCODE_HOME",),
++        observed_version=_JCODE_OBSERVED_VERSION,
++        observed_at=_JCODE_OBSERVED_AT,
++        schema_notes=(
++            "One JSON object per session (flat file, not a directory tree). "
++            "Top-level `id`, `title` (nullable), `working_dir` (cwd), `model`, "
++            "`provider_key`, `status`, and a `messages` array of "
++            "`{id, role, content: [{type: text, text}], display_role, "
++            "timestamp}`. `.bak` siblings hold the same shape from a prior "
++            "checkpoint (e.g. before a crash) and are read by the same "
++            "adapter; a crashed/superseded session can carry unique content "
++            "only its `.bak` still has."
++        ),
++        sample_record=(
++            '{"id":"session_cactus_...","working_dir":"/home/mhugo/code/jcode",'
++            '"messages":[{"role":"user","content":[{"type":"text","text":"<redacted>"}]}]}'
++        ),
++        distinguishes_from=("jcode.prompt_history",),
++        search_by_default=True,
++        search_notes="Full per-session transcript with tool-call metadata folded into content.",
++        discovery=(
++            DiscoverySpec(
++                store="jcode.sessions",
++                adapter_id="jcode.sessions_json.v1",
++                path_kind="session_file",
++                source_kind="json",
++                home_subpath=("sessions",),
++                glob="session_*.json",
++            ),
++            DiscoverySpec(
++                store="jcode.sessions",
++                adapter_id="jcode.sessions_json.v1",
++                data_version="jcode.sessions.backup.v1",
++                path_kind="session_file",
++                source_kind="json",
++                home_subpath=("sessions",),
++                glob="session_*.bak",
++            ),
++        ),
++    ),
++    StoreDescriptor(
++        agent="jcode",
++        store_id="jcode.goals",
++        role=StoreRole.PLAN,
++        format=StoreFormat.OPAQUE,
++        path_pattern="${JCODE_HOME or ${HOME}/.jcode}/goals/",
++        env_overrides=("JCODE_HOME",),
++        observed_version=_JCODE_OBSERVED_VERSION,
++        observed_at=_JCODE_OBSERVED_AT,
++        schema_notes="Durable-goal working directory; not walked by this catalogue yet.",
++        coverage=StoreCoverage.CATALOG_ONLY,
++        search_by_default=False,
++    ),
++)
+diff -ruN '--exclude=__pycache__' a/agentgrep/store_catalog/kimi_code.py b/agentgrep/store_catalog/kimi_code.py
+--- a/agentgrep/store_catalog/kimi_code.py	1970-01-01 00:00:00.000000000 +0000
++++ b/agentgrep/store_catalog/kimi_code.py	2026-09-24 19:04:04.379402808 +0000
+@@ -0,0 +1,179 @@
++"""kimi-code (Kimi Code CLI) store descriptors for the agentgrep catalogue."""
++
++from __future__ import annotations
++
++from agentgrep.store_catalog._common import _KIMI_CODE_OBSERVED_AT
++from agentgrep.stores import (
++    DiscoverySpec,
++    StoreCoverage,
++    StoreDescriptor,
++    StoreFormat,
++    StoreRole,
++)
++
++_KIMI_CODE_OBSERVED_VERSION = "kimi-code (devbox live tree, 2026-09-24)"
++"""No packaged app-version string was read off disk for this observation;
++the date lives in ``observed_at`` and this row records how the shapes below
++were captured -- a live filesystem walk on this devbox, not a scripted
++``observations/`` fixture the way the other agents in this catalogue are.
++"""
++
++
++_KIMI_CODE_STORES: tuple[StoreDescriptor, ...] = (
++    StoreDescriptor(
++        agent="kimi-code",
++        store_id="kimi-code.sessions",
++        role=StoreRole.PRIMARY_CHAT,
++        format=StoreFormat.JSONL,
++        path_pattern=(
++            "${HOME}/.kimi-code/sessions/wd_<slug>_<hash12>/session_<uuid>/agents/<agentId>/wire.jsonl"
++        ),
++        observed_version=_KIMI_CODE_OBSERVED_VERSION,
++        observed_at=_KIMI_CODE_OBSERVED_AT,
++        schema_notes=(
++            "JSONL wire log for one session agent (`main` or a swarm sub-agent "
++            "`agent-<n>`). Every line has a top-level `type`. The visible "
++            "conversation lives in two shapes: `context.append_message` "
++            "(`message.role`, `message.content` as text or a content-blocks "
++            "array -- user prompts and injected `<system-reminder>` turns; no "
++            "assistant `context.append_message` was ever observed) and "
++            "`context.append_loop_event` rows whose `event.type` is "
++            "`content.part` with `event.part.type == \"text\"` (the assistant's "
++            "streamed reply). `event.part.type == \"think\"` is reasoning and is "
++            "read by `kimi-code.tool_activity` instead, matching how "
++            "`grok.sessions` excludes reasoning summaries from the primary "
++            "transcript. The sibling `state.json` one level up carries `cwd` "
++            "and `title` for the whole session; there is no per-line cwd."
++        ),
++        sample_record=(
++            '{"type":"context.append_message","agentId":"main",'
++            '"message":{"role":"user","content":[{"type":"text","text":"<redacted>"}]}}'
++        ),
++        distinguishes_from=("kimi-code.tool_activity",),
++        search_by_default=True,
++        search_notes=(
++            "Primary user/assistant transcript. Tool calls, tool output, and "
++            "reasoning are `kimi-code.tool_activity` (inspectable, exhaustive-only) "
++            "so a default-scope search is not flooded with tool payloads."
++        ),
++        discovery=(
++            DiscoverySpec(
++                store="kimi-code.sessions",
++                adapter_id="kimi_code.sessions_jsonl.v1",
++                path_kind="session_file",
++                source_kind="jsonl",
++                home_subpath=("sessions",),
++                glob="wire.jsonl",
++            ),
++        ),
++    ),
++    StoreDescriptor(
++        agent="kimi-code",
++        store_id="kimi-code.tool_activity",
++        role=StoreRole.SUPPLEMENTARY_CHAT,
++        format=StoreFormat.JSONL,
++        path_pattern=(
++            "${HOME}/.kimi-code/sessions/wd_<slug>_<hash12>/session_<uuid>/agents/<agentId>/wire.jsonl"
++        ),
++        observed_version=_KIMI_CODE_OBSERVED_VERSION,
++        observed_at=_KIMI_CODE_OBSERVED_AT,
++        schema_notes=(
++            "The same `wire.jsonl` file as `kimi-code.sessions`, read a second "
++            "time for its tool traffic and reasoning: `context.append_loop_event` "
++            "rows with `event.type` in `tool.call` (name + args), `tool.result` "
++            "(`event.result.output`, the text a command or MCP tool returned -- "
++            "this is where a live incident string like a leaked IP or a "
++            "suspicious hostname first surfaces), and `content.part` with "
++            "`event.part.type == \"think\"` (the model's private reasoning). "
++            "Large tool outputs get truncated inline with a pointer into "
++            "`kimi-code.tool_result_files` instead of the full text."
++        ),
++        sample_record=(
++            '{"type":"context.append_loop_event","event":{"type":"tool.result",'
++            '"toolCallId":"call_...","result":{"output":"<redacted>"}}}'
++        ),
++        distinguishes_from=("kimi-code.sessions", "kimi-code.tool_result_files"),
++        coverage=StoreCoverage.INSPECTABLE,
++        search_by_default=False,
++        search_notes=(
++            "High-volume tool call/result/reasoning stream. Reachable via "
++            "`--exhaustive` or broad-scope search, not the default fast path."
++        ),
++        discovery=(
++            DiscoverySpec(
++                store="kimi-code.tool_activity",
++                adapter_id="kimi_code.tool_activity_jsonl.v1",
++                path_kind="session_file",
++                source_kind="jsonl",
++                home_subpath=("sessions",),
++                glob="wire.jsonl",
++            ),
++        ),
++    ),
++    StoreDescriptor(
++        agent="kimi-code",
++        store_id="kimi-code.task_output_files",
++        role=StoreRole.SUPPLEMENTARY_CHAT,
++        format=StoreFormat.TEXT,
++        path_pattern=(
++            "${HOME}/.kimi-code/sessions/wd_<slug>_<hash12>/session_<uuid>/agents/<agentId>/"
++            "tasks/<tool>-<id>/output.log"
++        ),
++        observed_version=_KIMI_CODE_OBSERVED_VERSION,
++        observed_at=_KIMI_CODE_OBSERVED_AT,
++        schema_notes=(
++            "Plain-text stdout/stderr log for one background or detached "
++            "bash task (e.g. `Bash(run_in_background=true)`). A sibling "
++            "`<tool>-<id>.json` carries `taskId`, `command`, `status`, "
++            "`exitCode`, and timing, but is not itself parsed here -- the "
++            "log body is the searchable payload. Files can be large "
++            "(hundreds of KB), so this store is exhaustive-only."
++        ),
++        distinguishes_from=("kimi-code.tool_activity", "kimi-code.tool_result_files"),
++        coverage=StoreCoverage.INSPECTABLE,
++        search_by_default=False,
++        discovery=(
++            DiscoverySpec(
++                store="kimi-code.task_output_files",
++                adapter_id="kimi_code.task_output_text.v1",
++                path_kind="store_file",
++                source_kind="text",
++                home_subpath=("sessions",),
++                glob="**/tasks/*/output.log",
++            ),
++        ),
++    ),
++    StoreDescriptor(
++        agent="kimi-code",
++        store_id="kimi-code.tool_result_files",
++        role=StoreRole.SUPPLEMENTARY_CHAT,
++        format=StoreFormat.TEXT,
++        path_pattern=(
++            "${HOME}/.kimi-code/sessions/wd_<slug>_<hash12>/session_<uuid>/agents/<agentId>/"
++            "tool-results/<tool>-call_<id>-<uuid>.txt"
++        ),
++        observed_version=_KIMI_CODE_OBSERVED_VERSION,
++        observed_at=_KIMI_CODE_OBSERVED_AT,
++        schema_notes=(
++            "Plain-text spillover for one tool result once it exceeds Kimi "
++            "Code's inline size threshold ('Tool output exceeded 50000 "
++            "characters...'); `wire.jsonl` keeps only a preview plus an "
++            "`output_path` pointer into this file. Files can be very large "
++            "(hundreds of KB), so this store is exhaustive-only, matching "
++            "`codex.attachments`."
++        ),
++        distinguishes_from=("kimi-code.tool_activity",),
++        coverage=StoreCoverage.INSPECTABLE,
++        search_by_default=False,
++        discovery=(
++            DiscoverySpec(
++                store="kimi-code.tool_result_files",
++                adapter_id="kimi_code.tool_result_text.v1",
++                path_kind="store_file",
++                source_kind="text",
++                home_subpath=("sessions",),
++                glob="**/tool-results/*.txt",
++            ),
++        ),
++    ),
++)
+diff -ruN '--exclude=__pycache__' a/agentgrep/store_catalog/qoder.py b/agentgrep/store_catalog/qoder.py
+--- a/agentgrep/store_catalog/qoder.py	1970-01-01 00:00:00.000000000 +0000
++++ b/agentgrep/store_catalog/qoder.py	2026-09-24 19:04:04.379402808 +0000
+@@ -0,0 +1,134 @@
++"""qoder (Qoder CLI/IDE) store descriptors for the agentgrep catalogue."""
++
++from __future__ import annotations
++
++from agentgrep.store_catalog._common import _QODER_OBSERVED_AT
++from agentgrep.stores import (
++    DiscoverySpec,
++    StoreCoverage,
++    StoreDescriptor,
++    StoreFormat,
++    StoreRole,
++)
++
++_QODER_OBSERVED_VERSION = "qoder (devbox live tree, 2026-09-24; qoder-cli entrypoint 1.1.19)"
++"""Captured from a live filesystem walk on this devbox, not a scripted
++``observations/`` fixture. ``entrypoint: "cli"`` and ``version`` are read
++directly off ``qoder.sessions`` records.
++"""
++
++
++_QODER_STORES: tuple[StoreDescriptor, ...] = (
++    StoreDescriptor(
++        agent="qoder",
++        store_id="qoder.sessions",
++        role=StoreRole.PRIMARY_CHAT,
++        format=StoreFormat.JSONL,
++        path_pattern="${HOME}/.qoder/projects/<dash_encoded_cwd>/<session_uuid>.jsonl",
++        observed_version=_QODER_OBSERVED_VERSION,
++        observed_at=_QODER_OBSERVED_AT,
++        schema_notes=(
++            "Qoder CLI's session transcript, shaped almost identically to "
++            "`claude.projects`: one JSONL line per event, `type` in "
++            "`workspace-directories` / `runtime-config` / `active-leaf` / "
++            "`system` / `user` / `assistant`, each conversational line "
++            "carrying `sessionId` and `cwd` directly (no directory-name "
++            "decode needed). `message.role`/`message.content` holds the "
++            "text; `content` may be a bare string or a content-blocks array. "
++            "The parent directory name is the working directory with `/` "
++            "replaced by `-` (e.g. `-home-mhugo` for `/home/mhugo`). The same "
++            "glob also reaches two sibling shapes with the identical event "
++            "envelope: `<project>/<uuid>/subagents/agent-<name>-<hash>.jsonl` "
++            "(a delegated subagent's own transcript -- no `sessionId`/`cwd` "
++            "on its lines, so those records get no origin and their "
++            "`conversation_id` falls back to the subagent file's own stem) "
++            "and `<project>/transcript/<task-id>.session.execution.jsonl` "
++            "(a background/scheduled task's execution log)."
++        ),
++        sample_record=(
++            '{"type":"user","uuid":"...","sessionId":"...","cwd":"/home/mhugo",'
++            '"message":{"role":"user","content":"<redacted>"}}'
++        ),
++        distinguishes_from=("qoder.conversation_history",),
++        search_by_default=True,
++        search_notes=(
++            "Qoder CLI's primary per-session transcript. A background task run "
++            "through the IDE can be recorded twice: once here as "
++            "`<task-id>.session.execution.jsonl` and again under "
++            "`qoder.conversation_history` as `conversation-history/<task-id>/"
++            "<task-id>.jsonl` -- observed for one project's `task-301` job, "
++            "same prompt text, two different on-disk shapes and id schemes. "
++            "agentgrep has no cross-store dedup key linking them (unlike "
++            "`grok.session_search`, which shares `session_id` with "
++            "`grok.sessions`), so a broad-scope search of both stores can "
++            "surface that content twice."
++        ),
++        discovery=(
++            DiscoverySpec(
++                store="qoder.sessions",
++                adapter_id="qoder.sessions_jsonl.v1",
++                path_kind="session_file",
++                source_kind="jsonl",
++                home_subpath=("projects",),
++                glob="*.jsonl",
++            ),
++        ),
++    ),
++    StoreDescriptor(
++        agent="qoder",
++        store_id="qoder.conversation_history",
++        role=StoreRole.SUPPLEMENTARY_CHAT,
++        format=StoreFormat.JSONL,
++        path_pattern=(
++            "${HOME}/.qoder/cache/projects/<repo_basename>-<hash8>/"
++            "conversation-history/<conversation_id>/<conversation_id>.jsonl"
++        ),
++        observed_version=_QODER_OBSERVED_VERSION,
++        observed_at=_QODER_OBSERVED_AT,
++        schema_notes=(
++            "The Qoder IDE's (qoder-server / editor extension) per-conversation "
++            "chat log, distinct from the `qoder.sessions` CLI transcript. One "
++            "observed project (jcode) had both: its CLI-side "
++            "`projects/-home-mhugo-code-jcode/transcript/` and its IDE-side "
++            "`cache/projects/jcode-22936ca3/conversation-history/` -- see the "
++            "`qoder.sessions` search_notes for the resulting duplicate-content "
++            "caveat. A project can also have only one of the two. "
++            "Lines are `{\"role\": \"user\"|\"assistant\", \"message\": "
++            "{\"content\": [{\"type\": \"text\", \"text\": ...}]}}`, with no "
++            "per-line cwd or session id. `<repo_basename>-<hash8>` is a "
++            "project-directory name whose 8-char suffix did not match "
++            "md5/sha1/sha256[:8] of the absolute project path in a quick "
++            "check, so it is treated as opaque here: records carry no `cwd` "
++            "origin. `<conversation_id>` (e.g. `1d349168`, or `task-301` for a "
++            "background task) is used as the session/conversation id."
++        ),
++        sample_record=(
++            '{"role":"user","message":{"content":[{"type":"text","text":"<redacted>"}]}}'
++        ),
++        distinguishes_from=("qoder.sessions",),
++        search_by_default=True,
++        search_notes="Qoder IDE per-conversation chat log; no cwd recovered.",
++        discovery=(
++            DiscoverySpec(
++                store="qoder.conversation_history",
++                adapter_id="qoder.conversation_history_jsonl.v1",
++                path_kind="session_file",
++                source_kind="jsonl",
++                home_subpath=("cache", "projects"),
++                glob="**/conversation-history/*/*.jsonl",
++            ),
++        ),
++    ),
++    StoreDescriptor(
++        agent="qoder",
++        store_id="qoder.memories",
++        role=StoreRole.PERSISTENT_MEMORY,
++        format=StoreFormat.OPAQUE,
++        path_pattern="${HOME}/.qoder/memories/",
++        observed_version=_QODER_OBSERVED_VERSION,
++        observed_at=_QODER_OBSERVED_AT,
++        schema_notes="Persistent memory workspace directory; not walked by this catalogue yet.",
++        coverage=StoreCoverage.CATALOG_ONLY,
++        search_by_default=False,
++    ),
++)
+diff -ruN '--exclude=__pycache__' a/agentgrep/stores.py b/agentgrep/stores.py
+--- a/agentgrep/stores.py	2026-09-24 19:04:04.364402514 +0000
++++ b/agentgrep/stores.py	2026-09-24 19:04:04.374402710 +0000
+@@ -96,6 +96,9 @@
+     "antigravity-cli",
+     "antigravity-ide",
+     "grok",
++    "kimi-code",
++    "qoder",
++    "jcode",
+     "pi",
+     "opencode",
+     "windsurf",
+diff -ruN '--exclude=__pycache__' a/tests/test_local_stores.py b/tests/test_local_stores.py
+--- a/tests/test_local_stores.py	1970-01-01 00:00:00.000000000 +0000
++++ b/tests/test_local_stores.py	2026-09-24 19:04:04.394403101 +0000
+@@ -0,0 +1,325 @@
++"""Fixture-based tests for the kimi-code, qoder, and jcode adapters/catalog.
++
++Uses synthetic fixture files, never real transcripts, so these tests are
++safe to run against any machine and carry no user conversation content.
++"""
++
++from __future__ import annotations
++
++import json
++import pathlib
++
++import pytest
++
++from agentgrep.adapters import PARSER_REGISTRY
++from agentgrep.adapters.jcode import parse_jcode_prompt_history, parse_jcode_session_file
++from agentgrep.adapters.kimi_code import (
++    parse_kimi_session_transcript,
++    parse_kimi_tool_activity,
++)
++from agentgrep.adapters.qoder import (
++    parse_qoder_conversation_history_file,
++    parse_qoder_session_file,
++)
++from agentgrep.discovery import (
++    discover_jcode_sources,
++    discover_kimi_code_sources,
++    discover_qoder_sources,
++)
++from agentgrep.records import AGENT_CHOICES, ITER_SOURCE_RECORD_ADAPTERS, BackendSelection
++from agentgrep.records import SourceHandle
++from agentgrep.store_catalog import CATALOG
++
++
++def _handle(agent, store, adapter_id, path: pathlib.Path, *, path_kind="session_file", source_kind="jsonl"):
++    return SourceHandle(
++        agent=agent,
++        store=store,
++        adapter_id=adapter_id,
++        path=path,
++        path_kind=path_kind,
++        source_kind=source_kind,
++        search_root=None,
++        mtime_ns=path.stat().st_mtime_ns,
++    )
++
++
++# --- catalog/registry consistency ------------------------------------------
++
++
++def test_new_agents_are_registered_choices():
++    for agent in ("kimi-code", "qoder", "jcode"):
++        assert agent in AGENT_CHOICES
++
++
++def test_every_new_discovery_spec_has_a_registered_parser():
++    for descriptor in CATALOG.stores:
++        if descriptor.agent not in ("kimi-code", "qoder", "jcode"):
++            continue
++        for spec in descriptor.discovery:
++            assert spec.adapter_id in PARSER_REGISTRY, spec.adapter_id
++            assert spec.adapter_id in ITER_SOURCE_RECORD_ADAPTERS, spec.adapter_id
++
++
++# --- kimi-code ---------------------------------------------------------------
++
++
++def _write_kimi_session(tmp_path: pathlib.Path) -> pathlib.Path:
++    session_dir = tmp_path / ".kimi-code" / "sessions" / "wd_demo_abc123" / "session_deadbeef"
++    agent_dir = session_dir / "agents" / "main"
++    agent_dir.mkdir(parents=True)
++    (session_dir / "state.json").write_text(
++        json.dumps({"cwd": "/home/demo/project", "title": "demo incident"}),
++    )
++    wire_lines = [
++        {
++            "type": "context.append_message",
++            "agentId": "main",
++            "message": {"role": "user", "content": [{"type": "text", "text": "check lh-hostroot now"}]},
++            "time": 1000,
++        },
++        {
++            "type": "context.append_loop_event",
++            "event": {
++                "type": "content.part",
++                "part": {"type": "text", "text": "Looking into lh-hostroot."},
++            },
++            "time": 1001,
++        },
++        {
++            "type": "context.append_loop_event",
++            "event": {
++                "type": "content.part",
++                "part": {"type": "think", "think": "private reasoning about lh-hostroot"},
++            },
++            "time": 1002,
++        },
++        {
++            "type": "context.append_loop_event",
++            "event": {
++                "type": "tool.call",
++                "name": "Bash",
++                "toolCallId": "call_1",
++                "args": {"command": "grep lh-hostroot /var/log"},
++            },
++            "time": 1003,
++        },
++        {
++            "type": "context.append_loop_event",
++            "event": {
++                "type": "tool.result",
++                "toolCallId": "call_1",
++                "result": {"output": "found lh-hostroot in /var/log/syslog"},
++            },
++            "time": 1004,
++        },
++    ]
++    wire_path = agent_dir / "wire.jsonl"
++    wire_path.write_text("\n".join(json.dumps(line) for line in wire_lines) + "\n")
++    tool_results_dir = agent_dir / "tool-results"
++    tool_results_dir.mkdir()
++    (tool_results_dir / "Bash-call_2-uuid.txt").write_text("spillover output mentioning lh-hostroot\n")
++    tasks_dir = agent_dir / "tasks" / "bash-taskid"
++    tasks_dir.mkdir(parents=True)
++    (tasks_dir / "output.log").write_text("background task log mentioning lh-hostroot\n")
++    return wire_path
++
++
++def test_kimi_session_transcript_surfaces_user_and_assistant_text(tmp_path):
++    wire_path = _write_kimi_session(tmp_path)
++    source = _handle("kimi-code", "kimi-code.sessions", "kimi_code.sessions_jsonl.v1", wire_path)
++    records = list(parse_kimi_session_transcript(source))
++    assert [(r.role, r.kind) for r in records] == [("user", "prompt"), ("assistant", "history")]
++    assert all(r.origin is not None and r.origin.cwd == "/home/demo/project" for r in records)
++    assert all(r.title == "demo incident" for r in records)
++    assert "lh-hostroot" in records[0].text
++    assert "lh-hostroot" in records[1].text
++    # Reasoning ("think") and tool traffic must not leak into the primary transcript.
++    assert not any("private reasoning" in r.text for r in records)
++    assert not any("found lh-hostroot in /var/log" in r.text for r in records)
++
++
++def test_kimi_tool_activity_surfaces_tool_call_result_and_reasoning(tmp_path):
++    wire_path = _write_kimi_session(tmp_path)
++    source = _handle("kimi-code", "kimi-code.tool_activity", "kimi_code.tool_activity_jsonl.v1", wire_path)
++    records = list(parse_kimi_tool_activity(source))
++    texts = [r.text for r in records]
++    assert any("call_1" in (r.metadata.get("tool_call_id") or "") for r in records)
++    assert any("found lh-hostroot in /var/log/syslog" in text for text in texts)
++    assert any("private reasoning about lh-hostroot" in text for text in texts)
++    assert any(r.metadata.get("reasoning") is True for r in records)
++    # The user prompt / assistant reply must not be duplicated here.
++    assert not any(text == "check lh-hostroot now" for text in texts)
++
++
++def test_kimi_tool_result_file_and_discovery(tmp_path):
++    _write_kimi_session(tmp_path)
++    backends = BackendSelection(find_tool=None, grep_tool=None, json_tool=None)
++    sources = discover_kimi_code_sources(tmp_path, backends, include_non_default=True)
++    by_store = {}
++    for source in sources:
++        by_store.setdefault(source.store, []).append(source)
++    assert len(by_store["kimi-code.sessions"]) == 1
++    assert len(by_store["kimi-code.tool_activity"]) == 1
++    assert len(by_store["kimi-code.tool_result_files"]) == 1
++    assert len(by_store["kimi-code.task_output_files"]) == 1
++    spillover = by_store["kimi-code.tool_result_files"][0]
++    record = next(iter(PARSER_REGISTRY[spillover.adapter_id].parser(spillover)))
++    assert "lh-hostroot" in record.text
++    task_output = by_store["kimi-code.task_output_files"][0]
++    task_record = next(iter(PARSER_REGISTRY[task_output.adapter_id].parser(task_output)))
++    assert "lh-hostroot" in task_record.text
++
++
++def test_kimi_code_missing_home_yields_no_sources(tmp_path):
++    backends = BackendSelection(find_tool=None, grep_tool=None, json_tool=None)
++    assert discover_kimi_code_sources(tmp_path, backends) == []
++
++
++# --- qoder -------------------------------------------------------------------
++
++
++def test_qoder_session_file_extracts_role_text_and_cwd(tmp_path):
++    project_dir = tmp_path / ".qoder" / "projects" / "-home-demo-project"
++    project_dir.mkdir(parents=True)
++    session_path = project_dir / "11111111-1111-1111-1111-111111111111.jsonl"
++    lines = [
++        {"type": "workspace-directories", "sessionId": "s1", "directories": ["/home/demo/project"]},
++        {
++            "type": "user",
++            "uuid": "u1",
++            "sessionId": "s1",
++            "cwd": "/home/demo/project",
++            "message": {"role": "user", "content": "investigate lh-hostroot"},
++        },
++        {
++            "type": "assistant",
++            "uuid": "a1",
++            "sessionId": "s1",
++            "cwd": "/home/demo/project",
++            "message": {"role": "assistant", "content": "lh-hostroot looks like a rogue pod"},
++        },
++    ]
++    session_path.write_text("\n".join(json.dumps(line) for line in lines) + "\n")
++    source = _handle("qoder", "qoder.sessions", "qoder.sessions_jsonl.v1", session_path)
++    records = list(parse_qoder_session_file(source))
++    assert [r.kind for r in records] == ["prompt", "history"]
++    assert all(r.origin is not None and r.origin.cwd == "/home/demo/project" for r in records)
++    # The generic message-candidate walk reads role/text off the nested
++    # ``message`` object, which carries no session id of its own -- the
++    # outer envelope's ``sessionId`` is not visible from there (matching
++    # how ``claude.projects`` behaves on the same shape). ``conversation_id``
++    # falls back reliably to the transcript file's own uuid stem instead.
++    assert all(r.session_id is None for r in records)
++    assert all(r.conversation_id == session_path.stem for r in records)
++
++
++def test_qoder_conversation_history_file(tmp_path):
++    conv_dir = tmp_path / ".qoder" / "cache" / "projects" / "demo-aabbccdd" / "conversation-history" / "1a2b3c4d"
++    conv_dir.mkdir(parents=True)
++    conv_path = conv_dir / "1a2b3c4d.jsonl"
++    lines = [
++        {"role": "user", "message": {"content": [{"type": "text", "text": "what is lh-hostroot"}]}},
++        {"role": "assistant", "message": {"content": [{"type": "text", "text": "lh-hostroot is a static pod"}]}},
++    ]
++    conv_path.write_text("\n".join(json.dumps(line) for line in lines) + "\n")
++    source = _handle(
++        "qoder",
++        "qoder.conversation_history",
++        "qoder.conversation_history_jsonl.v1",
++        conv_path,
++    )
++    records = list(parse_qoder_conversation_history_file(source))
++    assert [r.role for r in records] == ["user", "assistant"]
++    assert all(r.conversation_id == "1a2b3c4d" for r in records)
++
++
++def test_qoder_discovery_finds_both_stores(tmp_path):
++    project_dir = tmp_path / ".qoder" / "projects" / "-home-demo"
++    project_dir.mkdir(parents=True)
++    (project_dir / "s1.jsonl").write_text(
++        json.dumps({"type": "user", "sessionId": "s1", "cwd": "/home/demo", "message": {"role": "user", "content": "hi"}})
++        + "\n",
++    )
++    conv_dir = tmp_path / ".qoder" / "cache" / "projects" / "demo-aabbccdd" / "conversation-history" / "c1"
++    conv_dir.mkdir(parents=True)
++    (conv_dir / "c1.jsonl").write_text(
++        json.dumps({"role": "user", "message": {"content": [{"type": "text", "text": "hi"}]}}) + "\n",
++    )
++    backends = BackendSelection(find_tool=None, grep_tool=None, json_tool=None)
++    sources = discover_qoder_sources(tmp_path, backends)
++    stores = {s.store for s in sources}
++    assert stores == {"qoder.sessions", "qoder.conversation_history"}
++
++
++# --- jcode ---------------------------------------------------------------
++
++
++def test_jcode_prompt_history_reads_bare_json_strings(tmp_path):
++    path = tmp_path / "prompt-history.jsonl"
++    path.write_text('"first prompt"\n"lh-hostroot lookup"\n')
++    source = _handle("jcode", "jcode.prompt_history", "jcode.prompt_history_jsonl.v1", path, path_kind="history_file")
++    records = list(parse_jcode_prompt_history(source))
++    assert [r.text for r in records] == ["first prompt", "lh-hostroot lookup"]
++    assert all(r.kind == "prompt" for r in records)
++
++
++def test_jcode_session_file_does_not_confuse_message_id_with_session_id(tmp_path):
++    session_id = "session_demo_1234_aaaa"
++    payload = {
++        "id": session_id,
++        "title": "incident triage",
++        "working_dir": "/home/demo/code/proj",
++        "model": "demo-model",
++        "messages": [
++            {
++                "id": "message_should_not_leak_as_session_id",
++                "role": "user",
++                "content": [{"type": "text", "text": "any sign of lh-hostroot?"}],
++                "timestamp": "2026-01-01T00:00:00Z",
++            },
++            {
++                "id": "message_2",
++                "role": "assistant",
++                "content": [{"type": "text", "text": "yes, lh-hostroot showed up in the pod list"}],
++                "timestamp": "2026-01-01T00:00:01Z",
++            },
++        ],
++    }
++    path = tmp_path / f"{session_id}.json"
++    path.write_text(json.dumps(payload))
++    source = _handle("jcode", "jcode.sessions", "jcode.sessions_json.v1", path, source_kind="json")
++    records = list(parse_jcode_session_file(source))
++    assert len(records) == 2
++    for record in records:
++        assert record.session_id == session_id
++        assert record.conversation_id == session_id
++        assert record.session_id != "message_should_not_leak_as_session_id"
++        assert record.origin is not None
++        assert record.origin.cwd == "/home/demo/code/proj"
++        assert record.title == "incident triage"
++    assert records[0].kind == "prompt"
++    assert records[1].kind == "history"
++
++
++def test_jcode_discovery_reads_json_and_bak(tmp_path):
++    sessions_dir = tmp_path / ".jcode" / "sessions"
++    sessions_dir.mkdir(parents=True)
++    payload = {
++        "id": "session_x_1_a",
++        "working_dir": "/home/demo",
++        "messages": [{"id": "m1", "role": "user", "content": [{"type": "text", "text": "hi"}]}],
++    }
++    (sessions_dir / "session_x_1_a.json").write_text(json.dumps(payload))
++    (sessions_dir / "session_y_2_b.bak").write_text(json.dumps({**payload, "id": "session_y_2_b"}))
++    (tmp_path / ".jcode" / "prompt-history.jsonl").write_text('"hi"\n')
++    backends = BackendSelection(find_tool=None, grep_tool=None, json_tool=None)
++    sources = discover_jcode_sources(tmp_path, backends)
++    session_sources = [s for s in sources if s.store == "jcode.sessions"]
++    assert len(session_sources) == 2
++    assert {s.path.suffix for s in session_sources} == {".json", ".bak"}
++    assert any(s.store == "jcode.prompt_history" for s in sources)
++
++
++if __name__ == "__main__":
++    raise SystemExit(pytest.main([__file__, "-v"]))

@@ -161,7 +161,11 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* \*:15\/30:00"/);
   assert.match(backup, /RandomizedDelaySec\s*=\s*"2min"/);
   assert.match(backup, /Type\s*=\s*"exec"/);
-  assert.match(backup, /RuntimeMaxSec\s*=\s*"60min"/);
+  // Was 60min: raised so a cold-cache create (observed running 36+ min
+  // without finishing even after removing the redundant pre-create
+  // validation walk) has room to complete once. See
+  // unsafe_skip_path_validation_before_create below.
+  assert.match(backup, /RuntimeMaxSec\s*=\s*"115min"/);
   assert.match(backup, /Nice\s*=\s*19/);
   assert.match(backup, /IOSchedulingClass\s*=\s*"idle"/);
   assert.match(backup, /lock="\$XDG_RUNTIME_DIR\/borgmatic-hot-source\.lock"/);
@@ -173,6 +177,14 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   assert.doesNotMatch(backup, /repo-create --encryption none/);
   assert.match(backup, /create prune compact/);
   assert.match(backup, /make_parent_directories\s*=\s*true/);
+  // Hot-source has no database hooks, so borgmatic's unconditional
+  // pre-create "borg create --dry-run --list" validation pass (meant only
+  // to confirm a runtime hook directory survives excludes) re-walks the
+  // whole large source tree for nothing. Observed 2026-09-24 consuming
+  // most of the RuntimeMaxSec budget every cycle, so every hel1 run ended
+  // "Failed with result 'timeout'" and no archive completed 2026-09-11 ->
+  // 2026-09-24. Must stay skipped.
+  assert.match(backup, /unsafe_skip_path_validation_before_create\s*=\s*true/);
   assert.match(
     backup,
     /hot-source-(?:hel1|fsn1)[\s\S]*?Install\.WantedBy\s*=\s*\["timers\.target"\]/,

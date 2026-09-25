@@ -73,6 +73,14 @@ if [ "$check" = 1 ]; then
 else
 	fail "$script must route facade calls through repo_vcs(): direnv exec for the real root, direct call under SE_CLEANUP_ENGINE_ROOT"
 fi
+# 2026-09-25: a `direnv exec` per facade call (~4s each) overran the unit's
+# 30min timeout with ~230 lanes. The environment must be loaded exactly once,
+# so `direnv exec` may appear only inside load_facade_env, never in repo_vcs.
+if [ "$(grep -c 'direnv exec' <<<"$body")" = 1 ]; then
+	ok "direnv exec appears once (environment load), not per facade call"
+else
+	fail "$script must run direnv exec once (load_facade_env), not per facade call"
+fi
 
 # The unit must execute the immutable store copy, not a $HOME path an unmanaged
 # write could replace.
@@ -154,6 +162,7 @@ cat >"$engine/bin/repo" <<'FAKE'
 # shellcheck disable=SC2016
 set -euo pipefail
 printf '%s\n' "$*" >>"$FIXTURE_LOG"
+printf '%s\n' "${FIXTURE_ENV_MARKER:-unset}" >>"$FIXTURE_LOG.env"
 if [[ "${2:-}" == "workspace-list" ]]; then
 	[[ "${FIXTURE_LIST_RC:-0}" == 0 ]] || exit "$FIXTURE_LIST_RC"
 	cat "$FIXTURE_LIST"
@@ -249,6 +258,62 @@ grep -q 'keeping' "$tmp/out" || fail "case 7 did not report a refusal as kept"
 [[ -d "$worktrees/zzz-stray" ]] || fail "case 7 removed a directory the facade refused"
 unset FIXTURE_VERB_RC
 ok "a refusal keeps the workspace"
+
+# 8 — 2026-09-25 regression: the real-root path must load the facade
+# environment ONCE, not run `direnv exec` per lane (~4s each; ~230 lanes overran
+# the unit's 30min timeout). A fake direnv on PATH counts invocations and marks
+# the environment it hands back; the fixture facade must see that marker on
+# every call, and direnv must have run exactly once (the load).
+shimdir="$tmp/shim"
+mkdir -p "$shimdir"
+cat >"$shimdir/direnv" <<'SHIM'
+#!/usr/bin/env bash
+printf 'direnv %s\n' "$*" >>"$FIXTURE_DIRENV_LOG"
+[[ "${FIXTURE_DIRENV_RC:-0}" == 0 ]] || exit "$FIXTURE_DIRENV_RC"
+[[ "$1" == exec ]] || exit 64
+shift 2
+exec env FIXTURE_ENV_MARKER=loaded "$@"
+SHIM
+chmod +x "$shimdir/direnv"
+orig_path="$PATH"
+export FIXTURE_DIRENV_LOG="$tmp/direnv.log" SE_CLEANUP_FORCE_DIRENV=1
+export PATH="$shimdir:$PATH"
+
+mkdir -p "$worktrees/lane-x1" "$worktrees/lane-x2" "$worktrees/lane-x3"
+{
+	default_entry
+	entry lane-x1 expired yes
+	entry lane-x2 missing yes
+	entry lane-x3 expired yes
+} >"$tmp/list"
+: >"$tmp/direnv.log"
+: >"$tmp/log.env"
+run_case "environment loaded once for many lanes" 0
+if [[ "$(grep -c . "$tmp/direnv.log")" == 1 ]]; then
+	ok "direnv ran exactly once for three lanes"
+else
+	fail "case 8 ran direnv $(grep -c . "$tmp/direnv.log") times; expected the single environment load"
+fi
+grep -qx "direnv exec $engine env -0" "$tmp/direnv.log" || fail "case 8 did not load the environment via direnv exec <root> env -0"
+for lane in lane-x1 lane-x2 lane-x3; do
+	grep -qx "vcs workspace-close $lane" "$tmp/log" || fail "case 8 did not call workspace-close for $lane"
+done
+if grep -qvx 'loaded' "$tmp/log.env"; then
+	fail "case 8: a facade call ran without the loaded environment"
+else
+	ok "every facade call ran with the environment loaded once"
+fi
+
+# 9 — the one load failing must refuse everything and call no verb.
+: >"$tmp/direnv.log"
+: >"$tmp/log.env"
+FIXTURE_DIRENV_RC=3 run_case "failed environment load refuses" 1
+grep -q 'cannot load the facade environment' "$tmp/err" || fail "case 9 did not report the failed load"
+[[ ! -s "$tmp/log" ]] || fail "case 9 called the facade after the environment load failed"
+ok "a failed environment load refuses without calling the facade"
+
+export PATH="$orig_path"
+unset FIXTURE_DIRENV_LOG SE_CLEANUP_FORCE_DIRENV
 
 if ((failures > 0)); then
 	echo "$failures engine-worktree-cleanup contract failure(s)" >&2

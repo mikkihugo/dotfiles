@@ -56,6 +56,13 @@
 #      nix-direnv falls back, and the facade refuses with exactly the defect-4
 #      message again.
 #
+#   5. (2026-09-25) With ~230 reclaimable lanes the per-call `direnv exec`
+#      (~4s each, ~7s per lane with the facade refusal) overran the unit's
+#      30min TimeoutStartSec: systemd killed the sweep mid-loop and the unit
+#      was `failed (timeout)`, every lane reached having been kept. The
+#      environment is now loaded once (see load_facade_env) and the facade is
+#      called directly, still failing loudly if that one load fails.
+#
 # There is no pipe into a short-circuiting reader anywhere below, and no bare
 # rm -rf. Reintroducing either is how this recurs.
 set -euo pipefail
@@ -72,17 +79,36 @@ if [[ ! -x "$REPO" ]]; then
 	exit 1
 fi
 
-# The facade hard-requires the repository's flake environment. Real runs get
-# it via `direnv exec` (one-shot, cached shell, fails closed); fixture runs
-# (SE_CLEANUP_ENGINE_ROOT set by the contract test) call the fake facade
-# directly so the test stays hermetic.
-repo_vcs() {
-	if [[ -n "${SE_CLEANUP_ENGINE_ROOT:-}" ]]; then
-		"$REPO" vcs "$@"
-	else
-		direnv exec "$ENGINE_ROOT" "$REPO" vcs "$@"
+# The facade hard-requires the repository's flake environment. Real runs load it
+# ONCE through `direnv exec` (one-shot, cached shell, fails closed) and export
+# it into this shell. A `direnv exec` per facade call cost ~4s of a ~7s per-lane
+# budget, so ~230 lanes overran TimeoutStartSec=30min and the unit ended
+# `failed (timeout)` on 2026-09-25 after refusing every lane it reached.
+# Fixture runs (SE_CLEANUP_ENGINE_ROOT set by the contract test) call the fake
+# facade directly so the test stays hermetic; SE_CLEANUP_FORCE_DIRENV=1 makes a
+# fixture run take the real load path so the contract test can prove it.
+load_facade_env() {
+	local dump kv
+	dump="$(mktemp)"
+	if ! direnv exec "$ENGINE_ROOT" env -0 >"$dump"; then
+		rm -f -- "$dump"
+		echo "engine-worktree-cleanup: cannot load the facade environment; refusing to touch anything" >&2
+		exit 1
 	fi
+	while IFS= read -r -d '' kv; do
+		[[ "${kv%%=*}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+		export "${kv?}"
+	done <"$dump"
+	rm -f -- "$dump"
 }
+
+repo_vcs() {
+	"$REPO" vcs "$@"
+}
+
+if [[ -z "${SE_CLEANUP_ENGINE_ROOT:-}" || -n "${SE_CLEANUP_FORCE_DIRENV:-}" ]]; then
+	load_facade_env
+fi
 
 cd "$ENGINE_ROOT"
 

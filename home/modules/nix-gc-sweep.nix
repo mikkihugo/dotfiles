@@ -158,7 +158,11 @@ in {
         Nice = 19;
         IOSchedulingClass = "idle";
         IOSchedulingPriority = 7;
-        TimeoutStartSec = "30min";
+        # 2026-09-26: the daily run was killed at 30min mid `--deep-scan`
+        # (Result: timeout, 5min CPU over 30min wall: it is I/O-bound at idle
+        # priority on a busy disk), so the store-space step never ran. Give the
+        # scan room; the unit is Nice=19/idle-IO and a timer, nobody waits on it.
+        TimeoutStartSec = "2h";
       };
     };
   };

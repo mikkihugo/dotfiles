@@ -32,7 +32,7 @@ class PurposeBackboneTest(unittest.TestCase):
         self.assertNotIn("umans", prompt.lower())
         self.assertIn("direct `minimax:MiniMax-M3`", prompt)
         self.assertIn("direct `kimi:k3`", prompt)
-        self.assertIn("ollama-cloud:glm-5.2", prompt)
+        self.assertIn("ollama-cloud:glm-5.3", prompt)
 
     def test_codex_apply_uses_canonical_doctrine_when_source_is_managed(self):
         with tempfile.TemporaryDirectory() as tmp:

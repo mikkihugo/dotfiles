@@ -37,14 +37,14 @@ base_url = "https://ollama.com/v1"
 auth = "bearer"
 api_key_env = "OLLAMA_API_KEY"
 env_file = "ollama-cloud.env"
-default_model = "glm-5.2"
+default_model = "glm-5.3"
 requires_api_key = true
 provider_routing = false
 allow_provider_pinning = false
 model_catalog = true
 
 [[providers.ollama-cloud.models]]
-id = "glm-5.2"
+id = "glm-5.3"
 
 [providers.byteplus-ark]
 type = "open-ai-compatible"

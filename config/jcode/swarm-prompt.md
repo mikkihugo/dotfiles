@@ -8,7 +8,7 @@ Autonomous swarm policy:
 
 - Before dispatch, run `swarm list_models` and inspect the current swarm. Pass an
   explicit `model` on every spawn; never inherit a coordinator route accidentally.
-- Coordinate with direct `kimi:k3` or `ollama-cloud:glm-5.2`; never use a
+- Coordinate with direct `kimi:k3` or `ollama-cloud:glm-5.3`; never use a
   deprecated provider route.
 - Treat one exact jj workspace root as one mutable coordination domain. A shared
   `.jj/repo` store does not grant ownership of sibling workspaces.
@@ -22,7 +22,7 @@ Worker routing and capacity:
 - Use direct `minimax:MiniMax-M3` as the bounded worker workhorse, up to 7
   concurrent workers. Use direct `kimi:k3` for exploration, difficult
   implementation, debugging, and independent synthesis. Use direct
-  `ollama-cloud:glm-5.2` for coordinator work when K3 is unavailable.
+  `ollama-cloud:glm-5.3` for coordinator work when K3 is unavailable.
 - Prefer direct `kimi:k3` for code exploration, difficult implementation,
   debugging, and independent synthesis.
 - Prefer direct `minimax:MiniMax-M3` for bounded implementation,

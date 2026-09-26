@@ -1,12 +1,8 @@
 [provider]
-# Default workhorse: MiniMax-M3 via J-Code's built-in `minimax` provider
-# (api.minimax.io, MINIMAX_API_KEY from minimax.env). Its China endpoint is
-# opt-in only (JCODE_MINIMAX_CN=1), so no separately named profile is needed;
-# scripts/jcode-preferences removes the retired, separately named profile.
-# Umans routes are retired for default/session traffic.
+# Global default session route; provider-local defaults are intentionally unset.
 default_provider = "minimax"
 default_model = "minimax:MiniMax-M3"
-model_picker_providers = ["minimax", "llm-gateway", "kimi", "openai-oauth", "ollama-cloud", "byteplus-ark"]
+model_picker_providers = ["minimax", "kimi", "openai-oauth", "ollama-cloud"]
 cross_provider_failover = "countdown"
 
 # jcode's own memory agent is off. Durable agent memory belongs in the
@@ -24,24 +20,9 @@ memory = false
 trusted_external_sources = []
 trusted_external_source_paths = []
 
-[providers.llm-gateway]
-type = "open-ai-compatible"
-base_url = "https://llm-gateway.centralcloud.com/v1"
-auth = "bearer"
-api_key_env = "JCODE_PROVIDER_LLM_GATEWAY_API_KEY"
-env_file = "provider-llm-gateway.env"
-default_model = "auto"
-requires_api_key = true
-provider_routing = false
-allow_provider_pinning = false
-model_catalog = true
-
-[[providers.llm-gateway.models]]
-id = "auto"
-
 # Direct ollama.com cloud provider — full context + reasoning, unlike the
 # llm-gateway ollama-cloud/* entries which are cataloged at 128k/no-reasoning.
-# The autonomy model-admission policy routes ollama-cloud:glm-5.2 (coordinator
+# The autonomy model-admission policy routes ollama-cloud:glm-5.3 (coordinator
 # failover) and ollama-cloud:deepseek-v4-flash (explore/worker) through this
 # provider; without it, worker spawn fails and pending effects block all
 # autonomous dispatch.
@@ -51,14 +32,13 @@ base_url = "https://ollama.com/v1"
 auth = "bearer"
 api_key_env = "OLLAMA_API_KEY"
 env_file = "ollama-cloud.env"
-default_model = "glm-5.2"
 requires_api_key = true
 provider_routing = false
 allow_provider_pinning = false
 model_catalog = true
 
 [[providers.ollama-cloud.models]]
-id = "glm-5.2"
+id = "glm-5.3"
 
 [[providers.ollama-cloud.models]]
 id = "deepseek-v4-flash"
@@ -69,64 +49,3 @@ id = "deepseek-v4-flash"
 # fails with "refusing to fall back the worker cwd onto it".
 [agents]
 swarm_lane_provisioning = true
-
-# BytePlus Ark coding plan (ap-southeast-1). OpenAI protocol: jcode only
-# supports open-ai-compatible / open-router, so this uses Ark's
-# /api/coding/v3 rather than its Anthropic-protocol /api/coding path.
-# model_catalog stays false on purpose: Ark's /models publishes 54 regional
-# models, most of which the coding-plan key is NOT entitled to, and a live
-# catalog would let the picker select one that 404s with UnsupportedModel.
-# Every id below was verified against the live endpoint on 2026-08-12.
-[providers.byteplus-ark]
-type = "open-ai-compatible"
-base_url = "https://ark.ap-southeast.bytepluses.com/api/coding/v3"
-auth = "bearer"
-api_key_env = "BYTEPLUS_ARK_API_KEY"
-env_file = "byteplus-ark.env"
-default_model = "ark-code-latest"
-requires_api_key = true
-provider_routing = false
-allow_provider_pinning = false
-model_catalog = false
-
-# ark-code-latest is the console-side Auto router; it reports model = "auto"
-# and rejects image input. Context is the conservative pool floor.
-[[providers.byteplus-ark.models]]
-id = "ark-code-latest"
-context_window = 262144
-input = ["text"]
-
-[[providers.byteplus-ark.models]]
-id = "dola-seed-2.0-pro"
-context_window = 262144
-input = ["text", "image"]
-
-[[providers.byteplus-ark.models]]
-id = "dola-seed-2.0-lite"
-context_window = 262144
-input = ["text", "image"]
-
-[[providers.byteplus-ark.models]]
-id = "dola-seed-2.0-code"
-context_window = 262144
-input = ["text", "image"]
-
-[[providers.byteplus-ark.models]]
-id = "glm-5.2"
-context_window = 1048576
-input = ["text"]
-
-[[providers.byteplus-ark.models]]
-id = "glm-5.1"
-context_window = 200000
-input = ["text"]
-
-[[providers.byteplus-ark.models]]
-id = "kimi-k2.5"
-context_window = 262144
-input = ["text"]
-
-[[providers.byteplus-ark.models]]
-id = "gpt-oss-120b"
-context_window = 131072
-input = ["text"]

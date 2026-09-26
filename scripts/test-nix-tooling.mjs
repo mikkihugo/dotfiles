@@ -509,6 +509,16 @@ test("Home Manager uses the nixpkgs mise package without a private overlay", asy
   assert.doesNotMatch(updater, /nix develop|just mise-upgrade/);
 });
 
+test("Codex server refresh is declared separately from the stopped guardian", async () => {
+  const home = await source("home/home.nix");
+  const refresh = await source("home/modules/codex-server-auto-update.nix");
+
+  assert.match(home, /\.\/modules\/codex-server-auto-update\.nix/);
+  assert.match(refresh, /app-server --remote-control[\s\S]*--managed-daemon/);
+  assert.match(refresh, /current\/bin\/codex/);
+  assert.doesNotMatch(refresh, /codex-guardian/);
+});
+
 test("daily python3 is nixpkgs, not mise", async () => {
   const mise = await source("config/mise/config.toml");
   const env = await source("config/common/env.sh");

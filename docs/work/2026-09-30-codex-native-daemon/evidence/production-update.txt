@@ -1,0 +1,6 @@
+error: the following required arguments were not provided:
+  --from-cli
+
+Usage: codex app-server daemon update --from-cli --yes
+
+For more information, try '--help'.

@@ -1,0 +1,25 @@
+✖ Codex native daemon owns package selection and lifecycle (6.420975ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 105.226714
+
+✖ failing tests:
+
+test at scripts/test-nix-tooling.mjs:512:1
+✖ Codex native daemon owns package selection and lifecycle (6.420975ms)
+  Error: ENOENT: no such file or directory, open '/home/mhugo/.dotfiles-worktrees/codex-native-daemon-20260930/home/modules/codex-managed-daemon.nix'
+      at async open (node:internal/fs/promises:1345:25)
+      at async readFile (node:internal/fs/promises:1996:14)
+      at async TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/codex-native-daemon-20260930/scripts/test-nix-tooling.mjs:514:18)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/home/mhugo/.dotfiles-worktrees/codex-native-daemon-20260930/home/modules/codex-managed-daemon.nix'
+  }

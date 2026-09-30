@@ -1,0 +1,172 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-09-30-codex-native-daemon-evidence",
+  "workspec_id": "2026-09-30-codex-native-daemon-work",
+  "purpose_contract_id": "2026-09-30-codex-native-daemon-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "4a30b2f373a618d4d9af3683ff9eaf7f1986e20a7b84ae2a569d933f5086ee66"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "89416f6249e78a7dda6451ec435b9b23fa0609d450136bbbe5c4b62a20cf6c4a"
+  },
+  "workflow_run_id": "2026-09-30-codex-native-daemon-run",
+  "execution": {
+    "execution_id": "2026-09-30-codex-native-daemon-execution",
+    "tool": {
+      "id": "codex-native-daemon-runtime-probe",
+      "version": "local-canonical-validator"
+    },
+    "result": {
+      "result_id": "2026-09-30-codex-native-daemon-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "c4414bd332ec271a534db205cd33a0d720956e0996f751fec9528765ffd7fa0a"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "2026-09-30-codex-native-daemon-evidence-artifact",
+        "uri": "evidence/runtime-final.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "c4414bd332ec271a534db205cd33a0d720956e0996f751fec9528765ffd7fa0a"
+        }
+      },
+      {
+        "artifact_id": "2026-09-30-codex-native-daemon-changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "904cb2d75e3e9f8e0e6ced0291ee2f31209a01698f7a049053483145270a7fa6"
+        }
+      },
+      {
+        "artifact_id": "T1-red-artifact",
+        "uri": "evidence/red-result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "ad4668f3c33168e28daf9a1ca4810df1aab4aff4e5a8b9b5476ed8259fcc4ccc"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-09-30-codex-native-daemon-trace",
+    "started_at": "2026-09-30T10:38:55.803833+00:00",
+    "completed_at": "2026-09-30T10:38:55.803833+00:00"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Contract test for R1",
+      "result_id": "2026-09-30-codex-native-daemon-result",
+      "artifact_ids": [
+        "2026-09-30-codex-native-daemon-evidence-artifact"
+      ],
+      "output_uri": "evidence/runtime-final.json",
+      "green_observed_at": "2026-09-30T10:38:55.803833+00:00",
+      "red_proof": {
+        "result_id": "T1-red",
+        "artifact_id": "T1-red-artifact",
+        "output_uri": "evidence/red-result.json",
+        "observed_at": "2026-09-30T10:10:10.952332+00:00"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "89416f6249e78a7dda6451ec435b9b23fa0609d450136bbbe5c4b62a20cf6c4a"
+      },
+      "artifact_ids": [
+        "2026-09-30-codex-native-daemon-evidence-artifact"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "codex-root"
+      },
+      "observed_at": "2026-09-30T10:38:55.803833+00:00",
+      "rationale": "Declared verification passed."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "2026-09-30-codex-native-daemon-changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "904cb2d75e3e9f8e0e6ced0291ee2f31209a01698f7a049053483145270a7fa6"
+      },
+      "files": [
+        "home/home.nix",
+        "home/modules/codex-managed-daemon.nix",
+        "home/modules/codex-server-auto-update.nix",
+        "scripts/test-nix-tooling.mjs"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "The declared falsifier was executed and did not disprove the contract.",
+    "output_uri": "evidence/runtime-final.json"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "4efd1b97f4eeb4c783fe2566b2b4b512fd24a06f10f1595aab8d51b4e3b377ab"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "366e3df00f75313223778e82fe8c8cc0b4c539ce9bb7aaa5b39c8111b94fa3bc"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "96a5bde5e997e715c7d00e7c738d9f9d4901c18c02ee75ddfff0e69f7b6add52"
+    },
+    "witness_artifact_id": "2026-09-30-codex-native-daemon-evidence-artifact"
+  },
+  "reviews": [],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "runtime-probe",
+      "observed_outcome": "rejected",
+      "artifact_id": "2026-09-30-codex-native-daemon-evidence-artifact",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "89416f6249e78a7dda6451ec435b9b23fa0609d450136bbbe5c4b62a20cf6c4a"
+      },
+      "observed_at": "2026-09-30T10:38:55.803833+00:00"
+    }
+  ]
+}

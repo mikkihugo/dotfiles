@@ -1,0 +1,9 @@
+Removed '/home/mhugo/.config/systemd/user/timers.target.wants/codex-server-auto-update.timer'.
+Removed '/home/mhugo/.config/systemd/user/codex-server-auto-update.timer'.
+Removed '/home/mhugo/.config/systemd/user/codex-managed-daemon.service'.
+Removed '/home/mhugo/.config/systemd/user/default.target.wants/codex-managed-daemon.service'.
+Replace installed daemon version 0.157.1 with CLI version 0.159.2 from /home/mhugo/.codex/packages/standalone/releases/0.159.2-x86_64-unknown-linux-musl.
+The daemon package will be installed in /home/mhugo/.codex/packages/app-server-daemon.
+The selected package will be pinned. Run `codex app-server daemon update` to return to production updates.
+{"status":"updated","managedCodexPath":"/home/mhugo/.codex/packages/app-server-daemon/current/bin/codex","installedVersion":"0.159.2","runningVersion":null,"message":"The CLI package is selected and pinned. Run `codex app-server daemon update` to return to production updates."}
+{"status":"bootstrapped","backend":"pid","autoUpdateEnabled":false,"remoteControlEnabled":true,"managedCodexPath":"/home/mhugo/.codex/packages/app-server-daemon/current/bin/codex","managedCodexVersion":"0.159.2","socketPath":"/home/mhugo/.codex/app-server-control/app-server-control.sock","cliVersion":"0.159.2","appServerVersion":"0.159.2"}

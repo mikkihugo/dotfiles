@@ -1,0 +1,6 @@
+Checking style in 2 files using 16 threads.
+
+
+Congratulations! Your code complies with the Alejandra style.
+
+🤟 If Alejandra is useful to you, please consider sponsoring its author: https://github.com/sponsors/kamadorueda

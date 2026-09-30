@@ -1,0 +1,1 @@
+{"source": "repository-vcs-facade", "files": ["home/home.nix", "home/modules/codex-managed-daemon.nix", "home/modules/codex-server-auto-update.nix", "scripts/test-nix-tooling.mjs"]}

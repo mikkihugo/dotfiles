@@ -1,0 +1,32 @@
+{
+  "ok": false,
+  "version": {
+    "status": "running",
+    "managedCodexPath": "/home/mhugo/.codex/packages/app-server-daemon/current/bin/codex",
+    "managedCodexVersion": "0.157.1",
+    "socketPath": "/home/mhugo/.codex/app-server-control/app-server-control.sock",
+    "cliVersion": "0.159.2",
+    "appServerVersion": "0.159.2"
+  },
+  "checks": {
+    "running": true,
+    "versions_agree": false,
+    "retired:codex-managed-daemon.service": false,
+    "retired:codex-server-auto-update.timer": false,
+    "retired:codex-server-auto-update.service": true,
+    "remote_control_enabled": true,
+    "single_native_daemon": false,
+    "guardian_masked": true
+  },
+  "legacy_units": {
+    "codex-managed-daemon.service": "active",
+    "codex-server-auto-update.timer": "active",
+    "codex-server-auto-update.service": "inactive"
+  },
+  "processes": [
+    {
+      "pid": 1351631,
+      "executable": "/home/mhugo/.codex/packages/standalone/releases/0.159.2-x86_64-unknown-linux-musl/bin/codex"
+    }
+  ]
+}

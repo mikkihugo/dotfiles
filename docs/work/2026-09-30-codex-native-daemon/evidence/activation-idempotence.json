@@ -1,0 +1,13 @@
+{
+  "pid_unchanged": true,
+  "remote_control": "{\"status\":\"alreadyEnabled\",\"backend\":\"pid\",\"remoteControlEnabled\":true,\"socketPath\":\"/home/mhugo/.codex/app-server-control/app-server-control.sock\",\"cliVersion\":\"0.159.2\",\"appServerVersion\":\"0.159.2\"}\n",
+  "start": "{\"status\":\"alreadyRunning\",\"backend\":\"pid\",\"managedCodexPath\":\"/home/mhugo/.codex/packages/app-server-daemon/current/bin/codex\",\"managedCodexVersion\":\"0.159.2\",\"socketPath\":\"/home/mhugo/.codex/app-server-control/app-server-control.sock\",\"cliVersion\":\"0.159.2\",\"appServerVersion\":\"0.159.2\"}\n",
+  "updater": {
+    "pid": 1887281,
+    "processStartTime": "Wed Sep 30 10:35:17 2026",
+    "processIdentity": {
+      "bootId": "19cfdcc2-2246-4284-bff5-d0cb8e254fef",
+      "startTicks": 17861452
+    }
+  }
+}

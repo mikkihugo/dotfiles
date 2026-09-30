@@ -1,0 +1,11 @@
+{
+  "state": "runtime-verified",
+  "native_backend": "pid",
+  "version": "0.159.2",
+  "production_update": "successful",
+  "updater_pid": 1887281,
+  "activation_pid_unchanged": true,
+  "source_test": "passed",
+  "falsifier": "runtime-final.json ok false, inactive updater, or repeated activation changes daemon PID",
+  "publication": "local source edits only"
+}

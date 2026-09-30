@@ -380,18 +380,9 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
     /(?:KIMI_API_KEY|MINIMAX_API_KEY|JCODE_PROVIDER_LLM_GATEWAY_API_KEY)\s*=\s*"[A-Za-z0-9_-]{16,}"/,
   );
 
-  // Assert MEMBERSHIP, not the literal array. Pinning the exact order broke the
-  // moment a provider was added (ollama-cloud) and reordered (minimax-direct
-  // first), which is a config decision this test has no opinion about. What it
-  // must protect is that every provider the managed profiles depend on is
-  // offered in the picker.
-  for (const provider of ["llm-gateway", "kimi", "minimax", "openai-oauth", "ollama-cloud"]) {
-    assert.match(
-      preferences,
-      new RegExp(`model_picker_providers\\s*=\\s*\\[[^\\]]*"${provider}"`),
-      `model_picker_providers must offer ${provider}`,
-    );
-  }
+  // Commit 3b827f74 removed the managed allowlist so additional providers
+  // remain visible. An absent list leaves routes unfiltered in JCode.
+  assert.doesNotMatch(preferences, /^model_picker_providers\s*=/m);
   assert.match(preferences, /cross_provider_failover\s*=\s*"(manual|countdown)"/);
   assert.match(preferences, /trusted_external_sources\s*=\s*\[\]/);
   assert.match(preferences, /trusted_external_source_paths\s*=\s*\[\]/);
@@ -509,14 +500,22 @@ test("Home Manager uses the nixpkgs mise package without a private overlay", asy
   assert.doesNotMatch(updater, /nix develop|just mise-upgrade/);
 });
 
-test("Codex server refresh is declared separately from the stopped guardian", async () => {
+test("Codex native daemon owns package selection and lifecycle", async () => {
   const home = await source("home/home.nix");
-  const refresh = await source("home/modules/codex-server-auto-update.nix");
+  const daemon = await source("home/modules/codex-managed-daemon.nix");
 
-  assert.match(home, /\.\/modules\/codex-server-auto-update\.nix/);
-  assert.match(refresh, /app-server --remote-control[\s\S]*--managed-daemon/);
-  assert.match(refresh, /current\/bin\/codex/);
-  assert.doesNotMatch(refresh, /codex-guardian/);
+  assert.match(home, /\.\/modules\/codex-managed-daemon\.nix/);
+  assert.doesNotMatch(home, /\.\/modules\/codex-server-auto-update\.nix/);
+  assert.match(daemon, /app-server daemon bootstrap --remote-control/);
+  assert.match(daemon, /app-server daemon update/);
+  assert.doesNotMatch(daemon, /--from-cli/);
+  assert.match(daemon, /app-server daemon start/);
+  assert.match(daemon, /entryBetween \["linkGeneration"\] \["writeBoundary"\]/);
+  assert.match(daemon, /entryAfter \["reloadSystemd"\]/);
+  assert.match(daemon, /disable --now codex-managed-daemon\.service/);
+  assert.match(daemon, /disable --now codex-server-auto-update\.timer/);
+  assert.doesNotMatch(daemon, /systemd\.user|OnCalendar|RestartSec|ExecStart/);
+  assert.doesNotMatch(daemon, /codex-guardian/);
 });
 
 test("daily python3 is nixpkgs, not mise", async () => {

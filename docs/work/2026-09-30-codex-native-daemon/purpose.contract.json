@@ -1,0 +1,93 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-09-30-codex-native-daemon-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-09-30-codex-native-daemon"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-09-30-codex-native-daemon",
+      "revision": "initial"
+    },
+    "objective": {
+      "id": "2026-09-30-codex-native-daemon-objective",
+      "statement": "Give Codex sessions one native owner for daemon package selection and lifecycle.",
+      "measure": "The native daemon owns its production package and updater; .dotfiles retires its standalone launcher and direct-restart timer; CLI, managed package, and running server agree and /model lists GPT-6.1-Sol."
+    },
+    "need": {
+      "id": "2026-09-30-codex-native-daemon-need",
+      "statement": "Give Codex sessions one native owner for daemon package selection and lifecycle.",
+      "stakeholders": [
+        "Mikael and the shared Codex TUI sessions on cc-se-sto-devbox-01."
+      ],
+      "baseline": "codex app-server daemon version reports managedCodexVersion=0.157.1 while cliVersion and appServerVersion are 0.159.2; codex-managed-daemon.service launches standalone/current and an hourly timer owns direct restarts.",
+      "consequence_of_no_action": "Native daemon diagnostics continue to describe an unused stale package, while Home Manager and Codex have overlapping lifecycle ownership.",
+      "assumptions": [],
+      "alternatives_considered": [
+        "Keep the standalone systemd wrapper",
+        "Use supported native bootstrap and package update commands"
+      ]
+    }
+  },
+  "admission": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  },
+  "purpose": "Give Codex sessions one native owner for daemon package selection and lifecycle.",
+  "consumer": "Mikael and the shared Codex TUI sessions on cc-se-sto-devbox-01.",
+  "contract": "The native daemon owns its production package and updater; .dotfiles retires its standalone launcher and direct-restart timer; CLI, managed package, and running server agree and /model lists GPT-6.1-Sol.",
+  "failure_boundary": "Migration may disconnect attached Codex turns; source and logs persist, and the separate migration unit must complete native bootstrap even when the old daemon exits.",
+  "evidence": [
+    {
+      "kind": "runtime",
+      "description": "The runtime checker proves package/version agreement, native executable ownership, remote control enabled, and retirement of custom systemd units.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "Codex native management owns the running shared daemon after migration.",
+    "executable_check": {
+      "kind": "command",
+      "description": "Any mismatch in CLI/managed/server versions, active legacy unit, or executable outside app-server-daemon/current falsifies the migration.",
+      "command": "python3 docs/work/2026-09-30-codex-native-daemon/evidence/check-runtime.py"
+    }
+  },
+  "non_goals": [
+    "Change default model or reasoning settings",
+    "Change authentication, MCP registration, or the masked guardian",
+    "Deploy unrelated dirty dotfiles edits"
+  ],
+  "invariants": [
+    "Exactly one shared daemon owns the Codex socket",
+    "Remote control remains enabled",
+    "Native package diagnostics describe the executable actually running",
+    "Unrelated primary checkout edits are preserved"
+  ],
+  "assumptions": [
+    {
+      "statement": "Native bootstrap can own a Linux daemon without the custom standalone systemd launcher.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "Native bootstrap fails or returns a daemon that cannot reconnect normal TUI sessions."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "risk": "medium",
+    "blast_radius": "service",
+    "reversibility": "moderate",
+    "max_active_doubt": 1,
+    "reason": "Operator explicitly requested replacing the custom daemon management with native Codex management."
+  },
+  "target_planes": [
+    "host-tooling"
+  ],
+  "plane_constraints": []
+}

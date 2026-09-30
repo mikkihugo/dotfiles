@@ -1,0 +1,165 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-09-30-codex-native-daemon-work",
+  "purpose_contract_id": "2026-09-30-codex-native-daemon-purpose",
+  "handover": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  },
+  "feature_tree_target": {
+    "kind": "component",
+    "name": "dotfiles Codex runtime management",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-09-30-codex-native-daemon-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "4efd1b97f4eeb4c783fe2566b2b4b512fd24a06f10f1595aab8d51b4e3b377ab"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "Dotfiles shall use Codex native bootstrap and retire its custom standalone daemon service and timer; the migrated devbox shall run the native production package at the installed CLI version.",
+        "acceptance_criteria": [
+          "Native bootstrap remains declared in dotfiles activation after legacy service retirement",
+          "Legacy daemon and refresh timer are stopped and disabled",
+          "CLI, managed package, running server versions agree at migration",
+          "Normal daemon-backed /model picker lists GPT-6.1-Sol",
+          "Remote control remains enabled and the guardian stays masked"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Dotfiles Codex activation",
+            "trigger": "the operator applies the native daemon migration",
+            "response": "retire the old systemd daemon/timer and bootstrap the native managed daemon with remote control enabled"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "an old systemd unit continues owning the daemon or native package version diverges from the running process at migration",
+          "witness_kind": "runtime-probe",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "Dotfiles shall use Codex native bootstrap and retire its custom standalone daemon service and timer; the migrated devbox shall run the native production package at the installed CLI version.",
+      "acceptance_criteria": [
+        "Native bootstrap remains declared in dotfiles activation after legacy service retirement",
+        "Legacy daemon and refresh timer are stopped and disabled",
+        "CLI, managed package, running server versions agree at migration",
+        "Normal daemon-backed /model picker lists GPT-6.1-Sol",
+        "Remote control remains enabled and the guardian stays masked"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Dotfiles Codex activation",
+          "trigger": "the operator applies the native daemon migration",
+          "response": "retire the old systemd daemon/timer and bootstrap the native managed daemon with remote control enabled"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "an old systemd unit continues owning the daemon or native package version diverges from the running process at migration",
+        "witness_kind": "runtime-probe",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "home/home.nix",
+      "home/modules/codex-server-auto-update.nix",
+      "home/modules/codex-managed-daemon.nix",
+      "scripts/test-nix-tooling.mjs",
+      "docs/work/2026-09-30-codex-native-daemon/**"
+    ],
+    "blocked": [
+      "secrets/**",
+      "config/codex/config.toml",
+      "config/codex/shared-preferences.toml"
+    ],
+    "expected_files": [
+      "home/home.nix",
+      "scripts/test-nix-tooling.mjs"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Runtime ownership/version check fails before migration; updated existing Nix tooling contract and fresh TUI picker prove the supported native lifecycle after migration.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "python3 docs/work/2026-09-30-codex-native-daemon/evidence/check-runtime.py",
+      "node --test --test-name-pattern=\"Codex native daemon\" scripts/test-nix-tooling.mjs",
+      "nix eval .#homeConfigurations.cc-se-sto-devbox-01.activationPackage.drvPath",
+      "purpose-validate-work docs/work/2026-09-30-codex-native-daemon --require-evidence"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex-01a0e95e"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-09-30-codex-native-daemon",
+    "target_planes": [
+      "host-tooling"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "unspecified",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

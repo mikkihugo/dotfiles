@@ -84,7 +84,11 @@ in
         # 103+ engine lanes: each workspace-close attempt costs ~3–4s via direnv;
         # most are refused (dirty/unintegrated/owned) but must still be probed.
         # 5min timed out mid-scan on 2026-09-02 without deleting anything.
-        TimeoutStartSec = "30min";
+        # 2026-10-01: 330 lanes at ~8s per probe: the first complete run after the
+        # inventory fix closed 0 and kept 164 in 30min, then systemd killed it
+        # mid-loop, so it never reached the rest (singularity-engine#964). Fail-closed
+        # and idle-priority, so a long budget costs nothing but wall clock.
+        TimeoutStartSec = "3h";
       };
     };
 

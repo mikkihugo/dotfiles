@@ -85,6 +85,7 @@
     # Daily python3 is nixpkgs, not mise. Linked against its own bzip2/lzma
     # closure so `import bz2` works without nix-ld search-path hacks.
     python3
+    python3Packages.pyyaml # `import yaml` for scripts tooling (e.g. config validation)
     pkg-config # native library discovery for remaining mise source builds
     go # build local Go tools
     pnpm # fast, disk-efficient Node package manager

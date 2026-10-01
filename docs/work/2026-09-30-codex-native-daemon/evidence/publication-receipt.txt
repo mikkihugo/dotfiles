@@ -1,0 +1,206 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+forgejo-https credential helper: ok
+dotfiles VCS contract: ok
+ast-grep 0.42.1
+ast-grep 0.42.1
+/tmp/tmp.iB4ww5QlVh/sample.js:1:const answer = 42;
+export LANG="C.UTF-8"
+export LC_ALL="C.UTF-8"
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.328s
+
+OK
+........saved model, model_reasoning_effort, developer_instructions, features.memories, features.context_management, features.step_model_switching, features.mcp_2026_07_28 to /tmp/tmp5fm6tsg3/shared.toml
+.saved model, developer_instructions to /tmp/tmp14p73_59/shared.toml
+..
+----------------------------------------------------------------------
+Ran 11 tests in 0.651s
+
+OK
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.071s
+
+OK
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.716s
+
+OK
+ok   exit 0 on add
+ok   adds only the missing declared key (2 -> 3)
+ok   declared key now present
+ok   undeclared pre-existing key kept
+ok   exit 0 on rerun
+ok   second run is a no-op (byte-identical)
+ok   no duplicate lines after rerun
+ok   comment difference does not create a duplicate
+ok   hardware sk key preserved
+ok   options-prefixed key preserved
+ok   declared key appended alongside (2 -> 3)
+ok   options-prefixed key matched, not duplicated
+ok   target left at 0600
+ok   exit 0 when target absent
+ok   target created with the declared key
+ok   created target is 0600
+ok   exit 0 when declared file absent
+ok   target untouched when declared file absent
+
+all merge-authorized-keys checks passed
+ok   scripts/codex-preferences (derived)
+ok   scripts/jcode-preferences (derived)
+ok   scripts/merge-authorized-keys (derived)
+ok   scripts/reap-abandoned-searches.sh (derived)
+nix gate covers every module-referenced script
+ok   no recursive rm in the sweep
+ok   no pipe into grep -q
+ok   no eval direnv-export fallback
+ok   facade routed through fail-closed repo_vcs/direnv-exec wrapper with fixture bypass
+ok   direnv exec appears once (environment load), not per facade call
+ok   ExecStart is the store wrapper
+ok   hms cannot start the sweep (X-SwitchMethod=keep-old)
+ok   the .local/bin copy is force-replaced, not clobber-blocked
+ok   migration hook retires the unmanaged copies pre-checkLinkTargets
+ok   the sweep honours the fixture root overrides (safe to execute)
+ok   unreadable inventory refuses without calling a verb
+ok   empty inventory refuses
+ok   reclaimable present workspace goes through workspace-close
+ok   missing path clears only the registration
+ok   live lease is never acted on
+ok   a registration matching early in the listing is not treated as an orphan
+ok   a refusal keeps the workspace
+ok   direnv ran exactly once for three lanes
+ok   every facade call ran with the environment loaded once
+ok   a failed environment load refuses without calling the facade
+engine-worktree-cleanup contract holds
+sccache profile scope contract: ok
+✔ Home Manager owns the devbox-scoped exact wrapper logic (10.644077ms)
+✔ wrapper selects the nearest marked Engine root and preserves argv (65.147196ms)
+✔ wrapper rejects an unrelated ancestor flake and uses marked fallback (77.258746ms)
+✔ wrapper recursion fails closed before invoking Nix (28.225097ms)
+✔ the canonical repository check runs the cargo-pgrx wrapper contract (2.403917ms)
+✔ Purpose Tool alone owns the external-harness-orchestration skill source and projection (10.638567ms)
+✔ Codex root orchestrates through the canonical skill and explicit profiles (3.006803ms)
+✔ Home Manager retains all five explicit role profiles and the Codex-only provenance launcher (8.127147ms)
+✔ old general orchestration runbooks remain absent (2.86158ms)
+✔ requires explicit root/parent/task identity; no anonymous default (324.00004ms)
+✔ rejects Kimi agent budget above the per-coordinator ceiling of 10 (324.269597ms)
+✔ writes crash-recoverable record with required provenance and no prompt/argv leakage (85.192117ms)
+✔ falls back to ~/.local/state/codex when XDG_STATE_HOME is unset (93.312652ms)
+✔ records child exit code and failed status; launcher forwards exit code (86.985415ms)
+✔ records signal termination and maps launcher exit to 128+signo (75.746068ms)
+✔ forwards SIGTERM to the child and records signal termination (121.694915ms)
+✔ rejects a duplicate run id instead of overwriting an existing record (163.600929ms)
+✔ preserves nested root/parent ancestry (parent is the immediate lead task) (84.70945ms)
+✔ rejects Kimi prompt mode combined with --auto or --yolo (123.923734ms)
+✔ reconciles stale dead-pid records before summing reserved Kimi budget (101.016852ms)
+✔ rejects a launch that would exceed the global 30 Kimi agent ceiling (73.135752ms)
+✔ enforces one writer per workspace lane (88.312604ms)
+✔ serializes concurrent reservations without exceeding the global ceiling (1599.534738ms)
+✔ rejects when one coordinator's aggregated active Kimi reservations would exceed 10 (73.677622ms)
+✔ other coordinators' reservations do not count toward the per-coordinator ceiling (86.398139ms)
+✔ fails closed on an unparsable run record instead of ignoring it (74.476626ms)
+✔ fails closed on a schema-invalid active record instead of treating missing budget as zero (82.05493ms)
+✔ signals the worker process group so grandchildren do not survive launcher termination (120.249463ms)
+✔ cursor harness launches without Kimi budget accounting (93.21655ms)
+✔ recovers a reservation lock whose recorded owner PID is dead (104.439448ms)
+✔ recovers a legacy ownerless lock once it is older than the contention window (87.095492ms)
+✔ recovers a corrupt owner lock once it is older than the contention window (92.809464ms)
+✔ fails closed on a fresh ownerless lock inside the contention window without stealing it (328.580007ms)
+✔ retry-budget overrides never shorten the stale classification window (89.452251ms)
+✔ never steals a lock whose recorded owner PID is alive (353.022339ms)
+✔ root and every gateway-backed Codex role disable hosted search (23.066001ms)
+✔ Codex keeps external gateway profiles profile-only and residents OpenAI-only (15.221477ms)
+✔ detect-secrets filters only canonical Purpose work-packet metadata (5119.861186ms)
+✔ detect-secrets filters host-hook content hashes in hooks.lock.json (1004.73367ms)
+✔ hms warns (but still builds) when the primary is not a clean main checkout (91.968721ms)
+✔ hms stays silent on a clean main checkout (63.945432ms)
+✔ Home Manager retires only the unsafe JCode lane-settle artifacts (4.740378ms)
+✔ nix-direnv overlay does not GC-root flake archive inputs (10.676327ms)
+✔ agent direnv cache rejects exports with deleted Nix store paths (2.764277ms)
+✔ Home Manager preserves the requested Forgejo and fast-Nix toolchain without tea (27.741768ms)
+✔ Home Manager owns nix-index database refresh wiring (2.928055ms)
+✔ Home Manager activation does not launch emergency backup jobs (3.162417ms)
+✔ mutable home sweeps serialize and report bounded lock failures (2.325802ms)
+✔ home emergency backup ssh command keeps long uploads alive on Hetzner Storage Box (2.646534ms)
+✔ home emergency backup ssh command never shares an ssh connection with sibling jobs (1.534982ms)
+✔ borgmatic hot-source backup replaces mutating git snapshots safely (14.090708ms)
+✔ Home Manager gives every managed agent client a deterministic UTF-8 locale (1.803978ms)
+✔ NixOS owns the JCode units; Home Manager must not shadow them (2.936901ms)
+✔ JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gateway fallbacks (13.081668ms)
+✔ shell aliases consume the managed Nix tooling (3.449056ms)
+✔ the Home Manager wrapper preserves an explicitly requested flake (2.029892ms)
+✔ the maintenance shell supplies every executable used by the canonical check (4.040119ms)
+✔ Home Manager does not include the retired Hermes agent (1.932549ms)
+✔ Home Manager uses the nixpkgs mise package without a private overlay (5.660091ms)
+✔ Codex native daemon owns package selection and lifecycle (1.994576ms)
+✔ daily python3 is nixpkgs, not mise (4.949281ms)
+✔ Home Manager activation uses the non-deprecated nix profile command (1.677138ms)
+✔ dotfiles flake does not import ace-coder or the GPU worker (4.016936ms)
+✔ just check delegates to the single repository check implementation (2.472447ms)
+✔ global Codex instructions keep publication owned until land completes (1.452727ms)
+✔ otel-env.sh resolves OTLP helpers without mutating caller PATH (2.827405ms)
+✔ cursor-agent and agent share one OTEL wrapper with unified binary resolution (3.947434ms)
+✔ Claude Code remains native-installer-owned outside Home Manager (2.540023ms)
+✔ Home Manager modules keep single ownership of every managed path and bin name (20.014405ms)
+✔ live config does not call retired *.infra.centralcloud.com endpoints (30.073289ms)
+(node:2654210) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ the shell startup secret loaders are untraceable (15.075052ms)
+✔ the untraceable prologue actually suppresses a traced leak (64.134098ms)
+✔ mikki-bunker-windows uses the verified Tailscale admin route (3.631058ms)
+✔ ssh_config declares cc-se-sto-core-01 so fleet loops can reach it (1.266185ms)
+✔ stable shell preserves the caller PATH ahead of Home Manager defaults (22.578774ms)
+✔ SHELL points directly at an immutable store wrapper (1.940304ms)
+✔ stable-shell delegates non-interactive direnv loading to BASH_ENV (3.007424ms)
+✔ ordinary non-interactive shells enter direnv once with a bounded wait (154.036056ms)
+✔ Home Manager uses direnv-instant for interactive shells (4.472532ms)
+﹣ the NixOS devbox is the sole interactive direnv hook authority (0.368526ms) # SKIP
+✔ Home Manager exports BASH_ENV for login and systemd user sessions (3.55237ms)
+✔ BASH_ENV path hook enters direnv once for Claude/Codex bash -c (127.401273ms)
+✔ dump cache hit evals without direnv allow or export (220.670924ms)
+✔ fill runs direnv allow only when the envrc proves blocked (245.680486ms)
+✔ enter-once sentinel is scoped to the repository root (70.812585ms)
+✔ directories without an envrc skip direnv entirely (12.197874ms)
+✔ dump fill strips one-line DIRENV_DIFF and DIRENV_WATCHES (175.454605ms)
+✔ dump whose recorded root no longer has envrc is not reused (239.542747ms)
+✔ dump miss drops leftover flock locks without a matching dump (119.632993ms)
+✔ a dump that froze a truncated PATH cannot strip the caller's tool dirs (92.982169ms)
+✔ an interactive direnv-instant apply cannot strip the caller's tool dirs (100.860527ms)
+✔ the interactive and non-interactive PATH restores stay one rule (3.840743ms)
+✔ fj wrapper falls back to FJ_HOST_DEFAULT when FJ_HOST is unset (12.867425ms)
+✔ wrapper validator rejects the exact shape that caused the 2026-09-20 outage (2.483757ms)
+✔ wrapper validator accepts an absolute interpreter and exec target (0.3931ms)
+✔ wrapper validator rejects a shebang pointing at a missing interpreter (0.309233ms)
+✔ the deployed agent-shell wrapper is executable on this host (0.521843ms)
+✔ stable-shell.nix generators never emit a relative interpreter (3.827277ms)
+✔ Home Manager imports the Tabby terminal module without replacing WezTerm (1.308454ms)
+✔ Eugeny Tabby is hash-pinned without installing the unrelated TabbyML server (21.292822ms)
+ℹ tests 100
+ℹ suites 0
+ℹ pass 99
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 6283.046659
+✔ the NixOS devbox is the sole interactive direnv hook authority (8163.218807ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8257.327868
+To github.com:mikkihugo/dotfiles.git
+   654a1d45..0d2947e8  HEAD -> main
+To git.svc:mhugo/dotfiles.git
+   654a1d45..0d2947e8  HEAD -> main
+From git.svc:mhugo/dotfiles
+   654a1d45..0d2947e8  main       -> origin/main
+landed=main revision=0d2947e89192097e00c470118ea7d1455d436236 forgejo_readback=true github_readback=true source=worktree/codex-native-daemon-20260930

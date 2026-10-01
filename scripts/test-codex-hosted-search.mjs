@@ -4,7 +4,6 @@ import test from "node:test";
 
 const readConfig = async (path) => readFile(path, "utf8");
 const disabled = /^web_search\s*=\s*"disabled"\s*$/m;
-const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 test("root and every gateway-backed Codex role disable hosted search", async () => {
   const seed = await readConfig("config/codex/config.toml");
@@ -17,19 +16,12 @@ test("root and every gateway-backed Codex role disable hosted search", async () 
   assert.match(seed, disabled);
   assert.match(shared, disabled);
   for (const roleName of roleNames) {
-    const role = await readConfig(`config/codex/agents/${roleName}`);
+    const role = await readConfig("config/codex/agents/" + roleName);
     if (/^model_provider\s*=\s*"llm-gateway"\s*$/m.test(role)) {
-      assert.match(
-        role,
-        disabled,
-        `${roleName} must explicitly disable hosted web search`,
-      );
+      assert.match(role, disabled, roleName + " must explicitly disable hosted web search");
     }
   }
-  assert.match(
-    seed,
-    /\[mcp_servers\.ccgw\][\s\S]*?^required\s*=\s*true\s*$/m,
-  );
+  assert.match(seed, /\[mcp_servers\.ccgw\][\s\S]*?^required\s*=\s*true\s*$/m);
   assert.match(activation, /cp "\$\{\.\.\/\.\.\/config\/codex\/config\.toml\}"/);
   assert.match(
     activation,
@@ -37,9 +29,10 @@ test("root and every gateway-backed Codex role disable hosted search", async () 
   );
 });
 
-test("Codex keeps external gateway profiles profile-only and residents OpenAI-only", async () => {
+test("Codex exposes no alternate gateway profiles and keeps residents OpenAI-only", async () => {
   const seed = await readConfig("config/codex/config.toml");
   const shared = await readConfig("config/codex/shared-preferences.toml");
+  const instructions = await readConfig("config/codex/AGENTS.md");
   const managedFiles = await readConfig("home/modules/files.nix");
   const activation = await readConfig("home/modules/activation.nix");
   const expectedResidentFiles = [
@@ -52,22 +45,8 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
     "taxonomy-worker.toml",
   ];
   const expectedResidentConfigs = expectedResidentFiles
-    .map((file) => `agents/${file}`)
+    .map((file) => "agents/" + file)
     .sort();
-  const expectedProfiles = [
-    "external-explorer.config.toml",
-    "external-reasoner.config.toml",
-    "external-reviewer.config.toml",
-    "external-verifier.config.toml",
-    "external-worker.config.toml",
-  ];
-  const expectedModels = {
-    "external-explorer.config.toml": "auto-qwen-fast",
-    "external-reasoner.config.toml": "kimi-code/k3",
-    "external-reviewer.config.toml": "ollama-cloud/deepseek-v4-pro",
-    "external-verifier.config.toml": "ollama-cloud/nemotron-3-ultra",
-    "external-worker.config.toml": "minimax-coding-plan/MiniMax-M3",
-  };
   const registeredFiles = [...seed.matchAll(
     /^\[agents\.[^\]]+\][\s\S]*?^config_file\s*=\s*"([^"]+)"$/gm,
   )]
@@ -79,7 +58,7 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
   assert.match(
     seed,
     /\[model_providers\.llm-gateway\][\s\S]*?^wire_api\s*=\s*"responses"$/m,
-    "the Codex gateway provider must retain its native Responses endpoint",
+    "the dormant gateway provider declaration remains explicit",
   );
   assert.match(shared, /^model\s*=\s*"gpt-reserve"$/m);
   assert.match(shared, /^model_provider\s*=\s*"openai"$/m);
@@ -93,50 +72,38 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
   const managedResidentLinks = [...managedFiles.matchAll(
     /"\.codex\/agents\/([^\"]+)"\s*=\s*\{[\s\S]*?source\s*=\s*([^;]+);/g,
   )]
-    .map(([, target, source]) => `${target}:${source.trim()}`)
+    .map(([, target, source]) => target + ":" + source.trim())
     .sort();
   const expectedResidentLinks = expectedResidentFiles
-    .map((file) => `${file}:../../config/codex/agents/${file}`)
+    .map((file) => file + ":../../config/codex/agents/" + file)
     .sort();
   assert.deepEqual(managedResidentLinks, expectedResidentLinks);
 
   for (const residentFile of expectedResidentFiles) {
-    const resident = await readConfig(`config/codex/agents/${residentFile}`);
-    assert.match(resident, /^model_provider\s*=\s*"openai"$/m, `${residentFile} must remain OpenAI-resident`);
+    const resident = await readConfig("config/codex/agents/" + residentFile);
+    assert.match(
+      resident,
+      /^model_provider\s*=\s*"openai"$/m,
+      residentFile + " must remain OpenAI-resident",
+    );
   }
 
-  for (const profileName of expectedProfiles) {
-    const profilePath = `config/codex/external-profiles/${profileName}`;
-    const profile = await readConfig(profilePath);
-    assert.match(
-      profile,
-      new RegExp(`^model\\s*=\\s*"${escapeRegExp(expectedModels[profileName])}"$`, "m"),
-      `${profileName} must use its explicit canonical gateway model ID`,
-    );
-    assert.match(profile, /^model_provider\s*=\s*"llm-gateway"$/m, `${profileName} must target llm-gateway`);
-    assert.match(profile, disabled, `${profileName} must disable hosted web search`);
-    assert.doesNotMatch(profile, /\bumans\b/i, `${profileName} must not use a deprecated Umans route`);
-    assert.match(
-      managedFiles,
-      new RegExp(`"\\.codex/${escapeRegExp(profileName)}"\\s*=\\s*\\{[\\s\\S]*?source\\s*=\\s*\\.\\.\\/\\.\\.\\/config\\/codex\\/external-profiles\\/${escapeRegExp(profileName)};`),
-      `${profileName} must be Home Manager-provisioned as a profile-only config`,
-    );
-    if (profileName === "external-reviewer.config.toml") {
-      assert.match(profile, /^model_reasoning_effort\s*=\s*"high"$/m);
-    } else if (profileName === "external-verifier.config.toml") {
-      assert.match(
-        profile,
-        /^model_reasoning_effort\s*=\s*"none"$/m,
-        "the non-reasoning verifier must suppress the inherited root reasoning effort",
-      );
-    } else {
-      assert.doesNotMatch(
-        profile,
-        /^model_reasoning_effort\s*=/m,
-        `${profileName} must not guess a named reasoning effort absent catalog support`,
-      );
-    }
-  }
+  const externalProfiles = await readdir("config/codex/external-profiles").catch((error) => {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  });
+  assert.deepEqual(externalProfiles, [], "alternate Codex profile sources must be removed");
+  assert.doesNotMatch(
+    managedFiles,
+    /\.codex\/external-(explorer|reasoner|reviewer|verifier|worker)\.config\.toml/,
+    "Home Manager must not provision alternate Codex profiles",
+  );
+  assert.doesNotMatch(
+    instructions,
+    /external-(explorer|reasoner|reviewer|verifier|worker)/,
+    "Codex instructions must not advertise removed profiles",
+  );
+  assert.match(managedFiles, /"\.codex\/bin\/codex-external-run"\s*=\s*\{/);
 
   assert.match(
     activation,
@@ -158,8 +125,9 @@ test("Codex keeps external gateway profiles profile-only and residents OpenAI-on
     /gnugrep[\s\S]*?model_provider[\s\S]*?llm-gateway/,
     "activation must detect a stale plain gateway agent file",
   );
-  assert.ok(
-    activation.includes("['\\\"]llm-gateway['\\\"]"),
+  assert.match(
+    activation,
+    /\['\\"]llm-gateway\['\\"]/,
     "activation must recognize both legal TOML string delimiters for llm-gateway",
   );
   assert.match(

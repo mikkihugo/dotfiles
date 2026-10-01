@@ -150,38 +150,14 @@
       force = true;
     };
 
-    # Gateway-backed profiles are deliberately outside ~/.codex/agents. They
-    # are only for codex exec --ephemeral --profile external-<role>.
-    ".codex/external-explorer.config.toml" = {
-      source = ../../config/codex/external-profiles/external-explorer.config.toml;
-      force = true;
-    };
-
-    ".codex/external-reasoner.config.toml" = {
-      source = ../../config/codex/external-profiles/external-reasoner.config.toml;
-      force = true;
-    };
-
-    ".codex/external-reviewer.config.toml" = {
-      source = ../../config/codex/external-profiles/external-reviewer.config.toml;
-      force = true;
-    };
-
-    ".codex/external-verifier.config.toml" = {
-      source = ../../config/codex/external-profiles/external-verifier.config.toml;
-      force = true;
-    };
-
-    ".codex/external-worker.config.toml" = {
-      source = ../../config/codex/external-profiles/external-worker.config.toml;
-      force = true;
-    };
-
+    # Alternate gateway-backed Codex profiles are intentionally not installed.
+    # Keep the provenance launcher below for explicitly authorized external CLI
+    # workers; it is not a Codex model profile.
     # Agent skills are installed from the Engine-owned Purpose Tool MCP/plugin via
     # install_skills. Dotfiles keeps only archived legacy copies; Home Manager
     # must not republish them as live ~/.agents, ~/.claude, or ~/.copilot skills.
     # Reusable external-harness-orchestration is installed by Purpose Tool;
-    # this module owns only the Codex-specific launcher and role profiles.
+    # this module owns only the Codex-specific launcher.
     # The provenance launcher is installed only under ~/.codex/bin.
     ".codex/bin/codex-external-run" = {
       source = pkgs.replaceVars ../../config/codex/bin/codex-external-run.mjs {

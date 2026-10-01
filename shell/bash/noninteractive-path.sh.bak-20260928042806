@@ -26,11 +26,3 @@ fi
 # shellcheck disable=SC1091
 [ -f "$HOME/.dotfiles/shell/bash/direnv-export.sh" ] &&
 	. "$HOME/.dotfiles/shell/bash/direnv-export.sh"
-
-# OpenBao CLI address. home.nix sets this via home.sessionVariables, which only
-# reaches LOGIN shells; agent `bash -c` shells miss it, and `bao` then falls back
-# to its built-in default (https://127.0.0.1:8200) where nothing listens --
-# surfacing as a bogus "connection refused / OpenBao is down" diagnosis.
-# Mirrors the BAO_ADDR declaration in home/home.nix; keep the two in sync.
-# A caller-supplied BAO_ADDR still wins.
-export BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}"

@@ -48,11 +48,19 @@
     bootstrapCodexManagedDaemon = lib.hm.dag.entryAfter ["reloadSystemd"] ''
       codex_cli="${config.home.homeDirectory}/.local/bin/codex"
       if [ -x "$codex_cli" ]; then
+        # A codex app server that is already running unmanaged (for example one
+        # started by an open Codex session) makes bootstrap/start exit non-zero
+        # ("app server is running but is not managed by codex app-server
+        # daemon"). That must not fail the whole Home Manager switch: report it
+        # and leave the running server alone.
         if [ ! -f "${config.home.homeDirectory}/.codex/app-server-daemon/settings.json" ]; then
-          "$codex_cli" app-server daemon bootstrap --remote-control
+          "$codex_cli" app-server daemon bootstrap --remote-control ||
+            echo "warning: codex app-server daemon bootstrap failed (unmanaged server running?); continuing" >&2
         else
-          "$codex_cli" app-server daemon enable-remote-control
-          "$codex_cli" app-server daemon start
+          "$codex_cli" app-server daemon enable-remote-control ||
+            echo "warning: codex app-server daemon enable-remote-control failed; continuing" >&2
+          "$codex_cli" app-server daemon start ||
+            echo "warning: codex app-server daemon start failed (unmanaged server running?); continuing" >&2
         fi
       fi
     '';

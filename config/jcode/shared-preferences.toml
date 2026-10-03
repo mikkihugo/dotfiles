@@ -55,7 +55,13 @@ model_catalog = true
 id = "glm-5.3"
 
 [[providers.ollama-cloud.models]]
+id = "glm-5.3-flash"
+
+[[providers.ollama-cloud.models]]
 id = "deepseek-v4-flash"
+
+[[providers.ollama-cloud.models]]
+id = "deepseek-v4.1-flash"
 
 [providers.byteplus-ark]
 type = "open-ai-compatible"

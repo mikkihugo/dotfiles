@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 MANAGED_SECTIONS = ("provider", "auth", "features", "agents")
-MANAGED_PROFILES = ("llm-gateway", "ollama-cloud")
+MANAGED_PROFILES = ("llm-gateway", "ollama-cloud", "minimax", "kimi")
 # Profiles this script used to own and now removes from the live config.
 # minimax-direct duplicated J-Code's built-in `minimax` provider (same
 # api.minimax.io endpoint and MINIMAX_API_KEY); the built-in's China endpoint is

@@ -60,6 +60,42 @@ id = "glm-5.3-flash"
 [[providers.ollama-cloud.models]]
 id = "deepseek-v4.1-flash"
 
+# Built-in MiniMax stays the default route. M3.1 Flash is the extra worker
+# model jcode admits as minimax:MiniMax-M3.1-Flash-Preview.
+[providers.minimax]
+type = "open-ai-compatible"
+base_url = "https://api.minimax.io/v1"
+auth = "bearer"
+api_key_env = "MINIMAX_API_KEY"
+env_file = "minimax.env"
+requires_api_key = true
+provider_routing = false
+allow_provider_pinning = false
+model_catalog = true
+
+[[providers.minimax.models]]
+id = "MiniMax-M3"
+
+[[providers.minimax.models]]
+id = "MiniMax-M3.1-Flash-Preview"
+
+# Kimi Code. jcode's provider id is `kimi`; `kimi-code` is an alias.
+# The admitted direct model is k3.
+[providers.kimi]
+type = "open-ai-compatible"
+base_url = "https://api.kimi.com/coding/v1"
+auth = "bearer"
+api_key_env = "KIMI_API_KEY"
+env_file = "kimi.env"
+default_model = "k3"
+requires_api_key = true
+provider_routing = false
+allow_provider_pinning = false
+model_catalog = true
+
+[[providers.kimi.models]]
+id = "k3"
+
 # Enable repository lane provisioning for autonomous swarm dispatch. Without
 # this, the autonomy controller cannot create isolated writer workspaces for
 # managed canonical-primary repos (e.g. jcode selfdev), and lane provisioning

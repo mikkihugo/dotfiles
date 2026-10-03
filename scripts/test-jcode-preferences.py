@@ -45,6 +45,24 @@ model_catalog = true
 
 [[providers.ollama-cloud.models]]
 id = "glm-5.3"
+
+[providers.minimax]
+type = "open-ai-compatible"
+base_url = "https://api.minimax.io/v1"
+api_key_env = "MINIMAX_API_KEY"
+model_catalog = true
+
+[[providers.minimax.models]]
+id = "MiniMax-M3"
+
+[providers.kimi]
+type = "open-ai-compatible"
+base_url = "https://api.kimi.com/coding/v1"
+api_key_env = "KIMI_API_KEY"
+model_catalog = true
+
+[[providers.kimi.models]]
+id = "k3"
 '''
 
 
@@ -190,6 +208,12 @@ class JcodePreferencesTest(unittest.TestCase):
         self.assertNotIn("byteplus", secrets.lower())
         ids = [model["id"] for model in parsed["providers"]["ollama-cloud"]["models"]]
         self.assertEqual(ids, ["glm-5.3", "glm-5.3-flash", "deepseek-v4.1-flash"])
+        self.assertEqual(
+            [model["id"] for model in parsed["providers"]["minimax"]["models"]],
+            ["MiniMax-M3", "MiniMax-M3.1-Flash-Preview"],
+        )
+        self.assertEqual(parsed["providers"]["kimi"]["base_url"], "https://api.kimi.com/coding/v1")
+        self.assertEqual([model["id"] for model in parsed["providers"]["kimi"]["models"]], ["k3"])
 
 
     def test_apply_consumes_multiline_string_value_of_a_managed_key(self) -> None:

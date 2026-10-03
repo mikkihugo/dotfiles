@@ -313,7 +313,7 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   );
   assert.doesNotMatch(service, /JCODE_RUNTIME_DIR|runtime-allowlisted/);
 
-  for (const provider of ["minimax", "ollama-cloud"]) {
+  for (const provider of ["minimax", "ollama-cloud", "kimi"]) {
     assert.match(
       aiTools,
       new RegExp(`claude\\|openai[^\\n]*${provider}`),
@@ -326,9 +326,18 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
     );
   }
   assert.ok(
+    aiTools.includes("minimax\tOpenAI-compatible\thttps://api.minimax.io/v1 (MiniMax-M3, MiniMax-M3.1-Flash-Preview)"),
+    "the MiniMax listing must include M3 and M3.1 Flash",
+  );
+  assert.ok(
     aiTools.includes("ollama-cloud\tOpenAI-compatible\thttps://ollama.com/v1 (glm-5.3, glm-5.3-flash, deepseek-v4.1-flash)"),
     "the direct Ollama listing must match the managed model profile",
   );
+  assert.ok(
+    aiTools.includes("kimi\tOpenAI-compatible\thttps://api.kimi.com/coding/v1 (k3)"),
+    "Kimi Code must be listed under its jcode provider id",
+  );
+  assert.match(aiTools, /claude\|openai\|minimax\|ollama-cloud\|kimi\|kimi-code\) return 0 ;;/);
   assert.doesNotMatch(aiTools, /byteplus-ark|BYTEPLUS_ARK_API_KEY|ark\.ap-southeast\.bytepluses\.com/);
   assert.doesNotMatch(preferences, /byteplus-ark|BYTEPLUS_ARK_API_KEY|ark\.ap-southeast\.bytepluses\.com/);
   assert.doesNotMatch(preferences, /id = "deepseek-v4-flash"/);

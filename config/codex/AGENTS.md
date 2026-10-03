@@ -162,10 +162,11 @@ identity semantics.
 Codex Default/Plan and multi-agent v1/v2 are lifecycle/UI modes, not protocol fixes.
 Codex root orchestrates external workers. For delegated external work, load
 `external-harness-orchestration` from Purpose Tool and follow it; dotfiles owns
-only the `~/.codex/bin/codex-external-run` launcher. Alternate gateway-backed
-Codex profiles are intentionally not installed. External workers, when
-explicitly authorized, must use the launcher and their own declared client
-route; do not invent a removed `codex --profile external-*` command.
+only the explicit `external-explorer`, `external-worker`, `external-reasoner`,
+`external-reviewer`, and `external-verifier` Codex profiles and the
+`~/.codex/bin/codex-external-run` launcher. Interactive example:
+`codex --profile external-worker`. One-shot example:
+`codex exec --ephemeral --profile external-worker "inspect this codebase"`.
 Do not duplicate the generic launch policy here.
 
 When `spawn_agent` reports a thread limit, inspect the exposed agent status,

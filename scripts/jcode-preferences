@@ -11,12 +11,13 @@ from pathlib import Path
 
 
 MANAGED_SECTIONS = ("provider", "auth", "features", "agents")
-MANAGED_PROFILES = ("llm-gateway", "ollama-cloud", "byteplus-ark")
+MANAGED_PROFILES = ("llm-gateway", "ollama-cloud")
 # Profiles this script used to own and now removes from the live config.
 # minimax-direct duplicated J-Code's built-in `minimax` provider (same
 # api.minimax.io endpoint and MINIMAX_API_KEY); the built-in's China endpoint is
 # opt-in only (JCODE_MINIMAX_CN=1), so the separate name is no longer needed.
-RETIRED_PROFILES = ("minimax-direct",)
+# byteplus-ark is removed entirely; DeepSeek 4.1 Flash stays on ollama-cloud.
+RETIRED_PROFILES = ("minimax-direct", "byteplus-ark")
 SECTION_HEADER = re.compile(r"^\s*(\[\[?)([^\]]+)(\]\]?)\s*(?:#.*)?$")
 KEY = re.compile(r"^\s*([A-Za-z0-9_-]+)\s*=")
 

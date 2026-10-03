@@ -45,20 +45,6 @@ model_catalog = true
 
 [[providers.ollama-cloud.models]]
 id = "glm-5.3"
-
-[providers.byteplus-ark]
-type = "open-ai-compatible"
-base_url = "https://ark.ap-southeast.bytepluses.com/api/coding/v3"
-auth = "bearer"
-api_key_env = "BYTEPLUS_ARK_API_KEY"
-env_file = "byteplus-ark.env"
-default_model = "ark-code-latest"
-model_catalog = false
-
-[[providers.byteplus-ark.models]]
-id = "ark-code-latest"
-context_window = 262144
-input = ["text"]
 '''
 
 
@@ -104,6 +90,10 @@ id = "stale"
 base_url = "https://stale-minimax.example/v1"
 obsolete = true
 
+[providers.byteplus-ark]
+base_url = "https://ark.ap-southeast.bytepluses.com/api/coding/v3"
+api_key_env = "BYTEPLUS_ARK_API_KEY"
+
 [providers.other]
 token = "keep-me"
 '''
@@ -140,6 +130,8 @@ class JcodePreferencesTest(unittest.TestCase):
             # provider: a stale copy in the live config is removed, not kept.
             self.assertNotIn("minimax-direct", parsed["providers"])
             self.assertNotIn("stale-minimax.example", first)
+            self.assertNotIn("byteplus-ark", parsed["providers"])
+            self.assertNotIn("ark.ap-southeast.bytepluses.com", first)
             self.assertEqual(parsed["providers"]["llm-gateway"]["models"], [{"id": "auto"}])
             self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o640)
 
@@ -174,7 +166,7 @@ class JcodePreferencesTest(unittest.TestCase):
             self.apply(source, target)
             self.assertEqual(target.read_text(), rendered)
 
-    def test_byteplus_ark_profile_is_managed(self) -> None:
+    def test_byteplus_ark_profile_is_retired(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             source = root / "shared-preferences.toml"
@@ -184,11 +176,20 @@ class JcodePreferencesTest(unittest.TestCase):
 
             self.apply(source, target)
             parsed = tomllib.loads(target.read_text())
-            profile = parsed["providers"]["byteplus-ark"]
-            self.assertEqual(profile["base_url"], "https://ark.ap-southeast.bytepluses.com/api/coding/v3")
-            self.assertEqual(profile["api_key_env"], "BYTEPLUS_ARK_API_KEY")
-            self.assertFalse(profile["model_catalog"])
-            self.assertEqual(profile["models"], [{"id": "ark-code-latest", "context_window": 262144, "input": ["text"]}])
+            self.assertNotIn("byteplus-ark", parsed["providers"])
+            self.assertNotIn("BYTEPLUS_ARK_API_KEY", target.read_text())
+
+    def test_shipped_catalog_drops_byteplus_and_keeps_deepseek_v41_on_ollama_cloud(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        preferences = (root / "config" / "jcode" / "shared-preferences.toml").read_text()
+        parsed = tomllib.loads(preferences)
+        self.assertNotIn("byteplus-ark", parsed["providers"])
+        self.assertNotIn("byteplus", preferences.lower())
+        secrets = (root / "secrets" / "api-keys.yaml").read_text()
+        self.assertNotIn("BYTEPLUS", secrets)
+        self.assertNotIn("byteplus", secrets.lower())
+        ids = [model["id"] for model in parsed["providers"]["ollama-cloud"]["models"]]
+        self.assertEqual(ids, ["glm-5.3", "glm-5.3-flash", "deepseek-v4.1-flash"])
 
 
     def test_apply_consumes_multiline_string_value_of_a_managed_key(self) -> None:

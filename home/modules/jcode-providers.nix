@@ -71,10 +71,8 @@
         "$provider_dir/provider-llm-gateway.env" \
         "JCODE_PROVIDER_LLM_GATEWAY_API_KEY" \
         "${config.sops.secrets.llm_gateway_api_key.path}"
-      render_provider_env \
-        "$provider_dir/byteplus-ark.env" \
-        "BYTEPLUS_ARK_API_KEY" \
-        "${config.sops.secrets.byteplus_ark_api_key.path}"
+      # Retire the removed BytePlus profile and its previously rendered secret.
+      rm -f -- "$provider_dir/byteplus-ark.env"
 
       # Home Manager creates config.toml as a read-only Nix store symlink
       # or with read-only permissions. Fix it so the merge script can write.
@@ -93,12 +91,6 @@
 in {
   sops.secrets.kimi_api_key = {
     key = "sf/env/KIMI_API_KEY";
-    mode = "0600";
-    sopsFile = ../../secrets/api-keys.yaml;
-  };
-
-  sops.secrets.byteplus_ark_api_key = {
-    key = "sf/env/BYTEPLUS_ARK_API_KEY";
     mode = "0600";
     sopsFile = ../../secrets/api-keys.yaml;
   };

@@ -313,7 +313,7 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
   );
   assert.doesNotMatch(service, /JCODE_RUNTIME_DIR|runtime-allowlisted/);
 
-  for (const provider of ["minimax", "ollama-cloud", "byteplus-ark"]) {
+  for (const provider of ["minimax", "ollama-cloud"]) {
     assert.match(
       aiTools,
       new RegExp(`claude\\|openai[^\\n]*${provider}`),
@@ -325,6 +325,16 @@ test("JCode keeps one runtime with direct-preferred K3 and M3 plus explicit gate
       `jcode provider list must expose ${provider}`,
     );
   }
+  assert.ok(
+    aiTools.includes("ollama-cloud\tOpenAI-compatible\thttps://ollama.com/v1 (glm-5.3, glm-5.3-flash, deepseek-v4.1-flash)"),
+    "the direct Ollama listing must match the managed model profile",
+  );
+  assert.doesNotMatch(aiTools, /byteplus-ark|BYTEPLUS_ARK_API_KEY|ark\.ap-southeast\.bytepluses\.com/);
+  assert.doesNotMatch(preferences, /byteplus-ark|BYTEPLUS_ARK_API_KEY|ark\.ap-southeast\.bytepluses\.com/);
+  assert.doesNotMatch(preferences, /id = "deepseek-v4-flash"/);
+  assert.match(preferences, /id = "deepseek-v4\.1-flash"/);
+  assert.match(providers, /rm -f -- "\$provider_dir\/byteplus-ark\.env"/);
+  assert.doesNotMatch(providers, /BYTEPLUS_ARK_API_KEY|byteplus_ark_api_key|ark\.ap-southeast\.bytepluses\.com/);
   assert.doesNotMatch(aiTools, /minimax-direct/, "the retired minimax-direct profile must not be allowed or listed");
   assert.match(aiTools, /\*\) return 1 ;;/, "unknown providers must remain denied");
   assert.match(aiTools, /oauth_login_provider\(\)/);

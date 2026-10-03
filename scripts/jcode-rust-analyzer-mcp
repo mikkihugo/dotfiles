@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Launcher for the rust-analyzer MCP helper under jcode-server.
+# The server PATH is nix-only (no rust-analyzer, cargo or rustc) and the helper
+# looks only in PATH and ~/.cargo/bin. Run it inside the session directory's
+# direnv dev shell when that shell loads quickly; otherwise fall back to the
+# system toolchain. stdout is the MCP channel: keep every message on stderr.
+set -u
+export DIRENV_LOG_FORMAT=""
+# The jcode-server PATH holds only direnv, bash and the setuid wrappers: no nix,
+# git, env or timeout. Add the host system and user profiles so the dev shell loads.
+export PATH="$PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin"
+MCP="${JCODE_RA_MCP_BIN:-$HOME/.cargo/bin/rust-analyzer-mcp}"
+if timeout 20 direnv exec "$PWD" sh -c 'command -v rust-analyzer >/dev/null' >/dev/null 2>&1; then
+  exec direnv exec "$PWD" "$MCP" "$@"
+fi
+echo "jcode-rust-analyzer-mcp: no dev-shell rust-analyzer in $PWD, using system toolchain" >&2
+export PATH="/run/current-system/sw/bin:$HOME/.nix-profile/bin:$PATH"
+exec "$MCP" "$@"

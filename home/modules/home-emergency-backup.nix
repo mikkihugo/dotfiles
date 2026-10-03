@@ -195,6 +195,10 @@
     archive_name_format = "${backupHost}-hot-source-${name}-{now:%Y-%m-%dT%H:%M:%SZ}";
     exclude_patterns = hotSourceExcludes;
     exclude_if_present = [".nobackup"];
+    # cargo writes CACHEDIR.TAG into target/; skips cache dirs the glob list misses
+    exclude_caches = true;
+    # build churn changes ctime/inode; borg's default ctime,size,inode files cache then misses and rehashes
+    files_cache = "mtime,size";
     bootstrap.store_config_files = false;
     ssh_command = sshCommand;
     compression = "lz4";

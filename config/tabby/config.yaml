@@ -3,3 +3,20 @@
 terminal:
   environment:
     TERM: xterm-256color
+
+# Warpgate terminates SSH on the edge listener and selects the target from the
+# username. Keep this profile public-key-only; do not put Warpgate passwords or
+# OTP secrets in the synced Tabby configuration.
+profiles:
+  - type: ssh
+    name: warpgate devbox
+    options:
+      host: ssh.centralcloud.net
+      port: 2244
+      user: mhugo:cc-se-sto-devbox-01
+      auth: publicKey
+      privateKeys:
+        - ~/.ssh/personal_admin_id_ed25519
+      term: xterm-256color
+      forwardedPorts: []
+      scripts: []

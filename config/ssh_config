@@ -90,13 +90,16 @@ Host cc-fr-lau-store-02 cc-fr-lau-store-02.centralcloud.com
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-# tl.centralcloud.net is the name in habitual use (it is the one in known_hosts)
-# but was never declared here, so it fell through to Host * — connecting as the
-# local username with unpinned default identities, which fails preauth without
-# sshd ever logging a rejected key. tl.hugo.dk is kept in parallel: hugo.dk is
-# not part of the .infra.centralcloud.com retirement and nothing else references
-# either name.
+# tl.centralcloud.net is the normal interactive route and uses the operator
+# account. Keep the administrative root route explicit as tl-root so ordinary
+# SSH and Tabby sessions do not silently select root.
 Host tl.centralcloud.net tl.hugo.dk cc-se-sto-devbox-01 cc-se-sto-devbox-01.centralcloud.com
+    HostName 82.197.73.216
+    User mhugo
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host tl-root
     HostName 82.197.73.216
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519

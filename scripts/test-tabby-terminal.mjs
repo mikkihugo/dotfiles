@@ -19,4 +19,11 @@ test("Eugeny Tabby is hash-pinned without installing the unrelated TabbyML serve
   assert.doesNotMatch(module, /home\.packages\s*=\s*\[\s*pkgs\.tabby\b/);
   assert.match(module, /\.config\/tabby\/config\.yaml/);
   assert.match(config, /terminal:\s*\n(?:[^\n]*\n)*?\s+environment:\s*\n(?:[^\n]*\n)*?\s+TERM:\s*xterm-256color/m);
+  assert.match(config, /name:\s*warpgate devbox/);
+  assert.match(config, /host:\s*ssh\.centralcloud\.net/);
+  assert.match(config, /port:\s*2244/);
+  assert.match(config, /user:\s*mhugo:cc-se-sto-devbox-01/);
+  assert.match(config, /auth:\s*publicKey/);
+  assert.match(config, /personal_admin_id_ed25519/);
+  assert.doesNotMatch(config, /password:|otpSecret:/);
 });

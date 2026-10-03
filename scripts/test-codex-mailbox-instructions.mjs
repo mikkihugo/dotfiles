@@ -38,3 +38,14 @@ test("hook and direct-reader mailboxes remain isolated and never take over forei
   );
   assert.match(handwritten, /inbox_uri[^.]{0,120}(?:secret|capability)/i);
 });
+
+test("decision-bearing doubt requires a bounded falsifier check before action", () => {
+  assert.match(handwritten, /Before a decision-bearing action, load the applicable canonical skills/i);
+  assert.match(handwritten, /smallest feasible read, supported tool, scoped research, or supported\s+message/i);
+  assert.match(handwritten, /test the named falsifier/i);
+  assert.match(handwritten, /message receipt is not\s+acceptance/i);
+  assert.match(handwritten, /When blocked, name the responsible owner or supported route/i);
+  assert.match(handwritten, /observable\s+resume trigger/i);
+  assert.match(handwritten, /continue independent authorized work/i);
+  assert.match(handwritten, /do not repeat unchanged\s+failed investigations or retries/i);
+});

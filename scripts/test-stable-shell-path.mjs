@@ -214,9 +214,23 @@ test("BASH_ENV path hook enters direnv once for Claude/Codex bash -c", async () 
     BASH_ENV: join(process.cwd(), "shell/bash/noninteractive-path.sh"),
     XDG_RUNTIME_DIR: runtime,
   };
-  delete env.IN_NIX_SHELL;
-  delete env.DIRENV_DIR;
-  delete env.AGENT_DIRENV_EXPORT_TRIED;
+  // The test must model a fresh agent `bash -c`, not inherit the repository's
+  // live direnv session. Any of these markers can make direnv-export.sh skip
+  // the fake export or apply the parent's snapshot before the assertion runs.
+  for (const key of [
+    "IN_NIX_SHELL",
+    "NIX_DIRENV_DID_FALLBACK",
+    "DIRENV_DIR",
+    "DIRENV_FILE",
+    "DIRENV_CONFIG",
+    "DIRENV_INSTANT_SHELL_PID",
+    "DIRENV_DIFF",
+    "DIRENV_WATCHES",
+    "AGENT_DIRENV_EXPORT_TRIED",
+    "AGENT_DIRENV_EXPORT_TRIED_ROOT",
+  ]) {
+    delete env[key];
+  }
 
   const first = spawnSync("bash", ["-c", 'printf "%s" "${IN_NIX_SHELL:-}"'], {
     cwd: repo,

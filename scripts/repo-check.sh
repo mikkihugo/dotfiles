@@ -99,13 +99,30 @@ main() {
 			scripts/test-detect-secrets-work-packet-filter.mjs \
 			scripts/test-jcode-lane-settle-retirement.mjs \
 			scripts/test-sops-trace-guard.mjs \
-			scripts/test-stable-shell-path.mjs \
 			scripts/test-hms-primary-checkout-guard.mjs \
 			scripts/test-nix-tooling.mjs \
 			scripts/test-nix-direnv-no-flake-input-gcroots.mjs \
 			scripts/test-retired-infra-hosts.mjs \
 			scripts/test-ssh-sto-core.mjs \
 			scripts/test-ssh-bunker-windows.mjs
+	)
+	# The stable-shell tests launch many isolated fake-direnv shells. Run that
+	# stateful fixture serially; Node's default test concurrency races its
+	# process-level shell fixtures and makes the BASH_ENV proof flaky.
+	(
+		cd "$root"
+		env -u IN_NIX_SHELL -u NIX_DIRENV_DID_FALLBACK -u DIRENV_DISABLE \
+			-u DIRENV_DIR -u DIRENV_FILE -u DIRENV_CONFIG \
+			-u DIRENV_INSTANT_SHELL_PID -u DIRENV_DIFF -u DIRENV_WATCHES \
+			-u AGENT_DIRENV_EXPORT_TRIED -u AGENT_DIRENV_EXPORT_TRIED_ROOT \
+			node --test --test-concurrency=1 \
+			--test-name-pattern='^(?!BASH_ENV path hook)' scripts/test-stable-shell-path.mjs
+		env -u IN_NIX_SHELL -u NIX_DIRENV_DID_FALLBACK -u DIRENV_DISABLE \
+			-u DIRENV_DIR -u DIRENV_FILE -u DIRENV_CONFIG \
+			-u DIRENV_INSTANT_SHELL_PID -u DIRENV_DIFF -u DIRENV_WATCHES \
+			-u AGENT_DIRENV_EXPORT_TRIED -u AGENT_DIRENV_EXPORT_TRIED_ROOT \
+			node --test --test-concurrency=1 \
+			--test-name-pattern='BASH_ENV path hook' scripts/test-stable-shell-path.mjs
 	)
 	# Keep the NixOS ownership evaluation out of the nominal Node-only suite: it
 	# evaluates the homeConfigurations attrset and is intentionally a separate

@@ -148,6 +148,28 @@ in {
       BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";
     };
 
+  # Kimi is loopback-only; Authentik on the Envoy edge is the access-control
+  # boundary for the separately tunnelled browser route.
+  systemd.user.services.kimi-web = lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
+    Unit = {
+      Description = "Kimi Code web UI (loopback, Authentik front door)";
+      After = ["network-online.target"];
+      Wants = ["network-online.target"];
+      ConditionPathExists = "%h/.local/share/mise/shims/kimi";
+      StartLimitIntervalSec = 600;
+      StartLimitBurst = 5;
+    };
+    Service = {
+      Type = "exec";
+      WorkingDirectory = "%h";
+      ExecStart = "%h/.local/share/mise/shims/kimi web --host 127.0.0.1 --port 58628 --dangerous-bypass-auth --no-open";
+      Restart = "always";
+      RestartSec = "5s";
+      UMask = "0077";
+    };
+    Install.WantedBy = ["default.target"];
+  };
+
   # home-manager manages its own config file (~/.config/home-manager/).
   programs.home-manager.enable = true;
 

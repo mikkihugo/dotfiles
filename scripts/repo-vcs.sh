@@ -490,12 +490,12 @@ worktree-create)
 	[[ ! -e "$path" ]] || die "worktree path exists: $path"
 	git -C "$root" worktree add -b "worktree/$name" "$path" "$revision"
 	;;
-worktree-drop)
-	[[ $# -eq 1 ]] || die 'worktree-drop requires name'
+worktree-delete | worktree-drop)
+	[[ $# -eq 1 ]] || die 'worktree-delete requires name'
 	name="$1"
 	valid_name "$name"
 	path="$HOME/.dotfiles-worktrees/$name"
-	[[ "$(realpath "$root")" != "$(realpath "$path")" ]] || die 'cannot drop current worktree'
+	[[ "$(realpath "$root")" != "$(realpath "$path")" ]] || die 'cannot delete current worktree'
 	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'worktree is not registered'
 	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'worktree is dirty'
 	if ! git -C "$root" merge-base --is-ancestor "$(task_branch_for "$name")" main; then
@@ -535,12 +535,12 @@ worktree-abandon)
 	git -C "$root" branch -D "$(task_branch_for "$name")"
 	printf 'abandoned=%s revision=%s clean=true live_process=false\n' "$name" "$revision"
 	;;
-branch-retire)
-	[[ $# -ge 1 && $# -le 2 ]] || die 'branch-retire requires a leftover ref and optional --apply'
+branch-delete | branch-retire)
+	[[ $# -ge 1 && $# -le 2 ]] || die 'branch-delete requires a leftover ref and optional --apply'
 	ref="$1"
 	apply="${2:-}"
 	valid_leftover_ref "$ref"
-	[[ -z "$apply" || "$apply" == --apply ]] || die 'branch-retire accepts only --apply after the leftover ref'
+	[[ -z "$apply" || "$apply" == --apply ]] || die 'branch-delete accepts only --apply after the leftover ref'
 	local_present=false
 	if git -C "$root" show-ref --verify --quiet "refs/heads/$ref"; then
 		local_present=true
@@ -630,7 +630,7 @@ contract-test)
 	# configured. If tea's token is missing or the awk pattern drifts, this
 	# contract fires before any agent attempts a fetch.
 	forgejo_https_credential_helper_check
-	for recipe in status diff log show worktree-list fetch rebase sync-main describe amend push push-github land worktree-create worktree-drop worktree-abandon branch-retire test; do
+	for recipe in status diff log show worktree-list fetch rebase sync-main describe amend push push-github land worktree-create worktree-delete worktree-drop worktree-abandon branch-delete branch-retire test; do
 		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"
 	done
 	printf 'dotfiles VCS contract: ok\n'
@@ -639,5 +639,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main [--divergence-only]|converge-main|primary-to-main|describe|amend|push|push-github|land|worktree-create|worktree-drop|worktree-abandon|branch-retire|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main [--divergence-only]|converge-main|primary-to-main|describe|amend|push|push-github|land|worktree-create|worktree-delete|worktree-abandon|branch-delete|contract-test|config}' ;;
 esac

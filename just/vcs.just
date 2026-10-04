@@ -54,14 +54,21 @@ land:
 worktree-create NAME REVISION="main":
     @{{runner}} worktree-create "$1" "$2"
 
+worktree-delete NAME:
+    @{{runner}} worktree-delete "$1"
+
+# Compatibility alias; new callers should use the AIP-aligned delete verb.
 worktree-drop NAME:
-    @{{runner}} worktree-drop "$1"
+    @{{runner}} worktree-delete "$1"
 
 worktree-abandon NAME CONFIRMATION:
     @{{runner}} worktree-abandon "$1" "$2"
 
 branch-retire *ARGS:
     @{{runner}} branch-retire "$@"
+
+branch-delete *ARGS:
+    @{{runner}} branch-delete "$@"
 
 test:
     @{{runner}} contract-test

@@ -3,53 +3,53 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 resolve_jj_store() {
-  local checkout="$1" marker ref
-  marker="$checkout/.jj/repo"
-  if [[ -d "$marker" && ! -L "$marker" ]]; then
-    realpath -e "$marker" 2>/dev/null
-    return
-  fi
-  if [[ -f "$marker" && ! -L "$marker" ]]; then
-    IFS= read -r ref < "$marker" || [[ -n "$ref" ]] || return 1
-    [[ -n "$ref" ]] || return 1
-    if [[ "$ref" == /* ]]; then
-      realpath -e "$ref" 2>/dev/null
-    else
-      realpath -e "$checkout/.jj/$ref" 2>/dev/null
-    fi
-    return
-  fi
-  return 1
+	local checkout="$1" marker ref
+	marker="$checkout/.jj/repo"
+	if [[ -d "$marker" && ! -L "$marker" ]]; then
+		realpath -e "$marker" 2>/dev/null
+		return
+	fi
+	if [[ -f "$marker" && ! -L "$marker" ]]; then
+		IFS= read -r ref <"$marker" || [[ -n "$ref" ]] || return 1
+		[[ -n "$ref" ]] || return 1
+		if [[ "$ref" == /* ]]; then
+			realpath -e "$ref" 2>/dev/null
+		else
+			realpath -e "$checkout/.jj/$ref" 2>/dev/null
+		fi
+		return
+	fi
+	return 1
 }
 find_caller_workspace() {
-  local candidate
-  candidate="$(pwd -P)"
-  while [[ "$candidate" != "/" ]]; do
-    if [[ -d "$candidate/.jj" && ! -L "$candidate/.jj" &&
-          -f "$candidate/.purpose/commands.json" && ! -L "$candidate/.purpose/commands.json" &&
-          -f "$candidate/bin/repo" && ! -L "$candidate/bin/repo" &&
-          -x "$candidate/bin/repo" ]]; then
-      printf '%s
+	local candidate
+	candidate="$(pwd -P)"
+	while [[ "$candidate" != "/" ]]; do
+		if [[ -d "$candidate/.jj" && ! -L "$candidate/.jj" &&
+			-f "$candidate/.purpose/commands.json" && ! -L "$candidate/.purpose/commands.json" &&
+			-f "$candidate/bin/repo" && ! -L "$candidate/bin/repo" &&
+			-x "$candidate/bin/repo" ]]; then
+			printf '%s
 ' "$candidate"
-      return 0
-    fi
-    candidate="$(dirname "$candidate")"
-  done
-  return 1
+			return 0
+		fi
+		candidate="$(dirname "$candidate")"
+	done
+	return 1
 }
 # A long-lived client may retain another checkout's generated executable in
 # PATH. Rebind only to a regular generated launcher in a checkout that shares
 # this launcher's jj store; task-write ownership is still enforced downstream.
 if CALLER_ROOT="$(find_caller_workspace)" && [[ "$CALLER_ROOT" != "$ROOT" ]]; then
-  ROOT_STORE="$(resolve_jj_store "$ROOT" || true)"
-  CALLER_STORE="$(resolve_jj_store "$CALLER_ROOT" || true)"
-  if [[ -n "$ROOT_STORE" && "$CALLER_STORE" == "$ROOT_STORE" ]]; then
-    exec "$CALLER_ROOT/bin/repo" "$@"
-  fi
+	ROOT_STORE="$(resolve_jj_store "$ROOT" || true)"
+	CALLER_STORE="$(resolve_jj_store "$CALLER_ROOT" || true)"
+	if [[ -n "$ROOT_STORE" && "$CALLER_STORE" == "$ROOT_STORE" ]]; then
+		exec "$CALLER_ROOT/bin/repo" "$@"
+	fi
 fi
 unset CALLER_ROOT ROOT_STORE CALLER_STORE
 show_help() {
-  cat <<'PURPOSE_REPO_HELP'
+	cat <<'PURPOSE_REPO_HELP'
 Usage: repo <command> [args...]
 
 Commands are listed like MCP tools: what, when, steps, falsifier, and access mode.
@@ -154,11 +154,11 @@ Version control:
       1. Run `repo vcs amend`.
       2. Read back repository state through `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
-  repo vcs branch-retire
-    What: Retire an unused leftover namespaced ref; dry-run unless --apply
+  repo vcs branch-delete
+    What: Delete an unused leftover namespaced ref; dry-run unless --apply
     When: Before choosing a repository lifecycle transition.
     Steps:
-      1. Run `repo vcs branch-retire`.
+      1. Run `repo vcs branch-delete`.
       2. Read back repository state through `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs primary-to-main
@@ -210,11 +210,11 @@ Version control:
       1. Run `repo vcs worktree-create`.
       2. Read back repository state through `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
-  repo vcs worktree-drop
+  repo vcs worktree-delete
     What: Remove an integrated clean task worktree
     When: Before choosing a repository lifecycle transition.
     Steps:
-      1. Run `repo vcs worktree-drop`.
+      1. Run `repo vcs worktree-delete`.
       2. Read back repository state through `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs worktree-list
@@ -256,36 +256,186 @@ Test:
 PURPOSE_REPO_HELP
 }
 if [[ ${#} -eq 0 || "${1:-}" == "--help" || "${1:-}" == "help" ]]; then
-  show_help
-  exit 0
+	show_help
+	exit 0
 fi
-if [[ "${1:-}" == 'check' ]] && [[ "${2:-}" == 'nix' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-check-nix.sh" "$@"
-elif [[ "${1:-}" == 'sync' ]] && [[ "${2:-}" == 'mise-upgrade' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-maintenance.sh" 'mise-upgrade' "$@"
-elif [[ "${1:-}" == 'test' ]] && [[ "${2:-}" == 'check-entry' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-check.sh" 'check-entry' "$@"
-elif [[ "${1:-}" == 'test' ]] && [[ "${2:-}" == 'codex-preferences' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-check.sh" 'codex-preferences' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'amend' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'amend' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'branch-retire' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'branch-retire' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'describe' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'describe' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'diff' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'diff' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'fetch' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'fetch' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'land' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'land' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'log' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'log' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'primary-to-main' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'primary-to-main' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'push' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push-github' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'push-github' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'rebase' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'rebase' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'show' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'show' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'status' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'status' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'sync-main' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'sync-main' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'converge-main' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'converge-main' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'test' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'contract-test' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-abandon' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-abandon' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-create' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-create' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-drop' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-drop' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-list' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-vcs.sh" 'worktree-list' "$@"
-elif [[ "${1:-}" == 'check' ]]; then shift 1; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; exec "$ROOT/scripts/repo-check.sh" "$@"
+if [[ "${1:-}" == 'check' ]] && [[ "${2:-}" == 'nix' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-check-nix.sh" "$@"
+elif [[ "${1:-}" == 'sync' ]] && [[ "${2:-}" == 'mise-upgrade' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-maintenance.sh" 'mise-upgrade' "$@"
+elif [[ "${1:-}" == 'test' ]] && [[ "${2:-}" == 'check-entry' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-check.sh" 'check-entry' "$@"
+elif [[ "${1:-}" == 'test' ]] && [[ "${2:-}" == 'codex-preferences' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-check.sh" 'codex-preferences' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'amend' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'amend' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'branch-delete' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'branch-delete' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'describe' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'describe' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'diff' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'diff' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'fetch' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'fetch' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'land' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'land' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'log' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'log' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'primary-to-main' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'primary-to-main' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'push' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push-github' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'push-github' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'rebase' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'rebase' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'show' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'show' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'status' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'status' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'sync-main' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'sync-main' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'converge-main' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'converge-main' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'test' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'contract-test' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-abandon' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'worktree-abandon' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-create' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'worktree-create' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-delete' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'worktree-delete' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'worktree-list' ]]; then
+	shift 2
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-vcs.sh" 'worktree-list' "$@"
+elif [[ "${1:-}" == 'check' ]]; then
+	shift 1
+	if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+		show_help
+		exit 0
+	fi
+	exec "$ROOT/scripts/repo-check.sh" "$@"
 else
-  echo "unknown command: $*" >&2
-  show_help >&2
-  exit 2
+	echo "unknown command: $*" >&2
+	show_help >&2
+	exit 2
 fi

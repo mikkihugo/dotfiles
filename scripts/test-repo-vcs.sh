@@ -169,7 +169,7 @@ grep -q 'conflict markers remain in' "$root/scripts/repo-vcs.sh" || {
 }
 _run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs sync-main'
 _run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs worktree-abandon'
-_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs branch-retire'
+_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs branch-delete'
 # mhugo/dotfiles#13: sync-main must report local-only commits with a
 # divergence report naming each commit's sha/author/subject, and the
 # recovery block must point to worktree-create + converge-main. The

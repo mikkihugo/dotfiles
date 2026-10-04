@@ -182,6 +182,17 @@
     "**/.terraform"
     "**/result"
     "**/result-*"
+    # engine canonical checkout: .git is a bind mount of .jj/git-writable (same inode,
+    # 26883090), so every cycle walked that ~47 GB twice. The jj store is the kept copy.
+    "${homeDir}/code/singularity-engine/.git"
+    # superseded engine stores: the broken 2026-09-03 store, and the one-off
+    # pre-repair copy that the repair it predates already replaced.
+    "${homeDir}/code/singularity-engine/.jj.broken-20260903"
+    "${homeDir}/backups/singularity-engine/primary-repair-20260923-07081f20"
+    # jcode lane checkouts each carry a full copy of the canonical assets/ tree
+    # (demos + readme media, 25 files / 177332713 B, byte-identical across lanes
+    # and to code/jcode/assets). The canonical copy stays in the archive.
+    "${homeDir}/code/worktrees/jj/jcode/*/assets"
   ];
   hotSourceConfig = name: target: {
     source_directories = hotSourceDirectories;

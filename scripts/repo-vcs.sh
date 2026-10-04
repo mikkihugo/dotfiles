@@ -594,18 +594,23 @@ contract-test)
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
 	cfg="$root/config/ssh_config"
 	git_host_line="$(awk '/^Host / && /git\.centralcloud\.net/ { print NR; exit }' "$cfg")"
+	svc_host_line="$(awk '/^Host git\.svc$/ { print NR; exit }' "$cfg")"
 	github_host_line="$(awk '/^Host github\.com$/ { print NR; exit }' "$cfg")"
 	star_line="$(awk '/^Host \*$/ { print NR; exit }' "$cfg")"
 	[[ -n "$git_host_line" && -n "$star_line" && "$git_host_line" -lt "$star_line" ]] ||
 		die 'Forgejo Host stanza must precede Host * so ControlPersist no wins'
 	[[ -n "$github_host_line" && "$github_host_line" -lt "$star_line" ]] ||
 		die 'github.com Host stanza must precede Host * so ControlPersist no wins'
+	[[ -n "$svc_host_line" && "$svc_host_line" -lt "$star_line" ]] ||
+		die 'git.svc Host stanza must precede Host * so the Forgejo key is selected'
 	persist="$(ssh -G -F "$cfg" -p 2222 git@git.centralcloud.net | awk '/^controlpersist / { print $2; exit }')"
 	[[ "$persist" == no ]] || die "expected Forgejo controlpersist no, got ${persist:-empty}"
 	master="$(ssh -G -F "$cfg" -p 2222 git@git.centralcloud.net | awk '/^controlmaster / { print $2; exit }')"
 	[[ "$master" == no || "$master" == false ]] || die "expected Forgejo controlmaster no, got ${master:-empty}"
 	gh_persist="$(ssh -G -F "$cfg" github.com | awk '/^controlpersist / { print $2; exit }')"
 	[[ "$gh_persist" == no ]] || die "expected github.com controlpersist no, got ${gh_persist:-empty}"
+	svc_persist="$(ssh -G -F "$cfg" git.svc | awk '/^controlpersist / { print $2; exit }')"
+	[[ "$svc_persist" == no ]] || die "expected git.svc controlpersist no, got ${svc_persist:-empty}"
 	other_persist="$(ssh -G -F "$cfg" storagebox | awk '/^controlpersist / { print $2; exit }')"
 	[[ "$other_persist" == 600 ]] || die "expected Host * ControlPersist 10m for storagebox, got ${other_persist:-empty}"
 	grep -Fq "worktree add -b \"worktree/\$name\"" "$root/scripts/repo-vcs.sh"

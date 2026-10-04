@@ -14,6 +14,17 @@ Host git.infra.centralcloud.com git.centralcloud.net
     ControlPath none
     ControlPersist no
 
+# In-cluster Forgejo service name used by the repository facade.
+Host git.svc
+    HostName git.svc
+    Port 22
+    User git
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+    ControlMaster no
+    ControlPath none
+    ControlPersist no
+
 Host github.com
     HostName github.com
     User git

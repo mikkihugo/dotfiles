@@ -4,7 +4,7 @@
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
 # Performance
-command_timeout = 500
+command_timeout = 1000
 scan_timeout = 100
 add_newline = true
 

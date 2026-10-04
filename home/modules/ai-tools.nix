@@ -629,6 +629,11 @@ in {
       mode = "0600";
       sopsFile = ../../secrets/api-keys.yaml;
     };
+    exa_api_key = {
+      key = "exa/api_key";
+      mode = "0600";
+      sopsFile = ../../secrets/api-keys.yaml;
+    };
     opencode_go_api_key = {
       key = "sf/env/OPENCODE_GO_API_KEY";
       mode = "0600";
@@ -893,6 +898,17 @@ in {
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
           export OTEL_SERVICE_NAME="opencode"
           export OPENCODE_ENABLE_EXA=1
+          exa_key_file="${config.sops.secrets.exa_api_key.path}"
+          if [ ! -r "$exa_key_file" ]; then
+            echo "opencode: missing SOPS Exa API key: $exa_key_file" >&2
+            exit 1
+          fi
+          exa_key="$(cat "$exa_key_file")"
+          if [ -z "$exa_key" ]; then
+            echo "opencode: SOPS Exa API key is empty: $exa_key_file" >&2
+            exit 1
+          fi
+          export EXA_API_KEY="$exa_key"
           exec "$HOME/.local/share/mise/shims/opencode" "$@"
         '';
       };

@@ -1,6 +1,6 @@
 name = "taxonomy-validator"
-description = "Mechanical taxonomy validator (GPT-6 Luna): labeling, duplicate detection, schema checks, and format validation."
-model = "gpt-6-luna"
+description = "Mechanical taxonomy validator (GPT-6.1 Luna): labeling, duplicate detection, schema checks, and format validation."
+model = "gpt-6.1-luna"
 model_provider = "openai"
 model_reasoning_effort = "low"
 sandbox_mode = "read-only"

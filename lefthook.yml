@@ -15,12 +15,12 @@ pre-commit:
       run: deadnix --fail {staged_files}
 
     shellcheck:
-      glob: "*.sh"
-      run: shellcheck --external-sources {staged_files}
+      glob: "**/*"
+      run: scripts/lint-staged-shell.sh shellcheck {staged_files}
 
     shfmt:
-      glob: "*.sh"
-      run: shfmt -d {staged_files}
+      glob: "**/*"
+      run: scripts/lint-staged-shell.sh shfmt {staged_files}
 
     typos:
       exclude: '\.(gz|bin|wasm|lock)$|^secrets/'

@@ -1,0 +1,20 @@
+{
+  "schema_version": "evidence-bundle/v1",
+  "bundle_id": "2026-10-04-dotfiles-review-fixes-evidence",
+  "purpose_contract_id": "2026-10-04-dotfiles-review-fixes-purpose",
+  "workspec_id": "2026-10-04-dotfiles-review-fixes-work",
+  "status": "partial",
+  "evidence": [
+    {"kind": "test", "command": "python3 scripts/test-codex-preferences.py", "result": "pass: 11 tests"},
+    {"kind": "test", "command": "node --test scripts/test-opencode-config.mjs", "result": "pass: 1 test"},
+    {"kind": "test", "command": "bash scripts/test-codex-rollout-gc.sh", "result": "pass"},
+    {"kind": "test", "command": "bash scripts/test-nix-gate-script-coverage.sh", "result": "pass"},
+    {"kind": "test", "command": "bash tasks/scripts/lint.sh", "result": "pass: shellcheck/shfmt scan including home and config shebang executables"},
+    {"kind": "check", "command": "sops -d secrets/api-keys.yaml >/dev/null", "result": "pass"},
+    {"kind": "check", "command": "STARSHIP_CONFIG=$PWD/config/starship.toml starship print-config >/dev/null", "result": "pass"},
+    {"kind": "check", "command": "repo check nix", "result": "pass"},
+    {"kind": "check", "command": "repo check", "result": "blocked by five unrelated existing test failures: detect-secrets work-packet filters (2), stale python3 regex expectations (2), and BASH_ENV integration environment assertion (1)"},
+    {"kind": "check", "command": "deadnix --no-unused --error home/modules/ai-tools.nix", "result": "blocked by installed deadnix CLI rejecting the repository's --no-unused option"}
+  ],
+  "falsifier": "A focused regression fails, plaintext Exa credentials remain, or the unrelated full-gate failures are shown to be caused by this change."
+}

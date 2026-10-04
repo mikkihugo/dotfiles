@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # shell/bash/bashrc — runtime shell hooks that cannot live in Nix
 #
 # Purpose:
@@ -60,9 +60,10 @@ if [ -n "$mise_bin" ]; then
 
 	_mise_node_bin="$("$mise_bin" which node 2>/dev/null || true)"
 	if [ -n "$_mise_node_bin" ]; then
-		export PATH="$(dirname "$_mise_node_bin"):$PATH"
+		_mise_node_dir="$(dirname "$_mise_node_bin")"
+		export PATH="$_mise_node_dir:$PATH"
 	fi
-	unset _mise_node_bin
+	unset _mise_node_bin _mise_node_dir
 
 	# mise activate prepends tool install dirs ahead of home.sessionPath, which
 	# shadows HM wrappers in ~/.local/bin (goose → llm-gateway, kimi, …).
@@ -274,10 +275,12 @@ _load_sops_secrets() {
 	val=$(_sops_val cloudflare api_token)
 	if [ -n "$val" ]; then
 		export CF_API_KEY="$val"
-		export CF_API_EMAIL="$(_sops_val cloudflare email)"
+		cf_api_email="$(_sops_val cloudflare email)"
+		export CF_API_EMAIL="$cf_api_email"
 		# Aliases some tools (Terraform CF provider, others) expect
 		export CLOUDFLARE_API_KEY="$CF_API_KEY"
 		export CLOUDFLARE_API_EMAIL="$CF_API_EMAIL"
+		unset cf_api_email
 	fi
 
 	# gog Google Workspace CLI encrypted file keyring
@@ -439,8 +442,9 @@ _load_sops_secrets 2>/dev/null || true
 # bounded enter-once loader that distinguishes the current repo from an
 # inherited foreign Nix shell.
 # shellcheck source=direnv-export.sh
-[ -f "$HOME/.dotfiles/shell/bash/direnv-export.sh" ] \
-	&& . "$HOME/.dotfiles/shell/bash/direnv-export.sh"
+# shellcheck disable=SC1091
+[ -f "$HOME/.dotfiles/shell/bash/direnv-export.sh" ] &&
+	. "$HOME/.dotfiles/shell/bash/direnv-export.sh"
 
 # ── Homebrew (Linux Homebrew, present on some machines) ───────────────────────
 if [ -x "/home/linuxbrew/.linuxbrew/bin/brew" ]; then

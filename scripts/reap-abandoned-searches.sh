@@ -16,7 +16,7 @@ set -uo pipefail
 
 THRESHOLD=${REAP_THRESHOLD_SECONDS:-300}
 DRY_RUN=${REAP_DRY_RUN:-0}
-AGENT_COMMS='^(codex|claude|jcode|kimi-code|node)$'
+AGENT_COMMS='^(codex|claude|jcode|kimi-code|opencode)$'
 SEARCH_COMMS='^(rg|fd|find|grep|ag|ack)$'
 SELF=$$
 

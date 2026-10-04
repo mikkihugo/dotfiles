@@ -171,7 +171,7 @@ class CodexPreferencesTest(unittest.TestCase):
             self.assertIn("model for delegated work", instructions)
 
         expected = {
-            "scout": ("gpt-5.6-luna", "low", "read-only"),
+            "scout": ("gpt-6.1-luna", "low", "read-only"),
             "implementer": ("gpt-5.6-terra", "medium", "workspace-write"),
             "reviewer": ("gpt-5.6-sol", "high", "read-only"),
         }

@@ -1,6 +1,6 @@
 name = "scout"
-description = "Read-only scout (GPT-6 Luna): mechanical inventory, structural audit, and bounded evidence collection."
-model = "gpt-6-luna"
+description = "Read-only scout (GPT-6.1 Luna): mechanical inventory, structural audit, and bounded evidence collection."
+model = "gpt-6.1-luna"
 model_provider = "openai"
 model_reasoning_effort = "low"
 sandbox_mode = "read-only"

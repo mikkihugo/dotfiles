@@ -14,6 +14,8 @@
 # without teaching the gate about it; this test must fail.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+dirty_fixture="$root/config/.repo-check-dirty-regression-${BASHPID}"
+trap 'rm -f -- "$dirty_fixture"' EXIT
 
 # Reuse the gate's own derivation and pattern so the test cannot drift from it.
 # repo-check.sh is function-only when sourced (its main runs under a
@@ -71,6 +73,14 @@ done <<<"$expected"
 if printf '%s\n' "$referenced" | grep -Fxq "scripts/repo-check.sh"; then
 	echo "FAIL: derivation over-matched — repo-check.sh is not a module-referenced script" >&2
 	failures=$((failures + 1))
+fi
+
+# Regression: a dirty activation-tree path must still request the build even
+# when the committed diff alone contains no relevant path.
+touch "$dirty_fixture"
+if ! nix_gate_needs_build; then
+	echo "FAIL: dirty activation-tree change skipped the nix build gate" >&2
+	exit 1
 fi
 
 if ((failures > 0)); then

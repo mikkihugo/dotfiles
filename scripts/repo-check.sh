@@ -30,7 +30,14 @@ nix_gate_needs_build() {
 	# the historical behaviour of a standalone `just check` on synced main.
 	local base changed script
 	base="$(git -C "$root" merge-base origin/main HEAD 2>/dev/null)" || return 0
-	changed="$(git -C "$root" diff --name-only "$base" HEAD 2>/dev/null)" || return 0
+	# Include committed, staged, unstaged, and untracked paths. A dirty worktree
+	# must not skip the activation build merely because HEAD's diff is unrelated.
+	changed="$({
+		git -C "$root" diff --name-only "$base" HEAD
+		git -C "$root" diff --name-only
+		git -C "$root" diff --cached --name-only
+		git -C "$root" ls-files --others --exclude-standard
+	} 2>/dev/null | sort -u)" || return 0
 	[[ -n "$changed" ]] || return 0
 	printf '%s\n' "$changed" | grep -Eq "$nix_gate_path_re" && return 0
 	while IFS= read -r script; do
@@ -79,9 +86,11 @@ main() {
 	bash "$root/scripts/test-nix-gate-script-coverage.sh"
 	bash "$root/scripts/test-engine-worktree-cleanup.sh"
 	bash "$root/scripts/test-sccache-profile-scope.sh"
+	bash "$root/scripts/test-codex-rollout-gc.sh"
 	(
 		cd "$root"
 		node --test \
+			scripts/test-opencode-config.mjs \
 			scripts/test-cargo-pgrx-wrapper.mjs \
 			scripts/test-tabby-terminal.mjs \
 			scripts/test-codex-hosted-search.mjs \

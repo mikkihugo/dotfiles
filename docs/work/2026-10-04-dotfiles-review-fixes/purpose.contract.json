@@ -1,0 +1,21 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-10-04-dotfiles-review-fixes-purpose",
+  "source": {"system": "operator-request", "repository": ".", "request_id": "2026-10-04-dotfiles-review-fixes"},
+  "lineage": {
+    "origin": {"kind": "request", "id": "2026-10-04-dotfiles-review-fixes", "revision": "initial"},
+    "objective": {"id": "2026-10-04-dotfiles-review-fixes-objective", "statement": "Resolve the confirmed dotfiles review findings while preserving unrelated operator edits.", "measure": "Focused regressions and repo check pass; no tracked plaintext Exa credential remains."},
+    "need": {"id": "2026-10-04-dotfiles-review-fixes-need", "statement": "The review found an exposed Exa credential, a failing model contract, unsafe cleanup inputs, an incomplete dirty-tree build gate, narrow shell lint scope, and a prompt timeout.", "stakeholders": ["dotfiles operator", "Home Manager users", "repository maintainers"], "baseline": "repo check fails on Codex Luna routing; review reproductions identify the remaining gaps.", "consequence_of_no_action": "Credentials remain exposed and safety/verification gaps continue.", "assumptions": [{"statement": "The existing Exa credential is the intended value to preserve while moving it to SOPS.", "doubt": 2, "falsifier": "The operator supplies a replacement or revocation instruction before activation."}], "alternatives_considered": ["Leave the review findings unresolved", "Fix only the failing test"]}
+  },
+  "admission": {"state": "proposed", "producer": {"kind": "agent", "id": "codex"}},
+  "purpose": "Resolve the confirmed dotfiles review findings while preserving unrelated operator edits.",
+  "consumer": "Dotfiles operators, Home Manager activation, OpenCode, Codex, and repository gates.",
+  "contract": "Exa authentication is encrypted in SOPS and injected at runtime; Luna roles and tests agree on gpt-6.1-luna; dirty activation changes trigger the Nix build gate; cleanup scripts reject unsafe inputs and agent ancestry is narrow; shell checks cover managed shell entrypoints; Starship no longer times out the reported rustc probe.",
+  "failure_boundary": "Unrelated existing worktree edits remain untouched; invalid secrets or unsafe cleanup inputs fail closed; a failed verification blocks completion.",
+  "evidence": [{"kind": "test", "description": "Focused tests plus repo check and diff inspection.", "status": "expected"}],
+  "falsifier": {"claim": "The review findings are resolved.", "executable_check": {"kind": "command", "description": "A focused regression or repo check still fails, or plaintext Exa credentials remain.", "command": "repo check"}},
+  "non_goals": ["Rotate the exposed Exa credential", "Change unrelated pre-existing worktree edits", "Publish or land the branch"],
+  "invariants": ["SOPS remains the source of truth for provider credentials", "Repository VCS changes use the declared facade", "Existing user edits are preserved"],
+  "assumptions": [{"statement": "OpenCode supports the existing {env:NAME} interpolation used by its GitHub MCP header.", "doubt": 1, "falsifier": "The focused config test or live OpenCode config parser rejects the placeholder."}],
+  "run_control": {"autonomous_allowed": true, "risk": "moderate", "blast_radius": "repo", "reversibility": "easy", "max_active_doubt": 1}
+}

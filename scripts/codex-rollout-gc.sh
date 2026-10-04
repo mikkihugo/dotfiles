@@ -22,6 +22,11 @@ AGE_DAYS="${CODEX_ROLLOUT_GC_AGE_DAYS:-7}"
 APPLY=0
 [ "${1:-}" = "--apply" ] && APPLY=1
 
+if ! [[ "$AGE_DAYS" =~ ^[1-9][0-9]*$ ]] || [ "$AGE_DAYS" -gt 3650 ]; then
+	printf 'codex-rollout-gc: CODEX_ROLLOUT_GC_AGE_DAYS must be an integer from 1 to 3650\n' >&2
+	exit 2
+fi
+
 exec "${PYTHON:-python3}" - "$AGE_DAYS" "$APPLY" <<'PY'
 import json, os, sys, time
 

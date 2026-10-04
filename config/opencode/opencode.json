@@ -10,7 +10,7 @@
   "mcp": {
     "exa": {
       "type": "remote",
-      "url": "https://mcp.exa.ai/mcp?exaApiKey=e9f259a8-1e04-48e8-b30c-d16d9bde946c",
+      "url": "https://mcp.exa.ai/mcp?exaApiKey={env:EXA_API_KEY}",
       "enabled": true
     },
     "github": {

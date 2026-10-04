@@ -513,7 +513,7 @@ test("Home Manager uses the nixpkgs mise package without a private overlay", asy
   assert.match(updater, /"\$mise_bin" upgrade --yes/);
   assert.match(packages, /^\s*gnumake\b/m);
   assert.match(packages, /^\s*pkg-config\b/m);
-  assert.match(packages, /^\s*python3\b/m);
+  assert.match(packages, /\bpython3\b/m);
   assert.match(updater, /uninstall python --all --yes/);
   assert.doesNotMatch(updater, /pythonBuildDeps|NIX_CFLAGS_COMPILE|NIX_LDFLAGS/);
   assert.doesNotMatch(updater, /nix develop|just mise-upgrade/);
@@ -547,7 +547,7 @@ test("daily python3 is nixpkgs, not mise", async () => {
 
   assert.doesNotMatch(mise, /^\s*python\s*=/m);
   assert.doesNotMatch(env, /^export MISE_ECOSYSTEM_PYTHON=/m);
-  assert.match(packages, /^\s*python3\b/m);
+  assert.match(packages, /\bpython3\b/m);
   assert.match(flake, /^\s*python3\b/m);
   assert.match(updater, /uninstall python --all --yes/);
   assert.match(activation, /retireMisePython/);

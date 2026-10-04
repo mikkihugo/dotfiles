@@ -16,7 +16,15 @@ const otherRevision = createHash("sha256").update("detect-secrets unrelated revi
 async function scan(files, baseline) {
   execFileSync(
     "detect-secrets",
-    ["scan", "--baseline", baseline, "--all-files", ...files],
+    [
+      "scan",
+      "--baseline",
+      baseline,
+      "--all-files",
+      "-f",
+      `file://${join(repoRoot, "scripts/detect-secrets-work-packet-filter.py")}::is_purpose_work_packet_digest`,
+      ...files,
+    ],
     {
       cwd: repoRoot,
       encoding: "utf8",
@@ -29,7 +37,16 @@ async function scan(files, baseline) {
 function hookScan(files, baseline) {
   const gitBin = process.env.SE_GIT_BIN;
   assert.ok(gitBin?.startsWith("/"), "fixture requires the Nix-pinned SE_GIT_BIN");
-  return spawnSync("detect-secrets-hook", ["--baseline", baseline, ...files], {
+  return spawnSync(
+    "detect-secrets-hook",
+    [
+      "--baseline",
+      baseline,
+      "-f",
+      `file://${join(repoRoot, "scripts/detect-secrets-work-packet-filter.py")}::is_purpose_work_packet_digest`,
+      ...files,
+    ],
+    {
     cwd: repoRoot,
     encoding: "utf8",
     // detect-secrets-hook internally runs `git diff` to check its copied
@@ -40,14 +57,15 @@ function hookScan(files, baseline) {
       PATH: `${dirname(gitBin)}:${process.env.PATH}`,
       PYTHONDONTWRITEBYTECODE: "1",
     },
-  });
+    },
+  );
 }
 
 test("detect-secrets filters only canonical Purpose work-packet metadata", async () => {
   const lefthook = await readFile(join(repoRoot, "lefthook.yml"), "utf8");
   assert.match(
     lefthook,
-    /run: PYTHONDONTWRITEBYTECODE=1 detect-secrets-hook --baseline \.secrets\.baseline \{staged_files\}/,
+    /run: PYTHONDONTWRITEBYTECODE=1 detect-secrets-hook --baseline \.secrets\.baseline -f file:\/\/scripts\/detect-secrets-work-packet-filter\.py::is_purpose_work_packet_digest \{staged_files\}/,
     "the staged hook must not leave Python bytecode in the task workspace",
   );
 

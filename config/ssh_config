@@ -202,9 +202,11 @@ Host mikki-bunker-windows
 Host mikki-bunker
     HostName mikki-bunker
     User mhugo
-    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
 
 Host mikki-laptop
     HostName mikki-laptop
     User mhugo
-    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes

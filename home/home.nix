@@ -40,6 +40,7 @@ in {
     ./modules/cargo-build-jobs.nix
     ./modules/cargo-subcommand-proxies.nix
     ./modules/shell.nix
+    ./modules/tmux.nix
     ./modules/git.nix
     ./modules/stable-shell.nix
     ./modules/jcode-gc.nix

@@ -1,6 +1,7 @@
 # home/modules/shell.nix — interactive shell configuration
 #
-# Covers: bash, zsh, aliases, direnv, starship prompt, zoxide.
+# Covers: bash, zsh (oh-my-zsh plugins + starship), aliases, direnv, zoxide.
+# Tmux defaults: modules/tmux.nix.
 # The shared `shellInit` string is injected into both bash and zsh so
 # there's a single source of truth for the runtime init sequence.
 {
@@ -295,6 +296,24 @@ in {
         exec "$HOME/.local/bin/receipts-browser-api" "''${1:-https://app.mynt.com/}"
       '';
     };
+
+    # Cursor agent terminal snap helpers (no-op; silences command-not-found).
+    ".local/bin/dump_zsh_state" = {
+      executable = true;
+      force = true;
+      text = ''
+        #!/bin/sh
+        exit 0
+      '';
+    };
+    ".local/bin/dump_bash_state" = {
+      executable = true;
+      force = true;
+      text = ''
+        #!/bin/sh
+        exit 0
+      '';
+    };
   };
 
   # Claude Code is installed and auto-updated by Anthropic's native installer;
@@ -362,6 +381,11 @@ in {
 
     # bat-powered man pages
     man = "batman";
+
+    # tmux (prefix Ctrl-a; see modules/tmux.nix)
+    ta = "tmux attach -t";
+    tl = "tmux list-sessions";
+    ts = "tmux new-session -A -s";
   };
 
   programs = {
@@ -404,9 +428,36 @@ in {
     };
 
     # zsh uses initContent (home-manager 24.11+); same init sequence as bash.
+    # Prompt: Starship (programs.starship). Oh My Zsh supplies plugins only.
     zsh = {
       enable = true;
-      initContent = shellInit;
+      enableCompletion = true;
+      enableAutosuggestions = true;
+      enableSyntaxHighlighting = true;
+      history = {
+        size = 10000;
+        save = 10000;
+        share = true;
+        ignoreDups = true;
+        ignoreSpace = true;
+      };
+      oh-my-zsh = {
+        enable = true;
+        theme = "";
+        plugins = [
+          "git"
+          "kubectl"
+          "tmux"
+        ];
+      };
+      initContent =
+        shellInit
+        + ''
+
+          # Oh My Zsh tmux plugin can auto-spawn; keep attach explicit (SSH prompt / jc).
+          export ZSH_TMUX_AUTOSTART=false
+          export ZSH_TMUX_FIXTERM=false
+        '';
       # Cursor Agent runs `zsh -c` (non-interactive). That sources .zshenv
       # (envExtra) and skips .zshrc/initContent, so the interactive direnv
       # hook never fires. Enter Nix once here: direnv allow + export.

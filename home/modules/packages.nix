@@ -5,6 +5,7 @@
 {pkgs, ...}: {
   home.packages = with pkgs; [
     # Networking — resilient remote shell and DNS diagnostics.
+    tmux # multiplexed shells (HM config in modules/tmux.nix; jc/jcode-ui use it too)
     mosh # UDP-based ssh replacement, survives roaming/sleep, local echo
     abduco # session detach/attach only (no multiplexing); pairs with mosh
     dnsutils # dig, host, nslookup — DNS query tools

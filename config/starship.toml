@@ -19,6 +19,7 @@ $directory\
 $git_branch\
 $git_status\
 $git_metrics\
+$tmux\
 $fill\
 $nodejs\
 $rust\
@@ -75,6 +76,12 @@ read_only = " 󰌾"
 read_only_style = "bold red"
 truncation_symbol = "…/"
 home_symbol = "󰋜 ~"
+
+[tmux]
+disabled = false
+format = "[$symbol$session]($style) "
+symbol = "󰽙 "
+style = "bold purple"
 
 [directory.substitutions]
 "Documents" = "󰈙 "

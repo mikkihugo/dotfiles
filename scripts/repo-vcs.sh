@@ -217,22 +217,17 @@ task_branch_for() {
 	printf '%s' "$live_branch"
 }
 
-# Revision reads go through the Engine repository operator. It understands
-# jj revsets such as main@origin. SE_REPO_ROOT selects this checkout; the
-# operator tree stays the Engine implementation.
-engine_repo_read() {
-	local engine_repo="${DOTFILES_ENGINE_REPO:-/home/mhugo/code/singularity-engine/tools/repository-operator/repo}"
-	[[ -f "$engine_repo" ]] || die "engine repo command is missing: $engine_repo"
-	SE_REPO_ROOT="$root" bash "$engine_repo" "$@"
-}
-
+# Revision reads use the pinned git, like status and diff. The Engine launcher
+# reads jj repositories only, and task lanes are plain git worktrees (no .jj),
+# so routing log/show there fails with "There is no jj repo". Git names (main,
+# origin/main, a sha) work; jj-only revsets such as main@origin do not.
 case "$command_name" in
 status) git -C "$root" status "$@" ;;
 diff) git -C "$root" diff "$@" ;;
-log) engine_repo_read log "$@" ;;
+log) git -C "$root" log "$@" ;;
 show)
 	[[ $# -eq 1 ]] || die 'show requires one revision'
-	engine_repo_read show "$1"
+	git -C "$root" show "$1"
 	;;
 worktree-list) git -C "$root" worktree list --porcelain ;;
 fetch)

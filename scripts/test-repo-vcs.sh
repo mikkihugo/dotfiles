@@ -33,6 +33,29 @@ actual="$(_run_repo_vcs PATH="$tmp/refuse:$PATH" SE_GIT_BIN="$tmp/pinned/git" "$
 	printf 'facade did not use pinned SE_GIT_BIN: %s\n' "$actual" >&2
 	exit 1
 }
+
+# log and show read through the pinned git like status and diff. The Engine
+# launcher needs a jj repo and lanes are plain git worktrees, so it must not be
+# reached: the stub launcher fails loudly if the facade ever routes to it.
+printf '#!/usr/bin/env bash\nprintf "engine-route-used\\n"\nexit 97\n' >"$tmp/engine-stub"
+actual="$(_run_repo_vcs DOTFILES_ENGINE_REPO="$tmp/engine-stub" PATH="$tmp/refuse:$PATH" SE_GIT_BIN="$tmp/pinned/git" "$root/scripts/repo-vcs.sh" log -n 1 2>&1)"
+[[ "$actual" == "pinned-git -C $root log -n 1" ]] || {
+	printf 'log did not use pinned SE_GIT_BIN: %s\n' "$actual" >&2
+	exit 1
+}
+actual="$(_run_repo_vcs DOTFILES_ENGINE_REPO="$tmp/engine-stub" PATH="$tmp/refuse:$PATH" SE_GIT_BIN="$tmp/pinned/git" "$root/scripts/repo-vcs.sh" show HEAD 2>&1)"
+[[ "$actual" == "pinned-git -C $root show HEAD" ]] || {
+	printf 'show did not use pinned SE_GIT_BIN: %s\n' "$actual" >&2
+	exit 1
+}
+if _run_repo_vcs PATH="$tmp/refuse:$PATH" SE_GIT_BIN="$tmp/pinned/git" "$root/scripts/repo-vcs.sh" show >"$tmp/show-bad.out" 2>"$tmp/show-bad.err"; then
+	printf 'show must require exactly one revision\n' >&2
+	exit 1
+fi
+grep -Fq 'show requires one revision' "$tmp/show-bad.err" || {
+	printf 'show without a revision must say so\n' >&2
+	exit 1
+}
 help_log="$tmp/describe-help.log"
 mkdir -p "$tmp/record"
 cat >"$tmp/record/git" <<'RECORD_GIT'

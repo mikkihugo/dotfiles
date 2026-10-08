@@ -403,7 +403,8 @@ fi
 # bare repository stands in for Forgejo.
 p2m="$tmp/primary-to-main"
 mkdir -p "$p2m"
-p2m_git_bin="$(command -v git)"
+# Prefer the pinned Git: agent PATHs resolve bare `git` to a refusal shim.
+p2m_git_bin="${SE_GIT_BIN:-$(command -v git)}"
 p2m_git() { "$p2m_git_bin" -c user.name=t -c user.email=t@t -c init.defaultBranch=main "$@"; }
 p2m_git init -q --bare "$p2m/remote.git"
 p2m_git clone -q "$p2m/remote.git" "$p2m/seed" 2>/dev/null

@@ -374,7 +374,13 @@ primary-to-main)
 	[[ $# -eq 0 ]] || die 'primary-to-main takes no arguments'
 	primary="${DOTFILES_PRIMARY:-$HOME/.dotfiles}"
 	[[ -d "$primary" ]] || die "primary checkout is missing: $primary"
-	branch="$(git -C "$primary" symbolic-ref --quiet --short HEAD)" || die 'primary checkout is detached'
+	detached_head=''
+	if ! branch="$(git -C "$primary" symbolic-ref --quiet --short HEAD)"; then
+		# A detached primary has no branch ref to preserve; its HEAD is kept
+		# under refs/dotfiles-primary-backup/ before it is moved.
+		detached_head="$(git -C "$primary" rev-parse HEAD)"
+		branch="detached@${detached_head:0:7}"
+	fi
 	[[ "$branch" != main ]] || die 'primary checkout is already on main; use: repo vcs sync-main'
 	fetch_forgejo_main "$primary"
 	if git -C "$primary" show-ref --verify --quiet refs/heads/main && git -C "$primary" cherry origin/main main | grep -q '^+'; then
@@ -387,6 +393,16 @@ primary-to-main)
 		path="${entry:3}"
 		case "$entry_status" in
 		' M' | 'M ' | 'MM') ;;
+		' D' | 'D ')
+			# A deletion is provable only when origin/main already lacks the
+			# path; deleting a path main still has is unique work.
+			if git -C "$primary" cat-file -e "origin/main:$path" 2>/dev/null; then
+				unproven+=("$path")
+			else
+				discarded=$((discarded + 1))
+			fi
+			continue
+			;;
 		*)
 			unproven+=("$path status=$entry_status")
 			continue
@@ -404,6 +420,9 @@ primary-to-main)
 	if ((${#unproven[@]})); then
 		printf 'unproven_dirt=%s\n' "${unproven[@]}" >&2
 		die "primary checkout $primary has changes that are not in origin/main history; land them first: repo vcs worktree-create <name> origin/main, copy the files, then repo vcs land"
+	fi
+	if [[ -n "$detached_head" ]]; then
+		git -C "$primary" update-ref "refs/dotfiles-primary-backup/$detached_head" "$detached_head"
 	fi
 	git -C "$primary" checkout --quiet --force -B main origin/main
 	printf 'aligned=main revision=%s previous_branch=%s discarded_paths=%d\n' "$(git -C "$primary" rev-parse HEAD)" "$branch" "$discarded"

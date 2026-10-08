@@ -484,3 +484,51 @@ if ! DOTFILES_PRIMARY="$p2m_long/primary" DOTFILES_FORGEJO_HTTPS_URL="$p2m_long/
 	exit 1
 fi
 grep -Fq 'aligned=main' "$tmp/p2m-long.out"
+
+# A detached primary (how a stale jj/git checkout is left) moves to origin/main
+# when every dirty path is provable: a modified file must exist in history, a
+# deleted file must already be absent from origin/main. A deletion main does NOT
+# have is unique and refuses, touching nothing. A detached HEAD has no branch ref
+# to preserve, so the old HEAD is kept under refs/dotfiles-primary-backup/.
+p2m_det="$tmp/primary-to-main-detached"
+mkdir -p "$p2m_det"
+p2m_git init -q --bare "$p2m_det/remote.git"
+p2m_git clone -q "$p2m_det/remote.git" "$p2m_det/seed" 2>/dev/null
+printf 'v1\n' >"$p2m_det/seed/f"
+printf 'gone\n' >"$p2m_det/seed/g"
+printf 'keep\n' >"$p2m_det/seed/h"
+p2m_git -C "$p2m_det/seed" add f g h
+p2m_git -C "$p2m_det/seed" commit -qm base
+printf 'v2\n' >"$p2m_det/seed/f"
+p2m_git -C "$p2m_det/seed" rm -q g
+p2m_git -C "$p2m_det/seed" commit -qam 'update f, remove g'
+p2m_git -C "$p2m_det/seed" push -q origin main
+p2m_git clone -q "$p2m_det/remote.git" "$p2m_det/primary"
+p2m_git -C "$p2m_det/primary" checkout -q --detach HEAD~1
+p2m_det_base="$(p2m_git -C "$p2m_det/primary" rev-parse HEAD)"
+rm "$p2m_det/primary/h"
+if DOTFILES_PRIMARY="$p2m_det/primary" DOTFILES_FORGEJO_HTTPS_URL="$p2m_det/remote.git" SE_GIT_BIN="$p2m_git_bin" _run_repo_vcs "$root/scripts/repo-vcs.sh" primary-to-main >"$tmp/p2m-det-refuse.out" 2>"$tmp/p2m-det-refuse.err"; then
+	printf 'primary-to-main must refuse a detached primary that deleted a path origin/main still has\n' >&2
+	exit 1
+fi
+grep -Fq 'unproven_dirt=h' "$tmp/p2m-det-refuse.err"
+[[ ! -e "$p2m_det/primary/h" ]]
+[[ "$(p2m_git -C "$p2m_det/primary" rev-parse HEAD)" == "$p2m_det_base" ]]
+p2m_git -C "$p2m_det/primary" checkout -q -- h
+printf 'v2\n' >"$p2m_det/primary/f"
+rm "$p2m_det/primary/g"
+if ! DOTFILES_PRIMARY="$p2m_det/primary" DOTFILES_FORGEJO_HTTPS_URL="$p2m_det/remote.git" SE_GIT_BIN="$p2m_git_bin" _run_repo_vcs "$root/scripts/repo-vcs.sh" primary-to-main >"$tmp/p2m-det-ok.out" 2>"$tmp/p2m-det-ok.err"; then
+	printf 'primary-to-main must align a detached primary whose dirt is provable\n' >&2
+	cat "$tmp/p2m-det-ok.err" >&2
+	exit 1
+fi
+grep -Fq 'aligned=main' "$tmp/p2m-det-ok.out"
+grep -Fq 'previous_branch=detached@' "$tmp/p2m-det-ok.out"
+[[ "$(p2m_git -C "$p2m_det/primary" symbolic-ref --short HEAD)" == main ]]
+[[ "$(p2m_git -C "$p2m_det/primary" rev-parse HEAD)" == "$(p2m_git -C "$p2m_det/remote.git" rev-parse main)" ]]
+[[ -z "$(p2m_git -C "$p2m_det/primary" status --porcelain)" ]]
+[[ ! -e "$p2m_det/primary/g" ]]
+p2m_git -C "$p2m_det/primary" show-ref --verify --quiet "refs/dotfiles-primary-backup/$p2m_det_base" || {
+	printf 'primary-to-main must keep the old detached HEAD under refs/dotfiles-primary-backup/\n' >&2
+	exit 1
+}

@@ -1,7 +1,14 @@
 # home/modules/git.nix — version control configuration
 #
 # Covers: git (identity, delta pager, aliases), jujutsu, GitHub CLI.
-_: {
+{pkgs, ...}: let
+  # HTTPS credentials for Forgejo come from OpenBao at call time, never from a
+  # git config file. Scoped to the one host, so no other remote is offered it.
+  forgejoCredentialHelper = pkgs.writeShellScript "git-credential-forgejo-bao" ''
+    export BAO_BIN=${pkgs.openbao}/bin/bao
+    exec ${pkgs.bash}/bin/bash ${../../scripts/git-credential-forgejo-bao} "$@"
+  '';
+in {
   programs = {
     # git: canonical identity + delta diff pager + quality-of-life aliases.
     # delta replaces the default diff output with syntax-highlighted views.
@@ -24,6 +31,7 @@ _: {
           "git@git.centralcloud.net:"
           "ssh://git@git.centralcloud.net/"
         ];
+        credential."https://git.centralcloud.net".helper = "!${forgejoCredentialHelper}";
         core.pager = "delta";
         interactive.diffFilter = "delta --color-only";
         delta = {

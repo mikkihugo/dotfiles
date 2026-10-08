@@ -95,10 +95,28 @@ done
 grep -rqF -e "$OLD" "$h" && fail 'old token still present in a copy'
 grep -qF -e "$NEW" "$tmp/out" "$tmp/err" && fail 'token leaked to the script output'
 
-# --- idempotent
+# --- idempotent, and a no-op sync rewrites nothing (a 5-minute poll must not churn files)
+files=(run/forgejo-token .config/forgejo/token .local/share/forgejo-cli/keys.json .config/fj/config.toml .config/jcode/budget-autofix.env)
+inodes() { for f in "${files[@]}"; do stat -c '%i' "$h/$f"; done | tr '\n' ' '; }
+before_inodes="$(inodes)"
 rc="$(run "$h" ok)"
 [[ "$rc" == 0 ]] || fail "second sync exit $rc, want 0"
 [[ "$(jq -r '.hosts["git.centralcloud.net"].token' "$h/.local/share/forgejo-cli/keys.json")" == "$NEW" ]] || fail 'second sync changed keys.json'
+[[ "$(inodes)" == "$before_inodes" ]] || fail 'a sync with nothing to change rewrote a file'
+[[ "$(grep -c 'unchanged' "$tmp/out")" == 5 ]] || fail 'a no-op sync must report all five copies as unchanged'
+
+# --- one drifted copy is repaired; the others are left alone
+jq --arg t "$OLD" '.hosts["git.centralcloud.net"].token = $t' "$h/.local/share/forgejo-cli/keys.json" >"$tmp/keys.drift"
+cat "$tmp/keys.drift" >"$h/.local/share/forgejo-cli/keys.json"
+before_inodes="$(inodes)"
+rc="$(run "$h" ok)"
+[[ "$rc" == 0 ]] || fail "drift sync exit $rc, want 0"
+[[ "$(jq -r '.hosts["git.centralcloud.net"].token' "$h/.local/share/forgejo-cli/keys.json")" == "$NEW" ]] || fail 'drifted keys.json was not repaired'
+read -r -a b <<<"$before_inodes"
+read -r -a a <<<"$(inodes)"
+for i in 0 1 3 4; do [[ "${a[$i]}" == "${b[$i]}" ]] || fail "an unrelated copy (index $i) was rewritten during a drift repair"; done
+grep -q 'fj-keys.json updated' "$tmp/out" || fail 'drift repair must report keys.json as updated'
+[[ "$(mode "$h/.local/share/forgejo-cli/keys.json")" == 600 ]] || fail 'repaired keys.json must be 0600'
 
 # --- missing files are skipped, not created
 h="$tmp/h2"

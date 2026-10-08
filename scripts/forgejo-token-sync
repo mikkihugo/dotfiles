@@ -14,7 +14,8 @@
 #     ~/.config/fj/config.toml                     token in [hosts."https://git.centralcloud.net"]
 #     ~/.config/jcode/budget-autofix.env           FORGEJO_TOKEN= (quote style kept)
 #   If bao fails or returns an empty token, exit 1 and touch nothing. The token
-#   never reaches stdout, stderr or argv: it moves file to file.
+#   never reaches stdout, stderr or argv: it moves file to file. A copy that already
+#   matches is left untouched ("unchanged"), so the timer can poll every few minutes.
 # Falsifier: scripts/test-forgejo-token-sync.sh.
 set -euo pipefail
 umask 077
@@ -40,8 +41,21 @@ fi
 
 status=0
 
-# install_from <label> <dest> <tmpfile>: atomic replace at mode 0600.
+# install_from <label> <dest> <tmpfile>: atomic replace at mode 0600, but leave
+# a copy that already matches untouched (the timer polls every few minutes, so
+# a no-op run must not churn files or their mtimes). A matching copy with a
+# loose mode gets chmod 0600 in place.
 install_from() {
+	if [[ -e "$2" ]] && cmp -s -- "$3" "$2"; then
+		rm -f -- "$3"
+		if [[ "$(stat -c '%a' "$2")" != 600 ]]; then
+			chmod 600 "$2"
+			echo "forgejo-token-sync: $1 mode fixed"
+		else
+			echo "forgejo-token-sync: $1 unchanged"
+		fi
+		return 0
+	fi
 	chmod 600 "$3"
 	mv -f -- "$3" "$2"
 	echo "forgejo-token-sync: $1 updated"

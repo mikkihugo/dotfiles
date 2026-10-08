@@ -1,6 +1,7 @@
 {pkgs, ...}: let
-  # Runtime-dir path: tmpfs, per user, gone at logout/reboot. Rewritten by the
-  # timer below, so it never outlives the OpenBao secret by more than a period.
+  # Runtime-dir path: tmpfs, per user, gone at logout/reboot. Re-rendered by the
+  # timer below (every 5 min; unchanged copies are left alone), so it never outlives
+  # the OpenBao secret by more than one period.
   tokenFile = "/run/user/1000/forgejo-token";
 
   # scripts/forgejo-token-sync renders the token from OpenBao into the runtime
@@ -35,10 +36,10 @@ in {
     };
 
     timers.forgejo-token-file = {
-      Unit.Description = "Refresh the Forgejo token file from OpenBao";
+      Unit.Description = "Poll OpenBao and keep the Forgejo token copies current";
       Timer = {
         OnStartupSec = "20s";
-        OnUnitActiveSec = "6h";
+        OnUnitActiveSec = "5min"; # a bao rotation reaches every copy within one period, no manual step
         Persistent = true;
       };
       Install.WantedBy = ["timers.target"];

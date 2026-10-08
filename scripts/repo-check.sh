@@ -88,6 +88,7 @@ main() {
 	bash "$root/scripts/test-sccache-profile-scope.sh"
 	bash "$root/scripts/test-codex-rollout-gc.sh"
 	bash "$root/scripts/test-git-credential-forgejo-bao.sh"
+	bash "$root/scripts/test-forgejo-token-sync.sh"
 	(
 		cd "$root"
 		node --test \

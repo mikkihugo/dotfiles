@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Render the Forgejo token from OpenBao into every static copy a tool reads.
+#
+# Purpose: OpenBao kv/forgejo/cli-mhugo is the only place the token is edited.
+#   Tools that cannot call bao themselves (fj, shell scripts, systemd units)
+#   read copies; this script keeps the copies equal to bao, so a rotation is
+#   one `bao kv patch` plus one run of this script.
+# Consumer: home/modules/forgejo-token-file.nix (service + 6h timer).
+# Contract: the runtime file $FORGEJO_TOKEN_FILE is always written. These copies
+#   are updated only if they already exist (never created), keep every other
+#   field or line, and end at mode 0600:
+#     ~/.config/forgejo/token                      exact token, no newline
+#     ~/.local/share/forgejo-cli/keys.json         .hosts["git.centralcloud.net"].token
+#     ~/.config/fj/config.toml                     token in [hosts."https://git.centralcloud.net"]
+#     ~/.config/jcode/budget-autofix.env           FORGEJO_TOKEN= (quote style kept)
+#   If bao fails or returns an empty token, exit 1 and touch nothing. The token
+#   never reaches stdout, stderr or argv: it moves file to file.
+# Falsifier: scripts/test-forgejo-token-sync.sh.
+set -euo pipefail
+umask 077
+
+bao_bin="${BAO_BIN:-bao}"
+export BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}"
+runtime_file="${FORGEJO_TOKEN_FILE:-/run/user/$(id -u)/forgejo-token}"
+host_key="git.centralcloud.net"
+
+work="$(mktemp -d)"
+trap 'rm -rf -- "$work"' EXIT
+
+# Read into a file, never a variable that could reach argv.
+if ! "$bao_bin" kv get -mount=kv -field=token forgejo/cli-mhugo >"$work/raw" 2>/dev/null; then
+	echo 'forgejo-token-sync: could not read kv/forgejo/cli-mhugo from OpenBao (run bao-login?); nothing changed' >&2
+	exit 1
+fi
+tr -d '\n' <"$work/raw" >"$work/token"
+if [[ ! -s "$work/token" ]]; then
+	echo 'forgejo-token-sync: OpenBao returned an empty token; nothing changed' >&2
+	exit 1
+fi
+
+status=0
+
+# install_from <label> <dest> <tmpfile>: atomic replace at mode 0600.
+install_from() {
+	chmod 600 "$3"
+	mv -f -- "$3" "$2"
+	echo "forgejo-token-sync: $1 updated"
+}
+
+# Runtime file: always written.
+tmp="$(mktemp "$runtime_file.XXXXXX")"
+cat "$work/token" >"$tmp"
+install_from runtime-file "$runtime_file" "$tmp"
+
+# ~/.config/forgejo/token
+dest="$HOME/.config/forgejo/token"
+if [[ -e "$dest" ]]; then
+	tmp="$(mktemp "$dest.XXXXXX")"
+	cat "$work/token" >"$tmp"
+	install_from forgejo/token "$dest" "$tmp"
+fi
+
+# fj keys.json
+dest="$HOME/.local/share/forgejo-cli/keys.json"
+if [[ -e "$dest" ]]; then
+	tmp="$(mktemp "$dest.XXXXXX")"
+	if jq --rawfile t "$work/token" --arg h "$host_key" \
+		'if .hosts[$h] then .hosts[$h].token = $t else . end' "$dest" >"$tmp"; then
+		install_from fj-keys.json "$dest" "$tmp"
+	else
+		rm -f -- "$tmp"
+		echo 'forgejo-token-sync: keys.json is not valid JSON; left unchanged' >&2
+		status=1
+	fi
+fi
+
+# fj config.toml
+dest="$HOME/.config/fj/config.toml"
+if [[ -e "$dest" ]]; then
+	tmp="$(mktemp "$dest.XXXXXX")"
+	awk -v tf="$work/token" -v section="[hosts.\"https://$host_key\"]" '
+		BEGIN { getline t < tf }
+		/^\[/ { insec = ($0 == section) }
+		insec && /^token[[:space:]]*=/ { print "token = \"" t "\""; next }
+		{ print }
+	' "$dest" >"$tmp"
+	install_from fj-config.toml "$dest" "$tmp"
+fi
+
+# budget-autofix.env
+dest="$HOME/.config/jcode/budget-autofix.env"
+if [[ -e "$dest" ]]; then
+	tmp="$(mktemp "$dest.XXXXXX")"
+	awk -v tf="$work/token" '
+		BEGIN { getline t < tf }
+		/^FORGEJO_TOKEN="/ { print "FORGEJO_TOKEN=\"" t "\""; next }
+		/^FORGEJO_TOKEN=/ { print "FORGEJO_TOKEN=" t; next }
+		{ print }
+	' "$dest" >"$tmp"
+	install_from budget-autofix.env "$dest" "$tmp"
+fi
+
+exit "$status"

@@ -3,21 +3,15 @@
   # timer below, so it never outlives the OpenBao secret by more than a period.
   tokenFile = "/run/user/1000/forgejo-token";
 
+  # scripts/forgejo-token-sync renders the token from OpenBao into the runtime
+  # file and into every static copy a tool reads (fj, infra scripts, the
+  # budget-autofix watchdog), so rotating is one `bao kv patch` plus a refresh.
+  # The value goes file-to-file only: never argv, never the journal.
   refresh = pkgs.writeShellScript "forgejo-token-file" ''
-    set -euo pipefail
-    umask 077
-    export BAO_ADDR="''${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}"
-    tmp="$(${pkgs.coreutils}/bin/mktemp "${tokenFile}.XXXXXX")"
-    trap '${pkgs.coreutils}/bin/rm -f -- "$tmp"' EXIT
-    # The value goes file-to-file only: never argv, never the journal.
-    ${pkgs.openbao}/bin/bao kv get -mount=kv -field=token forgejo/cli-mhugo >"$tmp"
-    if [[ ! -s "$tmp" ]]; then
-      echo "forgejo-token-file: OpenBao returned an empty token; keeping the existing file" >&2
-      exit 1
-    fi
-    ${pkgs.coreutils}/bin/mv -f -- "$tmp" "${tokenFile}"
-    trap - EXIT
-    echo "forgejo-token-file: refreshed ${tokenFile}"
+    export PATH=${pkgs.lib.makeBinPath [pkgs.coreutils pkgs.gawk pkgs.jq]}
+    export BAO_BIN=${pkgs.openbao}/bin/bao
+    export FORGEJO_TOKEN_FILE=${tokenFile}
+    exec ${pkgs.bash}/bin/bash ${../../scripts/forgejo-token-sync}
   '';
 in {
   # Engine's in-process Forgejo client (singularity-repo-embedded, feature
@@ -28,7 +22,7 @@ in {
   systemd.user = {
     services.forgejo-token-file = {
       Unit = {
-        Description = "Write the Forgejo API token from OpenBao to the runtime dir (0600)";
+        Description = "Render the Forgejo API token from OpenBao into the runtime dir and tool copies (0600)";
         # Same rule as the other units here: never restart a live one under a caller.
         X-SwitchMethod = "keep-old";
       };

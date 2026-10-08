@@ -70,7 +70,5 @@ per-invocation brief.
   `subagents.agents.<agent_type>` model map.
 - `../copilot-instructions.md` — global instructions loaded every
   session.
-- `../hooks/` — event-driven hooks (mailbox-sweep, observations,
-  remind-skills). Plain per-CLI files; not managed by `.dotfiles`.
 - `../../AGENTS.md` — devbox-wide agent doctrine (model tiers,
   forbidden alternatives, operator authority).

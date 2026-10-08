@@ -90,21 +90,9 @@
       force = true;
     };
 
-    ".cursor/rules/engine-swarm-bus.mdc" = {
-      source = ../../config/cursor/rules/engine-swarm-bus.mdc;
-      force = true;
-    };
-
     # goose config.yaml is intentionally NOT HM-symlinked: goose writes
     # telemetry consent and other prefs into it. Seeded/merged in activation.nix.
     #
-    # goose has no coordination-mailbox-sweep equivalent: verified (2026-09-06,
-    # via block/goose docs + DeepWiki) that goose has no lifecycle hook system
-    # at all -- only MCP extensions, which run tools by the agent's own choice,
-    # not deterministically on session start. It already gets bus access via
-    # the ccgw extension activation.nix seeds into
-    # extensions:; that is the ceiling of what's possible here today.
-
     ".config/goose/moim-guardrails.md" = {
       source = ../../config/goose/moim-guardrails.md;
       force = true;

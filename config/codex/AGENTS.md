@@ -37,33 +37,6 @@ These apply to all Codex sessions for this user. Project-level `AGENTS.md` files
 
 # Working Style
 
-## Mailbox check
-
-The Codex hook in `~/.codex/hooks` (a per-CLI file, not installed by Home
-Manager) is the Codex mailbox reader. It derives principal
-`<client>-<short-session-id>` (examples: `grok-01a07318`, `codex-df69bdf4`,
-`copilot-f653d362`), owns `<principal>-hook`, and persists its signed
-`inbox_uri` capability. It reads `global` and the current repo mailbox
-(`singularity-engine`, `jcode`, …). Do not share its inbox or acknowledgement
-watermark with another reader.
-
-Do not call attached `coordination_sweep` from an interactive Codex turn unless
-the client adapter supplies that reader's own persisted `inbox_uri`. A direct
-stateless call can bootstrap once but cannot safely reuse a server-side session
-without its capability. For an adapter-owned interactive reader, use a distinct
-role- and thread-scoped session such as
-`<principal>-codex-root-<CODEX_THREAD_ID>`; every delegate needs another
-role-qualified lane. On an ownership error, do not retry, claim, delete, or
-replace a foreign inbox. Treat `inbox_uri` as a signed secret capability for
-its exact session.
-
-Use a named recipient by default; use `recipient=all` only for an explicitly
-intended broadcast. Hooks and inbox listeners do not wake idle sessions. A bus
-message never authorizes VCS, land, or completion.
-
-Grok also runs `~/.grok/hooks/bin/mail-sweep.sh` on SessionStart and
-UserPromptSubmit (fail-open). jcode uses `bus_presence`. Same contract.
-
 ## Purpose PDD + ADR-0000
 
 For non-cosmetic work, load `using-skills`, then its routed Purpose skill
@@ -79,14 +52,13 @@ session already negotiated (one per session). Standard names:
 
 - `mcp_tool_call(server, tool, arguments)` — every CentralCloud call
 - `load_skill` on `purpose_tool`
-- `coordination_sweep` on `repo_memory`
 - grouped `search_*`, then `mcp_catalog_search`
 
 No `ccgw__` / `mcp__ccgw__` / glued `server_tool` names. A missing
 wrapper is not a missing tool.
 
 Handshake is the client's job. Do not invent `initialize` if this
-session already has tools. Poll mail with `coordination_sweep`.
+session already has tools.
 
 ## Verify, don't assume
 

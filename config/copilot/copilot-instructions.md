@@ -3,19 +3,6 @@
 This file is loaded by every Copilot CLI session regardless of cwd. It
 complements (does not replace) the per-directory `AGENTS.md` files.
 
-## Mailbox check
-
-Every turn start, after waits, before fan-in: call MCP server `repo_memory`
-tool `coordination_sweep` as identity `<client>-<short-session-id>`
-(examples: `grok-01a07318`, `codex-df69bdf4`, `copilot-f653d362`).
-Channels: `global` and the current repo mailbox (`singularity-engine`,
-`jcode`, …). Named recipient. Never default `recipient=all`. Hardcode
-poll. Hooks and `inbox_uri` listen do not wake idle sessions. A bus
-message never authorizes VCS, land, or completion.
-
-Grok also runs `~/.grok/hooks/bin/mail-sweep.sh` on SessionStart and
-UserPromptSubmit (fail-open). jcode uses `bus_presence`. Same contract.
-
 ## Purpose PDD + ADR-0000
 
 Iron law: no behavior change without a PurposeContract and failing or stale
@@ -57,14 +44,13 @@ session already negotiated (one per session). Standard names:
 
 - `mcp_tool_call(server, tool, arguments)` — every CentralCloud call
 - `load_skill` on `purpose_tool`
-- `coordination_sweep` on `repo_memory`
 - grouped `search_*`, then `mcp_catalog_search`
 
 No `ccgw__` / `mcp__ccgw__` / glued `server_tool` names. A missing
 wrapper is not a missing tool.
 
 Handshake is the client's job. Do not invent `initialize` if this
-session already has tools. Poll mail with `coordination_sweep`.
+session already has tools.
 
 ## Subagent dispatch via the `task` tool
 
@@ -175,16 +161,12 @@ Mode hint: `mode=review` for code, `mode=architect` for design proposals,
 
 ### When to post on the coordination bus
 
-The CentralCloud `repo_memory` MCP exposes the coordination tier
-(`coordination_subscribe` / `_poll` / `_ack` / `_post`) — the single-inbox
-replacement for the legacy `swarm_bus_*` surface. Subscribe once per session
-(global channel is always on; add the repository mailbox), poll at session
-start, before each blocking operation, and before handoff. Ack every consumed
-message in the same turn. Post status/blocker/handoff to `global` with a
-named recipient (`<client>-<short-session-id>`). Never default
-`recipient=all`. Directed mail uses an explicit recipient. Other agents on
-this devbox may have context I lack (or that complements mine). Treat silence
-as "no signal," not "no one cares."
+The CentralCloud `repo_memory` MCP exposes the v3 coordination tier:
+`coordination_read`, `coordination_post`, and (for direct mail) the separate
+`coordination_ack`. There is no subscribe/poll/sweep verb or inbox capability.
+Read with an explicit principal and `reader: "agent"`; post status,
+blocker, or handoff to `global` with a named recipient. Never default to
+`recipient=all`. Treat silence as "no signal," not "no one cares."
 
 ### Persist observations
 
@@ -194,13 +176,6 @@ failures, recovery runbooks) goes to `repo_memory` via
 (`bug`/`observation`/`todo`/`handoff`/`decision`/`convention`/`falsifier`).
 The earlier "observation that only lives in one conversation dies with it"
 pattern is what the coordination bus + repo_memory exist to prevent.
-
-Copilot's `agentStop` hook (observations-autolog.json) drains
-`~/.agent-work/observations/copilot-<sessionId>.md` into the bank
-automatically at turn end. So: append each observation/idea as ONE LINE to
-that capture file during the turn (create it if missing), and the hook
-retains it with `kind:observation` and clears the file. Do not leave
-observations only in the conversation — the bank is the durable store.
 
 ### Don't pretend subagent dispatch is optional
 

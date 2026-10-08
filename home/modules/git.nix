@@ -18,6 +18,12 @@ _: {
         safe.directory = "/home/mhugo/code/flakecache";
         init.defaultBranch = "main";
         pull.rebase = true;
+        # Forgejo SSH is port 2222. Rewrite scp-style and portless ssh URLs so
+        # Git dials that port even when it does not apply Host entries.
+        url."ssh://git@git.centralcloud.net:2222/".insteadOf = [
+          "git@git.centralcloud.net:"
+          "ssh://git@git.centralcloud.net/"
+        ];
         core.pager = "delta";
         interactive.diffFilter = "delta --color-only";
         delta = {
@@ -75,10 +81,16 @@ _: {
             "--when".repositories = [
               "/home/mhugo/code/singularity-engine"
               "/home/mhugo/code/worktrees/jj/singularity-engine"
+              "/home/mhugo/code/jcode"
+              "/home/mhugo/code/worktrees/jj/jcode"
+              "/srv/infra"
+              "/home/mhugo/code/worktrees/jj/infra"
+              "/home/mhugo/.dotfiles"
             ];
-            # engine's only remote is `forgejo`; jj's default trunk() ignores it and
-            # resolves to root(), leaving main@forgejo mutable at the jj level.
-            "revset-aliases"."trunk()" = "main@forgejo";
+            # Publication bookmark is main@origin in all four repositories.
+            # Without this alias jj's trunk() falls back to root() and the
+            # published main stays mutable.
+            "revset-aliases"."trunk()" = "main@origin";
           }
         ];
       };

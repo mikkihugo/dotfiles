@@ -88,6 +88,9 @@ in {
       "$HOME/.npm-global/bin" # codex, opencode, and other npm globals
 
       "$HOME/.amp/bin"
+      # zsh, gemini and other home-manager packages. Nothing else puts this on PATH
+      # here (no /etc/profile.d/nix.sh), so `zsh` is not found from bash.
+      "$HOME/.nix-profile/bin"
       # ~/.kimi-code/bin removed — kimi is managed by mise (npm:@moonshot-ai/kimi-code)
     ];
 

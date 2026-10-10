@@ -166,9 +166,10 @@
     "/srv/infra"
     # NOTE 2026-10-10: ${homeDir}/.cache/engine-jj-git-store no longer exists (the Engine jj
     # store's git_target is now ../../../.git, a bind mount excluded below), and borgmatic
-    # refuses to run when ANY source path is missing, so every hot-source job was failing.
-    # Path dropped to restore the other sources. OPEN: the Engine jj store (~47 GB) has no
-    # kept copy in this backup until the operator decides what to cover (or relies on Forgejo).
+    # refuses to run when ANY source path is missing, so every hot-source job failed from
+    # ~2026-10-07 (last good archive 2026-10-07T15:58:49Z). Path dropped to restore the other
+    # sources. The live store (.jj/git-writable under the code source root) is NOT excluded, so
+    # it is covered via "${homeDir}/code" (verified 2026-10-10, no exclude matches it).
   ];
   hotSourceExcludes = [
     # regex, not **/.cache: a fm/sh glob also excludes a source root that lives under .cache (the engine jj store below)

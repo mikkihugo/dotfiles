@@ -332,6 +332,11 @@ in
           Service = {
             Type = "oneshot";
             ExecStart = "${serializedBackupScript name}";
+            # Whole-home reads filled 9.7G+ of page cache, evicting build
+            # working sets. MemoryHigh reclaims this job's own cache first;
+            # borg's anon memory is far below the ceiling (2026-10-10).
+            MemoryHigh = "4G";
+            MemoryMax = "10G";
             Environment = [
               "HOME=${homeDir}"
               "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
@@ -396,6 +401,10 @@ in
             IOSchedulingClass = "idle";
             CPUWeight = 10;
             IOWeight = 10;
+            # Same envelope as home-emergency-backup: observed peaks of
+            # 11-23G were mostly page cache, not borg anon (2026-10-10).
+            MemoryHigh = "4G";
+            MemoryMax = "10G";
             Environment = [
               "HOME=${homeDir}"
             ];

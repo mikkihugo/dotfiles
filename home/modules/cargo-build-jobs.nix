@@ -78,8 +78,23 @@
 # BASH_ENV loader does not source hm-session-vars, so sessions already running
 # at activation time keep the old environment. Landing this is not the same as
 # it taking effect: check with `printenv CARGO_BUILD_JOBS` in a NEW session.
+#
+# MEMORY: `capped` (added 2026-10-10)
+# The 2026-09-07 finding above held until 2026-10-10 17:21, when host memory
+# exhaustion (MemAvailable 25G -> 3.5G in 12 min, zram swapping instead of
+# killing) hung the VM until it was hard-reset. `capped <cmd...>` runs a heavy
+# build in its own transient scope with a hard MemoryMax, so a runaway build
+# is OOM-killed alone instead of taking every session down. It is opt-in: a
+# PATH shim cannot catch builds because each repo's devShell puts its own
+# cargo first. The host-wide backstop is systemd-oomd on user.slice
+# (/srv/infra hosts/cc-se-sto-devbox-01). No MemoryHigh here, per WHY above:
+# throttling builds makes them slower and trips deadlines.
+# Override the ceiling with CAPPED_MEMORY_MAX (default 24G).
+# Falsifier: `capped sh -c 'cat /proc/self/cgroup'` prints a run-*.scope path,
+# and `systemctl --user show <that scope> -p MemoryMax` is not infinity.
 {
   lib,
+  pkgs,
   hostname ? "",
   ...
 }:
@@ -89,4 +104,20 @@ lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
   # Builds started from user services (jcode-server and friends) do not
   # inherit a login shell, so declare the same bound there.
   systemd.user.sessionVariables.CARGO_BUILD_JOBS = "-8";
+
+  home.packages = [
+    (pkgs.writeShellApplication {
+      name = "capped";
+      text = ''
+        if [ "$#" -eq 0 ]; then
+          echo "usage: capped <command> [args...]  (CAPPED_MEMORY_MAX=''${CAPPED_MEMORY_MAX:-24G})" >&2
+          exit 64
+        fi
+        exec systemd-run --user --scope --quiet --collect \
+          -p MemoryMax="''${CAPPED_MEMORY_MAX:-24G}" \
+          -p MemorySwapMax=0 \
+          -- "$@"
+      '';
+    })
+  ];
 }

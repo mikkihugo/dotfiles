@@ -143,6 +143,33 @@ in
           Environment="JCODE_MCP_DEFAULT_CALL_TIMEOUT_SECS=180"
         '';
 
+        # Coordination dialect v3.
+        #
+        # crates/jcode-app-core/src/server/coordination_identity.rs defaults
+        # `CoordinationDialect` to V2 when JCODE_COORDINATION_DIALECT is unset,
+        # and the V2 path is the v2 `coordination_subscribe` tool. The
+        # centralcloud-mcp-gateway repo_memory server deleted that tool when v3
+        # landed (repo-memory-client BUS_TOOLS no longer names
+        # `coordination_subscribe` or `coordination_poll`; v3 collapsed both
+        # into the first `coordination_read` against the caller's own
+        # `(principal, reader)` position).
+        #
+        # A V2 poller therefore wedges on `-32602 unknown tool
+        # "coordination_subscribe"`, retries indefinitely, and never advances
+        # its read position -- observed in production as 19 observe-cycle
+        # pollers each at 100+ retries, every fleet swarm health "failed",
+        # and zero dispatch progress since the v3 server shipped.
+        #
+        # Override the daemon to V3 here. The dialect is captured once per
+        # poller at spawn time, so the running daemon must be restarted for
+        # already-spawned V2 pollers to die; new sessions spawn under V3.
+        # The follow-up lane will flip the binary default to V3 so this
+        # override becomes defense-in-depth rather than a hard dependency.
+        ".config/systemd/user/jcode-server.service.d/40-coordination-dialect.conf".text = ''
+          [Service]
+          Environment="JCODE_COORDINATION_DIALECT=v3"
+        '';
+
         # Watchdog `dbg()` calls PATH `jcode`. Put the castle-attached launcher
         # first so a lagged CLI current (install_release) cannot fail debug
         # against the live server, and so the laptop allowlist wrapper cannot

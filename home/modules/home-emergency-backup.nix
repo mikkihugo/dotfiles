@@ -164,7 +164,11 @@
     "${homeDir}/workspaces"
     "${homeDir}/backups"
     "/srv/infra"
-    "${homeDir}/.cache/engine-jj-git-store"
+    # NOTE 2026-10-10: ${homeDir}/.cache/engine-jj-git-store no longer exists (the Engine jj
+    # store's git_target is now ../../../.git, a bind mount excluded below), and borgmatic
+    # refuses to run when ANY source path is missing, so every hot-source job was failing.
+    # Path dropped to restore the other sources. OPEN: the Engine jj store (~47 GB) has no
+    # kept copy in this backup until the operator decides what to cover (or relies on Forgejo).
   ];
   hotSourceExcludes = [
     # regex, not **/.cache: a fm/sh glob also excludes a source root that lives under .cache (the engine jj store below)

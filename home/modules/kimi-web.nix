@@ -36,7 +36,11 @@ in
           WorkingDirectory = "%h/code/hightower";
           Restart = "always";
           RestartSec = "15s";
-          Environment = ["KIMI_CODE_TRUST_WORKSPACE=1"];
+          Environment = [
+            "KIMI_CODE_TRUST_WORKSPACE=1"
+            # Host-header allowlist (DNS-rebinding guard stays on): tailnet names only.
+            "KIMI_CODE_ALLOWED_HOSTS=cc-se-sto-devbox-01.ts.hugo.dk,cc-se-sto-devbox-01,kimidev.ts.hugo.dk,kimidev,100.64.0.4"
+          ];
         };
         Install.WantedBy = ["default.target"];
       };

@@ -36,8 +36,8 @@
     # Match the fleet host's Rust 1.98.1 without moving the user environment base.
     nixpkgs-rust.url = "github:NixOS/nixpkgs/6fcc160353f63555b560f25588925133c8f61f2a";
 
-    # Unstable used only for selected tooling pins (currently jujutsu 0.45.1).
-    # Drop when nixos-26.05 backports jj ≥ 0.45.1.
+    # Unstable used only for selected tooling pins (currently jujutsu 0.46.0).
+    # Drop when nixos-26.05 backports jj ≥ 0.46.0.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     # Home Manager release branch follows the matching nixpkgs release.

@@ -35,7 +35,7 @@ in
           ExecStart = "%h/.local/share/mise/shims/node %h/.cache/hightower/current/apps/kimi-code/dist/main.mjs web --host 127.0.0.1 --port ${port} --dangerous-bypass-auth --no-open";
           WorkingDirectory = "%h/code/hightower";
           Restart = "always";
-          RestartSec = "5s";
+          RestartSec = "15s";
           Environment = ["KIMI_CODE_TRUST_WORKSPACE=1"];
         };
         Install.WantedBy = ["default.target"];

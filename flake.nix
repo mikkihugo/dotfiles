@@ -36,8 +36,9 @@
     # Match the fleet host's Rust 1.98.1 without moving the user environment base.
     nixpkgs-rust.url = "github:NixOS/nixpkgs/6fcc160353f63555b560f25588925133c8f61f2a";
 
-    # Unstable used only for selected tooling pins (currently jujutsu 0.46.0).
-    # Drop when nixos-26.05 backports jj ≥ 0.46.0.
+    # Unstable provides selected tools that lag in nixos-26.05: jujutsu
+    # (0.46.0), mise, and ast-grep. Drop each override when the stable input
+    # meets its contract.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     # Home Manager release branch follows the matching nixpkgs release.
@@ -104,7 +105,8 @@
           system = sys;
           config.allowUnfree = true;
           overlays = [
-            # jujutsu 0.45.1: in colocated repos, an external `git add` run
+            # jujutsu is pinned from nixpkgs-unstable because 26.05 still ships
+            # 0.41.0. In 0.45.1, an external `git add` run
             # after a `jj` command no longer produces a tree with duplicate
             # entries (`git fsck: duplicateEntries`) -- 0.45.0 stops leaving a
             # stale cache-tree in .git/index; already-corrupted repos are not
@@ -117,9 +119,10 @@
             # immutable WC snapshot, `jj run`, aarch64 corrupt-object fix.
             # 26.05 is still 0.41.
             #
-            # mise 2026.8.8: pull from nixpkgs-unstable for newer version
-            # (26.05 has 2026.5.12, unstable has 2026.8.8)
+            # mise 2026.10.3: pull from nixpkgs-unstable for newer version
+            # (26.05 has 2026.5.12, unstable has 2026.10.3)
             (_final: prev: {
+              ast-grep = nixpkgs-unstable.legacyPackages.${sys}.ast-grep;
               jujutsu = nixpkgs-unstable.legacyPackages.${sys}.jujutsu;
               mise = nixpkgs-unstable.legacyPackages.${sys}.mise;
               nix-index = prev.nix-index.overrideAttrs (old: {

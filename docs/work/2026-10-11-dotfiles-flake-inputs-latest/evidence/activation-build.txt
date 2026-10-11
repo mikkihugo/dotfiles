@@ -1,0 +1,11 @@
+[0mdirenv: using angrr
+[0mdirenv: angrr: touch GC roots in "/home/mhugo/.dotfiles-worktrees/flake-inputs-latest-20261011" (took 0.004s)
+[0mdirenv: nix-direnv: Stale Nix fallback disabled (intentional)
+[0mdirenv: loading ~/.dotfiles-worktrees/flake-inputs-latest-20261011/.envrc
+[0mdirenv: using flake path:.
+[0mdirenv: nix-direnv: Using cached dev shell
+dotfiles maintenance shell (x86_64-linux)
+  secrets-view  — decrypt and print api-keys.yaml
+  secrets-edit  — open api-keys.yaml in $EDITOR via sops
+  age-keygen    — print age pubkey derived from SSH key
+activation_build_exit_code=0

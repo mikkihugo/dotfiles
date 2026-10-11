@@ -1,0 +1,76 @@
+{
+  "captured_at": "2026-10-11T17:18:56.519Z",
+  "summary": "Floating flake inputs are refreshed at their existing refs. The cc-se-sto-devbox-01 profile evaluates ast-grep 0.45.3 and mise 2026.10.3 from refreshed nixpkgs-unstable, keeps both Zsh features enabled with current option names, and builds its activation package.",
+  "observations": [
+    {
+      "claim": "Before source edits, installed ast-grep was 0.42.1 and nixpkgs-unstable was locked at 801bef6abd86b91e51083066b83fb354a11fc640.",
+      "evidence": "evidence/red-proof.txt"
+    },
+    {
+      "claim": "The update advanced nixpkgs-unstable to 6510408d147d8c5e6d76043e899e9251756f6a75 and refreshed other floating lock entries; existing flake input URL declarations remain in place.",
+      "evidence": "evidence/source-diff.txt"
+    },
+    {
+      "claim": "The host profile evaluates ast-grep 0.45.3, mise 2026.10.3, and both current Zsh options true, without rename warnings.",
+      "evidence": "evidence/evaluated-config.txt"
+    },
+    {
+      "claim": "The explicit host activation-package build returned exit code 0.",
+      "evidence": "evidence/activation-build.txt"
+    },
+    {
+      "claim": "repo check returned exit code 0; recorded suites report 76/76 passing, 23/24 passing with one skip, and two additional single-test suites passing.",
+      "evidence": "evidence/repo-check.txt"
+    },
+    {
+      "claim": "A final nix flake update currentness check returned exit code 0 without further input changes.",
+      "evidence": "evidence/flake-update.txt"
+    }
+  ],
+  "commands": [
+    {
+      "command": "nix flake update",
+      "exit_code": 0,
+      "evidence": "evidence/source-diff.txt"
+    },
+    {
+      "command": "nix eval --impure --json --expr <devbox-profile-ast-grep-mise-and-zsh-options>",
+      "exit_code": 0,
+      "evidence": "evidence/evaluated-config.txt"
+    },
+    {
+      "command": "repo check",
+      "exit_code": 0,
+      "evidence": "evidence/repo-check.txt"
+    },
+    {
+      "command": "nix build --no-link --quiet .#homeConfigurations.cc-se-sto-devbox-01.activationPackage",
+      "exit_code": 0,
+      "evidence": "evidence/activation-build.txt"
+    },
+    {
+      "command": "nix flake update (final currentness check)",
+      "exit_code": 0,
+      "evidence": "evidence/flake-update.txt"
+    }
+  ],
+  "red_proofs": [
+    {
+      "result_id": "2026-10-11-dotfiles-flake-inputs-latest-red-result-T1",
+      "status": "failed",
+      "observed_at": "2026-10-11T16:54:58.770Z",
+      "evidence_uri": "evidence/red-T1.json",
+      "raw_output_uri": "evidence/red-proof.txt"
+    },
+    {
+      "result_id": "2026-10-11-dotfiles-flake-inputs-latest-red-result-T2",
+      "status": "failed",
+      "observed_at": "2026-10-11T16:57:36.511Z",
+      "evidence_uri": "evidence/red-T2.json",
+      "raw_output_uri": "evidence/deprecation-red-proof.txt"
+    }
+  ],
+  "limits": [
+    "Home Manager activation was not run; no post-activation ast-grep --version readback is claimed."
+  ]
+}

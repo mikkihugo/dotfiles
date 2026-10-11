@@ -1,0 +1,118 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-10-11-dotfiles-flake-inputs-latest-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-10-11-dotfiles-flake-inputs-latest"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-10-11-dotfiles-flake-inputs-latest",
+      "revision": "initial"
+    },
+    "objective": {
+      "id": "2026-10-11-dotfiles-flake-inputs-latest-objective",
+      "statement": "Keep the cc-se-sto-devbox-01 Home Manager toolchain current by refreshing every floating flake input at its already-declared ref, using the newest ast-grep package available from refreshed Nixpkgs inputs, and adapting the profile to the refreshed Home Manager options.",
+      "measure": "Update flake.lock to newest revisions at existing floating refs, preserve fixed input refs and channel choices, source ast-grep from refreshed nixpkgs-unstable when needed, replace renamed Zsh options without changing enabled behavior, and verify the devbox activation package builds."
+    },
+    "need": {
+      "id": "2026-10-11-dotfiles-flake-inputs-latest-need",
+      "statement": "Keep the cc-se-sto-devbox-01 Home Manager toolchain current by refreshing every floating flake input at its already-declared ref, using the newest ast-grep package available from refreshed Nixpkgs inputs, and adapting the profile to the refreshed Home Manager options.",
+      "stakeholders": [
+        "Mikael using the cc-se-sto-devbox-01 Home Manager profile."
+      ],
+      "baseline": "The active ast-grep command reports 0.42.1; upstream latest release is 0.50.0. flake.lock pins nixpkgs-unstable at 801bef6abd86b91e51083066b83fb354a11fc640 while the current branch resolves to 6510408d147d8c5e6d76043e899e9251756f6a75. Current nixpkgs-unstable exposes ast-grep 0.45.3; nixos-26.05 exposes 0.42.1. After the lock refresh, Home Manager evaluation reports that the two Zsh option names in home/modules/shell.nix were renamed.",
+      "consequence_of_no_action": "The devbox keeps using stale flake inputs and an older ast-grep package. Evaluation also continues to emit Home Manager option-rename warnings.",
+      "assumptions": [],
+      "alternatives_considered": [
+        "Keep all existing lock revisions and package source",
+        "Refresh all floating refs and use the newest package available in the declared Nixpkgs inputs"
+      ]
+    }
+  },
+  "admission": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  },
+  "purpose": "Keep the cc-se-sto-devbox-01 Home Manager toolchain current by refreshing every floating flake input at its already-declared ref, using the newest ast-grep package available from refreshed Nixpkgs inputs, and adapting the profile to the refreshed Home Manager options.",
+  "consumer": "Mikael using the cc-se-sto-devbox-01 Home Manager profile.",
+  "contract": "Update flake.lock to newest revisions at existing floating refs, preserve fixed input refs and channel choices, source ast-grep from refreshed nixpkgs-unstable when needed, replace renamed Zsh options without changing enabled behavior, and verify the devbox activation package builds.",
+  "failure_boundary": "If lock refresh, evaluation, quality checks, or activation-package build fails, do not activate a new Home Manager generation; preserve the currently active profile and report the failed gate.",
+  "evidence": [
+    {
+      "kind": "runtime",
+      "description": "Compare the locked nixpkgs-unstable revision and active ast-grep version to current upstream/Nixpkgs observations before editing.",
+      "status": "present",
+      "command": "ast-grep --version; nix flake metadata --json github:NixOS/nixpkgs/nixos-unstable; nix eval --raw github:NixOS/nixpkgs/nixos-unstable#ast-grep.version"
+    },
+    {
+      "kind": "test",
+      "description": "Verify the refreshed lock, declared checks, and current devbox Home Manager activation package.",
+      "status": "expected",
+      "command": "nix flake update; repo check; nix build .#homeConfigurations.cc-se-sto-devbox-01.activationPackage"
+    },
+    {
+      "kind": "runtime",
+      "description": "Capture pre-fix Home Manager evaluation warnings for renamed Zsh options.",
+      "status": "present",
+      "command": "nix eval --impure --json --expr builtins.attrNames ((builtins.getFlake (toString ./.)).homeConfigurations.\"cc-se-sto-devbox-01\")"
+    }
+  ],
+  "falsifier": {
+    "claim": "The refreshed flake resolves all floating inputs at declared refs, selects the newest Nixpkgs ast-grep package, and evaluates the current Home Manager profile without renamed-option warnings.",
+    "executable_check": {
+      "kind": "command",
+      "description": "Evaluate the ast-grep version selected by the proposed cc-se-sto-devbox-01 profile against the locked nixpkgs-unstable package, then build its activation package; any mismatch or build failure falsifies the claim. A live ast-grep --version readback is required only after a separately authorized profile activation.",
+      "command": "nix eval --impure --json --expr <devbox-profile-ast-grep-version>; nix build .#homeConfigurations.cc-se-sto-devbox-01.activationPackage"
+    }
+  },
+  "non_goals": [
+    "Change flake.nix channel/ref declarations or fixed version pins",
+    "Package upstream ast-grep source when nixpkgs does not yet provide it",
+    "Activate Home Manager profiles for other hosts",
+    "Change the ast-grep/sg shim behavior"
+  ],
+  "invariants": [
+    "Existing flake input URLs and channel selections remain unchanged",
+    "The fixed nixpkgs-rust revision and direnv-instant version ref remain fixed",
+    "Do not activate a Home Manager generation in this source update; verify evaluation and build only"
+  ],
+  "assumptions": [
+    {
+      "statement": "\u201cAll latest in flake\u201d means refresh floating lock entries at existing declared refs without changing their ref declarations.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "The user requests a different channel, tag, or immutable source revision."
+    },
+    {
+      "statement": "The newest ast-grep package available from the refreshed Nixpkgs inputs is the intended package target, even if upstream publishes a newer release first.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "The user requires exact upstream ast-grep 0.50.0 rather than the latest package in Nixpkgs."
+    },
+    {
+      "statement": "The replacement Home Manager Zsh option paths preserve the semantics of the old enabled flags.",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "Evaluation or activation shows autosuggestions or syntax highlighting disabled or unavailable."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "medium",
+    "blast_radius": "repo",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "host"
+  ],
+  "plane_constraints": [
+    "Keep the Home Manager target to cc-se-sto-devbox-01; do not activate other profiles."
+  ]
+}

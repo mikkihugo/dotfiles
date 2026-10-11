@@ -1,0 +1,220 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-10-11-dotfiles-flake-inputs-latest-work",
+  "purpose_contract_id": "2026-10-11-dotfiles-flake-inputs-latest-purpose",
+  "handover": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  },
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-10-11-dotfiles-flake-inputs-latest",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-10-11-dotfiles-flake-inputs-latest-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "9cf68a36443e71d8fe6650c22f860f9d0b25be80a76f2a54e6c159bf8327d0da"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "Every floating flake input resolves to the newest revision at its existing declared ref, and the devbox uses the newest ast-grep package provided by the refreshed Nixpkgs inputs.",
+        "acceptance_criteria": [
+          "flake.lock records the current revision for every floating input while preserving fixed refs and original input URLs",
+          "The Home Manager package selection resolves ast-grep from refreshed nixpkgs-unstable when stable nixpkgs is older",
+          "The cc-se-sto-devbox-01 evaluated profile selects the version from locked nixpkgs-unstable and its activation package builds",
+          "The current Home Manager profile evaluates without Zsh option-rename warnings."
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Home Manager flake",
+            "response": "refresh all floating input locks and expose the newest Nixpkgs-provided ast-grep package"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "A floating input remains on an older revision or the profile exposes an older ast-grep package than the refreshed Nixpkgs input",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "The refreshed Home Manager module uses current Zsh option paths and preserves enabled autosuggestions and syntax highlighting without rename warnings.",
+        "acceptance_criteria": [
+          "Home Manager evaluation emits no warnings for programs.zsh.enableAutosuggestions or programs.zsh.enableSyntaxHighlighting",
+          "The effective programs.zsh.autosuggestion.enable and programs.zsh.syntaxHighlighting.enable values are true"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Home Manager Zsh profile",
+            "response": "enable autosuggestions and syntax highlighting with current option paths"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "The refreshed module still emits renamed-option warnings or disables either Zsh feature",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "Every floating flake input resolves to the newest revision at its existing declared ref, and the devbox uses the newest ast-grep package provided by the refreshed Nixpkgs inputs.",
+      "acceptance_criteria": [
+        "flake.lock records the current revision for every floating input while preserving fixed refs and original input URLs",
+        "The Home Manager package selection resolves ast-grep from refreshed nixpkgs-unstable when stable nixpkgs is older",
+        "The cc-se-sto-devbox-01 evaluated profile selects the version from locked nixpkgs-unstable and its activation package builds",
+        "The current Home Manager profile evaluates without Zsh option-rename warnings."
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Home Manager flake",
+          "response": "refresh all floating input locks and expose the newest Nixpkgs-provided ast-grep package"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "A floating input remains on an older revision or the profile exposes an older ast-grep package than the refreshed Nixpkgs input",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "The refreshed Home Manager module uses current Zsh option paths and preserves enabled autosuggestions and syntax highlighting without rename warnings.",
+      "acceptance_criteria": [
+        "Home Manager evaluation emits no warnings for programs.zsh.enableAutosuggestions or programs.zsh.enableSyntaxHighlighting",
+        "The effective programs.zsh.autosuggestion.enable and programs.zsh.syntaxHighlighting.enable values are true"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Home Manager Zsh profile",
+          "response": "enable autosuggestions and syntax highlighting with current option paths"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "The refreshed module still emits renamed-option warnings or disables either Zsh feature",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "flake.nix",
+      "flake.lock",
+      "home/modules/git.nix",
+      "home/modules/shell.nix",
+      "docs/work/2026-10-11-dotfiles-flake-inputs-latest/**"
+    ],
+    "blocked": [
+      "secrets/**",
+      "other Home Manager host profiles"
+    ],
+    "expected_files": [
+      "flake.nix",
+      "flake.lock",
+      "home/modules/git.nix",
+      "home/modules/shell.nix"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Compare the refreshed lock and selected package version, evaluate the host profile, and build its activation package without activating it.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "Evaluate the updated Home Manager profile, assert both renamed options are true, and assert stderr contains no rename warnings.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "nix flake update",
+      "nix eval --impure --json --expr <devbox-profile-zsh-options-and-package-versions>",
+      "repo check",
+      "nix build .#homeConfigurations.cc-se-sto-devbox-01.activationPackage"
+    ],
+    "evidence_required": [
+      "quality",
+      "runtime",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "codex"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-10-11-dotfiles-flake-inputs-latest",
+    "target_planes": [
+      "host"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [
+      "nix"
+    ],
+    "requested_isolation": "process",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [
+      "purpose-contract/v2",
+      "workspec/v4"
+    ],
+    "deterministic_replay_required": true
+  }
+}

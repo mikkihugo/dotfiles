@@ -1,0 +1,23 @@
+# Baseline stale proof
+
+Date: 2026-10-11
+Purpose: show the installed ast-grep and pinned input are behind currently resolved upstream/Nixpkgs inputs.
+
+Locked nixpkgs-unstable revision: 801bef6abd86b91e51083066b83fb354a11fc640
+
+$ ast-grep --version
+exit_code=0
+ast-grep 0.42.1
+
+$ nix eval --raw github:NixOS/nixpkgs/nixos-unstable#ast-grep.version
+exit_code=0
+0.45.3
+
+$ nix eval --raw github:NixOS/nixpkgs/nixos-26.05#ast-grep.version
+exit_code=0
+0.42.1
+
+$ nix flake metadata --json github:NixOS/nixpkgs/nixos-unstable
+exit_code=0
+resolved_revision=6510408d147d8c5e6d76043e899e9251756f6a75
+

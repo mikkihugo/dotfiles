@@ -1,0 +1,9 @@
+# Baseline Home Manager deprecation proof
+
+$ nix eval --impure --json --expr builtins.attrNames ((builtins.getFlake (toString ./.)).homeConfigurations."cc-se-sto-devbox-01")
+exit_code=0
+stdout:
+["_module","_type","activation-script","activationPackage","class","config","extendModules","graph","newsDisplay","newsEntries","options","pkgs","type"]
+stderr:
+trace: warning: The option `programs.zsh.enableSyntaxHighlighting' defined in `/nix/store/0ci6qlrg5vljp525bj1jayp56f78yr9v-source/home/modules/shell.nix' has been renamed to `programs.zsh.syntaxHighlighting.enable'.
+trace: warning: The option `programs.zsh.enableAutosuggestions' defined in `/nix/store/0ci6qlrg5vljp525bj1jayp56f78yr9v-source/home/modules/shell.nix' has been renamed to `programs.zsh.autosuggestion.enable'.

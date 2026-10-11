@@ -1,0 +1,7 @@
+{
+  "result_id": "2026-10-11-dotfiles-flake-inputs-latest-red-result-T1",
+  "status": "failed",
+  "observed_at": "2026-10-11T16:54:58.770Z",
+  "failure": "Installed ast-grep was 0.42.1 while the current nixpkgs-unstable package was 0.45.3 and the lock revision was stale.",
+  "evidence_uri": "evidence/red-proof.txt"
+}

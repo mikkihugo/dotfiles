@@ -432,8 +432,8 @@ in {
     zsh = {
       enable = true;
       enableCompletion = true;
-      enableAutosuggestions = true;
-      enableSyntaxHighlighting = true;
+      autosuggestion.enable = true;
+      syntaxHighlighting.enable = true;
       history = {
         size = 10000;
         save = 10000;

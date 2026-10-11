@@ -1,0 +1,30 @@
+{
+  "source": "repository-vcs-facade",
+  "files": [
+    "flake.lock",
+    "flake.nix",
+    "home/modules/git.nix",
+    "home/modules/shell.nix",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/README.md",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/current-spec.snapshot.json",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence.bundle.json",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/.gitkeep",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/activation-build.txt",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/changed-files.json",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/deprecation-red-proof.txt",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/evaluated-config.txt",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/flake-update.txt",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/red-T1.json",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/red-T2.json",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/red-proof.txt",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/repo-check.txt",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/result.json",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/source-diff.txt",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/vcs-status.txt",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/purpose.contract.json",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/validation.report.json",
+    "docs/work/2026-10-11-dotfiles-flake-inputs-latest/work.spec.json"
+  ],
+  "status_evidence_uri": "evidence/vcs-status.txt",
+  "diff_evidence_uri": "evidence/source-diff.txt"
+}

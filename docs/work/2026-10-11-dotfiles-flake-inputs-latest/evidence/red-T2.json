@@ -1,0 +1,7 @@
+{
+  "result_id": "2026-10-11-dotfiles-flake-inputs-latest-red-result-T2",
+  "status": "failed",
+  "observed_at": "2026-10-11T16:57:36.511Z",
+  "failure": "Home Manager evaluation emitted rename warnings for both configured Zsh options.",
+  "evidence_uri": "evidence/deprecation-red-proof.txt"
+}

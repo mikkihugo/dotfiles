@@ -1,0 +1,253 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-10-11-dotfiles-flake-inputs-latest-evidence",
+  "workspec_id": "2026-10-11-dotfiles-flake-inputs-latest-work",
+  "purpose_contract_id": "2026-10-11-dotfiles-flake-inputs-latest-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "f4190c91afa41b802e70aeedc5044a92cf4a5e7e02b9537bc92bd4a11b4ca7dd"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "d88e229c0ae0d623415b4727372d0a2448d31e268ed52a15cebbfcb96b9b71de"
+  },
+  "workflow_run_id": "2026-10-11-dotfiles-flake-inputs-latest-run",
+  "execution": {
+    "execution_id": "2026-10-11-dotfiles-flake-inputs-latest-execution",
+    "tool": {
+      "id": "nix-and-repository-vcs-facade",
+      "version": "Nix 2.34.8; local repo facade"
+    },
+    "result": {
+      "result_id": "2026-10-11-dotfiles-flake-inputs-latest-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "15475621ec079f8d071309e8dcb6f28e03280b07b7475ff470bc064b8ab7798d"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "2026-10-11-dotfiles-flake-inputs-latest-evidence-artifact",
+        "uri": "evidence/result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "15475621ec079f8d071309e8dcb6f28e03280b07b7475ff470bc064b8ab7798d"
+        }
+      },
+      {
+        "artifact_id": "2026-10-11-dotfiles-flake-inputs-latest-changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "dcf3682e6073cc4cd232c7e1823fcc77506288aeeb3d6ca47c8c8140f99780cb"
+        }
+      },
+      {
+        "artifact_id": "2026-10-11-dotfiles-flake-inputs-latest-red-T1",
+        "uri": "evidence/red-T1.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f3328341bbcdd52cdb66293c425e2fd7612c9bb5a4f8aa6ba3effa8303259155"
+        }
+      },
+      {
+        "artifact_id": "2026-10-11-dotfiles-flake-inputs-latest-red-T2",
+        "uri": "evidence/red-T2.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "8597eada5cdbbdd4c4ded30278b9370d42e986f2f797bd15202bafd16e47af62"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-10-11-dotfiles-flake-inputs-latest-trace",
+    "started_at": "2026-10-11T16:54:58.770Z",
+    "completed_at": "2026-10-11T17:18:56.522Z"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "The refreshed input and selected ast-grep package were evaluated, then the host activation package was built.",
+      "result_id": "2026-10-11-dotfiles-flake-inputs-latest-result",
+      "artifact_ids": [
+        "2026-10-11-dotfiles-flake-inputs-latest-evidence-artifact"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-10-11T17:18:36.195Z",
+      "red_proof": {
+        "result_id": "2026-10-11-dotfiles-flake-inputs-latest-red-result-T1",
+        "artifact_id": "2026-10-11-dotfiles-flake-inputs-latest-red-T1",
+        "output_uri": "evidence/red-T1.json",
+        "observed_at": "2026-10-11T16:54:58.770Z"
+      }
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "description": "The host profile evaluates with both current Zsh option paths enabled and no rename warnings.",
+      "result_id": "2026-10-11-dotfiles-flake-inputs-latest-result",
+      "artifact_ids": [
+        "2026-10-11-dotfiles-flake-inputs-latest-evidence-artifact"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-10-11T17:17:12.962Z",
+      "red_proof": {
+        "result_id": "2026-10-11-dotfiles-flake-inputs-latest-red-result-T2",
+        "artifact_id": "2026-10-11-dotfiles-flake-inputs-latest-red-T2",
+        "output_uri": "evidence/red-T2.json",
+        "observed_at": "2026-10-11T16:57:36.511Z"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "d88e229c0ae0d623415b4727372d0a2448d31e268ed52a15cebbfcb96b9b71de"
+      },
+      "artifact_ids": [
+        "2026-10-11-dotfiles-flake-inputs-latest-evidence-artifact"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "codex"
+      },
+      "observed_at": "2026-10-11T17:18:56.522Z",
+      "rationale": "repo check returned exit code 0; captured test suites reported no failures."
+    },
+    {
+      "gate_id": "runtime-evaluation-build",
+      "kind": "runtime",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "d88e229c0ae0d623415b4727372d0a2448d31e268ed52a15cebbfcb96b9b71de"
+      },
+      "artifact_ids": [
+        "2026-10-11-dotfiles-flake-inputs-latest-evidence-artifact"
+      ],
+      "producer": {
+        "kind": "agent",
+        "id": "codex"
+      },
+      "observed_at": "2026-10-11T17:18:56.522Z",
+      "rationale": "Host profile evaluation and activation package build returned exit code 0; profile activation was not performed."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "2026-10-11-dotfiles-flake-inputs-latest-changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "dcf3682e6073cc4cd232c7e1823fcc77506288aeeb3d6ca47c8c8140f99780cb"
+      },
+      "files": [
+        "flake.lock",
+        "flake.nix",
+        "home/modules/git.nix",
+        "home/modules/shell.nix",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/README.md",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/current-spec.snapshot.json",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence.bundle.json",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/.gitkeep",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/activation-build.txt",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/changed-files.json",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/deprecation-red-proof.txt",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/evaluated-config.txt",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/flake-update.txt",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/red-T1.json",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/red-T2.json",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/red-proof.txt",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/repo-check.txt",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/result.json",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/source-diff.txt",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/evidence/vcs-status.txt",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/purpose.contract.json",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/validation.report.json",
+        "docs/work/2026-10-11-dotfiles-flake-inputs-latest/work.spec.json"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "The proposed profile resolves ast-grep and mise from refreshed nixpkgs-unstable, evaluates both Zsh options enabled without rename warnings, and its activation package builds.",
+    "output_uri": "evidence/result.json"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "9cf68a36443e71d8fe6650c22f860f9d0b25be80a76f2a54e6c159bf8327d0da"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "c72cd5c207e4bc0395f7066a8e2ab6ebbe3676185edbca8151d1c1070ba178a0"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "12086e4a0edf2a999e7c82a7bfcab696e7f1c56584c634dfa3c386b142ba724b"
+    },
+    "witness_artifact_id": "2026-10-11-dotfiles-flake-inputs-latest-evidence-artifact"
+  },
+  "reviews": [],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "2026-10-11-dotfiles-flake-inputs-latest-evidence-artifact",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "d88e229c0ae0d623415b4727372d0a2448d31e268ed52a15cebbfcb96b9b71de"
+      },
+      "observed_at": "2026-10-11T17:18:36.195Z",
+      "rationale": "The recorded evaluation and build reject stale package selection or a failing host activation package."
+    },
+    {
+      "breaker_id": "B2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "2026-10-11-dotfiles-flake-inputs-latest-evidence-artifact",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "d88e229c0ae0d623415b4727372d0a2448d31e268ed52a15cebbfcb96b9b71de"
+      },
+      "observed_at": "2026-10-11T17:17:12.962Z",
+      "rationale": "The recorded evaluation rejects renamed-option warnings or either disabled Zsh feature."
+    }
+  ]
+}

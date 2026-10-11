@@ -1,0 +1,184 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-10-11-cargo-proxies-rust-1-98-evidence",
+  "workspec_id": "2026-10-11-cargo-proxies-rust-1-98-work",
+  "purpose_contract_id": "2026-10-11-cargo-proxies-rust-1-98-purpose",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "6b0b7b96be549f4d40193b3d179d499741d64b883b311e931153dead72e5d304"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "ae0b2a0122e23a3144614d2608bb51121a123a1ae7a4a90ea4fdc55ea7400689"
+  },
+  "workflow_run_id": "2026-10-11-cargo-proxies-rust-1-98-run",
+  "execution": {
+    "execution_id": "2026-10-11-cargo-proxies-rust-1-98-execution",
+    "tool": {
+      "id": "purpose-validate-work",
+      "version": "local-installed"
+    },
+    "result": {
+      "result_id": "2026-10-11-cargo-proxies-rust-1-98-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "500bf7dca0990e75a6e49c43869715f52a4d30b1a96e385c0483935835979075"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "2026-10-11-cargo-proxies-rust-1-98-evidence-artifact",
+        "uri": "evidence/result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "500bf7dca0990e75a6e49c43869715f52a4d30b1a96e385c0483935835979075"
+        }
+      },
+      {
+        "artifact_id": "2026-10-11-cargo-proxies-rust-1-98-changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "b609076f18ccfd5f83fcac08fb0d50e091b648a8c86f0001a862a9f826e7338c"
+        }
+      },
+      {
+        "artifact_id": "2026-10-11-cargo-proxies-rust-1-98-red",
+        "uri": "evidence/red-proof.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "ba6a26da85b75475ab3f5b7e5ffffe6e1a18e7be35fd440c1da489ff0ad55323"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-10-11-cargo-proxies-rust-1-98-trace",
+    "started_at": "2026-10-11T10:53:21.778Z",
+    "completed_at": "2026-10-11T10:53:21.778Z"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Contract test for R1",
+      "result_id": "2026-10-11-cargo-proxies-rust-1-98-result",
+      "artifact_ids": [
+        "2026-10-11-cargo-proxies-rust-1-98-evidence-artifact"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-10-11T10:53:21.778Z",
+      "red_proof": {
+        "result_id": "2026-10-11-cargo-proxies-rust-1-98-red",
+        "artifact_id": "2026-10-11-cargo-proxies-rust-1-98-red",
+        "output_uri": "evidence/red-proof.json",
+        "observed_at": "2026-10-11T10:51:53.679Z"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ae0b2a0122e23a3144614d2608bb51121a123a1ae7a4a90ea4fdc55ea7400689"
+      },
+      "artifact_ids": [
+        "2026-10-11-cargo-proxies-rust-1-98-evidence-artifact"
+      ],
+      "producer": {
+        "kind": "service",
+        "id": "purpose-validate-work"
+      },
+      "observed_at": "2026-10-11T10:53:21.778Z",
+      "rationale": "Declared verification passed."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "2026-10-11-cargo-proxies-rust-1-98-changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "b609076f18ccfd5f83fcac08fb0d50e091b648a8c86f0001a862a9f826e7338c"
+      },
+      "files": [
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/current-spec.snapshot.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence.bundle.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/changed-files.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/nix-sources.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/nix-versions.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/red-proof.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/result.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/review.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/rustup-audit.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/purpose.contract.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/validation.report.json",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/work.spec.json",
+        "flake.lock",
+        "flake.nix",
+        "home/modules/cargo-subcommand-proxies.nix",
+        "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/live-proof.json"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "The declared falsifier was executed and did not disprove the contract.",
+    "output_uri": "evidence/result.json"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "2c2f68ce6b6c9d84dbe19ca53a1a950a6ec762faad9ee3ece61a178945c7fc39"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "043a29e9e2452c0a7df3f7b9b588979595592129f9ff6db9cc4f13f8d3adc3b0"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "48a59916277c1a27446c2f78e932ea2f03c0f7132d971d92951002df27721fec"
+    },
+    "witness_artifact_id": "2026-10-11-cargo-proxies-rust-1-98-evidence-artifact"
+  },
+  "reviews": [],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "2026-10-11-cargo-proxies-rust-1-98-evidence-artifact",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ae0b2a0122e23a3144614d2608bb51121a123a1ae7a4a90ea4fdc55ea7400689"
+      },
+      "observed_at": "2026-10-11T10:53:21.778Z"
+    }
+  ]
+}

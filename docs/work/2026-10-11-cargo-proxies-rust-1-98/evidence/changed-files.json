@@ -1,0 +1,22 @@
+{
+  "source": "repository-vcs-facade",
+  "command": "repo vcs status --porcelain --untracked-files=all",
+  "files": [
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/current-spec.snapshot.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence.bundle.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/changed-files.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/nix-sources.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/nix-versions.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/red-proof.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/result.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/review.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/rustup-audit.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/purpose.contract.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/validation.report.json",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/work.spec.json",
+    "flake.lock",
+    "flake.nix",
+    "home/modules/cargo-subcommand-proxies.nix",
+    "docs/work/2026-10-11-cargo-proxies-rust-1-98/evidence/live-proof.json"
+  ]
+}

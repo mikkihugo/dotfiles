@@ -28,22 +28,25 @@
 {
   pkgs,
   lib,
+  nixpkgs-rust,
   hostname ? "",
   ...
-}:
-lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
-  home.file = {
-    ".cargo/bin/cargo-fmt" = {
-      source = "${pkgs.rustfmt}/bin/cargo-fmt";
-      force = true;
+}: let
+  rustPackages = nixpkgs-rust.legacyPackages.${pkgs.stdenv.hostPlatform.system}.rustPackages_1_98;
+in
+  lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
+    home.file = {
+      ".cargo/bin/cargo-fmt" = {
+        source = "${rustPackages.rustfmt}/bin/cargo-fmt";
+        force = true;
+      };
+      ".cargo/bin/cargo-clippy" = {
+        source = "${rustPackages.clippy}/bin/cargo-clippy";
+        force = true;
+      };
+      ".cargo/bin/clippy-driver" = {
+        source = "${rustPackages.clippy}/bin/clippy-driver";
+        force = true;
+      };
     };
-    ".cargo/bin/cargo-clippy" = {
-      source = "${pkgs.clippy}/bin/cargo-clippy";
-      force = true;
-    };
-    ".cargo/bin/clippy-driver" = {
-      source = "${pkgs.clippy}/bin/clippy-driver";
-      force = true;
-    };
-  };
-}
+  }

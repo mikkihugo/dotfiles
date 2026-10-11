@@ -1,0 +1,16 @@
+{
+  "result_id": "2026-10-11-cargo-proxies-rust-1-98-result",
+  "status": "passed",
+  "observed_at": "2026-10-11T10:53:21.778Z",
+  "versions": {
+    "clippy": "1.98.1",
+    "rustc": "1.98.1",
+    "rustfmt": "1.98.1"
+  },
+  "sources": {
+    ".cargo/bin/cargo-clippy": "/nix/store/5dawrkfsxjh3slphk2yjlj6sdwib5ldv-clippy-1.98.1/bin/cargo-clippy",
+    ".cargo/bin/cargo-fmt": "/nix/store/ry3mwg1bwdna5qlv2jfxgkgysfphqg1f-rustfmt-1.98.1/bin/cargo-fmt",
+    ".cargo/bin/clippy-driver": "/nix/store/5dawrkfsxjh3slphk2yjlj6sdwib5ldv-clippy-1.98.1/bin/clippy-driver"
+  },
+  "repo_check": "exit 0"
+}

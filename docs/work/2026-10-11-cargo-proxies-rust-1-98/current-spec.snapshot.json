@@ -1,0 +1,9 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-10-11-cargo-proxies-rust-1-98-current-spec",
+  "source": {
+    "uri": "repository://current-spec",
+    "revision": "scaffold"
+  },
+  "requirements": []
+}

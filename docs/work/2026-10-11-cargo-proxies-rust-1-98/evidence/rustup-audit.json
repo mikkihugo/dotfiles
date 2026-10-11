@@ -1,0 +1,9 @@
+{
+  "source": "parent independent audit",
+  "observations": [
+    "~/.rustup/toolchains/1.85-x86_64-unknown-linux-gnu exists",
+    "config/common/env.sh:26 exports RUSTUP_HOME=\"$HOME/.rustup\"",
+    "home/modules/home-emergency-backup.nix:50-52 excludes rustup downloads,tmp,toolchains"
+  ],
+  "action": "reported only, preserved"
+}

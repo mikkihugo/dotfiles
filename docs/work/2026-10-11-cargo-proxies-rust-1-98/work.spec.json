@@ -1,0 +1,151 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-10-11-cargo-proxies-rust-1-98-work",
+  "purpose_contract_id": "2026-10-11-cargo-proxies-rust-1-98-purpose",
+  "handover": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  },
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-10-11-cargo-proxies-rust-1-98",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-10-11-cargo-proxies-rust-1-98-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "2c2f68ce6b6c9d84dbe19ca53a1a950a6ec762faad9ee3ece61a178945c7fc39"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "Cargo proxies use Rust 1.98.1 on the fleet devbox",
+        "acceptance_criteria": [
+          "Nix sources resolve rustfmt and clippy 1.98.1",
+          "Activated cargo-clippy reports clippy 0.1.98"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Home Manager",
+            "response": "install Rust 1.98.1 Cargo proxies"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "validation accepts an implementation without the promised behavior",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "Cargo proxies use Rust 1.98.1 on the fleet devbox",
+      "acceptance_criteria": [
+        "Nix sources resolve rustfmt and clippy 1.98.1",
+        "Activated cargo-clippy reports clippy 0.1.98"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Home Manager",
+          "response": "install Rust 1.98.1 Cargo proxies"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "validation accepts an implementation without the promised behavior",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "flake.nix",
+      "flake.lock",
+      "home/modules/cargo-subcommand-proxies.nix",
+      "docs/work/2026-10-11-cargo-proxies-rust-1-98/**"
+    ],
+    "blocked": [],
+    "expected_files": [
+      "flake.nix",
+      "flake.lock",
+      "home/modules/cargo-subcommand-proxies.nix"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Nix source versions and activated proxy version",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "repo check",
+      "~/.cargo/bin/cargo-clippy --version"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-10-11-cargo-proxies-rust-1-98",
+    "target_planes": [
+      "host"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "unspecified",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

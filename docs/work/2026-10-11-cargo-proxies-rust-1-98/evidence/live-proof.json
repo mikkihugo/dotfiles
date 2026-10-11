@@ -1,0 +1,11 @@
+{
+  "observed_at": "2026-10-11T10:53:21.360202+00:00",
+  "command": "zsh -ic hms; ~/.cargo/bin/cargo-clippy --version",
+  "hms_exit": 0,
+  "version": "clippy 0.1.98",
+  "paths": {
+    "cargo-fmt": "/nix/store/ry3mwg1bwdna5qlv2jfxgkgysfphqg1f-rustfmt-1.98.1/bin/cargo-fmt",
+    "cargo-clippy": "/nix/store/5dawrkfsxjh3slphk2yjlj6sdwib5ldv-clippy-1.98.1/bin/cargo-clippy",
+    "clippy-driver": "/nix/store/5dawrkfsxjh3slphk2yjlj6sdwib5ldv-clippy-1.98.1/bin/clippy-driver"
+  }
+}

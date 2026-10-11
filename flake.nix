@@ -33,6 +33,9 @@
     # NixOS 26.05 release branch: stable base for the user environment.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
+    # Match the fleet host's Rust 1.98.1 without moving the user environment base.
+    nixpkgs-rust.url = "github:NixOS/nixpkgs/6fcc160353f63555b560f25588925133c8f61f2a";
+
     # Unstable used only for selected tooling pins (currently jujutsu 0.45.1).
     # Drop when nixos-26.05 backports jj ≥ 0.45.1.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -72,6 +75,7 @@
   outputs = {
     nixpkgs,
     nixpkgs-unstable,
+    nixpkgs-rust,
     home-manager,
     sops-nix,
     flake-utils,
@@ -79,7 +83,7 @@
     direnv-instant,
     ...
   }: let
-    specialArgs = {inherit sops-nix llm-agents direnv-instant;};
+    specialArgs = {inherit sops-nix llm-agents direnv-instant nixpkgs-rust;};
 
     # Single nixpkgs per system, shared across the outputs below. Re-using
     # this binding instead of re-importing inside the `formatter` and

@@ -1,0 +1,88 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-10-11-cargo-proxies-rust-1-98-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-10-11-cargo-proxies-rust-1-98"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-10-11-cargo-proxies-rust-1-98",
+      "revision": "initial"
+    },
+    "objective": {
+      "id": "2026-10-11-cargo-proxies-rust-1-98-objective",
+      "statement": "Align Cargo subcommands with the host Rust 1.98.1 toolchain",
+      "measure": "Home Manager installs all three Cargo proxies from pinned rustPackages_1_98 version 1.98.1"
+    },
+    "need": {
+      "id": "2026-10-11-cargo-proxies-rust-1-98-need",
+      "statement": "Align Cargo subcommands with the host Rust 1.98.1 toolchain",
+      "stakeholders": [
+        "Mikael running cargo fmt and cargo clippy on cc-se-sto-devbox-01"
+      ],
+      "baseline": "~/.cargo/bin/cargo-clippy --version reports clippy 0.1.95",
+      "consequence_of_no_action": "Cargo clippy uses an older compiler than the host Rust toolchain",
+      "assumptions": [],
+      "alternatives_considered": [
+        "Keep the current behavior"
+      ]
+    }
+  },
+  "admission": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  },
+  "purpose": "Align Cargo subcommands with the host Rust 1.98.1 toolchain",
+  "consumer": "Mikael running cargo fmt and cargo clippy on cc-se-sto-devbox-01",
+  "contract": "Home Manager installs all three Cargo proxies from pinned rustPackages_1_98 version 1.98.1",
+  "failure_boundary": "If validation fails or scope drifts, the change must not ship.",
+  "evidence": [
+    {
+      "kind": "runtime",
+      "description": "Read Nix evaluated proxy sources and run installed cargo-clippy --version",
+      "status": "expected",
+      "command": "nix eval and ~/.cargo/bin/cargo-clippy --version"
+    }
+  ],
+  "falsifier": {
+    "claim": "The change delivers the promised contract.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Run the contract test; any failure falsifies the claim.",
+      "command": "~/.cargo/bin/cargo-clippy --version"
+    }
+  },
+  "non_goals": [
+    "Change other host tooling",
+    "Change nightly miri"
+  ],
+  "invariants": [
+    "Proxy host scope remains cc-se-sto-devbox-01",
+    "Other flake inputs keep their existing locks"
+  ],
+  "assumptions": [
+    {
+      "statement": "Pinned nixpkgs revision contains rustPackages_1_98 1.98.1",
+      "status": "unverified",
+      "doubt": 1,
+      "falsifier": "Nix evaluation reports a different version"
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "risk": "low",
+    "blast_radius": "repo",
+    "reversibility": "easy",
+    "max_active_doubt": 1
+  },
+  "target_planes": [
+    "host"
+  ],
+  "plane_constraints": []
+}

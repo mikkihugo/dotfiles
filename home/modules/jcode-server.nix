@@ -165,7 +165,7 @@ in
         # already-spawned V2 pollers to die; new sessions spawn under V3.
         # The follow-up lane will flip the binary default to V3 so this
         # override becomes defense-in-depth rather than a hard dependency.
-        ".config/systemd/user/jcode-server.service.d/40-coordination-dialect.conf".text = ''
+        ".config/systemd/user/jcode-server.service.d/40_coordination_dialect.conf".text = ''
           [Service]
           Environment="JCODE_COORDINATION_DIALECT=v3"
         '';

@@ -4,5 +4,6 @@
   "expected": "clippy 0.1.98",
   "status": "failed",
   "result_id": "2026-10-11-cargo-proxies-rust-1-98-red",
-  "observed_at": "2026-10-11T10:51:53.679Z"
+  "observed_at": "2026-10-11T10:42:08.817Z",
+  "timestamp_source": "original baseline artifact filesystem creation time"
 }

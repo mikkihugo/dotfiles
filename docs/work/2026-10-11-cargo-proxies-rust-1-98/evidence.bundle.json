@@ -53,7 +53,25 @@
         "digest": {
           "algorithm": "sha256",
           "canonicalization": "raw-bytes",
-          "value": "ba6a26da85b75475ab3f5b7e5ffffe6e1a18e7be35fd440c1da489ff0ad55323"
+          "value": "7417c15284a620cee3644094ccc5d58f49b9edcc26a0c4f9046d0fb1927a8070"
+        }
+      },
+      {
+        "artifact_id": "2026-10-11-cargo-proxies-rust-1-98-live",
+        "uri": "evidence/live-proof.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "a50e01017e74866acc4831c33b3f8f71ed22466c7e7ff5e14105d487f4d49566"
+        }
+      },
+      {
+        "artifact_id": "2026-10-11-cargo-proxies-rust-1-98-review",
+        "uri": "evidence/review.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "9de9cea7e0f9a070789fd3cbe7b0fc5e3a09459b1d450ae20e13685a832d970e"
         }
       }
     ]
@@ -79,7 +97,7 @@
         "result_id": "2026-10-11-cargo-proxies-rust-1-98-red",
         "artifact_id": "2026-10-11-cargo-proxies-rust-1-98-red",
         "output_uri": "evidence/red-proof.json",
-        "observed_at": "2026-10-11T10:51:53.679Z"
+        "observed_at": "2026-10-11T10:42:08.817Z"
       }
     }
   ],
@@ -164,7 +182,24 @@
     },
     "witness_artifact_id": "2026-10-11-cargo-proxies-rust-1-98-evidence-artifact"
   },
-  "reviews": [],
+  "reviews": [
+    {
+      "reviewer": {
+        "kind": "agent",
+        "id": "/root/rust_review"
+      },
+      "verdict": "approved",
+      "independent": true,
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "ae0b2a0122e23a3144614d2608bb51121a123a1ae7a4a90ea4fdc55ea7400689"
+      },
+      "artifact_id": "2026-10-11-cargo-proxies-rust-1-98-review",
+      "review_id": "rust-review",
+      "observed_at": "2026-10-11T10:52:18.555762+00:00"
+    }
+  ],
   "breaker_witnesses": [
     {
       "breaker_id": "B1",

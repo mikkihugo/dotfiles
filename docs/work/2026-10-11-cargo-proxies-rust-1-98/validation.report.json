@@ -113,6 +113,16 @@
       "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
     },
     {
+      "id": "evidence:artifact:2026-10-11-cargo-proxies-rust-1-98-live",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
+      "id": "evidence:artifact:2026-10-11-cargo-proxies-rust-1-98-review",
+      "status": "pass",
+      "message": "artifact URI must be safe work-relative evidence and its SHA-256 must match bytes"
+    },
+    {
       "id": "evidence:execution-identity",
       "status": "pass",
       "message": "evidence must identify execution, tool, result, and unique artifacts"

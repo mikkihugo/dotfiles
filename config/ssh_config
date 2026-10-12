@@ -47,16 +47,16 @@ Host ai.hugo.dk vpn.hugo.dk jump.hugo.dk
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host cc-fi-hel-k3s-03 cc-fi-hel-k3s-03.centralcloud.net cc-fi-hel-k3s-03.centralcloud.com rigel rigel.hugo.dk flow.hugo.dk portal-workflow
+Host cc-fi-hel-k3s-03 cc-fi-hel-k3s-03.centralcloud.net cc-fi-hel-k3s-03.centralcloud.com flow.hugo.dk portal-workflow
     HostName 157.180.79.108
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
 # Personal Hetzner/public servers — use the personal admin key here.
-# `cc-fi-hel-k3s-04` is the canonical name; the older `lyra`, `mon.*`,
+# `cc-fi-hel-k3s-04` is the canonical name; the older `mon.*`
 # and `mail.sendramp.com` aliases are kept for back-compat.
-Host cc-fi-hel-k3s-04 cc-fi-hel-k3s-04.centralcloud.net cc-fi-hel-k3s-04.hugo.dk lyra lyra.hugo.dk mon.hugo.dk mon.portal.centralcloud.com mail.sendramp.com
+Host cc-fi-hel-k3s-04 cc-fi-hel-k3s-04.centralcloud.net cc-fi-hel-k3s-04.hugo.dk mon.hugo.dk mon.portal.centralcloud.com mail.sendramp.com
     HostName 77.42.29.242
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
@@ -75,9 +75,6 @@ Host cc-fi-hel-k3s-02 cc-fi-hel-k3s-02.centralcloud.net cc-fi-hel-k3s-02.central
     IdentitiesOnly yes
 
 Host cc-de-fsn-k3s-01 cc-de-fsn-k3s-01.centralcloud.net cc-de-fsn-k3s-01.centralcloud.com
-    # Same physical box as the old `aidev-new` alias — repurposed into the
-    # infra k3s fleet; hetzner_ace is no longer authorized here (confirmed
-    # 2026-07-01), only personal_admin_id_ed25519.
     HostName 46.225.157.57
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519

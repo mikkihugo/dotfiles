@@ -124,7 +124,7 @@ Host cc-se-sto-core-01 cc-se-sto-core-01.centralcloud.com
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host nue3 nue03 cc-de-nue-k3s-02 cc-de-nue-k3s-02.centralcloud.com cc-de-nue-k3s-03
+Host cc-de-nue-k3s-02 cc-de-nue-k3s-02.centralcloud.com nue3 nue03 cc-de-nue-k3s-03
     HostName 159.195.138.16
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
@@ -160,13 +160,13 @@ Host wf.portal.centralcloud.com
 # Disaster Central project (cc-*) — use the hetzner-dr-repo key.
 # These are the cc-fi-hel-core-01 / cc-de-fsn-core-01 boxes used for DR.
 # fi1/de1 are the Hetzner-side names; cc-* are the k3s node names.
-Host fi1 fi1.centralcloud.com cc-fi-hel-core-01
+Host cc-fi-hel-core-01 cc-fi-hel-core-01.centralcloud.com fi1 fi1.centralcloud.com
     HostName 204.168.217.156
     User root
     IdentityFile ~/.ssh/hetzner_id_ed25519
     IdentitiesOnly yes
 
-Host de1 de1.centralcloud.com cc-de-fsn-core-01
+Host cc-de-fsn-core-01 cc-de-fsn-core-01.centralcloud.com de1 de1.centralcloud.com
     HostName 49.13.125.237
     User root
     IdentityFile ~/.ssh/hetzner_id_ed25519

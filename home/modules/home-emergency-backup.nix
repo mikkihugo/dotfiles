@@ -11,6 +11,8 @@
     else "mhugo";
   backupHost =
     if shortHost == "cc-de-nue-k3s-03"
+    # Borg repo path + archive prefix: keep "nue03" (the existing repo name);
+    # renaming it would start a new, empty repo. SSH uses the full name.
     then "nue03"
     else shortHost;
   homeDir = "/home/mhugo";

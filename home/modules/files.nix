@@ -31,6 +31,13 @@
       force = true;
     };
 
+    # 2026-10-11: .codex/AGENTS.md is the Codex-specific addon. The global
+    # canonical plane is ~/.agents/AGENTS.md; Codex happens to read its
+    # local AGENTS.md at session start and appends whatever this file says
+    # on top of the canonical prose. Keep the body Codex-specific (Codex
+    # config knobs, config.toml notes, Codex-side MCP relay wiring) so the
+    # global plane stays CLI-agnostic. Addon content lives in
+    # .dotfiles/config/codex/AGENTS.md.
     ".codex/AGENTS.md" = {
       source = ../../config/codex/AGENTS.md;
       force = true;

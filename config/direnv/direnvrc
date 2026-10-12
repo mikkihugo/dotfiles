@@ -1,0 +1,52 @@
+# Managed by Home Manager (home/modules/shell.nix).
+# nix-direnv: provides use_nix / use flake functions used by repo .envrc files.
+
+# Agent / Cursor shells sometimes run with stderr closed. nix-direnv <3.2 writes
+# cache-invalidation lines to >/dev/stderr and fails with ENXIO; reopen fd 2.
+if ! : >&2 2>/dev/null; then
+  _direnv_stderr_log="${XDG_STATE_HOME:-$HOME/.local/state}/direnv/stderr.log"
+  mkdir -p "$(dirname "$_direnv_stderr_log")" 2>/dev/null || true
+  exec 2>>"$_direnv_stderr_log"
+fi
+unset -v _direnv_stderr_log 2>/dev/null || true
+
+_nix_direnv_rc=""
+for _candidate in \
+  "${XDG_DATA_HOME:-$HOME/.local/share}/direnv/nix-direnv/direnvrc" \
+  "${HOME}/.nix-profile/share/nix-direnv/direnvrc"; do
+  if [[ -f "$_candidate" ]]; then
+    _nix_direnv_rc="$_candidate"
+    break
+  fi
+done
+if [[ -n "$_nix_direnv_rc" ]]; then
+  # shellcheck source=/dev/null
+  source "$_nix_direnv_rc"
+fi
+unset -v _nix_direnv_rc _candidate
+
+# Redirect direnv cache when the project tree is not writable (e.g. /nix/store checkouts).
+: "${XDG_CACHE_HOME:=$HOME/.cache}"
+
+_layout_hash() {
+  local dir="${1:-$PWD}"
+  local name hash
+  name=$(basename "$dir")
+  if command -v sha256sum >/dev/null 2>&1; then
+    hash=$(printf '%s' "$dir" | sha256sum | cut -d' ' -f1 | head -c 7)
+  elif command -v shasum >/dev/null 2>&1; then
+    hash=$(printf '%s' "$dir" | shasum -a 256 | cut -d' ' -f1 | head -c 7)
+  else
+    hash=$(printf '%s' "$dir" | cksum | cut -d' ' -f1 | head -c 7)
+  fi
+  printf '%s-%s' "$name" "$hash"
+}
+
+direnv_layout_dir() {
+  if [[ -w "$PWD" ]] && mkdir -p "$PWD/.direnv" 2>/dev/null; then
+    echo "$PWD/.direnv"
+    return
+  fi
+
+  echo "$XDG_CACHE_HOME/direnv/layouts/$(_layout_hash "$PWD")"
+}

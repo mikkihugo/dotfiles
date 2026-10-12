@@ -28,11 +28,12 @@
 {
   pkgs,
   lib,
-  nixpkgs-rust,
+  engine-nixpkgs-pin,
   hostname ? "",
   ...
 }: let
-  rustPackages = nixpkgs-rust.legacyPackages.${pkgs.stdenv.hostPlatform.system}.rustPackages_1_98;
+  rustPackages =
+    engine-nixpkgs-pin.inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.rustPackages_1_98;
 in
   lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
     home.file = {

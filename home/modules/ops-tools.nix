@@ -14,12 +14,7 @@
 #
 # flarectl reads the API token from CF_API_TOKEN env var. Pull from
 # OpenBao at runtime: `export CF_API_TOKEN=$(bao kv get -field=api_token kv/cloudflare)`.
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}: {
+{pkgs, ...}: {
   home.packages = [
     pkgs.kustomize
     pkgs.flarectl

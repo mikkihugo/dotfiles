@@ -33,13 +33,23 @@
     # NixOS 26.05 release branch: stable base for the user environment.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
-    # Match the fleet host's Rust 1.98.1 without moving the user environment base.
-    nixpkgs-rust.url = "github:NixOS/nixpkgs/6fcc160353f63555b560f25588925133c8f61f2a";
+    # Fleet-canonical nixpkgs rev (Rust toolchain packages, Engine/jcode alignment).
+    # Bump only in Engine nix/toolchains/nixpkgs-pin; consumers follow nixpkgs.
+    engine-nixpkgs-pin.url = "git+ssh://git@git.centralcloud.net:2222/singularity/singularity-engine?dir=nix/toolchains/nixpkgs-pin";
 
-    # Unstable provides selected tools that lag in nixos-26.05: jujutsu
-    # (0.46.0), mise, and ast-grep. Drop each override when the stable input
-    # meets its contract.
+    # Unstable provides selected tools that lag in nixos-26.05: mise and
+    # ast-grep. Drop each override when the stable input meets its contract.
+    # jujutsu is not on this input. A channel update must not move it.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    # Exact jujutsu 0.46.0. nixos-26.05 still ships 0.41.0. This rev is the
+    # nixpkgs commit whose pkgs/by-name/ju/jujutsu/package.nix sets
+    # version = "0.46.0" (the first release that colocates a non-default
+    # workspace as a Git worktree). Bump the URL on purpose.
+    nixpkgs-jujutsu = {
+      url = "github:NixOS/nixpkgs/6510408d147d8c5e6d76043e899e9251756f6a75";
+      flake = false;
+    };
 
     # Home Manager release branch follows the matching nixpkgs release.
     home-manager = {
@@ -76,7 +86,8 @@
   outputs = {
     nixpkgs,
     nixpkgs-unstable,
-    nixpkgs-rust,
+    nixpkgs-jujutsu,
+    engine-nixpkgs-pin,
     home-manager,
     sops-nix,
     flake-utils,
@@ -84,7 +95,10 @@
     direnv-instant,
     ...
   }: let
-    specialArgs = {inherit sops-nix llm-agents direnv-instant nixpkgs-rust;};
+    specialArgs =
+      {
+        inherit sops-nix llm-agents direnv-instant engine-nixpkgs-pin;
+      };
 
     # Single nixpkgs per system, shared across the outputs below. Re-using
     # this binding instead of re-importing inside the `formatter` and
@@ -105,26 +119,15 @@
           system = sys;
           config.allowUnfree = true;
           overlays = [
-            # jujutsu is pinned from nixpkgs-unstable because 26.05 still ships
-            # 0.41.0. In 0.45.1, an external `git add` run
-            # after a `jj` command no longer produces a tree with duplicate
-            # entries (`git fsck: duplicateEntries`) -- 0.45.0 stops leaving a
-            # stale cache-tree in .git/index; already-corrupted repos are not
-            # repaired. Earlier 0.44 notes: stabilised tag fetch/push, `jj tag
-            # track|untrack`, `jj git push --allow-conflicts`, `merge_point()`
-            # revset. Breaking: `jj git fetch` now fetches tags, `jj git push
-            # --all` also pushes tags, and `--fetch-tags` is gone -- the
-            # facades here push a NAMED bookmark, so none of that reaches
-            # them. Earlier 0.43 notes: better change-id rebase on git fetch,
-            # immutable WC snapshot, `jj run`, aarch64 corrupt-object fix.
-            # 26.05 is still 0.41.
+            # jujutsu 0.46.0 comes from the exact nixpkgs-jujutsu input.
+            # 26.05 still ships 0.41.0. Do not take it from nixpkgs-unstable.
             #
             # mise 2026.10.3: pull from nixpkgs-unstable for newer version
             # (26.05 has 2026.5.12, unstable has 2026.10.3)
             (_final: prev: {
               ast-grep = nixpkgs-unstable.legacyPackages.${sys}.ast-grep;
-              jujutsu = nixpkgs-unstable.legacyPackages.${sys}.jujutsu;
-              mise = nixpkgs-unstable.legacyPackages.${sys}.mise;
+              inherit (import nixpkgs-jujutsu {system = sys;}) jujutsu;
+              inherit (nixpkgs-unstable.legacyPackages.${sys}) mise;
               nix-index = prev.nix-index.overrideAttrs (old: {
                 buildCommand =
                   old.buildCommand
@@ -222,8 +225,18 @@
               buildInputs = [pkgs.deadnix];
             } ''
               cd "$src"
-              deadnix --no-unused --error .
+              # 1.3 dropped --no-unused/--error. --fail matches lefthook.
+              deadnix --fail .
               touch $out
+            '';
+          jujutsu-pin = let
+            pinned = import nixpkgs-jujutsu {system = sys;};
+          in
+            pkgs.runCommand "dotfiles-jujutsu-pin-${sys}" {
+              inherit (pinned.jujutsu) version;
+            } ''
+              test "$version" = 0.46.0
+              printf '%s\n' "$version" > "$out"
             '';
         });
     }

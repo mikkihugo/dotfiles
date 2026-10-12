@@ -344,6 +344,28 @@ if ! _direnv_root=$(_direnv_envrc_root); then
 	return 0
 fi
 
+# Canonical read-only Engine observation tree: fleet v2 prewarm + .envrc
+# agent_direnv_try_shared_dump are authoritative. Do not publish a parallel
+# per-agent dump here; still honor an existing hit, otherwise one direnv export.
+_direnv_canonical_engine_ro="/home/mhugo/code/singularity-engine"
+if [ "$_direnv_root" = "$_direnv_canonical_engine_ro" ]; then
+	if command -v sha256sum >/dev/null 2>&1; then
+		_direnv_cache_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv"
+		_direnv_key=$(_direnv_cache_key "$_direnv_root")
+		_direnv_key=${_direnv_key%% *}
+		if [ -n "$_direnv_key" ] && _direnv_eval_hit; then
+			_direnv_cleanup
+			export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
+			return 0
+		fi
+	fi
+	_direnv_do_enter
+	_direnv_cleanup
+	export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
+	return 0
+fi
+unset _direnv_canonical_engine_ro
+
 _direnv_cache_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv"
 _direnv_lock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv-export.lock"
 _direnv_key=

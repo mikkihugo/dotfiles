@@ -69,7 +69,7 @@ in {
     };
 
     # jujutsu: primary VCS for jj-backed repos (git colocated backend).
-    # Package is overlaid from nixpkgs-unstable (0.46.0) in flake.nix — 26.05
+    # Package is the exact nixpkgs-jujutsu pin in flake.nix (0.46.0). 26.05
     # still ships 0.41. difft gives structural diffs instead of line noise.
     # 0.43 removed git_head()/git_refs() revset functions; do not reintroduce.
     jujutsu = {

@@ -24,6 +24,12 @@
 }: let
   sopsSecrets = config.sops.secrets;
   llm-pkgs = llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
+  # OpenCode 2.x built from the in-tree derivation `home/modules/opencode-2`.
+  # Originally imported from nixpkgs PR #572946 head; forked into dotfiles so
+  # we can bump to upstream tags (latest: v2.0.27) without waiting for the PR
+  # to refresh. See `home/modules/opencode-2/default.nix` for lineage and the
+  # three substituted literals (version, src.hash, node_modules.outputHash).
+  opencode-2x = pkgs.callPackage ./opencode-2/default.nix {};
   # The swarm devbox CLI launcher is jcode's install_release wrapper
   # (~/.local/bin/jcode -> ~/.jcode/builds/current/jcode). Do not force-shadow
   # it with the laptop allowlist wrapper, which isolates JCODE_RUNTIME_DIR and
@@ -675,7 +681,8 @@ in {
         # Claude Code is owned by its native installer outside Home Manager.
         # Cursor Agent is resolved by the wrapper below without a raw profile bin.
         # codex is npm-managed only (see the note after this list).
-        # opencode is managed globally by mise.
+        # opencode is built from `opencode-2x` (see comment above) and is not
+        # installed by mise or any other local package manager.
         # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
         # droid is managed globally by mise (wrapped below for OTEL).
         gooseGatewayWrapper # binary: goose -> resolves provider; openai uses llm-gateway
@@ -689,6 +696,13 @@ in {
         codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
         llm-pkgs.mistral-vibe # binary: vibe
         # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
+        # opencode 2.x: built in-tree from home/modules/opencode-2 (forked
+        # from nixpkgs PR #572946, bumped to v2.0.27). The wrapper at
+        # `~/.local/bin/opencode` execs the matching binary at
+        # `~/.nix-profile/bin/opencode2`, injecting OTEL/Exa env. When the
+        # upstream PR lands in nixpkgs proper, delete home/modules/opencode-2
+        # and switch to `pkgs.opencode` on nixos-unstable.
+        opencode-2x
       ]
       ++ lib.optionals (!isSwarmDevbox) [
         jcodeGatewayWrapper # binary: jcode -> llm-gateway.svc /v1 (+ strip ambient provider keys)
@@ -885,9 +899,13 @@ in {
         '';
       };
 
-      # OpenCode — mise-managed; inject OTEL (native OTLP when
+      # OpenCode 2.x — built in-tree from home/modules/opencode-2/default.nix
+      # (forked from nixpkgs PR #572946, bumped to v2.0.27). `~/.local/bin/opencode`
+      # shadows the raw home-manager-managed binary at
+      # `~/.nix-profile/bin/opencode2` so we keep the OTEL + Exa env injection
+      # that the previous mise-managed wrapper provided (native OTLP when
       # OTEL_EXPORTER_OTLP_ENDPOINT is set; AI SDK spans via
-      # experimental.openTelemetry in ~/.config/opencode/opencode.json).
+      # `experimental.openTelemetry` in `~/.config/opencode/opencode.json`).
       ".local/bin/opencode" = {
         executable = true;
         force = true;
@@ -909,7 +927,7 @@ in {
             exit 1
           fi
           export EXA_API_KEY="$exa_key"
-          exec "$HOME/.local/share/mise/shims/opencode" "$@"
+          exec "$HOME/.nix-profile/bin/opencode2" "$@"
         '';
       };
 

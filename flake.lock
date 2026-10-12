@@ -57,6 +57,22 @@
         "type": "github"
       }
     },
+    "engine-nixpkgs-pin": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1791781423,
+        "narHash": "sha256-c1Lk/bSIM9ESLtj5JplxI0C+pzrz7uZnBo8qgOi+rAw=",
+        "path": "/home/mhugo/code/worktrees/jj/singularity-engine/engine-nixpkgs-lock-20261012/nix/toolchains/nixpkgs-pin",
+        "type": "path"
+      },
+      "original": {
+        "dir": "nix/toolchains/nixpkgs-pin",
+        "type": "git",
+        "url": "ssh://git@git.centralcloud.net:2222/singularity/singularity-engine"
+      }
+    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
@@ -142,7 +158,7 @@
       "inputs": {
         "bun2nix": "bun2nix",
         "flake-parts": "flake-parts_2",
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": "nixpkgs_2",
         "systems": "systems_2",
         "treefmt-nix": "treefmt-nix_2"
       },
@@ -162,22 +178,6 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1790600678,
-        "narHash": "sha256-6k3n7X2UsZ6tAlWTz99RimiZab+17tMUrw9sRUcELiA=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "f45c6f04c2f013f004bf94e284e95d72898d9393",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixpkgs-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs-rust": {
-      "locked": {
         "lastModified": 1791662279,
         "narHash": "sha256-xI8L+UwJLIg75yVJwLPsY+AUEP1teCT3FyuvodyJu2Y=",
         "owner": "NixOS",
@@ -189,6 +189,23 @@
         "owner": "NixOS",
         "repo": "nixpkgs",
         "rev": "6fcc160353f63555b560f25588925133c8f61f2a",
+        "type": "github"
+      }
+    },
+    "nixpkgs-jujutsu": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791594108,
+        "narHash": "sha256-XK4KceonkwD8LuMAt/vNrz982mXJM5jeHAxMwsUXXAQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6510408d147d8c5e6d76043e899e9251756f6a75",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6510408d147d8c5e6d76043e899e9251756f6a75",
         "type": "github"
       }
     },
@@ -210,6 +227,22 @@
     },
     "nixpkgs_2": {
       "locked": {
+        "lastModified": 1790600678,
+        "narHash": "sha256-6k3n7X2UsZ6tAlWTz99RimiZab+17tMUrw9sRUcELiA=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f45c6f04c2f013f004bf94e284e95d72898d9393",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_3": {
+      "locked": {
         "lastModified": 1791662279,
         "narHash": "sha256-xI8L+UwJLIg75yVJwLPsY+AUEP1teCT3FyuvodyJu2Y=",
         "owner": "NixOS",
@@ -227,11 +260,12 @@
     "root": {
       "inputs": {
         "direnv-instant": "direnv-instant",
+        "engine-nixpkgs-pin": "engine-nixpkgs-pin",
         "flake-utils": "flake-utils",
         "home-manager": "home-manager",
         "llm-agents": "llm-agents",
-        "nixpkgs": "nixpkgs_2",
-        "nixpkgs-rust": "nixpkgs-rust",
+        "nixpkgs": "nixpkgs_3",
+        "nixpkgs-jujutsu": "nixpkgs-jujutsu",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "sops-nix": "sops-nix"
       }

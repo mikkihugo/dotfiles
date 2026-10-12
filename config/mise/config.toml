@@ -34,7 +34,6 @@ gcloud = "latest"
 # sat ahead of nixpkgs on PATH via shims. Uninstalled by activation.
 java = "latest"
 crush = "latest"
-opencode = "latest"
 # Rust is NOT managed by mise anymore: the fleet-wide nix-managed toolchain
 # (hosts/_shared/rust-toolchain.nix in /srv/infra, pinned to the engine's
 # nixpkgs 1.95.0) replaced the rustup/mise proxies on 2026-09-08 after the

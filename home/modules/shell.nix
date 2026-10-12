@@ -144,6 +144,13 @@ in {
       '';
     };
 
+    # Global direnvrc: nix-direnv source + read-only-checkout layout_dir. Stderr
+    # guard avoids nix-direnv 3.1.1 ENXIO on >/dev/stderr in agent shells.
+    ".config/direnv/direnvrc" = {
+      force = true;
+      source = ../../config/direnv/direnvrc;
+    };
+
     ".local/bin/receipts-browser" = {
       executable = true;
       force = true;

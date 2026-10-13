@@ -94,7 +94,10 @@ in {
         "$HOME/.npm:$cache_root/npm"; do
         old="''${old_and_new%%:*}"
         new="''${old_and_new#*:}"
-        if [ -d "$old" ] && [ ! -e "$new" ] && [ ! -L "$new" ]; then
+        if [ -L "$old" ]; then
+          # Already normalized; avoid copying a symlink target onto itself.
+          continue
+        elif [ -d "$old" ] && [ ! -e "$new" ] && [ ! -L "$new" ]; then
           ${pkgs.coreutils}/bin/mv "$old" "$new"
           ${pkgs.coreutils}/bin/ln -s "$new" "$old"
         elif [ -d "$old" ] && [ -d "$new" ]; then

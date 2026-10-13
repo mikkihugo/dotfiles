@@ -158,6 +158,15 @@ in {
     localeEnvironment
     // {
       BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";
+      # Keep user services (including Grok's shared leader) on the same
+      # language-cache layout as interactive shells.
+      XDG_CACHE_HOME = "$HOME/.cache";
+      CARGO_HOME = "$HOME/.cargo";
+      MIX_HOME = "$HOME/.cache/mix";
+      HEX_HOME = "$HOME/.cache/hex";
+      "npm_config_cache" = "$HOME/.cache/npm";
+      NPM_CONFIG_CACHE = "$HOME/.cache/npm";
+      NPM_CONFIG_PREFIX = "$HOME/.npm-global";
     };
 
   # home-manager manages its own config file (~/.config/home-manager/).

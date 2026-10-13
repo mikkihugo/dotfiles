@@ -139,7 +139,7 @@ fi
 # HARD GATE, learned the expensive way on 2026-08-08: the behaviour cases below
 # EXECUTE the script under test. A version that ignores SE_CLEANUP_ENGINE_ROOT /
 # SE_CLEANUP_WORKTREE_ROOT and hardcodes the real paths would sweep the live
-# checkout from inside `just check`. Running the pre-fix script through this
+# checkout from inside `repo check`. Running the pre-fix script through this
 # harness did exactly that and deleted 3 real workspace directories. Refuse to
 # execute anything that does not honour both overrides.
 if ! grep -q 'SE_CLEANUP_ENGINE_ROOT' "$script" ||

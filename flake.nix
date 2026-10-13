@@ -262,8 +262,7 @@
           cargo # build and validate local Rust tools
           nodejs # run Node contract tests from the canonical repo check
           python3 # nixpkgs interpreter for repo-check Python tests (not mise)
-          just # operator entrypoints for dotfiles maintenance tasks
-          nix-fast-build # parallel activation evaluation/build for `just check`
+          nix-fast-build # parallel activation evaluation/build for `repo check`
           gnumake # native builds in the maintenance shell
           pkg-config # native dependency discovery for rust crates when needed
           sops # encrypt/decrypt secrets/api-keys.yaml

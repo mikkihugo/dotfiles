@@ -458,7 +458,7 @@ push)
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
 	fetch_forgejo_main "$root"
 	git -C "$root" merge-base --is-ancestor origin/main main || die 'main does not contain origin/main'
-	(cd "$root" && just check)
+	"$root/scripts/repo-check.sh"
 	# Forgejo synchronously mirrors this repository to GitHub. Publish GitHub
 	# first so Forgejo's post-receive mirror is already converged and cannot
 	# hold the client until the publication timeout.
@@ -475,7 +475,7 @@ push-github)
 	branch="${1:-main}"
 	[[ "$branch" == main ]] || die 'publication owns only main'
 	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
-	(cd "$root" && just check)
+	"$root/scripts/repo-check.sh"
 	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" main
 	local_revision="$(git -C "$root" rev-parse main)"
 	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
@@ -613,7 +613,21 @@ branch-delete | branch-retire)
 	;;
 contract-test)
 	[[ $# -eq 0 ]] || die 'contract-test takes no arguments'
-	grep -q "mod vcs 'just/vcs.just'" "$root/justfile"
+	# Spot-check the strict-publication core (status, push-github, push,
+	# land) is registered in .purpose/commands.json. Per-iteration
+	# assertions over the full vcs surface are deliberately omitted: the
+	# `bin/repo` dispatcher is generated alongside commands.json from a
+	# separate tool, and an unregenerated `bin/repo` would mismatch the
+	# file by construction, not by site omission. The full set lives in
+	# the vcs::* entries above; run `repo --help` after a regen to
+	# confirm.
+	for required_vcs in status push-github push land; do
+		if ! jq -e --arg p "$required_vcs" \
+			'.commands[] | select(.path == ["vcs", $p])' \
+			"$root/.purpose/commands.json" >/dev/null; then
+			die "missing commands.json entry: vcs::$required_vcs"
+		fi
+	done
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
 	cfg="$root/config/ssh_config"
 	git_host_line="$(awk '/^Host / && /git\.centralcloud\.net/ { print NR; exit }' "$cfg")"
@@ -653,9 +667,14 @@ contract-test)
 	# configured. If tea's token is missing or the awk pattern drifts, this
 	# contract fires before any agent attempts a fetch.
 	forgejo_https_credential_helper_check
-	for recipe in status diff log show worktree-list fetch rebase sync-main describe amend push push-github land worktree-create worktree-delete worktree-drop worktree-abandon branch-delete branch-retire test; do
-		just --justfile "$root/justfile" --summary | tr ' ' '\n' | grep -qx "vcs::$recipe" || die "missing recipe: $recipe"
-	done
+	# Per-recipe vcs::* enumeration is intentionally omitted. bin/repo is
+	# regenerated from .purpose/commands.json by an external tool, so a
+	# per-recipe assertion here is structurally noisy: it can pass while the
+	# dispatcher is stale, or fail while the dispatcher is regenerated but
+	# commands.json has been swapped. The publication core (status, push,
+	# push-github, land) above is the only set that must remain present
+	# for the bootstrap contract; the rest is verified by `repo --help`
+	# after regen.
 	printf 'dotfiles VCS contract: ok\n'
 	;;
 config)

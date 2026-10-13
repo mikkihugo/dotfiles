@@ -573,10 +573,13 @@ test("dotfiles flake does not import ace-coder or the GPU worker", async () => {
   assert.doesNotMatch(shell, /promote-ace-coder/);
 });
 
-test("just check delegates to the single repository check implementation", async () => {
-  const justfile = await source("justfile");
-  assert.match(justfile, /(?:^|\n)check:\n\s+bash scripts\/repo-check\.sh(?:\n|$)/);
-
+test("repo check delegates to the single repository check implementation", async () => {
+  // After the just-removal migration, `justfile` no longer exists; the
+  // canonical agent entry point is `bin/repo` (generated from
+  // .purpose/commands.json). The bootstrap contracts below still apply:
+  // scripts/repo-check.sh must run the full 24-test gate and the bootstrap
+  // references it from both `bin/repo check` and the
+  // scripts/repo-maintenance.sh sync-mise-upgrade helper.
   const check = await source("scripts/repo-check.sh");
   for (const expected of [
     "scripts/test-repo-vcs.sh",
@@ -665,7 +668,7 @@ test("Claude Code remains native-installer-owned outside Home Manager", async ()
 // ~/.local/bin/jcode and both listed a derivation named "jcode", producing a
 // conflicting home.file definition and then a buildEnv "conflicting subpath".
 // These scanners are deliberately textual so the next such pair fails in
-// `just check` in milliseconds instead of during `land`.
+// `repo check` in milliseconds instead of during `land`.
 //
 // Known blind spots — a flagged duplicate needs triage, not an automatic bug
 // verdict, and a clean run is not proof that no collision exists:

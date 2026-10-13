@@ -7,7 +7,7 @@
 # (^scripts/codex-preferences$|^scripts/merge-authorized-keys$). When
 # home/modules/jcode-providers.nix began referencing scripts/jcode-preferences,
 # that script fell outside the list, so a commit touching only it changed the
-# activation package while `just check` skipped the build entirely — a green
+# activation package while `repo check` skipped the build entirely — a green
 # check on a change that might not evaluate.
 #
 # Falsifier: add a `${../../scripts/whatever}` reference to any home module

@@ -76,7 +76,6 @@
     pkg-config # native library discovery for remaining mise source builds
     go # build local Go tools
     pnpm # fast, disk-efficient Node package manager
-    just # durable task runner; avoid Cargo binaries tied to collected Nix loaders
     sccache # Rust compiler cache; Cargo wrapper is managed in files.nix
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin
 

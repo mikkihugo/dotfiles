@@ -1,0 +1,46 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-10-13-repo-elf-enrollment-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-10-13-repo-elf-enrollment"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-10-13-repo-elf-enrollment",
+      "revision": "initial"
+    },
+    "objective": {
+      "id": "2026-10-13-repo-elf-enrollment-objective",
+      "statement": "Switch the dotfiles `bin/repo` from the local generated bash dispatcher to the Rust-built `singularity-repository-operator` ELF exposed by `singularity/singularity-engine`",
+      "measure": "`repo --version` reports the operator binary, and `repo check nix` plus `repo vcs test` pass with the operator as the dispatcher"
+    },
+    "need": {
+      "id": "2026-10-13-repo-elf-enrollment-need",
+      "statement": "Consume the operator binary from the engine repo per the operator direction 2026-09-21, instead of carrying a parallel bash-generated dispatcher in dotfiles",
+      "stakeholders": [
+        "dotfiles operators who run `repo` end-to-end",
+        "engine maintainers who want every enrolled repo to compile and ship a single Rust dispatcher",
+        "the jcode fleet which already consumes the engine's operator via a similar path"
+      ],
+      "baseline": "dotfiles/bin/repo is a 17,070-byte bash dispatcher generated from .purpose/commands.json. It works but duplicates a Rust dispatcher the engine already builds and exposes for every enrolled repo.",
+      "consequence_of_no_action": "dotfiles continues to ship a duplicate bash dispatcher. The just+justfile shim layer was already removed (commit 9de82203 on main) but the bash dispatcher remains. Future operator fixes (commands added to the engine's native surface) will not reach dotfiles until the engine regenerates the bash dispatcher; agents on dotfiles will keep seeing the older command surface.",
+      "assumptions": [
+        "Engine maintainers will add `dotfiles` to the operator's enrollment list. Currently `pub const ENROLLED_OPERATOR_TARGETS: &[&str] = &[\"singularity-engine\"];` in tools/repository-operator/src/operator_floor.rs:44. A small Rust change on the engine side is required before dotfiles can use the operator end-to-end."
+      ],
+      "alternatives_considered": [
+        "Skip the operator and keep the bash dispatcher. Rejected because the operator direction is explicit and the just-removal commit already moved dotfiles closer to the Rust path.",
+        "Build a private operator fork in dotfiles that re-adds `dotfiles` to ENROLLED_OPERATOR_TARGETS. Rejected because the fork would diverge from the engine's discipline (jj-native repo operator) and require re-deriving the C29 integration contract, the coord bus, the C19 capabilities, and the target-manifest gates on every bump."
+      ]
+    }
+  },
+  "admission": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  }
+}

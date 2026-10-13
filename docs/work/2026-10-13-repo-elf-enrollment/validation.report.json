@@ -1,0 +1,697 @@
+{
+  "schema_version": "validation-report/v0",
+  "ok": false,
+  "authorizes_execution": false,
+  "authorization": {
+    "phase": "blocked_invalid",
+    "blocking_gate_ids": [
+      "schema:purpose",
+      "schema:work",
+      "schema:evidence",
+      "spec:snapshot-digest",
+      "spec:derived-requirements",
+      "evidence:purpose-subject-digest",
+      "evidence:workspec-subject-digest",
+      "evidence:artifact:2026-10-13-repo-elf-enrollment-evidence-artifact",
+      "coverage:planned:T1",
+      "coverage:planned:T2",
+      "coverage:planned:T3",
+      "coverage:planned-evidence:T1",
+      "coverage:planned-evidence:T2",
+      "coverage:planned-evidence:T3",
+      "evidence:changed-file-manifest",
+      "reconciliation:status",
+      "reconciliation:runtime-status",
+      "reconciliation:snapshot-digest",
+      "reconciliation:delta-digest",
+      "reconciliation:requirement-set-digest",
+      "reconciliation:witness",
+      "completion:required-evidence:purpose.contract.json",
+      "completion:required-evidence:work.spec.json",
+      "completion:required-evidence:evidence.bundle.json",
+      "completion:required-evidence:evidence",
+      "completion:contract-preserved"
+    ],
+    "next_action": "repair the failing structural work-packet gates",
+    "receipt_ids": [],
+    "requires_online_redemption": true
+  },
+  "work_dir": "docs/work/2026-10-13-repo-elf-enrollment",
+  "repo_root": ".",
+  "gates": [
+    {
+      "id": "schema:purpose",
+      "status": "fail",
+      "message": "purpose failed JSON Schema validation: / must have required property 'purpose'; / must have required property 'consumer'; / must have required property 'contract'"
+    },
+    {
+      "id": "schema:work",
+      "status": "fail",
+      "message": "work failed JSON Schema validation: / must have required property 'requirements'; / must have required property 'scope'; / must have required property 'model_requirements'"
+    },
+    {
+      "id": "schema:evidence",
+      "status": "fail",
+      "message": "evidence failed JSON Schema validation: / must have required property 'trace'; / must have required property 'tests'; / must have required property 'gates'"
+    },
+    {
+      "id": "linkage:schema-major",
+      "status": "pass",
+      "message": "purpose-contract/v2 is the admitted intent source for workspec/v4"
+    },
+    {
+      "id": "linkage:purpose-work",
+      "status": "pass",
+      "message": "purpose and work IDs match"
+    },
+    {
+      "id": "linkage:evidence-purpose",
+      "status": "pass",
+      "message": "evidence purpose_contract_id matches"
+    },
+    {
+      "id": "linkage:evidence-work",
+      "status": "pass",
+      "message": "evidence workspec_id matches"
+    },
+    {
+      "id": "admission:state",
+      "status": "pass",
+      "message": "admission is proposed and does not authorize execution"
+    },
+    {
+      "id": "handover:state",
+      "status": "pass",
+      "message": "handover is proposed and does not authorize execution"
+    },
+    {
+      "id": "spec:snapshot-path",
+      "status": "pass",
+      "message": "current_spec.uri must resolve inside the work directory"
+    },
+    {
+      "id": "spec:snapshot-digest",
+      "status": "fail",
+      "message": "current_spec.digest must bind the exact snapshot bytes"
+    },
+    {
+      "id": "spec:snapshot-id",
+      "status": "pass",
+      "message": "current_spec.snapshot_id must match the referenced snapshot"
+    },
+    {
+      "id": "spec:snapshot-requirements-unique",
+      "status": "pass",
+      "message": "current spec snapshot requirement IDs must be unique"
+    },
+    {
+      "id": "spec:delta-targets",
+      "status": "pass",
+      "message": "delta sources must exist once, added IDs must be new, and rename/modify IDs must be coherent"
+    },
+    {
+      "id": "spec:derived-requirements",
+      "status": "fail",
+      "message": "WorkSpec requirements must equal the deterministic snapshot plus delta result"
+    },
+    {
+      "id": "evidence:purpose-subject-digest",
+      "status": "fail",
+      "message": "evidence must bind the exact accepted PurposeContract digest"
+    },
+    {
+      "id": "evidence:workspec-subject-digest",
+      "status": "fail",
+      "message": "evidence must bind the exact accepted WorkSpec digest"
+    },
+    {
+      "id": "evidence:artifact:2026-10-13-repo-elf-enrollment-evidence-artifact",
+      "status": "fail",
+      "message": "artifact URI evidence/result.json must resolve inside the work directory's evidence/ root"
+    },
+    {
+      "id": "evidence:execution-identity",
+      "status": "pass",
+      "message": "evidence must identify execution, tool, result, and unique artifacts"
+    },
+    {
+      "id": "coverage:requirements-unique",
+      "status": "pass",
+      "message": "requirement IDs must be unique"
+    },
+    {
+      "id": "coverage:planned-tests-unique",
+      "status": "pass",
+      "message": "planned test IDs must be unique"
+    },
+    {
+      "id": "coverage:planned:T1",
+      "status": "fail",
+      "message": "planned test must reference an existing requirement"
+    },
+    {
+      "id": "coverage:planned:T2",
+      "status": "fail",
+      "message": "planned test must reference an existing requirement"
+    },
+    {
+      "id": "coverage:planned:T3",
+      "status": "fail",
+      "message": "planned test must reference an existing requirement"
+    },
+    {
+      "id": "coverage:evidence-tests-unique",
+      "status": "pass",
+      "message": "evidence test IDs must be unique"
+    },
+    {
+      "id": "coverage:planned-evidence:T1",
+      "status": "fail",
+      "message": "every planned test needs passed evidence; skipped, failed, and not_run do not complete coverage"
+    },
+    {
+      "id": "coverage:planned-evidence:T2",
+      "status": "fail",
+      "message": "every planned test needs passed evidence; skipped, failed, and not_run do not complete coverage"
+    },
+    {
+      "id": "coverage:planned-evidence:T3",
+      "status": "fail",
+      "message": "every planned test needs passed evidence; skipped, failed, and not_run do not complete coverage"
+    },
+    {
+      "id": "evidence:changed-file-manifest",
+      "status": "fail",
+      "message": "changed-file manifest must be a digest-bound artifact produced by the repository VCS facade"
+    },
+    {
+      "id": "reconciliation:evidence-version",
+      "status": "pass",
+      "message": "completion evidence for workspec/v4 must use evidence-bundle/v3"
+    },
+    {
+      "id": "reconciliation:status",
+      "status": "fail",
+      "message": "completion requires reconciliation.status=reconciled"
+    },
+    {
+      "id": "reconciliation:runtime-status",
+      "status": "fail",
+      "message": "completion reconciliation requires runtime.status=completed"
+    },
+    {
+      "id": "reconciliation:snapshot-digest",
+      "status": "fail",
+      "message": "reconciliation must bind the exact current spec snapshot digest"
+    },
+    {
+      "id": "reconciliation:delta-digest",
+      "status": "fail",
+      "message": "reconciliation must bind the exact WorkSpec requirement delta"
+    },
+    {
+      "id": "reconciliation:requirement-set-digest",
+      "status": "fail",
+      "message": "reconciliation must bind the deterministic derived requirement set"
+    },
+    {
+      "id": "reconciliation:witness",
+      "status": "fail",
+      "message": "reconciliation must reference a declared digest-verified witness artifact"
+    },
+    {
+      "id": "completion:gates",
+      "status": "pass",
+      "message": "typed completion gates must pass or carry an authority-bound waiver and reference digest-bound artifacts"
+    },
+    {
+      "id": "completion:required-evidence:purpose.contract.json",
+      "status": "fail",
+      "message": "verification_plan.evidence_required=purpose.contract.json must have corresponding successful typed evidence"
+    },
+    {
+      "id": "completion:required-evidence:work.spec.json",
+      "status": "fail",
+      "message": "verification_plan.evidence_required=work.spec.json must have corresponding successful typed evidence"
+    },
+    {
+      "id": "completion:required-evidence:evidence.bundle.json",
+      "status": "fail",
+      "message": "verification_plan.evidence_required=evidence.bundle.json must have corresponding successful typed evidence"
+    },
+    {
+      "id": "completion:required-evidence:evidence",
+      "status": "fail",
+      "message": "verification_plan.evidence_required=evidence must have corresponding successful typed evidence"
+    },
+    {
+      "id": "completion:breakers-unique",
+      "status": "pass",
+      "message": "each WorkSpec requirement must declare a unique breaker ID"
+    },
+    {
+      "id": "completion:breaker-witness-set",
+      "status": "pass",
+      "message": "breaker witnesses must form a one-to-one set with declared requirement and breaker pairs"
+    },
+    {
+      "id": "completion:contract-preserved",
+      "status": "fail",
+      "message": "completion evidence must affirm contract_preserved.status=true"
+    }
+  ],
+  "schema_errors": {
+    "purpose": [
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "purpose" },
+        "message": "must have required property 'purpose'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "consumer" },
+        "message": "must have required property 'consumer'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "contract" },
+        "message": "must have required property 'contract'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "failure_boundary" },
+        "message": "must have required property 'failure_boundary'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "evidence" },
+        "message": "must have required property 'evidence'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "falsifier" },
+        "message": "must have required property 'falsifier'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "non_goals" },
+        "message": "must have required property 'non_goals'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "invariants" },
+        "message": "must have required property 'invariants'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "assumptions" },
+        "message": "must have required property 'assumptions'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "run_control" },
+        "message": "must have required property 'run_control'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "target_planes" },
+        "message": "must have required property 'target_planes'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "plane_constraints" },
+        "message": "must have required property 'plane_constraints'"
+      }
+    ],
+    "work": [
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "requirements" },
+        "message": "must have required property 'requirements'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "scope" },
+        "message": "must have required property 'scope'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "model_requirements" },
+        "message": "must have required property 'model_requirements'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "run_control" },
+        "message": "must have required property 'run_control'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "execution_constraints" },
+        "message": "must have required property 'execution_constraints'"
+      },
+      {
+        "instancePath": "/verification_plan/evidence_required/0",
+        "schemaPath": "#/properties/verification_plan/properties/evidence_required/items/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "test",
+            "quality",
+            "runtime",
+            "deploy",
+            "falsifier",
+            "trace",
+            "manual"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/verification_plan/evidence_required/1",
+        "schemaPath": "#/properties/verification_plan/properties/evidence_required/items/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "test",
+            "quality",
+            "runtime",
+            "deploy",
+            "falsifier",
+            "trace",
+            "manual"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/verification_plan/evidence_required/2",
+        "schemaPath": "#/properties/verification_plan/properties/evidence_required/items/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "test",
+            "quality",
+            "runtime",
+            "deploy",
+            "falsifier",
+            "trace",
+            "manual"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/verification_plan/evidence_required/3",
+        "schemaPath": "#/properties/verification_plan/properties/evidence_required/items/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "test",
+            "quality",
+            "runtime",
+            "deploy",
+            "falsifier",
+            "trace",
+            "manual"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/traceability",
+        "schemaPath": "#/properties/traceability/required",
+        "keyword": "required",
+        "params": { "missingProperty": "retry_policy" },
+        "message": "must have required property 'retry_policy'"
+      },
+      {
+        "instancePath": "/traceability",
+        "schemaPath": "#/properties/traceability/required",
+        "keyword": "required",
+        "params": { "missingProperty": "dispatch_scope" },
+        "message": "must have required property 'dispatch_scope'"
+      },
+      {
+        "instancePath": "/traceability/owner",
+        "schemaPath": "#/$defs/actor/type",
+        "keyword": "type",
+        "params": { "type": "object" },
+        "message": "must be object"
+      },
+      {
+        "instancePath": "/requirement_delta",
+        "schemaPath": "#/properties/requirement_delta/required",
+        "keyword": "required",
+        "params": { "missingProperty": "modified" },
+        "message": "must have required property 'modified'"
+      },
+      {
+        "instancePath": "/requirement_delta",
+        "schemaPath": "#/properties/requirement_delta/required",
+        "keyword": "required",
+        "params": { "missingProperty": "removed" },
+        "message": "must have required property 'removed'"
+      },
+      {
+        "instancePath": "/requirement_delta",
+        "schemaPath": "#/properties/requirement_delta/required",
+        "keyword": "required",
+        "params": { "missingProperty": "renamed" },
+        "message": "must have required property 'renamed'"
+      },
+      {
+        "instancePath": "/requirement_delta/added/0",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "breaker" },
+        "message": "must have required property 'breaker'"
+      },
+      {
+        "instancePath": "/requirement_delta/added/1",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "breaker" },
+        "message": "must have required property 'breaker'"
+      },
+      {
+        "instancePath": "/requirement_delta/added/2",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "breaker" },
+        "message": "must have required property 'breaker'"
+      }
+    ],
+    "evidence": [
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "trace" },
+        "message": "must have required property 'trace'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "tests" },
+        "message": "must have required property 'tests'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "gates" },
+        "message": "must have required property 'gates'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "runtime" },
+        "message": "must have required property 'runtime'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "falsifier" },
+        "message": "must have required property 'falsifier'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "contract_preserved" },
+        "message": "must have required property 'contract_preserved'"
+      },
+      {
+        "instancePath": "/schema_version",
+        "schemaPath": "#/properties/schema_version/const",
+        "keyword": "const",
+        "params": { "allowedValue": "evidence-bundle/v1" },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "trace" },
+        "message": "must have required property 'trace'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "tests" },
+        "message": "must have required property 'tests'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "gates" },
+        "message": "must have required property 'gates'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "runtime" },
+        "message": "must have required property 'runtime'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "falsifier" },
+        "message": "must have required property 'falsifier'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "contract_preserved" },
+        "message": "must have required property 'contract_preserved'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "reconciliation" },
+        "message": "must have required property 'reconciliation'"
+      },
+      {
+        "instancePath": "/schema_version",
+        "schemaPath": "#/properties/schema_version/const",
+        "keyword": "const",
+        "params": { "allowedValue": "evidence-bundle/v2" },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "trace" },
+        "message": "must have required property 'trace'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "tests" },
+        "message": "must have required property 'tests'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "gates" },
+        "message": "must have required property 'gates'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "runtime" },
+        "message": "must have required property 'runtime'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "falsifier" },
+        "message": "must have required property 'falsifier'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "contract_preserved" },
+        "message": "must have required property 'contract_preserved'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "reconciliation" },
+        "message": "must have required property 'reconciliation'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "reviews" },
+        "message": "must have required property 'reviews'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": { "missingProperty": "breaker_witnesses" },
+        "message": "must have required property 'breaker_witnesses'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/oneOf",
+        "keyword": "oneOf",
+        "params": { "passingSchemas": null },
+        "message": "must match exactly one schema in oneOf"
+      }
+    ],
+    "snapshot": null
+  }
+}

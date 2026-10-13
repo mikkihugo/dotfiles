@@ -1,0 +1,554 @@
+{
+  "schema_version": "repo-agent-catalog/v1",
+  "cli_name": "repo",
+  "agent_protocol": {
+    "help_card_fields": [
+      "what",
+      "when",
+      "steps",
+      "falsifier",
+      "access",
+      "usage",
+      "example"
+    ],
+    "discovery": "repo help schema [topic-prefix...]",
+    "envelope": "REPO_OUTPUT=json|compact; auto-json when stdout is not a TTY; --select --compact on repo",
+    "envelope_spec": "using-skills/references/agent-cli.md#runtime-envelope",
+    "machine_output": "code-quality-contracts/references/cli-machine-output.md"
+  },
+  "groups": [
+    "check",
+    "sync",
+    "test",
+    "vcs"
+  ],
+  "commands": [
+    {
+      "path": [
+        "vcs",
+        "status"
+      ],
+      "command": "repo vcs status",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Show repository status",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs status`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "diff"
+      ],
+      "command": "repo vcs diff",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Show repository changes",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs diff`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "log"
+      ],
+      "command": "repo vcs log",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Show revision history",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs log`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "show"
+      ],
+      "command": "repo vcs show",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Show one revision",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs show`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "describe"
+      ],
+      "command": "repo vcs describe",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Commit the current workspace changes",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs describe`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "rebase"
+      ],
+      "command": "repo vcs rebase",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Rebase the owned task branch onto one revision",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs rebase`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "fetch"
+      ],
+      "command": "repo vcs fetch",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Fetch the Forgejo integration remote",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs fetch`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "land"
+      ],
+      "command": "repo vcs land",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Verify and publish a clean task workspace as main",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs land`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "push"
+      ],
+      "command": "repo vcs push",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Verify and publish local main to both remotes",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs push`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "amend"
+      ],
+      "command": "repo vcs amend",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Correct the message of an unpushed task-head commit without changing its contents",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs amend`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "branch-retire"
+      ],
+      "command": "repo vcs branch-retire",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Retire an unused leftover namespaced ref; dry-run unless --apply",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs branch-retire`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "primary-to-main"
+      ],
+      "command": "repo vcs primary-to-main",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Move the primary checkout off a stale branch onto origin/main when all its uncommitted changes are already in main's history",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs primary-to-main`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "push-github"
+      ],
+      "command": "repo vcs push-github",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Verify and publish local main to GitHub only",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs push-github`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "sync-main"
+      ],
+      "command": "repo vcs sync-main",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Converge a clean patch-equivalent canonical main to origin/main",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs sync-main`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "test"
+      ],
+      "command": "repo vcs test",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Verify the repository VCS facade contract",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs test`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "worktree-abandon"
+      ],
+      "command": "repo vcs worktree-abandon",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Discard an explicitly abandoned clean inactive task worktree",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs worktree-abandon`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "worktree-create"
+      ],
+      "command": "repo vcs worktree-create",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Create an isolated task worktree",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs worktree-create`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "worktree-drop"
+      ],
+      "command": "repo vcs worktree-drop",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Remove an integrated clean task worktree",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs worktree-drop`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "worktree-list"
+      ],
+      "command": "repo vcs worktree-list",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "List registered worktrees",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs worktree-list`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "sync",
+        "mise-upgrade"
+      ],
+      "command": "repo sync mise-upgrade",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "sync",
+      "what": "Install and upgrade mise-managed tools",
+      "when": "When the command's named lifecycle action is the next verified step.",
+      "steps": [
+        "Run `repo sync mise-upgrade`.",
+        "Verify the declared result before continuing to the next lifecycle step."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "test",
+        "check-entry"
+      ],
+      "command": "repo test check-entry",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "test",
+      "what": "Verify bounded environment-check dispatch",
+      "when": "Before handoff or after changing the behavior this gate covers.",
+      "steps": [
+        "Run `repo test check-entry`.",
+        "Verify the declared result before continuing to the next lifecycle step."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "test",
+        "codex-preferences"
+      ],
+      "command": "repo test codex-preferences",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "test",
+      "what": "Verify managed Codex preference preservation",
+      "when": "Before handoff or after changing the behavior this gate covers.",
+      "steps": [
+        "Run `repo test codex-preferences`.",
+        "Verify the declared result before continuing to the next lifecycle step."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "check"
+      ],
+      "command": "repo check",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "check",
+      "what": "Run the dotfiles repository verification gate",
+      "when": "Before handoff or after changing the behavior this gate covers.",
+      "steps": [
+        "Run `repo check`.",
+        "Verify the declared result before continuing to the next lifecycle step."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "check",
+        "nix"
+      ],
+      "command": "repo check nix",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "check",
+      "what": "Verify the exact dotfiles Nix environment without running package checks",
+      "when": "Before handoff or after changing the behavior this gate covers.",
+      "steps": [
+        "Run `repo check nix`.",
+        "Verify the declared result before continuing to the next lifecycle step."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    }
+  ]
+}

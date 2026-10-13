@@ -21,5 +21,9 @@ grep -Fq 'normalizeLanguageCaches' "$activation_nix" || {
 	printf 'missing activation cache migration\n' >&2
 	exit 1
 }
+grep -Fq "cp -a \"\$old\"/. \"\$new\"/" "$activation_nix" || {
+	printf 'missing safe merge for pre-existing cache targets\n' >&2
+	exit 1
+}
 
 printf 'language cache layout contract: ok\n'

@@ -83,7 +83,8 @@ in {
     # Keep language package caches under ~/.cache without moving executable
     # homes such as ~/.cargo/bin. Existing legacy directories are moved once
     # when their new destination is empty and retained as compatibility
-    # symlinks; if both locations contain data, leave them untouched.
+    # symlinks; if both locations contain data, merge the cache first and then
+    # replace the legacy directory with the compatibility symlink.
     normalizeLanguageCaches = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
       cache_root="$HOME/.cache"
       ${pkgs.coreutils}/bin/mkdir -p "$cache_root"
@@ -95,6 +96,10 @@ in {
         new="''${old_and_new#*:}"
         if [ -d "$old" ] && [ ! -e "$new" ] && [ ! -L "$new" ]; then
           ${pkgs.coreutils}/bin/mv "$old" "$new"
+          ${pkgs.coreutils}/bin/ln -s "$new" "$old"
+        elif [ -d "$old" ] && [ -d "$new" ]; then
+          ${pkgs.coreutils}/bin/cp -a "$old"/. "$new"/
+          ${pkgs.coreutils}/bin/rm -rf "$old"
           ${pkgs.coreutils}/bin/ln -s "$new" "$old"
         fi
       done

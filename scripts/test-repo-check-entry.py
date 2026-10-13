@@ -52,8 +52,21 @@ class CheckEntryTest(unittest.TestCase):
                 with self.subTest(args=args):
                     marker = root / "full"
                     marker.unlink(missing_ok=True)
-                    result = subprocess.run([str(root / "bin/repo"), "check", *args],
-                        env=dict(os.environ, BASH_ENV="", FULL_MARKER=str(marker)), capture_output=True, text=True)
+                    result = subprocess.run(
+                        [str(root / "bin/repo"), "check", *args],
+                        cwd=root,
+                        env=dict(
+                            os.environ,
+                            BASH_ENV="",
+                            FULL_MARKER=str(marker),
+                            IN_NIX_SHELL="impure",
+                            NIX_DIRENV_DID_FALLBACK="",
+                            DIRENV_DIR="-" + str(root),
+                            PATH=str(root / "bin") + os.pathsep + os.environ["PATH"],
+                        ),
+                        capture_output=True,
+                        text=True,
+                    )
                     self.assertEqual(result.returncode, 2, result.stderr)
                     self.assertFalse(marker.exists(), "invalid arguments entered full gate")
 

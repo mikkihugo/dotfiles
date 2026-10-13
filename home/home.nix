@@ -156,6 +156,17 @@ in {
   # home-manager manages its own config file (~/.config/home-manager/).
   programs.home-manager.enable = true;
 
+  # Silent the post-activation news readout. Upstream default is "notify",
+  # which prints "There are N unread and relevant news items" to stderr
+  # after every `home-manager switch`. We don't act on this on autopilot
+  # and the count grows by ~30 entries per upstream release; on this
+  # devbox it had ballooned to 379 before being addressed. Use
+  # `home-manager news` (or `hmn`) explicitly to view news when needed.
+  # Breaking-change news is a maintenance concern best surfaced in the
+  # upstream home-manager news feed (github.com/nix-community/home-manager)
+  # rather than via stderr after every activation.
+  news.display = "silent";
+
   # Use Home Manager's standard mise module and the nixpkgs package. The shared
   # runtime hook in shell/bash/bashrc remains the single activation authority
   # for bash and zsh because it also restores wrapper precedence after mise

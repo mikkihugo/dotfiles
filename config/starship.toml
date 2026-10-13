@@ -19,7 +19,7 @@ $directory\
 $git_branch\
 $git_status\
 $git_metrics\
-$tmux\
+$custom.tmux\
 $fill\
 $nodejs\
 $rust\
@@ -77,9 +77,11 @@ read_only_style = "bold red"
 truncation_symbol = "…/"
 home_symbol = "󰋜 ~"
 
-[tmux]
-disabled = false
-format = "[$symbol$session]($style) "
+# Built-in [tmux] does not exist in starship 1.25.x; use custom segment when TMUX is set.
+[custom.tmux]
+command = "tmux display-message -p '#S' 2>/dev/null"
+when = "test -n \"${TMUX:-}\""
+format = "[$symbol$output]($style) "
 symbol = "󰽙 "
 style = "bold purple"
 

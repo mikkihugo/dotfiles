@@ -62,7 +62,6 @@ in {
     ./modules/mise-auto-update.nix
     ./modules/grok-leader.nix
     ./modules/minimax-responses-compat.nix
-    ./modules/kimi-web.nix
     ./modules/tailscale.nix
     ./modules/tabby.nix
     ./modules/wezterm.nix

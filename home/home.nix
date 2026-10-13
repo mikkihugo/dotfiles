@@ -105,6 +105,14 @@ in {
         # This host is a k3s agent — local /etc/rancher/k3s/k3s.yaml points at
         # 127.0.0.1:6443 which has no listener. Use ~/.kube/config.
         KUBECONFIG = "$HOME/.kube/config";
+        # Keep package caches in one user-scoped tree while preserving
+        # ~/.cargo/bin for installed Cargo tools and rustup compatibility.
+        XDG_CACHE_HOME = "$HOME/.cache";
+        CARGO_HOME = "$HOME/.cargo";
+        MIX_HOME = "$HOME/.cache/mix";
+        HEX_HOME = "$HOME/.cache/hex";
+        "npm_config_cache" = "$HOME/.cache/npm";
+        NPM_CONFIG_CACHE = "$HOME/.cache/npm";
         NPM_CONFIG_PREFIX = "$HOME/.npm-global";
         SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
         MINIMAX_API_HOST = "https://api.minimax.io";

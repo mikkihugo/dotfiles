@@ -80,6 +80,26 @@ in {
       ${pkgs.systemd}/bin/systemctl --user reset-failed || true
     '';
 
+    # Keep language package caches under ~/.cache without moving executable
+    # homes such as ~/.cargo/bin. Existing legacy directories are moved once
+    # when their new destination is empty and retained as compatibility
+    # symlinks; if both locations contain data, leave them untouched.
+    normalizeLanguageCaches = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
+      cache_root="$HOME/.cache"
+      ${pkgs.coreutils}/bin/mkdir -p "$cache_root"
+      for old_and_new in \
+        "$HOME/.mix:$cache_root/mix" \
+        "$HOME/.hex:$cache_root/hex" \
+        "$HOME/.npm:$cache_root/npm"; do
+        old="''${old_and_new%%:*}"
+        new="''${old_and_new#*:}"
+        if [ -d "$old" ] && [ ! -e "$new" ] && [ ! -L "$new" ]; then
+          ${pkgs.coreutils}/bin/mv "$old" "$new"
+          ${pkgs.coreutils}/bin/ln -s "$new" "$old"
+        fi
+      done
+    '';
+
     # programs.gh and programs.jujutsu own these files as nix-store symlinks.
     # If they exist as plain files (written by `gh auth` or `jj init`) home-manager
     # aborts with "would be clobbered". Remove them before checkLinkTargets.

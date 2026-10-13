@@ -1,0 +1,36 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-10-13-devbox-cache-layout-purpose",
+  "source": {"system": "manual", "repository": "dotfiles", "request_id": "operator-2026-10-13"},
+  "lineage": {
+    "origin": {"kind": "request", "id": "operator-2026-10-13-devbox-cache-layout", "revision": "main@origin"},
+    "objective": {
+      "id": "devbox-cache-layout-objective",
+      "statement": "Normalize devbox language package cache variables into one user-scoped cache tree without moving executable Cargo tools.",
+      "measure": "Managed session variables and activation migration pass the focused cache-layout contract."
+    },
+    "need": {
+      "id": "devbox-cache-layout-need",
+      "statement": "The devbox currently splits Cargo, Mix, Hex, and npm state across unrelated home paths.",
+      "stakeholders": ["devbox developer sessions"],
+      "baseline": "Only CCACHE_DIR is explicitly managed; Cargo, Mix, Hex, and npm use separate default paths.",
+      "consequence_of_no_action": "Cache ownership remains unclear and package caches are harder to inspect and clean consistently.",
+      "assumptions": [
+        {"statement": "~/.cargo/bin must remain stable for installed Cargo tools.", "status": "verified", "doubt": 0, "falsifier": "A rendered profile no longer exposes ~/.cargo/bin or cargo subcommand proxies fail."}
+      ],
+      "alternatives_considered": ["Leave tool defaults unchanged", "Move all Cargo state under ~/.cache and rewrite PATH"]
+    }
+  },
+  "admission": {"state": "proposed", "producer": {"kind": "agent", "id": "codex"}},
+  "purpose": "Give devbox package caches explicit, inspectable user-scoped homes aligned with runner semantics.",
+  "consumer": "Home Manager sessions and language package managers on cc-se-sto-devbox-01.",
+  "contract": "XDG, Cargo, Mix, Hex, and npm cache variables are explicit; Cargo's executable home remains ~/.cargo; legacy Mix/Hex/npm directories are migrated only when the destination is empty.",
+  "failure_boundary": "The focused cache-layout test fails if any variable or migration hook is missing; activation never merges or deletes two populated cache trees.",
+  "evidence": [{"kind": "test", "description": "Focused RED/GREEN cache-layout test and repo check nix.", "status": "observed"}],
+  "falsifier": {"claim": "The devbox cache layout is normalized without breaking tool homes.", "executable_check": {"kind": "test", "description": "The focused contract rejects missing variables or migration logic.", "command": "bash scripts/test-language-cache-layout.sh"}},
+  "non_goals": ["Changing /nix", "Changing runner PVCs", "Moving ~/.cargo/bin", "Running home-manager switch in this change"],
+  "invariants": ["Home Manager remains the devbox authority", "Existing populated new cache directories are never overwritten", "NPM_CONFIG_PREFIX remains ~/.npm-global"],
+  "assumptions": [{"statement": "The operator will activate this through the declared cc-se-sto-devbox-01 Home Manager target.", "status": "verified", "doubt": 0, "falsifier": "The target is absent from flake.nix or activation does not render the variables."}],
+  "run_control": {"autonomous_allowed": true, "risk": "medium", "blast_radius": "devbox user environment", "reversibility": "easy", "max_active_doubt": 1},
+  "target_planes": ["dotfiles home-manager"]
+}

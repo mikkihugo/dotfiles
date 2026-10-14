@@ -180,8 +180,11 @@ if grep -Eq 'timeout[^\n]*[[:space:]]git[[:space:]]+-C' "$root/scripts/repo-vcs.
 fi
 
 _run_repo_vcs "$root/scripts/repo-vcs.sh" contract-test
-_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs land'
-_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs rebase'
+# Capture help before matching. A pipe into grep -q SIGPIPEs the writer
+# once the first hit lands, and pipefail turns that into exit 141.
+repo_help="$(_run_repo_vcs "$root/bin/repo" help)"
+grep -q 'repo vcs land' <<<"$repo_help"
+grep -q 'repo vcs rebase' <<<"$repo_help"
 grep -q 'rebase --continue requires at least one resolved path' "$root/scripts/repo-vcs.sh" || {
 	printf 'rebase continuation must require explicit resolved paths\n' >&2
 	exit 1
@@ -190,9 +193,9 @@ grep -q 'conflict markers remain in' "$root/scripts/repo-vcs.sh" || {
 	printf 'rebase continuation must reject unresolved conflict markers\n' >&2
 	exit 1
 }
-_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs sync-main'
-_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs worktree-abandon'
-_run_repo_vcs "$root/bin/repo" help | grep -q 'repo vcs branch-retire'
+grep -q 'repo vcs sync-main' <<<"$repo_help"
+grep -q 'repo vcs worktree-abandon' <<<"$repo_help"
+grep -q 'repo vcs branch-retire' <<<"$repo_help"
 # mhugo/dotfiles#13: sync-main must report local-only commits with a
 # divergence report naming each commit's sha/author/subject, and the
 # recovery block must point to worktree-create + converge-main. The

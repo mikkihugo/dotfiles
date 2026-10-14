@@ -22,6 +22,7 @@
     fzf # fuzzy finder (piped into other tools or used standalone)
     zoxide # smarter cd (frecency-based, `z` alias)
     delta # git diff pager (side-by-side, syntax highlight)
+    diffstat # per-file histogram of a unified diff
     jq # JSON query and transform
     yq-go # Mike Farah yq v4; repo validators rely on eval/ea and -o=json
     btop # process/resource monitor (replaces htop)

@@ -42,10 +42,8 @@ question without leaving the terminal.
 | `mise-auto-update.timer` | 24h | mise | (toolchain) | auto-update | Refreshes `mise` runtime shims to the latest pinned toolchain |
 | `long-term-cleanup.timer` | weekly (Sun 04:00) | nix | long-term cache | cleanup | Weekly Nix-managed long-term cache cleanup (Sunday 04:00) |
 | `nix-index-update.timer` | weekly | nix | (file index) | update | Weekly Nix-generated file-index update |
-| `engine-worktree-cleanup.timer` | daily 04:40 | engine | worktree | cleanup | Retires stale `singularity-engine` jj task workspaces via `repo vcs workspace-reconcile` |
-
-> Note: `budget-autofix-watchdog` and `engine-worktree-cleanup` were
-> not given new names; both already convey the scope + subject + verb.
+> Note: repository workspace reconciliation is owned by the NixOS operator's
+> templated `workspace-janitor` service in `/srv/infra`, not Home Manager.
 
 > Coverage caveat: a row in this table is **documentation**, not runtime
 > truth. Two user unit-files (`nix-index-update.timer`, `long-term-cleanup.timer`)
@@ -80,10 +78,9 @@ Each is a 1-line change in the corresponding unit file or `.nix` source:
 | `nix-gc-sweep.timer` | `nix-gc-roots-sweep-daily.timer` |
 | `engine-default-refresh.timer` | `engine-default-branch-refresh-half-hourly.timer` |
 | `engine-workspace-reconcile.timer` | `engine-workspace-reconcile-daily.timer` |
-| `engine-worktree-cleanup.timer` | `engine-worktree-cleanup-daily.timer` |
 | `purpose-first-audit.timer` | `purpose-first-drift-audit-daily.timer` |
 | `jcode-session-cleanup.timer` | `jcode-session-prune-daily.timer` |
-| `jcode-workspace-janitor.timer` | `jcode-workspace-janitor-half-hourly.timer` |
+| `workspace-janitor.timer` | `workspace-janitor-half-hourly.timer` |
 | `jcode-swarm-auto-deploy.timer` | `jcode-swarm-auto-deploy-quarter-hourly.timer` |
 | `jcode-swarm-fleet-watchdog.timer` | `jcode-swarm-fleet-watchdog-five-minutely.timer` |
 | `budget-autofix-watchdog.timer` | `budget-autofix-watchdog-twenty-minutely.timer` |

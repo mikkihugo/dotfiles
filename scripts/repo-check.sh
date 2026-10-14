@@ -84,7 +84,6 @@ main() {
 	python3 "$root/scripts/test-jcode-preferences.py"
 	python3 "$root/scripts/test-merge-authorized-keys.py"
 	bash "$root/scripts/test-nix-gate-script-coverage.sh"
-	bash "$root/scripts/test-engine-worktree-cleanup.sh"
 	bash "$root/scripts/test-sccache-profile-scope.sh"
 	bash "$root/scripts/test-language-cache-layout.sh"
 	bash "$root/scripts/test-codex-rollout-gc.sh"

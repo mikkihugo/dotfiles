@@ -27,6 +27,11 @@ cd "$cwd" 2>/dev/null || true
 
 model=$(json_get '.model.display_name')
 
+# These are deliberately tiny local probes. The statusline serves its cached
+# value immediately and refreshes out of band, so they never block rendering.
+load_1m=$(awk '{print $1}' /proc/loadavg 2>/dev/null || true)
+disk_free=$(df -P -h / 2>/dev/null | awk 'NR == 2 {print $4}' || true)
+
 DIM=$'\033[2m'
 RST=$'\033[0m'
 CYAN=$'\033[36m'
@@ -49,7 +54,10 @@ done
 
 # No repo facade here -> render the plain prompt and stop.
 if [ -z "$repo_bin" ]; then
-	printf '%s%s%s %s%s%s' "$DIM" "${model:-claude}" "$RST" "$DIM" "$(basename "$cwd")" "$RST"
+	line=$(printf '%s%s%s %s%s%s' "$DIM" "${model:-claude}" "$RST" "$DIM" "$(basename "$cwd")" "$RST")
+	[ -n "$load_1m" ] && line="$line ${DIM}│${RST} load:${load_1m}"
+	[ -n "$disk_free" ] && line="$line ${DIM}│${RST} free:${disk_free}"
+	printf '%s' "$line"
 	exit 0
 fi
 
@@ -112,6 +120,8 @@ tree=$("$repo_bin" vcs tree-id @ 2>/dev/null | tr -d '\n' | cut -c1-12)
 
 line="${DIM}${model:-claude}${RST}"
 line="${line} ${DIM}│${RST} ${CYAN}${change}${RST} ${state}"
+[ -n "$load_1m" ] && line="${line} ${DIM}│${RST} load:${load_1m}"
+[ -n "$disk_free" ] && line="${line} ${DIM}│${RST} free:${disk_free}"
 [ -n "$bookmark" ] && line="${line} ${DIM}│${RST} ${MAG}${bookmark}${RST}"
 [ -n "$ws" ] && line="${line} ${DIM}│${RST} ${DIM}ws:${RST}${ws}"
 [ -n "$tree" ] && line="${line} ${DIM}│${RST} ${DIM}tree:${tree}${RST}"

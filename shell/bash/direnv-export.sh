@@ -347,8 +347,18 @@ fi
 # Canonical read-only Engine observation tree: fleet v2 prewarm + .envrc
 # agent_direnv_try_shared_dump are authoritative. Do not publish a parallel
 # per-agent dump here; still honor an existing hit, otherwise one direnv export.
+# This branch returns before the nested-root guard further down. direnv's own
+# bash sources BASH_ENV, so a marker has to be set and honored here or every
+# export starts another `timeout 15s direnv export bash`.
 _direnv_canonical_engine_ro="/home/mhugo/code/singularity-engine"
 if [ "$_direnv_root" = "$_direnv_canonical_engine_ro" ]; then
+	if [ "${AGENT_DIRENV_EXPORT_TRIED_ROOT:-}" = "$_direnv_root" ]; then
+		_direnv_cleanup
+		export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
+		return 0
+	fi
+	export AGENT_DIRENV_EXPORT_TRIED=1
+	export AGENT_DIRENV_EXPORT_TRIED_ROOT="$_direnv_root"
 	if command -v sha256sum >/dev/null 2>&1; then
 		_direnv_cache_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv"
 		_direnv_key=$(_direnv_cache_key "$_direnv_root")

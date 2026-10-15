@@ -1,0 +1,17 @@
+{
+  "source": "repository-vcs-facade",
+  "change_id": "2026-10-15-wezterm-direct-devbox",
+  "files": [
+    "config/wezterm/wezterm.lua",
+    "docs/work/2026-10-15-wezterm-direct-devbox/README.md",
+    "docs/work/2026-10-15-wezterm-direct-devbox/current-spec.snapshot.json",
+    "docs/work/2026-10-15-wezterm-direct-devbox/purpose.contract.json",
+    "docs/work/2026-10-15-wezterm-direct-devbox/work.spec.json",
+    "docs/work/2026-10-15-wezterm-direct-devbox/evidence.bundle.json",
+    "docs/work/2026-10-15-wezterm-direct-devbox/evidence/changed-files.json",
+    "docs/work/2026-10-15-wezterm-direct-devbox/evidence/green-proof.txt",
+    "docs/work/2026-10-15-wezterm-direct-devbox/evidence/red-proof.txt",
+    "docs/work/2026-10-15-wezterm-direct-devbox/evidence/red-result.json",
+    "docs/work/2026-10-15-wezterm-direct-devbox/evidence/result.json"
+  ]
+}

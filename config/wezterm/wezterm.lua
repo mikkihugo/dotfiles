@@ -1,6 +1,8 @@
 local wezterm = require("wezterm")
 local act = wezterm.action
 local config = wezterm.config_builder()
+local IS_WINDOWS = wezterm.target_triple:match("windows") ~= nil
+local LOCAL_SHELL = os.getenv("SHELL") or "/bin/sh"
 
 -- IBM Big Orange — Scandinavian edition
 -- Carbon Orange 40 (#FF832B) is the only accent. Carbon Gray 50 (#8D8D8D) for dim.
@@ -34,50 +36,31 @@ local c = {
 	tab_inactive= "#262626",
 }
 
--- ── Vega tmux helper ──────────────────────────────────────────────────────────
--- Ensure Tailscale is up, then SSH to vega and attach/create a named tmux
--- session. `tmux new -A -s NAME` attaches if NAME exists, otherwise creates
--- it — so sessions persist on vega across wezterm restarts, reboots, drops.
-local function vega_tmux(session, cwd)
-	local tmux_cmd
-	if cwd then
-		tmux_cmd = string.format("tmux new -A -s %s -c %s", session, cwd)
-	else
-		tmux_cmd = string.format("tmux new -A -s %s", session)
-	end
-	return {
-		"powershell.exe", "-NoProfile", "-NoLogo", "-Command",
-		string.format([[
-			$ts = 'C:\Program Files\Tailscale\tailscale.exe';
-			& $ts status *> $null;
-			if ($LASTEXITCODE -ne 0) { & $ts up | Out-Null };
-			& ssh.exe -t mhugo@vega.ts.hugo.dk '%s'
-		]], tmux_cmd),
-	}
-end
-
--- Persistent tabs spawned on every wezterm launch.
--- { tmux_session_name, optional_starting_cwd_on_first_create }
-local PERSISTENT_TABS = {
-	{ "vega" },                -- general shell, ~ on vega
-	{ "root",    "/" },        -- root filesystem view
-	{ "space",   "~" },        -- scratch space
-	{ "work",    "~/code" },   -- work dir
+-- Direct resilient connection to the devbox's native WezTerm multiplexer.
+-- The Windows GUI connects here; the remote mux server keeps its tabs and
+-- panes alive across client disconnects without a shell-session wrapper.
+config.ssh_domains = {
+	{
+		name = "devbox",
+		remote_address = "cc-se-sto-devbox-01.centralcloud.com",
+		username = "mhugo",
+		multiplexing = "WezTerm",
+		remote_wezterm_path = "/home/mhugo/.local/bin/wezterm",
+		ssh_option = {
+			identityfile = wezterm.home_dir .. "/.ssh/personal_admin_id_ed25519",
+		},
+	},
 }
 
--- On GUI startup, open one tab per persistent session and attach.
-wezterm.on("gui-startup", function(cmd)
-	-- If wezterm was invoked with CLI args (e.g. `wezterm ssh host`), let it
-	-- handle that itself and don't double-spawn our 4-tab window.
-	if cmd and cmd.args and #cmd.args > 0 then return end
-	local first = PERSISTENT_TABS[1]
-	local _, _, window = wezterm.mux.spawn_window { args = vega_tmux(first[1], first[2]) }
-	for i = 2, #PERSISTENT_TABS do
-		local t = PERSISTENT_TABS[i]
-		window:spawn_tab { args = vega_tmux(t[1], t[2]) }
-	end
-	window:gui_window():maximize()
-end)
+-- Start the Windows client directly in the remote mux.  The Linux-side
+-- config is also used by the remote mux server, so never set this there or it
+-- would recursively try to connect back to itself.
+if IS_WINDOWS then
+	config.default_gui_startup_args = { "connect", "devbox" }
+	config.default_domain = "devbox"
+else
+	config.default_domain = "local"
+end
 
 -- ── Font ──────────────────────────────────────────────────────────────────────
 config.font = wezterm.font_with_fallback({
@@ -203,7 +186,7 @@ wezterm.on("format-window-title", function(tab, _pane, _tabs, _panes, _config)
 	return tab.active_pane.title
 end)
 
--- Right status: orange "vega" + day/time, with powerline arrows.
+-- Right status: orange "devbox" + day/time, with powerline arrows.
 local ARROW_LEFT = wezterm.nerdfonts.pl_right_hard_divider  --
 wezterm.on("update-right-status", function(window, _pane)
 	local time_bg, time_fg = c.bg_panel, c.fg
@@ -220,7 +203,7 @@ wezterm.on("update-right-status", function(window, _pane)
 		{ Background = { Color = c.orange } },
 		{ Foreground = { Color = c.tab_active_fg } },
 		{ Attribute = { Intensity = "Bold" } },
-		{ Text = "  vega " },
+		{ Text = "  devbox " },
 	})
 end)
 
@@ -235,27 +218,30 @@ config.scrollback_lines             = 50000
 config.enable_scroll_bar            = false
 
 -- ── Bell ──────────────────────────────────────────────────────────────────────
--- Silent. Claude Code emits BEL on task completion; health-alarm on vega
--- uses OSC 9 desktop notifications instead, so neither flashes the window.
+-- Silent. Claude Code emits BEL on task completion; neither flashes the window.
 config.audible_bell                 = "Disabled"
 
 -- ── Launch menu ───────────────────────────────────────────────────────────────
--- Dropdown next to the "+" tab button. First entry is the default for new tabs.
-config.launch_menu = {
-	{ label = "vega scratch (tmux)", args = vega_tmux("scratch") },
-	{ label = "vega root  (tmux)",   args = vega_tmux("root", "/") },
-	{ label = "vega work  (tmux)",   args = vega_tmux("work", "~/code") },
-	{ label = "WSL ~/code",           args = { "wsl.exe", "bash", "-l", "-c", "cd ~/code && exec bash" } },
-	{ label = "WSL ~",                args = { "wsl.exe", "bash", "-l" } },
-	{ label = "PowerShell",           args = { "pwsh.exe" } },
-}
--- Initial startup window prog (used only if gui-startup handler doesn't fire).
-config.default_prog = vega_tmux("scratch")
+-- The Windows client exposes the devbox mux; Linux is the remote mux host and
+-- uses its own login shell.
+if IS_WINDOWS then
+	config.launch_menu = {
+		{ label = "devbox mux", domain = { DomainName = "devbox" } },
+	}
+else
+	config.launch_menu = {
+		{ label = "shell", args = { LOCAL_SHELL, "-l" } },
+	}
+	config.default_prog = { LOCAL_SHELL, "-l" }
+end
 
 -- ── Keys ──────────────────────────────────────────────────────────────────────
 config.keys = {
-	-- Ctrl+Shift+T → vega tmux 'scratch' (override default which would spawn pwsh).
-	{ key = "t", mods = "CTRL|SHIFT", action = act.SpawnCommandInNewTab { args = vega_tmux("scratch") } },
+	-- Ctrl+Shift+T → a new tab in the devbox mux on Windows, current domain
+	-- on Linux (where this same file is read by the remote mux server).
+	{ key = "t", mods = "CTRL|SHIFT", action = act.SpawnCommandInNewTab {
+		domain = IS_WINDOWS and { DomainName = "devbox" } or "CurrentPaneDomain",
+	} },
 	-- Ctrl+Shift+L → launcher menu (lets you pick a session or local shell).
 	{ key = "l", mods = "CTRL|SHIFT", action = act.ShowLauncherArgs({ flags = "LAUNCH_MENU_ITEMS|TABS|WORKSPACES" }) },
 

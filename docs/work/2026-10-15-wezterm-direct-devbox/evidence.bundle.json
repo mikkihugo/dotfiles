@@ -1,0 +1,34 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-10-15-wezterm-direct-devbox-evidence",
+  "workspec_id": "2026-10-15-wezterm-direct-devbox-work",
+  "purpose_contract_id": "2026-10-15-wezterm-direct-devbox-purpose",
+  "purpose_subject_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "d0dfda15e80fce4b995c44fb0f9da237832ba192142d285fdd3507d4c6d0797c"},
+  "workspec_subject_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "4867e07c5a48d8c897167238fe0749fa0c40775133e98074b0dea310ea8abfef"},
+  "workflow_run_id": "2026-10-15-wezterm-direct-devbox-run-2",
+  "execution": {
+    "execution_id": "2026-10-15-wezterm-direct-devbox-execution-2",
+    "tool": {"id": "codex-session", "version": "2026-10-15"},
+    "result": {"result_id": "2026-10-15-wezterm-direct-devbox-result", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "160f49ae05f2c9c105c4fabb6b3d7bb77370b7fafd32d3d98be8b1d527e4f6ab"}},
+    "artifacts": [
+      {"artifact_id": "2026-10-15-wezterm-direct-devbox-result-artifact", "uri": "evidence/result.json", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "160f49ae05f2c9c105c4fabb6b3d7bb77370b7fafd32d3d98be8b1d527e4f6ab"}},
+      {"artifact_id": "2026-10-15-wezterm-direct-devbox-changed-files", "uri": "evidence/changed-files.json", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "64ea26b313fb7fc3c3d4401d6e2660a636d14dab0081933e05dc1c8dec31b469"}},
+      {"artifact_id": "2026-10-15-wezterm-direct-devbox-red-result-artifact", "uri": "evidence/red-result.json", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "1c01cca1dcdb8f2011df95a31ffccfff11bc2e60e39bb112ef0f92be87191d7d"}}
+    ]
+  },
+  "trace": {"trace_id": "2026-10-15-wezterm-direct-devbox-trace-2", "started_at": "2026-10-15T16:15:47Z", "completed_at": "2026-10-15T16:18:08Z"},
+  "tests": [
+    {"id": "T1", "requirement_id": "R1", "status": "passed", "description": "The corrected source removes the stale launcher, selects the devbox native mux, parses on Linux, reaches the remote binary, and builds the Home Manager activation package.", "result_id": "2026-10-15-wezterm-direct-devbox-result", "artifact_ids": ["2026-10-15-wezterm-direct-devbox-result-artifact", "2026-10-15-wezterm-direct-devbox-red-result-artifact", "2026-10-15-wezterm-direct-devbox-changed-files"], "output_uri": "evidence/result.json", "red_proof": {"artifact_id": "2026-10-15-wezterm-direct-devbox-red-result-artifact", "result_id": "2026-10-15-wezterm-direct-devbox-red-result", "output_uri": "evidence/red-result.json", "observed_at": "2026-10-15T16:15:47Z"}, "green_observed_at": "2026-10-15T16:18:08Z"}
+  ],
+  "gates": [
+    {"gate_id": "quality", "kind": "quality", "status": "passed", "subject_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "4867e07c5a48d8c897167238fe0749fa0c40775133e98074b0dea310ea8abfef"}, "artifact_ids": ["2026-10-15-wezterm-direct-devbox-result-artifact"], "producer": {"kind": "agent", "id": "codex-01a13feb"}, "observed_at": "2026-10-15T16:18:08Z", "rationale": "Static source assertions, Linux mux parsing, direct remote binary probe, and the activation build passed."}
+  ],
+  "runtime": {"status": "waiting_human", "changed_file_manifest": {"source": "repository-vcs-facade", "artifact_id": "2026-10-15-wezterm-direct-devbox-changed-files", "digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "64ea26b313fb7fc3c3d4401d6e2660a636d14dab0081933e05dc1c8dec31b469"}, "files": ["config/wezterm/wezterm.lua", "docs/work/2026-10-15-wezterm-direct-devbox/README.md", "docs/work/2026-10-15-wezterm-direct-devbox/current-spec.snapshot.json", "docs/work/2026-10-15-wezterm-direct-devbox/purpose.contract.json", "docs/work/2026-10-15-wezterm-direct-devbox/work.spec.json", "docs/work/2026-10-15-wezterm-direct-devbox/evidence.bundle.json", "docs/work/2026-10-15-wezterm-direct-devbox/evidence/changed-files.json", "docs/work/2026-10-15-wezterm-direct-devbox/evidence/green-proof.txt", "docs/work/2026-10-15-wezterm-direct-devbox/evidence/red-proof.txt", "docs/work/2026-10-15-wezterm-direct-devbox/evidence/red-result.json", "docs/work/2026-10-15-wezterm-direct-devbox/evidence/result.json"]}},
+  "falsifier": {"executed": true, "status": "not_disproved", "evidence": "The stale-launcher absence proof, source assertions, Linux parser, remote binary probe, and activation build passed; the Windows GUI attach remains unverified on this headless host.", "output_uri": "evidence/result.json"},
+  "contract_preserved": {"status": true, "scope_drift": false, "requirement_drift": false, "review_required": false},
+  "reconciliation": {"status": "reconciled", "snapshot_digest": {"algorithm": "sha256", "canonicalization": "raw-bytes", "value": "283594964eb9f2c6f4949b1ec1fbb8620c4dfa0c971d6b53f03bae8658773cf2"}, "delta_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "29c0a3c44fc9fc03c2d828a5a7b523428f50ad7061741edb7f809b04000cd980"}, "derived_requirement_set_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "dcab4dfa5032a9cdfd62121b84e161f6be8fee0bf3aa8384e36a2adf11179fd2"}, "witness_artifact_id": "2026-10-15-wezterm-direct-devbox-result-artifact"},
+  "reviews": [],
+  "breaker_witnesses": [
+    {"breaker_id": "B1", "requirement_id": "R1", "status": "passed", "witness_kind": "contract-test", "observed_outcome": "rejected", "artifact_id": "2026-10-15-wezterm-direct-devbox-result-artifact", "subject_digest": {"algorithm": "sha256", "canonicalization": "engine-json-v1", "value": "4867e07c5a48d8c897167238fe0749fa0c40775133e98074b0dea310ea8abfef"}, "observed_at": "2026-10-15T16:18:08Z", "rationale": "The stale-launcher absence assertion failed against the baseline VCS diff before the corrected source was verified."}
+  ]
+}

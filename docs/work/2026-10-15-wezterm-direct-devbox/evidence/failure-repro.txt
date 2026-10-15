@@ -1,0 +1,14 @@
+source: user-reported runtime error
+
+Observed:
+
+  Process "powershell.exe ..." in domain "local" did not exit cleanly.
+  WezTerm reported: "Unable to spawn powershell.exe" and "No viable
+  candidates found in PATH".  The reported PATH began with
+  /home/mhugo/.local/bin and contained Linux/Nix paths, not Windows paths.
+
+Root-cause boundary:
+
+  The active Linux-side WezTerm configuration invokes the Windows-only
+  powershell.exe startup command.  The Windows-native config file cannot
+  change that Linux-side startup behavior.

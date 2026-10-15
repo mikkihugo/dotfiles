@@ -1,0 +1,6 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-10-15-wezterm-direct-devbox-current-spec",
+  "source": {"uri": "repository://current-spec", "revision": "operator-correction-1"},
+  "requirements": []
+}

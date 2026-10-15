@@ -1,0 +1,8 @@
+{
+  "result_id": "2026-10-15-wezterm-direct-devbox-red-result",
+  "status": "failed",
+  "observed_at": "2026-10-15T16:15:47Z",
+  "command": "! (repo vcs diff -- config/wezterm/wezterm.lua | rg -n '^-[^-].*(powershell\\.exe|vega_tmux|vega\\.ts\\.hugo\\.dk|tmux)')",
+  "observed": "The absence assertion exited 1 because the VCS diff contained the removed baseline launcher lines: vega_tmux, powershell.exe, the Vega SSH endpoint, and tmux new commands.",
+  "falsifier": "The baseline VCS diff contains none of those removed launcher lines."
+}

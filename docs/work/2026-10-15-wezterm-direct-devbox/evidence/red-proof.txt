@@ -1,0 +1,11 @@
+RED proof, before correction
+
+Command:
+  ! rg -n 'powershell\\.exe|vega_tmux|vega\\.ts\\.hugo\\.dk|tmux new' config/wezterm/wezterm.lua
+
+Observed result:
+  exit 1 because the baseline source contained the obsolete vega_tmux helper,
+  powershell.exe, the Vega SSH endpoint, and tmux new -A startup commands.
+
+This is the reported failure boundary: the Linux-side PATH cannot resolve the
+Windows-only powershell.exe launcher.

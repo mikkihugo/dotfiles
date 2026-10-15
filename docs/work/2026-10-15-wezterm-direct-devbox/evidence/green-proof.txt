@@ -1,0 +1,31 @@
+GREEN proof, 2026-10-15
+
+1. JSON syntax:
+   jq empty docs/work/2026-10-15-wezterm-direct-devbox/*.json
+   result: pass
+
+2. Focused source assertions:
+   result: pass; devbox domain, WezTerm multiplexing, remote binary path,
+   Windows connect devbox startup, and no obsolete launcher references.
+   observed_at: 2026-10-15T16:18:08Z
+
+3. Direct endpoint:
+   ssh -o BatchMode=yes -o ConnectTimeout=10 cc-se-sto-devbox-01.centralcloud.com \
+     'test "$(hostname)" = cc-se-sto-devbox-01 && \
+      test "$(command -v wezterm)" = /home/mhugo/.local/bin/wezterm && \
+      wezterm --version'
+   result: pass; wezterm 20240203-110809-5046fc22
+
+4. Linux mux parser:
+   timeout 3s /home/mhugo/.local/bin/wezterm-mux-server \
+     --config-file config/wezterm/wezterm.lua
+   result: pass; process reached the timeout with no parse/config error.
+
+5. Home Manager activation build:
+   nix build --no-link path:/home/mhugo/.dotfiles-worktrees/wez-direct-devbox-20261015#homeConfigurations.cc-se-sto-devbox-01.activationPackage
+   result: pass; /nix/store/dzhz30yj066krazw0pdl50q1jha19hy5-home-manager-generation
+
+6. Client GUI:
+   not runnable on this headless devbox; the installed local GUI binary lacks
+   libxcb-image.so.0. Windows-side `wezterm connect devbox` remains the final
+   client test.

@@ -1,0 +1,15 @@
+{
+  "change_id": "2026-10-15-wezterm-direct-devbox",
+  "status": "verified_pending_client_gui",
+  "checks": [
+    {"id": "red_baseline", "status": "failed", "command": "! (repo vcs diff -- config/wezterm/wezterm.lua | rg -n '^-[^-].*(powershell\\.exe|vega_tmux|vega\\.ts\\.hugo\\.dk|tmux)')", "observed": "exit 1; the baseline diff contained the removed stale launcher lines", "artifact": "evidence/red-result.json"},
+    {"id": "json", "status": "passed", "command": "jq empty docs/work/2026-10-15-wezterm-direct-devbox/*.json"},
+    {"id": "source", "status": "passed", "command": "focused assertions over config/wezterm/wezterm.lua", "observed": "devbox domain, WezTerm multiplexing, remote binary path, Windows connect devbox startup, and no obsolete launcher references"},
+    {"id": "mux_parser", "status": "passed", "command": "timeout 3s /home/mhugo/.local/bin/wezterm-mux-server --config-file config/wezterm/wezterm.lua", "observed": "process reached timeout with no parse/config error"},
+    {"id": "ssh", "status": "passed", "command": "ssh -o BatchMode=yes -o ConnectTimeout=10 cc-se-sto-devbox-01.centralcloud.com 'test hostname and remote wezterm path; wezterm --version'", "observed": "remote=cc-se-sto-devbox-01; /home/mhugo/.local/bin/wezterm; wezterm 20240203-110809-5046fc22"},
+    {"id": "activation", "status": "passed", "command": "nix build --no-link --print-out-paths path:/home/mhugo/.dotfiles-worktrees/wez-direct-devbox-20261015#homeConfigurations.cc-se-sto-devbox-01.activationPackage", "observed": "/nix/store/dzhz30yj066krazw0pdl50q1jha19hy5-home-manager-generation"},
+    {"id": "repo_check", "status": "failed_unrelated", "command": "repo check", "observed": "One pre-existing stable-shell test failed: ordinary non-interactive shells enter direnv once with a bounded wait; 22/24 stable-shell tests passed (1 skipped) and 76/76 other node tests passed."},
+    {"id": "client_gui", "status": "pending", "reason": "The current headless devbox lacks the local GUI libraries required by its WezTerm binary; Windows-side connect devbox remains unverified."}
+  ],
+  "falsifier": "A Windows client-side `wezterm connect devbox` fails to load the managed config or cannot attach to the remote WezTerm mux."
+}

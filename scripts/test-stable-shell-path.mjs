@@ -54,7 +54,11 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
   assert.match(loader, /\${#_direnv_diff_snapshot}" -gt 65536/);
   assert.match(loader, /agent-direnv/);
   assert.doesNotMatch(loader, /timeout 90s direnv export/);
-  assert.doesNotMatch(loader, /else[\s\S]+direnv export bash/);
+  const executableLoader = loader
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("#"))
+    .join("\n");
+  assert.doesNotMatch(executableLoader, /else[\s\S]+direnv export bash/);
   assert.doesNotMatch(
     homeModule,
     /type _load_sops_secrets[^\n]+_load_sops_secrets/,

@@ -9,6 +9,13 @@ test("Home Manager imports the Tabby terminal module without replacing WezTerm",
   assert.match(home, /\.\/modules\/wezterm\.nix/);
 });
 
+test("native Windows WezTerm is not projected through a WSL path", async () => {
+  const module = await readFile("home/modules/wezterm.nix", "utf8");
+
+  assert.match(module, /Native Windows/);
+  assert.doesNotMatch(module, /home\.file\."\/mnt\/c/);
+});
+
 test("Eugeny Tabby is hash-pinned without installing the unrelated TabbyML server", async () => {
   const module = await readFile("home/modules/tabby.nix", "utf8");
   const config = await readFile("config/tabby/config.yaml", "utf8");

@@ -47,7 +47,9 @@ config.ssh_domains = {
 		multiplexing = "WezTerm",
 		remote_wezterm_path = "/home/mhugo/.local/bin/wezterm",
 		ssh_option = {
-			identityfile = wezterm.home_dir .. "/.ssh/personal_admin_id_ed25519",
+			identityfile = wezterm.home_dir .. (IS_WINDOWS
+				and "/.ssh/id_ed25519"
+				or "/.ssh/personal_admin_id_ed25519"),
 		},
 	},
 }

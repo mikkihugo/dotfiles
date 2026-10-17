@@ -62,7 +62,7 @@ Host cc-fi-hel-k3s-04 cc-fi-hel-k3s-04.centralcloud.net cc-fi-hel-k3s-04.hugo.dk
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host cc-de-fsn-k3s-02 cc-de-fsn-k3s-02.centralcloud.net cc-de-fsn-k3s-02.centralcloud.com betelgeuse betelgeuse.hugo.dk
+Host cc-de-fsn-k3s-02 cc-de-fsn-k3s-02.centralcloud.net cc-de-fsn-k3s-02.centralcloud.com
     HostName 178.104.218.38
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
@@ -121,7 +121,7 @@ Host cc-se-sto-core-01 cc-se-sto-core-01.centralcloud.net cc-se-sto-core-01.cent
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host cc-de-nue-k3s-02 cc-de-nue-k3s-02.centralcloud.net cc-de-nue-k3s-02.centralcloud.com nue3 nue03 cc-de-nue-k3s-03 cc-de-nue-k3s-03.centralcloud.net
+Host cc-de-nue-k3s-02 cc-de-nue-k3s-02.centralcloud.net cc-de-nue-k3s-02.centralcloud.com
     HostName 159.195.138.16
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
@@ -156,14 +156,14 @@ Host wf.portal.centralcloud.com
 
 # Disaster Central project (cc-*) — use the hetzner-dr-repo key.
 # These are the cc-fi-hel-core-01 / cc-de-fsn-core-01 boxes used for DR.
-# fi1/de1 are the Hetzner-side names; cc-* are the k3s node names.
-Host cc-fi-hel-core-01 cc-fi-hel-core-01.centralcloud.net cc-fi-hel-core-01.centralcloud.com fi1 fi1.centralcloud.com
+# Full cc-<cc>-<site>-<role>-NN names only; no short aliases (operator 2026-10-17).
+Host cc-fi-hel-core-01 cc-fi-hel-core-01.centralcloud.net cc-fi-hel-core-01.centralcloud.com
     HostName 204.168.217.156
     User root
     IdentityFile ~/.ssh/hetzner_id_ed25519
     IdentitiesOnly yes
 
-Host cc-de-fsn-core-01 cc-de-fsn-core-01.centralcloud.net cc-de-fsn-core-01.centralcloud.com de1 de1.centralcloud.com
+Host cc-de-fsn-core-01 cc-de-fsn-core-01.centralcloud.net cc-de-fsn-core-01.centralcloud.com
     HostName 49.13.125.237
     User root
     IdentityFile ~/.ssh/hetzner_id_ed25519

@@ -73,7 +73,12 @@
       "${homeDir}/**/coverage"
       "${homeDir}/**/result"
       "${homeDir}/**/result-*"
+      # VCS object stores are not backed up (operator 2026-10-17: "we dont need packs -
+      # i just want source docs etc"). Committed history lives on Forgejo; the working
+      # copies of every checkout and worktree are still captured as plain files.
       "${homeDir}/**/.git"
+      "${homeDir}/**/.jj"
+      "${homeDir}/**/_build"
       "${homeDir}/.antigravity-ide-server/data/logs"
       "${homeDir}/vendors"
       "${homeDir}/Downloads"
@@ -166,12 +171,12 @@
     "${homeDir}/workspaces"
     "${homeDir}/backups"
     "/srv/infra"
-    # NOTE 2026-10-10: ${homeDir}/.cache/engine-jj-git-store no longer exists (the Engine jj
-    # store's git_target is now ../../../.git, a bind mount excluded below), and borgmatic
-    # refuses to run when ANY source path is missing, so every hot-source job failed from
-    # ~2026-10-07 (last good archive 2026-10-07T15:58:49Z). Path dropped to restore the other
-    # sources. The live store (.jj/git-writable under the code source root) is NOT excluded, so
-    # it is covered via "${homeDir}/code" (verified 2026-10-10, no exclude matches it).
+    # Keep every listed path existing: borgmatic refuses to run when ANY source path is
+    # missing (the dropped ${homeDir}/.cache/engine-jj-git-store broke every hot-source job
+    # from ~2026-10-07 until 2026-10-10).
+    # Scope (operator 2026-10-17): working-copy source and docs of every checkout and
+    # worktree only - no VCS object stores (.git/.jj packs) and no build output. Committed
+    # history is recoverable from Forgejo; what only exists here is the working tree.
   ];
   hotSourceExcludes = [
     # regex, not **/.cache: a fm/sh glob also excludes a source root that lives under .cache (the engine jj store below)
@@ -189,9 +194,11 @@
     "**/.terraform"
     "**/result"
     "**/result-*"
-    # engine canonical checkout: .git is a bind mount of .jj/git-writable (same inode,
-    # 26883090), so every cycle walked that ~47 GB twice. The jj store is the kept copy.
-    "${homeDir}/code/singularity-engine/.git"
+    "**/_build"
+    # VCS object stores (packs): not wanted. This also drops the ~47 GB Engine jj store
+    # (code/singularity-engine/.jj) and its .git bind mount, which every cycle used to walk.
+    "**/.git"
+    "**/.jj"
     # superseded engine stores: the broken 2026-09-03 store, and the one-off
     # pre-repair copy that the repair it predates already replaced.
     "${homeDir}/code/singularity-engine/.jj.broken-20260903"
@@ -205,7 +212,9 @@
     source_directories = hotSourceDirectories;
     repositories = [
       {
-        path = "${lib.removeSuffix "/${backupHost}" target.path}/hot-source-v2/${backupHost}";
+        # v3 (2026-10-17): fresh repository for the source-only scope. hot-source-v2 still
+        # holds archives with VCS packs; delete it once v3 has verified archives on both sites.
+        path = "${lib.removeSuffix "/${backupHost}" target.path}/hot-source-v3/${backupHost}";
         label = "hot-source-${name}";
         make_parent_directories = true;
       }

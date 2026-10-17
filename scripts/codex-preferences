@@ -199,7 +199,27 @@ def apply(args) -> None:
                 output.append(f"{key} = {toml_value(picked[key])}")
                 seen_section[name].add(key)
 
+    open_delim = None
+    skip_body = False
+
+    def opened_multiline(line):
+        """Return the triple-quote delimiter a key line leaves open, if any."""
+        value = line.split("=", 1)[1].lstrip() if "=" in line else ""
+        for delim in ('"""', "'''"):
+            if value.startswith(delim) and value[3:].count(delim) == 0:
+                return delim
+        return None
+
     for line in original:
+        if open_delim is not None:
+            # Inside a multi-line string: never parse its body as keys or
+            # sections; drop it when its key was replaced by a managed value.
+            if not skip_body:
+                output.append(line)
+            if open_delim in line:
+                open_delim = None
+                skip_body = False
+            continue
         section_match = section_header.match(line)
         if section_match:
             flush_section(section)
@@ -219,12 +239,15 @@ def apply(args) -> None:
             key = match.group(1)
             output.append(f"{key} = {toml_value(prefs[key])}")
             seen.add(key)
+            open_delim, skip_body = opened_multiline(line), True
         elif section in section_prefs and match and match.group(1) in section_prefs[section]:
             key = match.group(1)
             output.append(f"{key} = {toml_value(section_prefs[section][key])}")
             seen_section[section].add(key)
+            open_delim, skip_body = opened_multiline(line), True
         else:
             output.append(line)
+            open_delim, skip_body = (opened_multiline(line) if match else None), False
 
     flush_section(section)
 
@@ -251,7 +274,12 @@ def apply(args) -> None:
             output.append("")
         output.extend(render_agent_section(name, values))
 
-    target.write_text("\n".join(output).rstrip() + "\n")
+    rendered = "\n".join(output).rstrip() + "\n"
+    try:
+        tomllib.loads(rendered)
+    except tomllib.TOMLDecodeError as err:
+        raise SystemExit(f"codex-preferences: refusing to write unparsable {target}: {err}")
+    target.write_text(rendered)
 
 
 def main() -> None:

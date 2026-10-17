@@ -70,6 +70,39 @@ class CodexPreferencesTest(unittest.TestCase):
             self.assertEqual(parsed["agents"]["user_specialist"]["config_file"], "keep-user-specialist.toml")
 
 
+    def test_apply_replaces_multiline_live_value_without_leaving_its_body(self) -> None:
+        # 2026-10-17: apply rewrote only the `key = """` line of a multi-line
+        # live value and kept its body, leaving config.toml unparsable.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            shared = root / "shared.toml"
+            live = root / "config.toml"
+            shared.write_text('developer_instructions = "New rules.\\n"\n')
+            live.write_text(
+                'model = "gpt-5.5"\n'
+                'developer_instructions = """Old rules.\n'
+                'key = "looks like toml but is string body"\n'
+                '[not.a.section]\n'
+                '"""\n'
+                'web_search = "live"\n'
+                "notes = '''literal\n"
+                "body'''\n"
+            )
+
+            subprocess.run(
+                [
+                    str(SCRIPT), "apply", "--source", str(shared), "--target", str(live),
+                    "--backbone", str(root / "no-backbone.md"),
+                ],
+                check=True,
+            )
+
+            parsed = tomllib.loads(live.read_text())
+            self.assertEqual(parsed["developer_instructions"], "New rules.\n")
+            self.assertEqual(parsed["web_search"], "live")
+            self.assertEqual(parsed["notes"], "literal\nbody")
+            self.assertNotIn("not", parsed)
+
     def test_managed_defaults_match_operator_settings(self):
         for name in ("config.toml", "shared-preferences.toml"):
             data = tomllib.loads((SCRIPT.parents[1] / "config/codex" / name).read_text())

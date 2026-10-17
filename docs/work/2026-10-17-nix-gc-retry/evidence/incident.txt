@@ -1,0 +1,8 @@
+Oct 17 04:42:01 cc-se-sto-devbox-01 9slf0g832gqjkkvvbj93y4xbzq1lrypw-nix-gc-sweep[174279]: error:
+Oct 17 04:42:01 cc-se-sto-devbox-01 9slf0g832gqjkkvvbj93y4xbzq1lrypw-nix-gc-sweep[174279]:        … While deleting garbage in store directory "/nix/store/tmp-173965-3979955482"
+Oct 17 04:42:01 cc-se-sto-devbox-01 9slf0g832gqjkkvvbj93y4xbzq1lrypw-nix-gc-sweep[174279]:        error: opening directory "/nix/store/tmp-173965-3979955482/x/pulumi/sdks/netcup-scp/node_modules/@types/node/assert": No such file or directory
+Oct 17 04:42:01 cc-se-sto-devbox-01 9slf0g832gqjkkvvbj93y4xbzq1lrypw-nix-gc-sweep[174279]: 0 store paths deleted, 0.0 KiB freed
+Oct 17 04:42:01 cc-se-sto-devbox-01 systemd[1871]: nix-gc-sweep.service: Main process exited, code=exited, status=1/FAILURE
+Oct 17 04:42:01 cc-se-sto-devbox-01 systemd[1871]: nix-gc-sweep.service: Failed with result 'exit-code'.
+Oct 17 04:42:01 cc-se-sto-devbox-01 systemd[1871]: Failed to start Prune stale nix-direnv gc roots and reclaim Nix store space.
+Oct 17 04:42:01 cc-se-sto-devbox-01 systemd[1871]: nix-gc-sweep.service: Consumed 3min 8.984s CPU time over 10min 32.887s wall clock time, 6.6G memory peak, 140K memory swap peak.

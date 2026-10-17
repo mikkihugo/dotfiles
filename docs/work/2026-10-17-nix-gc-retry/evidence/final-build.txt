@@ -1,0 +1,1 @@
+/nix/store/xacqrv5whpc1jwmfmy3d1x6i2hqr9p72-home-manager-generation

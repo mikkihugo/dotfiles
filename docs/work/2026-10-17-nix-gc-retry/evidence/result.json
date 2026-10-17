@@ -1,0 +1,7 @@
+{
+  "result_id": "2026-10-17-nix-gc-retry-result",
+  "status": "passed",
+  "observed_at": "2026-10-17T14:05:55.172Z",
+  "command": "bash scripts/test-nix-gc-sweep.sh",
+  "output": "PASS recover: status=0 attempts=3\nPASS success: status=0 attempts=1\nPASS other: status=42 attempts=1\nPASS missing: status=43 attempts=1\nPASS mixed: status=44 attempts=1\nPASS exhausted: status=44 attempts=3\n"
+}

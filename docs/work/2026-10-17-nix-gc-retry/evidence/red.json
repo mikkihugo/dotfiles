@@ -1,0 +1,7 @@
+{
+  "result_id": "2026-10-17-nix-gc-retry-red",
+  "status": "failed",
+  "observed_at": "2026-10-17T14:03:10.288Z",
+  "command": "bash scripts/test-nix-gc-sweep.sh",
+  "output": "FAIL recover: status=44 expected=0\n       error: opening directory \"/nix/store/tmp-173965-3979955482/x/assert\": No such file or directory\n"
+}

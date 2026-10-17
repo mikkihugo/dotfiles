@@ -1,0 +1,149 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-10-17-nix-gc-retry-work",
+  "purpose_contract_id": "2026-10-17-nix-gc-retry",
+  "handover": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  },
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-10-17-nix-gc-retry",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-10-17-nix-gc-retry-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "77e0b594ddc7c47420f888dc24dd4d009a18c17674f38d1fde2a1a17d66cedc5"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "Retry step 3 only for vanished /nix/store/tmp-* paths, at most three total attempts with backoff; propagate other errors immediately and exhausted retries as failures.",
+        "acceptance_criteria": [
+          "validate_work passes with requireEvidence=false before implementation",
+          "validate_work passes with requireEvidence=true after implementation"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "nix-gc-sweep",
+            "response": "Retry step 3 only for vanished /nix/store/tmp-* paths, at most three total attempts with backoff; propagate other errors immediately and exhausted retries as failures."
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "validation accepts an implementation without the promised behavior",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "Retry step 3 only for vanished /nix/store/tmp-* paths, at most three total attempts with backoff; propagate other errors immediately and exhausted retries as failures.",
+      "acceptance_criteria": [
+        "validate_work passes with requireEvidence=false before implementation",
+        "validate_work passes with requireEvidence=true after implementation"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "nix-gc-sweep",
+          "response": "Retry step 3 only for vanished /nix/store/tmp-* paths, at most three total attempts with backoff; propagate other errors immediately and exhausted retries as failures."
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "validation accepts an implementation without the promised behavior",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "home/modules/nix-gc-sweep.nix",
+      "scripts/test-nix-gc-sweep.sh",
+      "scripts/repo-check.sh",
+      "docs/work/2026-10-17-nix-gc-retry/**"
+    ],
+    "blocked": [],
+    "expected_files": []
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Contract test for the promised behavior.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "bash scripts/test-nix-gc-sweep.sh",
+      "repo check",
+      "hms",
+      "systemctl --user show nix-gc-sweep.service -p ExecStart"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": false,
+    "approval_required": true,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-10-17-nix-gc-retry",
+    "target_planes": [
+      "engine"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "unspecified",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

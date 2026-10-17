@@ -1,0 +1,25 @@
+{
+  "source": "repository-vcs-facade",
+  "files": [
+    "docs/work/2026-10-17-nix-gc-retry/current-spec.snapshot.json",
+    "docs/work/2026-10-17-nix-gc-retry/evidence.bundle.json",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/changed-files.json",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/final-build.txt",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/green.txt",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/incident.txt",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/multiline-red.txt",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/preflight.json",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/red.json",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/red.txt",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/repo-check.txt",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/result.json",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/review.json",
+    "docs/work/2026-10-17-nix-gc-retry/evidence/vcs-status.txt",
+    "docs/work/2026-10-17-nix-gc-retry/purpose.contract.json",
+    "docs/work/2026-10-17-nix-gc-retry/validation.report.json",
+    "docs/work/2026-10-17-nix-gc-retry/work.spec.json",
+    "home/modules/nix-gc-sweep.nix",
+    "scripts/repo-check.sh",
+    "scripts/test-nix-gc-sweep.sh"
+  ]
+}

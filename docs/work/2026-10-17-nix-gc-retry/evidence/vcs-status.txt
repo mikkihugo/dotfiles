@@ -1,0 +1,4 @@
+ M home/modules/nix-gc-sweep.nix
+ M scripts/repo-check.sh
+?? docs/work/2026-10-17-nix-gc-retry/
+?? scripts/test-nix-gc-sweep.sh

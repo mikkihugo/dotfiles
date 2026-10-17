@@ -97,10 +97,35 @@
     run "$GC_BIN" --apply --deep-scan --min-age-days 7
 
     # Step 3: reclaim store space for closures no other live root references.
-    run ${pkgs.util-linux}/bin/flock \
-      --wait 900 \
-      /run/user/1000/codex-fleet-nix-evaluation.lock \
-      ${pkgs.nix}/bin/nix-collect-garbage --delete-older-than 1d
+    # Retry only Nix's concurrent-build tmp-path disappearance (infra#2059).
+    # Other diagnostics and an exhausted third attempt remain fatal.
+    gc_attempt=1
+    while true; do
+      gc_errors="$(mktemp)"
+      if run ${pkgs.util-linux}/bin/flock \
+        --wait 900 \
+        /run/user/1000/codex-fleet-nix-evaluation.lock \
+        ${pkgs.nix}/bin/nix-collect-garbage --delete-older-than 1d 2>"$gc_errors"; then
+        cat "$gc_errors" >&2
+        rm -f "$gc_errors"
+        break
+      else
+        gc_status=$?
+      fi
+      cat "$gc_errors" >&2
+      # Nix emits a bare error: trace header; reject other error messages.
+      vanished_error='^[[:space:]]*error: .*"/nix/store/tmp-[^"]*": No such file or directory$'
+      if [[ "$gc_attempt" -ge 3 ]] ||
+        ! grep -Eq "$vanished_error" "$gc_errors" ||
+        grep -E '^[[:space:]]*error:[[:space:]]*[^[:space:]]' "$gc_errors" | grep -Ev "$vanished_error" >/dev/null; then
+        rm -f "$gc_errors"
+        exit "$gc_status"
+      fi
+      rm -f "$gc_errors"
+      echo "$LOG_PREFIX vanished temporary store path; retry after ''${gc_attempt}s (attempt $((gc_attempt + 1))/3)" >&2
+      sleep "$gc_attempt"
+      gc_attempt=$((gc_attempt + 1))
+    done
 
     # Step 4: rebuild canonical direnv profiles and Engine repo-vcs shared generation.
     if [[ "$DRY_RUN" = "1" ]]; then

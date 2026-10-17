@@ -1,0 +1,242 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-10-17-nix-gc-retry-evidence",
+  "workspec_id": "2026-10-17-nix-gc-retry-work",
+  "purpose_contract_id": "2026-10-17-nix-gc-retry",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "b771c77a64ca63b18f8ebbe81b0a07f77aa9dcc4581d65884f9705043d696629"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "engine-json-v1",
+    "value": "8d86d2d64d367e712c58a65eefe381f97bb4daf6f196b8b701c970f5c0fb39f8"
+  },
+  "workflow_run_id": "2026-10-17-nix-gc-retry-run",
+  "execution": {
+    "execution_id": "2026-10-17-nix-gc-retry-execution",
+    "tool": {
+      "id": "purpose-validate-work",
+      "version": "0.6.172"
+    },
+    "result": {
+      "result_id": "2026-10-17-nix-gc-retry-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "4e3dfc6752ac58a43da8d3726a58359c18fc2ebcf7bc640fca9935f27bfd1edb"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "2026-10-17-nix-gc-retry-evidence-artifact",
+        "uri": "evidence/result.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "4e3dfc6752ac58a43da8d3726a58359c18fc2ebcf7bc640fca9935f27bfd1edb"
+        }
+      },
+      {
+        "artifact_id": "2026-10-17-nix-gc-retry-changed-files",
+        "uri": "evidence/changed-files.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "d64d68ed4bc391b42531889e4b4705ab62717c70f2997a25e0c8528ad9bb1748"
+        }
+      },
+      {
+        "artifact_id": "red",
+        "uri": "evidence/red.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "e70e366498df5baf74f105279c6d1331d00968bb95e83950287fc43a8f097776"
+        }
+      },
+      {
+        "artifact_id": "repo-check.txt",
+        "uri": "evidence/repo-check.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "93ab6dbf93e0a649a134aaeb95cd7e0eb05c229368a1228f7ae0447d3d51cce8"
+        }
+      },
+      {
+        "artifact_id": "incident.txt",
+        "uri": "evidence/incident.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "88aa46bb23ab150c2e7c3ca3e71fc3c4000418a9d6fa02a4bc7bb024f81a6417"
+        }
+      },
+      {
+        "artifact_id": "multiline-red.txt",
+        "uri": "evidence/multiline-red.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f12253c433f17a5a46ae10107e57bd0afe02bb2a1938de2e5c4f7ea5bf00d150"
+        }
+      },
+      {
+        "artifact_id": "green.txt",
+        "uri": "evidence/green.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "28f650eca5ab4c6393c1745bb317f62aa8b344f110e6e5a32062722782e8cf68"
+        }
+      },
+      {
+        "artifact_id": "review.json",
+        "uri": "evidence/review.json",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "f36f5c5f35b95ca46995161669aa89d827b656316967c2fddd0943f9ed8be455"
+        }
+      },
+      {
+        "artifact_id": "final-build.txt",
+        "uri": "evidence/final-build.txt",
+        "digest": {
+          "algorithm": "sha256",
+          "canonicalization": "raw-bytes",
+          "value": "d61b8e58b341f623b8f7e60faccbe9ab3334f17b042344fb71c62252a604d9d3"
+        }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-10-17-nix-gc-retry-trace",
+    "started_at": "2026-10-17T14:05:55.172Z",
+    "completed_at": "2026-10-17T14:05:55.172Z"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Contract test for R1",
+      "result_id": "2026-10-17-nix-gc-retry-result",
+      "artifact_ids": [
+        "2026-10-17-nix-gc-retry-evidence-artifact"
+      ],
+      "output_uri": "evidence/result.json",
+      "green_observed_at": "2026-10-17T14:05:55.172Z",
+      "red_proof": {
+        "artifact_id": "red",
+        "result_id": "2026-10-17-nix-gc-retry-red",
+        "output_uri": "evidence/red.json",
+        "observed_at": "2026-10-17T14:03:10.288Z"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "8d86d2d64d367e712c58a65eefe381f97bb4daf6f196b8b701c970f5c0fb39f8"
+      },
+      "artifact_ids": [
+        "repo-check.txt"
+      ],
+      "producer": {
+        "kind": "service",
+        "id": "purpose-validate-work"
+      },
+      "observed_at": "2026-10-17T14:05:55.172Z",
+      "rationale": "repo check exited 0; focused retry test and full Home Manager profile build passed."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "2026-10-17-nix-gc-retry-changed-files",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "d64d68ed4bc391b42531889e4b4705ab62717c70f2997a25e0c8528ad9bb1748"
+      },
+      "files": [
+        "docs/work/2026-10-17-nix-gc-retry/current-spec.snapshot.json",
+        "docs/work/2026-10-17-nix-gc-retry/evidence.bundle.json",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/changed-files.json",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/final-build.txt",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/green.txt",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/incident.txt",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/multiline-red.txt",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/preflight.json",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/red.json",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/red.txt",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/repo-check.txt",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/result.json",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/review.json",
+        "docs/work/2026-10-17-nix-gc-retry/evidence/vcs-status.txt",
+        "docs/work/2026-10-17-nix-gc-retry/purpose.contract.json",
+        "docs/work/2026-10-17-nix-gc-retry/validation.report.json",
+        "docs/work/2026-10-17-nix-gc-retry/work.spec.json",
+        "home/modules/nix-gc-sweep.nix",
+        "scripts/repo-check.sh",
+        "scripts/test-nix-gc-sweep.sh"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "The declared falsifier was executed and did not disprove the contract.",
+    "output_uri": "evidence/result.json"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "77e0b594ddc7c47420f888dc24dd4d009a18c17674f38d1fde2a1a17d66cedc5"
+    },
+    "delta_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "2e9cf6fd8f946483853a473c5bfad639a6ce13ab611982cf86a65543a2562e70"
+    },
+    "derived_requirement_set_digest": {
+      "algorithm": "sha256",
+      "canonicalization": "engine-json-v1",
+      "value": "8456f76a53dd96a221ca622156de9635bd19a3e762dc1344639d4fb7d422e00b"
+    },
+    "witness_artifact_id": "2026-10-17-nix-gc-retry-evidence-artifact"
+  },
+  "reviews": [],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "2026-10-17-nix-gc-retry-evidence-artifact",
+      "subject_digest": {
+        "algorithm": "sha256",
+        "canonicalization": "engine-json-v1",
+        "value": "8d86d2d64d367e712c58a65eefe381f97bb4daf6f196b8b701c970f5c0fb39f8"
+      },
+      "observed_at": "2026-10-17T14:05:55.172Z"
+    }
+  ]
+}

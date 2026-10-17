@@ -1,0 +1,4 @@
+FAIL recover: status=44 expected=0
+error:
+       … While deleting garbage in store directory "/nix/store/tmp-173965-3979955482"
+       error: opening directory "/nix/store/tmp-173965-3979955482/x/assert": No such file or directory

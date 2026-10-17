@@ -1,0 +1,6 @@
+PASS recover: status=0 attempts=3
+PASS success: status=0 attempts=1
+PASS other: status=42 attempts=1
+PASS missing: status=43 attempts=1
+PASS mixed: status=44 attempts=1
+PASS exhausted: status=44 attempts=3

@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Conservatively synchronize ordinary Git checkouts under ~/code.
+
+Purpose contract: docs/work/checkout-sync/purpose.contract.json
+What tests should verify: clean strict-behind trees advance; unsafe trees do not.
+"""
+import datetime as dt
+import json
+import os
+import subprocess
+from pathlib import Path
+
+
+HOME = Path(os.environ.get("HOME", str(Path.home())))
+GIT = os.environ.get("GIT_BIN", "git")
+STATE = Path(os.environ.get("CHECKOUT_SYNC_STATUS", HOME / ".local/state/checkout-sync/status.json"))
+
+
+def run(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run([GIT, "-C", str(repo), *args], text=True, capture_output=True, check=check)
+
+
+def candidates():
+    roots = [HOME / "code", HOME / "code/worktrees"]
+    seen = set()
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for path in sorted(root.iterdir()):
+            if path in seen or not path.is_dir() or path == HOME / "code/worktrees":
+                continue
+            seen.add(path)
+            if path == HOME / "code/singularity-engine" or path == Path("/srv/infra"):
+                continue
+            if (path / ".jj").exists() or not (path / ".git").exists():
+                continue
+            yield path
+
+
+def warning(action: str) -> bool:
+    return action in {"dirty", "unique-local-commits", "fetch-failed", "not-a-branch"}
+
+
+def notify(path: Path, action: str):
+    if os.environ.get("CHECKOUT_SYNC_NO_COORD") == "1":
+        return
+    engine = HOME / "code/singularity-engine"
+    cmd = ["repo", "coord", "post", "--type", "blocker", "--recipient", "claude-fbe0939f",
+           "--body", f"checkout-sync: {path} remains {action}; manual review required"]
+    try:
+        subprocess.run(cmd, cwd=engine, env={**os.environ, "SE_SWARM_IDENTITY": os.environ.get("SE_SWARM_IDENTITY", "codex-01a14a62")},
+                       check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError:
+        pass
+
+
+def inspect(path: Path, today: str, warned: dict) -> dict:
+    row = {"path": str(path), "action": "up-to-date", "ahead": 0, "behind": 0}
+    try:
+        upstream = run(path, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}").stdout.strip()
+    except subprocess.CalledProcessError:
+        row["action"] = "no-upstream"
+        return row
+    try:
+        run(path, "fetch", "--quiet")
+        counts = run(path, "rev-list", "--left-right", "--count", f"HEAD...{upstream}").stdout.split()
+        ahead, behind = map(int, counts)
+        row.update(ahead=ahead, behind=behind)
+        dirty = bool(run(path, "status", "--porcelain").stdout.strip())
+        if dirty:
+            row["action"] = "dirty"
+        elif behind == 0 and ahead == 0:
+            row["action"] = "up-to-date"
+        elif ahead == 0:
+            run(path, "merge", "--ff-only", upstream)
+            row["action"] = "fast-forwarded"
+        else:
+            cherry = [line[0] for line in run(path, "cherry", upstream, "HEAD").stdout.splitlines() if line]
+            if cherry and all(mark == "-" for mark in cherry) and behind > 0:
+                branch = run(path, "symbolic-ref", "--short", "HEAD").stdout.strip().replace("/", "-")
+                stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d")
+                run(path, "update-ref", f"refs/backup/{branch}-{stamp}", "HEAD")
+                # Equivalent patches have divergent commit IDs, so an ff-only
+                # merge cannot move the ref. The backup ref makes this reset
+                # reversible while landing exactly on the fetched upstream.
+                run(path, "reset", "--hard", upstream)
+                row["action"] = "stale-but-safe"
+            else:
+                row["action"] = "unique-local-commits"
+    except subprocess.CalledProcessError:
+        row["action"] = "fetch-failed"
+    if warning(row["action"]):
+        key = str(path)
+        if warned.get(key) != today:
+            notify(path, row["action"])
+            warned[key] = today
+    return row
+
+
+def main():
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
+    previous = {}
+    if STATE.exists():
+        try:
+            previous = json.loads(STATE.read_text()).get("warning_dates", {})
+        except (OSError, ValueError):
+            previous = {}
+    rows = [inspect(path, today, previous) for path in candidates()]
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    STATE.write_text(json.dumps({"generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                                 "checkouts": rows, "warning_dates": previous}, indent=2) + "\n")
+
+
+if __name__ == "__main__":
+    main()

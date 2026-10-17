@@ -1,0 +1,19 @@
+{
+  "changeId": "checkout-sync",
+  "origin": "operator report: local checkouts silently stale",
+  "objective": "Keep safe clean Git checkouts current on a deterministic 15-minute cadence.",
+  "need": "Operators need visibility and safe fast-forwarding without touching local work.",
+  "authority": "Mikael (operator)",
+  "purpose": "Synchronize ordinary local checkouts while preserving unsafe work.",
+  "consumer": "Home Manager user service and operators reading status.json/coordination warnings.",
+  "contract": "Fetch upstreams; fast-forward clean strict-behind trees; backup and advance equivalent-patch stale trees; never mutate dirty or unique-local trees; record every result.",
+  "failureBoundary": "A checkout-level failure is recorded and isolated; other checkouts continue.",
+  "evidence": ["scripts/test-checkout-sync.sh", "systemctl --user is-active checkout-sync.timer", "CHECKOUT_SYNC_STATUS=... scripts/checkout-sync"],
+  "falsifier": "Fixture shows a dirty or unique-local checkout changed, or status omits a discovered checkout.",
+  "nonGoals": ["jj-managed repositories", "srv/infra", "singularity-engine", "rebasing, deleting, or resolving conflicts"],
+  "invariants": ["No force push", "No deletion", "One warning per checkout per UTC day", "depth-one discovery only"],
+  "assumptions": [
+    {"statement": "Git upstream metadata is available through @{u}.", "doubt": 1, "falsifier": "Fixture checkout with configured upstream is reported no-upstream."},
+    {"statement": "repo coord can be invoked from singularity-engine.", "doubt": 1, "falsifier": "A live warning command exits non-zero or cannot resolve repo."}
+  ]
+}

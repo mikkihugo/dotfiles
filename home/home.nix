@@ -56,6 +56,7 @@ in {
     ./modules/ops-tools.nix
     ./modules/nix-index.nix
     ./modules/dotfiles-auto-update.nix
+    ./modules/checkout-sync.nix
     ./modules/codex-managed-daemon.nix
     ./modules/sshid-key-sync.nix
     ./modules/mise-auto-update.nix

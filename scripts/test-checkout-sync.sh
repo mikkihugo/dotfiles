@@ -47,6 +47,7 @@ git -C "$HOME/code/unique-commits" commit --allow-empty -qm unique
 
 git_init "$tmp/dirty.git" "$HOME/code/dirty"
 printf '%s\n' dirty >>"$HOME/code/dirty/file"
+ln -s "$HOME/code/dirty" "$HOME/code/worktrees/dirty-alias"
 
 mkdir -p "$HOME/code/jj-skip/.git" "$HOME/code/jj-skip/.jj"
 
@@ -61,6 +62,8 @@ assert by[next(p for p in by if p.endswith('/diverged-but-upstream'))]["action"]
 assert by[next(p for p in by if p.endswith('/unique-commits'))]["action"] == "unique-local-commits"
 assert by[next(p for p in by if p.endswith('/dirty'))]["action"] == "dirty"
 assert not any(p.endswith('/jj-skip') for p in by)
+warning_dates = json.load(open(sys.argv[1]))["warning_dates"]
+assert not any(key.endswith('/dirty-alias') for key in warning_dates), warning_dates
 PY
 
 echo "checkout sync fixture: ok"

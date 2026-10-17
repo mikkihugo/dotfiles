@@ -90,7 +90,10 @@ def inspect(path: Path, today: str, warned: dict) -> dict:
     except subprocess.CalledProcessError:
         row["action"] = "fetch-failed"
     if warning(row["action"]):
-        key = str(path)
+        # Symlinked checkout aliases can be discovered under both roots; use
+        # the canonical path so one checkout receives at most one warning per
+        # UTC day while preserving the displayed discovery path in each row.
+        key = str(path.resolve())
         if warned.get(key) != today:
             notify(path, row["action"])
             warned[key] = today

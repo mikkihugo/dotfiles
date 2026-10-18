@@ -8,11 +8,14 @@
 # Four steps run on every sweep:
 #   1. nix-direnv-gc --apply                    (worktree .direnv including leftover flake-inputs, jcode-cache, direnv layouts)
 #   2. nix-direnv-gc --apply --deep-scan        (filesystem-wide sweep, 7d floor)
-#   3. nix-collect-garbage --delete-older-than 1d  (reclaim store space)
+#   3. start the system nix-gc.service           (the devbox's only collector; reclaims store space)
 #   4. nix-gc-reprovision                       (warm canonical dev shells + Engine repo-vcs generation store)
 #
-# Step 4 also runs after the standalone `nix-gc.service` (weekly `nix-collect-garbage -d`)
-# via OnSuccess, so timers do not have to wait for the daily sweep.
+# This module runs no collector itself: hosts/cc-se-sto-devbox-01/AGENTS.md:352-363
+# allows only the system nix-gc and nix-generation-prune, because nix-gc holds the
+# cold-eval lock that keeps it from deleting drvs a running eval still needs.
+# (Before 2026-10-18 step 3 ran nix-collect-garbage on the stale
+# codex-fleet-nix-evaluation.lock and a user nix-gc.service ran `-d`; infra#2340.)
 #
 # Leftover `.direnv/flake-inputs/` dirs are always prune candidates: the
 # flake-profile already keeps the built shell. Recursing into those dirs is
@@ -21,7 +24,7 @@
 # The 7d floor in step 2 protects active primaries (canonical jcode, active
 # singularity-engine / infra worktrees) — anything younger than 7d is left
 # alone. The 1d grace in step 3 gives running processes time to release
-# closures that step 1 or 2 just orphaned.
+# closures that step 1 or 2 just orphaned (nix-gc's --delete-older-than 1d).
 {pkgs, ...}: let
   canonicalDevRoots = [
     "/home/mhugo/code/singularity-engine"
@@ -96,36 +99,14 @@
     # sees; anything older is fair game.
     run "$GC_BIN" --apply --deep-scan --min-age-days 7
 
-    # Step 3: reclaim store space for closures no other live root references.
-    # Retry only Nix's concurrent-build tmp-path disappearance (infra#2059).
-    # Other diagnostics and an exhausted third attempt remain fatal.
-    gc_attempt=1
-    while true; do
-      gc_errors="$(mktemp)"
-      if run ${pkgs.util-linux}/bin/flock \
-        --wait 900 \
-        /run/user/1000/codex-fleet-nix-evaluation.lock \
-        ${pkgs.nix}/bin/nix-collect-garbage --delete-older-than 1d 2>"$gc_errors"; then
-        cat "$gc_errors" >&2
-        rm -f "$gc_errors"
-        break
-      else
-        gc_status=$?
-      fi
-      cat "$gc_errors" >&2
-      # Nix emits a bare error: trace header; reject other error messages.
-      vanished_error='^[[:space:]]*error: .*"/nix/store/tmp-[^"]*": No such file or directory$'
-      if [[ "$gc_attempt" -ge 3 ]] ||
-        ! grep -Eq "$vanished_error" "$gc_errors" ||
-        grep -E '^[[:space:]]*error:[[:space:]]*[^[:space:]]' "$gc_errors" | grep -Ev "$vanished_error" >/dev/null; then
-        rm -f "$gc_errors"
-        exit "$gc_status"
-      fi
-      rm -f "$gc_errors"
-      echo "$LOG_PREFIX vanished temporary store path; retry after ''${gc_attempt}s (attempt $((gc_attempt + 1))/3)" >&2
-      sleep "$gc_attempt"
-      gc_attempt=$((gc_attempt + 1))
-    done
+    # Step 3: reclaim store space through the system collector. nix-gc takes
+    # the cold-eval lock and is the only allowed collector on this host; never
+    # collect from here. --no-block: the sweep does not wait for the GC.
+    if [[ "$DRY_RUN" = "1" ]]; then
+      echo "$LOG_PREFIX (dry-run) would run: sudo -n systemctl start --no-block nix-gc.service" >&2
+    else
+      run /run/wrappers/bin/sudo -n /run/current-system/sw/bin/systemctl start --no-block nix-gc.service
+    fi
 
     # Step 4: rebuild canonical direnv profiles and Engine repo-vcs shared generation.
     if [[ "$DRY_RUN" = "1" ]]; then
@@ -154,26 +135,9 @@ in {
       };
     };
 
-    # Replaces the static ~/.config/systemd/user/nix-gc.service on switch so
-    # weekly `nix-collect-garbage -d` also triggers reprovision.
-    nix-gc = {
-      Unit = {
-        Description = "Nix Garbage Collector";
-        Documentation = ["man:nix-collect-garbage(1)"];
-        OnSuccess = ["nix-gc-reprovision.service"];
-        X-SwitchMethod = "keep-old";
-      };
-      Service = {
-        Type = "oneshot";
-        ExecStart = "${pkgs.nix}/bin/nix-collect-garbage -d";
-        StandardOutput = "journal";
-        StandardError = "journal";
-      };
-    };
-
     nix-gc-sweep = {
       Unit = {
-        Description = "Prune stale nix-direnv gc roots and reclaim Nix store space";
+        Description = "Prune stale nix-direnv gc roots, then start the system nix-gc";
         Documentation = "file:///home/mhugo/code/nix-direnv-gc/README.md";
         X-SwitchMethod = "keep-old";
       };

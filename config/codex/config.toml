@@ -47,7 +47,7 @@ and integration diagnosis; Sol or Astra only for architecture, adversarial
 review, or unresolved doubt of 2 or higher. Never silently use the default
 model for delegated work.
 """
-web_search = "disabled"
+web_search = "live"
 sandbox_mode = "danger-full-access"
 approval_policy = "never"
 suppress_unstable_features_warning = true

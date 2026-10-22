@@ -65,37 +65,24 @@
       force = true;
     };
 
-    ".copilot/copilot-instructions.md" = {
-      source = ../../config/copilot/copilot-instructions.md;
-      force = true;
-    };
-
+    # ~/.copilot/copilot-instructions.md is intentionally NOT HM-symlinked:
+    # Copilot writes its global custom instructions into this file, so a
+    # read-only store symlink breaks in-client edits. Seeded as a mutable file
+    # by seedMutableCopilotConfig in activation.nix (same pattern as goose).
+    #
     # Custom /agent definitions for the interactive CLI (`/agent [name]`).
     # The .agent.md format is the user-defined-agent surface; the YAML
     # frontmatter declares name/description/model/tools, the body is the
     # agent's system prompt. NOT the same surface as the built-in
     # `task` tool's `agent_type` (those system prompts live in the CLI
     # binary). See config/copilot/agents/README.md for the split.
-    ".copilot/agents/balanced.agent.md" = {
-      source = ../../config/copilot/agents/balanced.agent.md;
-      force = true;
-    };
-    ".copilot/agents/cheap-explore.agent.md" = {
-      source = ../../config/copilot/agents/cheap-explore.agent.md;
-      force = true;
-    };
-    ".copilot/agents/tri-lane.agent.md" = {
-      source = ../../config/copilot/agents/tri-lane.agent.md;
-      force = true;
-    };
-    ".copilot/agents/task-prompts.md" = {
-      source = ../../config/copilot/agents/task-prompts.md;
-      force = true;
-    };
-    ".copilot/agents/README.md" = {
-      source = ../../config/copilot/agents/README.md;
-      force = true;
-    };
+    #
+    # All ~/.copilot content (settings.json, copilot-instructions.md, and
+    # these agents/*.md) is intentionally NOT HM-symlinked: the Copilot CLI
+    # may rewrite any of them in place, and a read-only nix-store symlink
+    # makes in-client edits fail. Every path below is seeded as a mutable
+    # file by seedMutableCopilotConfig in activation.nix (same pattern as
+    # goose config.yaml). Do not re-add them to home.file.
 
     # goose config.yaml is intentionally NOT HM-symlinked: goose writes
     # telemetry consent and other prefs into it. Seeded/merged in activation.nix.
@@ -175,10 +162,10 @@
       force = true;
     };
 
-    ".copilot/settings.json" = {
-      source = ../../config/copilot/settings.json;
-      force = true;
-    };
+    # ~/.copilot/settings.json is intentionally NOT HM-symlinked: Copilot
+    # persists its own user settings into this file, so a read-only store
+    # symlink blocks in-client setting changes. Seeded as a mutable file by
+    # seedMutableCopilotConfig in activation.nix (same pattern as goose).
 
     ".factory/droids/worker.md" = {
       source = ../../config/factory/droids/worker.md;

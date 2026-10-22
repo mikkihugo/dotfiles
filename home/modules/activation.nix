@@ -132,6 +132,42 @@ in {
       fi
     '';
 
+    # Seed ~/.copilot as mutable files so the Copilot CLI can persist its own
+    # settings, global instructions, and /agent definitions in place. Home
+    # Manager store symlinks are read-only (root-owned, on a read-only /nix/store),
+    # so any in-client write to them fails. These paths are therefore excluded
+    # from home.file in files.nix and seeded here instead, following the same
+    # mutable-config pattern as seedMutableCodexConfig and goose config.yaml.
+    #
+    # Convergent and non-destructive: an existing regular file is left untouched
+    # so client-written edits survive activation; a stale store symlink or a
+    # missing file is (re)seeded from the dotfiles source of truth.
+    seedMutableCopilotConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      mkdir -p "$HOME/.copilot/agents"
+      for entry in \
+        "settings.json|${../../config/copilot/settings.json}" \
+        "copilot-instructions.md|${../../config/copilot/copilot-instructions.md}" \
+        "agents/balanced.agent.md|${../../config/copilot/agents/balanced.agent.md}" \
+        "agents/cheap-explore.agent.md|${../../config/copilot/agents/cheap-explore.agent.md}" \
+        "agents/tri-lane.agent.md|${../../config/copilot/agents/tri-lane.agent.md}" \
+        "agents/task-prompts.md|${../../config/copilot/agents/task-prompts.md}" \
+        "agents/README.md|${../../config/copilot/agents/README.md}"
+      do
+        rel="''${entry%%|*}"
+        src="''${entry#*|}"
+        dest="$HOME/.copilot/$rel"
+        if [ -L "$dest" ] || [ ! -e "$dest" ]; then
+          if [ -f "$src" ]; then
+            ${pkgs.coreutils}/bin/rm -f "$dest"
+            ${pkgs.coreutils}/bin/cp "$src" "$dest"
+            ${pkgs.coreutils}/bin/chmod u+rw "$dest"
+          else
+            echo "WARNING: copilot seed source missing for $rel: $src" >&2
+          fi
+        fi
+      done
+    '';
+
     removeRetiredCodexAgentRoles = lib.hm.dag.entryAfter ["writeBoundary"] ''
       # ~/.codex/agents is auto-loaded by Codex, independently of [agents] in
       # config.toml. Retire the former gateway roles so opaque Responses items

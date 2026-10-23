@@ -349,7 +349,12 @@ in {
     # it helps; naming the branch and dirty-file count is enough to stop an
     # operator deploying the wrong tree by accident while still letting a
     # deliberate build-from-WIP proceed.
-    hms = ''( branch="$(git -C "$HOME/.dotfiles" rev-parse --abbrev-ref HEAD 2>/dev/null)"; dirty="$(git -C "$HOME/.dotfiles" status --porcelain 2>/dev/null | wc -l)"; if [ "$branch" != main ] || [ "$dirty" -ne 0 ]; then echo "hms: WARNING $HOME/.dotfiles is on branch=$branch dirty=$dirty (not a clean main checkout) -- building and deploying this tree as-is, not landed main" >&2; fi ); nh home switch "$HOME/.dotfiles" -c "$("$HOME/.dotfiles/scripts/current-home-profile")"'';
+    #
+    # The warning is best-effort: agent and non-interactive shells can have git
+    # replaced by the agent-vcs-refuse shim (exit 126). That must not be read as
+    # "clean main", so the checkout state is reported as unknown and the switch
+    # proceeds -- this check never gates the build.
+    hms = ''( branch="$(git -C "$HOME/.dotfiles" rev-parse --abbrev-ref HEAD 2>/dev/null)"; case "$branch" in ""|HEAD) branch="unknown (git unavailable or detached)" ;; esac; dirty="$(git -C "$HOME/.dotfiles" status --porcelain 2>/dev/null | wc -l)"; if [ "$branch" != main ] || [ "$dirty" -ne 0 ]; then echo "hms: WARNING $HOME/.dotfiles is on branch=$branch dirty=$dirty (not a clean main checkout) -- building and deploying this tree as-is, not landed main" >&2; fi ); nh home switch "$HOME/.dotfiles" -c "$("$HOME/.dotfiles/scripts/current-home-profile")"'';
     # Standard home-manager subcommand aliases. Same wrapper as hms.
     hmn = "nh home news";
     hmp = "nh home packages";

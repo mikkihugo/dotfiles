@@ -43,7 +43,6 @@ in {
     ./modules/tmux.nix
     ./modules/git.nix
     ./modules/stable-shell.nix
-    ./modules/jcode-gc.nix
     ./modules/nix-gc-sweep.nix
     ./modules/reap-abandoned-searches.nix
     ./modules/home-emergency-backup.nix

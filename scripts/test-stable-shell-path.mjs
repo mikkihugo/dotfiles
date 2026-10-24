@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, readFile, rm, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import test from "node:test";
 
 test("stable shell preserves the caller PATH ahead of Home Manager defaults", async () => {
@@ -308,6 +308,94 @@ test("dump cache hit evals without direnv allow or export", async () => {
   );
 });
 
+const staleFixture = async (prefix) => {
+  const base = await mkdtemp(join(tmpdir(), prefix));
+  const repo = join(base, "repo");
+  const bin = join(base, "bin");
+  const runtime = join(base, "runtime");
+  const log = join(base, "direnv.log");
+  await Promise.all([mkdir(repo), mkdir(bin), mkdir(runtime)]);
+  await writeFile(join(repo, ".envrc"), "use flake\n");
+  await writeFile(join(repo, "flake.lock"), "gen1");
+  await mkdir(join(base, ".dotfiles/shell/bash"), { recursive: true });
+  await symlink(join(process.cwd(), "shell/bash/direnv-strip-snapshot.py"), join(base, ".dotfiles/shell/bash/direnv-strip-snapshot.py"));
+  // Each export reports the flake generation it evaluated, after an optional
+  // delay that stands in for a slow nix eval.
+  await writeFile(
+    join(bin, "direnv"),
+    `#!/bin/sh\nprintf '%s\\n' "$*" >> "$DIRENV_TEST_LOG"\nif [ "$1" = export ]; then sleep "\${DIRENV_TEST_SLEEP:-0}"; printf 'export DIRENV_TEST_GEN=%s;%s\\n' "$(cat flake.lock)" "\${DIRENV_TEST_EXTRA:-}"; fi\n`,
+    { mode: 0o755 },
+  );
+  const loader = join(process.cwd(), "shell/bash/direnv-export.sh");
+  const env = {
+    ...process.env,
+    PATH: `${bin}:${process.env.PATH}`,
+    DIRENV_TEST_LOG: log,
+    XDG_RUNTIME_DIR: runtime,
+    AGENT_DIRENV_LOADER: loader,
+    // `bash` on PATH may be the agent-shell wrapper, whose BASH_ENV sources the
+    // primary checkout's loader before this one. A scratch HOME keeps the test
+    // on the loader under test.
+    HOME: base,
+  };
+  for (const name of ["BASH_ENV", "ENV", "IN_NIX_SHELL", "DIRENV_DIR", "NIX_DIRENV_DID_FALLBACK", "AGENT_DIRENV_EXPORT_TRIED", "AGENT_DIRENV_EXPORT_TRIED_ROOT"]) {
+    delete env[name];
+  }
+  const run = (extra = {}) =>
+    new Promise((resolve) => {
+      const started = Date.now();
+      const child = spawn("bash", ["-c", '. "$1"; printf "%s" "${DIRENV_TEST_GEN:-none}"', "bash", loader], {
+        cwd: repo,
+        env: { ...env, ...extra },
+      });
+      let stdout = "";
+      child.stdout.on("data", (chunk) => (stdout += chunk));
+      // "close" waits for stdout EOF too, so an inherited pipe in the detached
+      // refresh would show up here as a slow run.
+      child.on("close", (status) => resolve({ status, stdout, ms: Date.now() - started }));
+    });
+  const exports = async () => (await readFile(log, "utf8")).split("\n").filter((line) => line === "export bash").length;
+  const dumps = async () => (await readdir(join(runtime, "agent-direnv"))).filter((name) => name.endsWith(".bash"));
+  return { repo, run, exports, dumps };
+};
+
+test("a moved flake serves the previous dump at once and refreshes once in the background", async () => {
+  const { repo, run, exports, dumps } = await staleFixture("direnv-stale-");
+
+  const cold = await run();
+  assert.equal(cold.stdout, "gen1");
+  assert.equal(await exports(), 1);
+
+  await writeFile(join(repo, "flake.lock"), "gen2");
+  const herd = await Promise.all(Array.from({ length: 10 }, () => run({ DIRENV_TEST_SLEEP: "4" })));
+  for (const shell of herd) {
+    assert.equal(shell.status, 0);
+    assert.equal(shell.stdout, "gen1", "a stale shell must get the previous generation");
+    assert.ok(shell.ms < 3000, `a stale shell must not wait for the refresh (took ${shell.ms}ms)`);
+  }
+
+  let fresh;
+  for (let i = 0; i < 75 && (fresh = await run()).stdout !== "gen2"; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  assert.equal(fresh.stdout, "gen2", "the detached refresh must publish the new generation");
+  assert.equal(await exports(), 2, "ten stale shells must start exactly one refresh");
+  assert.ok((await dumps()).length <= 2, "keep at most two generations per root");
+});
+
+test("a nix-direnv fallback export is applied but never cached", async () => {
+  const { run, exports, dumps } = await staleFixture("direnv-fallback-");
+  const fallback = { DIRENV_TEST_EXTRA: "export NIX_DIRENV_DID_FALLBACK=1" };
+
+  const first = await run(fallback);
+  assert.equal(first.stdout, "gen1", "the fallback environment still reaches the shell");
+  assert.deepEqual(await dumps(), [], "a fallback must not be published as fresh");
+
+  const second = await run();
+  assert.equal(second.stdout, "gen1");
+  assert.equal(await exports(), 2, "with no dump cached, the next shell evaluates again");
+});
+
 test("fill runs direnv allow only when the envrc proves blocked", async () => {
   // `direnv allow` rewrites the allow stamp even when it is already valid, and
   // the stamp sits in every loaded shell's watch list -- each rewrite forced a
@@ -606,6 +694,13 @@ test("dump miss drops leftover flock locks without a matching dump", async () =>
   await mkdir(cacheDir);
   await writeFile(join(repo, ".envrc"), "export KEEP_ME=1\n");
   await writeFile(join(cacheDir, "orphan.lock"), "");
+  await mkdir(join(base, ".dotfiles/shell/bash"), { recursive: true });
+  await symlink(join(process.cwd(), "shell/bash/direnv-strip-snapshot.py"), join(base, ".dotfiles/shell/bash/direnv-strip-snapshot.py"));
+  const twoHoursAgo = new Date(Date.now() - 2 * 3600 * 1000);
+  await utimes(join(cacheDir, "orphan.lock"), twoHoursAgo, twoHoursAgo);
+  // A fresh lock with no dump may belong to a fill that has opened but not yet
+  // flocked it; unlinking that lets a second fill start.
+  await writeFile(join(cacheDir, "in-flight.lock"), "");
   await writeFile(
     join(bin, "direnv"),
     `#!/bin/sh
@@ -622,6 +717,7 @@ fi
     PATH: `${bin}:${process.env.PATH}`,
     DIRENV_TEST_LOG: log,
     XDG_RUNTIME_DIR: runtime,
+    HOME: base,
   };
   delete env.BASH_ENV;
   delete env.ENV;
@@ -639,6 +735,7 @@ fi
   assert.equal(miss.stdout, "ok");
   const names = await readdir(cacheDir);
   assert.equal(names.includes("orphan.lock"), false, "orphan flock lock must be removed on miss");
+  assert.equal(names.includes("in-flight.lock"), true, "a fresh lock must survive the prune");
 });
 
 test("a dump that froze a truncated PATH cannot strip the caller's tool dirs", async () => {

@@ -90,7 +90,9 @@ _direnv_cleanup() {
 	unset _direnv_stripped _direnv_strip_helper _direnv_hdr _direnv_recorded _direnv_old _direnv_export
 	unset _direnv_slot _direnv_ticks _DIRENV_MAX_PARALLEL _DIRENV_WAIT_TICKS
 	unset _direnv_caller_path _direnv_restore_rest _direnv_restore_entry
+	unset _direnv_loader _direnv_line _direnv_kept _direnv_refresh_active _direnv_eval_wait _direnv_stale_file
 	unset -f _direnv_take_slot _direnv_await_cache 2>/dev/null || true
+	unset -f _direnv_stale_dump _direnv_refresh_detached _direnv_prune_root_generations 2>/dev/null || true
 	unset -f _direnv_restore_caller_path 2>/dev/null || true
 	unset -f _direnv_skip_enter _direnv_cleanup _direnv_envrc_root \
 		_direnv_cache_key _direnv_store_paths_exist _direnv_eval_hit _direnv_fill_cache \
@@ -265,7 +267,10 @@ _direnv_prune_dead_dumps() {
 	[ -d "$_direnv_cache_dir" ] || return 0
 	# find, not a glob: this file is sourced from zsh, and unmatched
 	# globs abort the whole Cursor zsh -c under nomatch.
-	find "$_direnv_cache_dir" -maxdepth 1 -name '.*.tmp' -type f -delete 2>/dev/null || true
+	# Only abandoned temps. A fresh one belongs to a fill whose `direnv export`
+	# is still writing it; deleting that lost the fill's output, so every miss in
+	# a herd erased its peers' work and no dump ever published.
+	find "$_direnv_cache_dir" -maxdepth 1 -name '.*.tmp' -type f -mmin +60 -delete 2>/dev/null || true
 	find "$_direnv_cache_dir" -maxdepth 1 -name '*.bash' -type f -print |
 		while IFS= read -r _direnv_old; do
 			[ -f "$_direnv_old" ] || continue
@@ -285,15 +290,38 @@ _direnv_prune_dead_dumps() {
 				;;
 			esac
 		done
-	find "$_direnv_cache_dir" -maxdepth 1 -name '*.lock' -type f -print |
+	# -mmin +60 as well: between a filler opening its lock and flocking it,
+	# flock -n below would see it unheld.
+	find "$_direnv_cache_dir" -maxdepth 1 -name '*.lock' -type f -mmin +60 -print |
 		while IFS= read -r _direnv_old; do
 			[ -f "$_direnv_old" ] || continue
 			_direnv_stem=${_direnv_old%.lock}
+			# A lock with no dump yet is also what an in-flight fill holds.
+			# Unlinking it lets the next shell lock a fresh inode and start a
+			# second evaluation of the same root, so remove only unheld locks,
+			# and unlink while holding it.
 			if [ ! -f "${_direnv_stem}.bash" ]; then
-				rm -f -- "$_direnv_old"
+				flock -n -- "$_direnv_old" rm -f -- "$_direnv_old" 2>/dev/null || true
 			fi
 		done
 	unset _direnv_old _direnv_hdr _direnv_recorded _direnv_stem
+}
+
+# Keep the newest two dumps per root: the current one plus one stale generation
+# for stale-while-revalidate. $XDG_RUNTIME_DIR is a small tmpfs.
+_direnv_prune_root_generations() {
+	find "$_direnv_cache_dir" -maxdepth 1 -name '*.bash' -type f -printf '%T@ %p\n' 2>/dev/null |
+		sort -rn |
+		while IFS= read -r _direnv_line; do
+			_direnv_old=${_direnv_line#* }
+			IFS= read -r _direnv_hdr <"$_direnv_old" || continue
+			case "$_direnv_hdr" in
+			"# agent-direnv-envrc-root:${_direnv_root}" | "# agent-direnv-root:${_direnv_root}") ;;
+			*) continue ;;
+			esac
+			_direnv_kept=$((${_direnv_kept:-0} + 1))
+			[ "$_direnv_kept" -le 2 ] || rm -f -- "$_direnv_old"
+		done
 }
 
 _direnv_fill_cache() {
@@ -307,9 +335,29 @@ _direnv_fill_cache() {
 	# `direnv allow` only after a failed export (blocked RC) -- an unconditional
 	# allow rewrites the watch-listed stamp and forces a reload on the next
 	# prompt of every interactive shell holding this root (see _direnv_do_enter).
-	if ! direnv export bash >"$_direnv_tmp" 2>/dev/null; then
+	# A foreground fill keeps the nix eval-slot wait short (direnvrc defaults to
+	# 300s, sized for detached refreshes and the direnv-instant daemon); a cold
+	# agent shell with no stale dump must not block for five minutes.
+	unset NIX_DIRENV_DID_FALLBACK
+	_direnv_eval_wait="${DIRENV_NIX_EVAL_WAIT:-20}"
+	[ "${_direnv_refresh_active:-}" != 1 ] || _direnv_eval_wait="${DIRENV_NIX_EVAL_WAIT:-300}"
+	if ! DIRENV_NIX_EVAL_WAIT=$_direnv_eval_wait direnv export bash >"$_direnv_tmp" 2>/dev/null; then
 		direnv allow . >/dev/null 2>&1 || true
-		direnv export bash >"$_direnv_tmp" 2>/dev/null || true
+		DIRENV_NIX_EVAL_WAIT=$_direnv_eval_wait direnv export bash >"$_direnv_tmp" 2>/dev/null || true
+	fi
+	unset _direnv_eval_wait
+	# nix-direnv fell back to its previous environment (eval failed, or the eval
+	# gate in direnvrc refused a slot). Publishing that under the new key would
+	# pass it off as fresh until the flake changes again: use it, never cache it.
+	if [ -s "$_direnv_tmp" ] && grep -qF 'NIX_DIRENV_DID_FALLBACK=' "$_direnv_tmp" 2>/dev/null; then
+		if [ "${_direnv_refresh_active:-}" != 1 ]; then
+			# shellcheck disable=SC1090
+			. "$_direnv_tmp" 2>/dev/null || true
+			unset DIRENV_DIFF DIRENV_WATCHES
+			_direnv_restore_caller_path
+		fi
+		rm -f -- "$_direnv_tmp"
+		return 0
 	fi
 	if [ -s "$_direnv_tmp" ]; then
 		# Byte-safe assignment strip. grep -v is a no-op or a dump-killer on
@@ -332,6 +380,7 @@ _direnv_fill_cache() {
 		rm -f -- "$_direnv_stripped"
 		chmod 0600 "$_direnv_tmp" 2>/dev/null || true
 		mv -f -- "$_direnv_tmp" "${_direnv_cache_dir}/${_direnv_key}.bash"
+		_direnv_prune_root_generations
 		_direnv_eval_hit && return 0
 	fi
 	rm -f -- "$_direnv_tmp" "$_direnv_stripped"
@@ -458,6 +507,80 @@ _direnv_await_cache() {
 	done
 	return 1
 }
+
+# Stale-while-revalidate. Operator 2026-10-24: an agent running a generation or
+# two behind is fine; an agent blocked behind a cold evaluation is not. On a miss
+# whose root still has an older dump (the flake moved on), serve the newest one
+# at once and refresh in a detached loader run. Ordering is load-bearing:
+#   - the recursion marker above is already exported, and the refresh clears it
+#     only for its own entry, so the `direnv export` it starts (which re-enters
+#     this loader through BASH_ENV) cannot fork a second refresh;
+#   - the fork happens before the stale dump is sourced, so the refresh exports
+#     from the caller's PATH, not a frozen snapshot (see the PATH note above);
+#   - the refresh takes the per-root lock and a slot non-blocking, so a herd of
+#     stale shells still starts at most one evaluation per root.
+_direnv_loader="${AGENT_DIRENV_LOADER:-$HOME/.dotfiles/shell/bash/direnv-export.sh}"
+
+# Newest same-root dump whose store paths survive GC. find -printf, not a glob:
+# zsh nomatch aborts on an empty glob.
+_direnv_stale_dump() {
+	find "$_direnv_cache_dir" -maxdepth 1 -name '*.bash' -type f -printf '%T@ %p\n' 2>/dev/null |
+		sort -rn |
+		while IFS= read -r _direnv_line; do
+			_direnv_old=${_direnv_line#* }
+			IFS= read -r _direnv_hdr <"$_direnv_old" || continue
+			case "$_direnv_hdr" in
+			"# agent-direnv-envrc-root:${_direnv_root}" | "# agent-direnv-root:${_direnv_root}") ;;
+			*) continue ;;
+			esac
+			_direnv_store_paths_exist "$_direnv_old" || continue
+			printf '%s\n' "$_direnv_old"
+			break
+		done
+}
+
+_direnv_refresh_detached() {
+	command -v setsid >/dev/null 2>&1 || return 1
+	[ -f "$_direnv_loader" ] || return 1
+	# The single quotes are intended: $1/$2 expand in the child bash.
+	# shellcheck disable=SC2016
+	AGENT_DIRENV_REFRESH=1 AGENT_DIRENV_EXPORT_TRIED_ROOT='' \
+		setsid -f bash -c 'cd "$1" && . "$2"' bash "$_direnv_root" "$_direnv_loader" \
+		</dev/null >/dev/null 2>&1
+}
+
+if [ "${AGENT_DIRENV_REFRESH:-}" = 1 ]; then
+	# Detached refresh: publish or give up quietly. Never wait, never fall back
+	# to an unbounded enter; the next stale shell retries.
+	unset AGENT_DIRENV_REFRESH
+	_direnv_refresh_active=1
+	if [ -n "$_direnv_key" ] && command -v flock >/dev/null 2>&1 && (
+		umask 077
+		: >>"$_direnv_lock"
+	) 2>/dev/null; then
+		{
+			if flock -n 9 && ! _direnv_eval_hit && _direnv_take_slot; then
+				_direnv_fill_cache || true
+				exec 8>&-
+			fi
+		} 9>>"$_direnv_lock"
+	fi
+	_direnv_cleanup
+	return 0
+fi
+
+if [ -n "$_direnv_key" ] && _direnv_stale_file=$(_direnv_stale_dump) && [ -n "$_direnv_stale_file" ]; then
+	_direnv_refresh_detached || true
+	_direnv_file=$_direnv_stale_file
+	# shellcheck disable=SC1090
+	. "$_direnv_file" 2>/dev/null || true
+	unset DIRENV_DIFF DIRENV_WATCHES _direnv_stale_file
+	_direnv_restore_caller_path
+	_direnv_cleanup
+	export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
+	return 0
+fi
+unset _direnv_stale_file
 
 if command -v flock >/dev/null 2>&1 && (
 	umask 077

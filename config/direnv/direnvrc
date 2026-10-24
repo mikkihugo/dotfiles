@@ -29,9 +29,11 @@ unset -v _nix_direnv_rc _candidate
 # root and DIRENV_NIX_EVAL_SLOTS (default 2) host-wide. On 2026-10-24 ~180
 # concurrent evaluations (83 for /srv/infra alone) piled up behind an
 # IOPS-saturated disk: none finished, so nix-direnv never wrote its cache and
-# every new shell started another — a self-feeding herd. A shell that cannot
-# get a slot within DIRENV_NIX_EVAL_WAIT seconds (default 20) fails the eval,
-# and nix-direnv falls back to the previous cached environment. flock locks
+# every new shell started another — a self-feeding herd. A shell still queued
+# after DIRENV_NIX_EVAL_NOTICE seconds (default 10) says so once and asks for
+# patience. One that cannot get a slot within DIRENV_NIX_EVAL_WAIT seconds
+# (default 300, matching direnv warn_timeout) fails the eval, and nix-direnv
+# falls back to the previous cached environment. flock locks
 # are held by an fd, so a killed eval never wedges a slot.
 if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
 	eval "_direnv_unguarded_nix() $(declare -f _nix | tail -n +2)"
@@ -41,7 +43,8 @@ if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
 			return
 		fi
 		local lock_dir="${XDG_RUNTIME_DIR:-/tmp}/direnv-nix-eval"
-		local slots="${DIRENV_NIX_EVAL_SLOTS:-2}" wait_s="${DIRENV_NIX_EVAL_WAIT:-20}"
+		local slots="${DIRENV_NIX_EVAL_SLOTS:-2}" wait_s="${DIRENV_NIX_EVAL_WAIT:-300}"
+		local notice_s="${DIRENV_NIX_EVAL_NOTICE:-10}" told=""
 		local root_key slot rc root_fd slot_fd
 		mkdir -p "$lock_dir" 2>/dev/null || {
 			_direnv_unguarded_nix "$@"
@@ -54,7 +57,7 @@ if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
 			log_status "nix eval for $PWD already running; using the cached environment"
 			return 1
 		fi
-		local deadline=$((SECONDS + wait_s))
+		local deadline=$((SECONDS + wait_s)) notice=$((SECONDS + notice_s))
 		while :; do
 			for ((slot = 0; slot < slots; slot++)); do
 				exec {slot_fd}>"$lock_dir/slot-$slot.lock"
@@ -66,6 +69,10 @@ if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
 				fi
 				exec {slot_fd}>&-
 			done
+			if [[ -z $told ]] && ((SECONDS >= notice)); then
+				log_status "queued: all $slots nix eval slots are busy. Please be patient; waiting up to ${wait_s}s, then using the cached environment"
+				told=1
+			fi
 			if ((SECONDS >= deadline)); then
 				exec {root_fd}>&-
 				log_status "all $slots nix eval slots busy for ${wait_s}s; using the cached environment"

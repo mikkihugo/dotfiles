@@ -208,6 +208,12 @@
     # and to code/jcode/assets). The canonical copy stays in the archive.
     "${homeDir}/code/worktrees/jj/jcode/*/assets"
   ];
+  # ~/code/worktrees holds hundreds of full lane checkouts (2026-10-24: 229
+  # Engine, 163 jcode, 86 infra). Walking them every cycle kept each hot-source
+  # run at 58-83min on the IOPS-capped devbox disk, so the 30min schedule ran
+  # back to back and saturated it. Hot-source skips them; worktreeConfig backs
+  # them up once a night instead (operator 2026-10-24).
+  worktreeRoot = "${homeDir}/code/worktrees";
   hotSourceConfig = name: target: {
     source_directories = hotSourceDirectories;
     repositories = [
@@ -220,7 +226,9 @@
       }
     ];
     archive_name_format = "${backupHost}-hot-source-${name}-{now:%Y-%m-%dT%H:%M:%SZ}";
-    exclude_patterns = hotSourceExcludes;
+    # explicit so prune never counts the nightly worktree archives in this repo
+    match_archives = "sh:${backupHost}-hot-source-${name}-*";
+    exclude_patterns = hotSourceExcludes ++ [worktreeRoot];
     exclude_if_present = [".nobackup"];
     # cargo writes CACHEDIR.TAG into target/; skips cache dirs the glob list misses
     exclude_caches = true;
@@ -250,12 +258,28 @@
     # hot-source-hel1.service). Skip the redundant pass.
     unsafe_skip_path_validation_before_create = true;
   };
+  worktreeConfig = name: target:
+    (hotSourceConfig name target)
+    // {
+      source_directories = [worktreeRoot];
+      archive_name_format = "${backupHost}-worktrees-${name}-{now:%Y-%m-%dT%H:%M:%SZ}";
+      match_archives = "sh:${backupHost}-worktrees-${name}-*";
+      exclude_patterns = hotSourceExcludes;
+      keep_hourly = 0;
+      keep_daily = 14;
+      keep_weekly = 8;
+      keep_monthly = 6;
+    };
   hotConfigPath = name: "${homeDir}/.config/borgmatic.d/hot-source-${name}.yaml";
-  hotSourceRunner = name:
-    pkgs.writeShellScript "borgmatic-hot-source-${name}" ''
+  worktreeConfigPath = name: "${homeDir}/.config/borgmatic.d/worktrees-${name}.yaml";
+  # One lock for hot-source and worktree runs on both sites, so no two borg
+  # walks of this disk ever overlap. Hot-source skips (-n, exit 75) when the
+  # lock is held; the nightly worktree run waits for it.
+  borgRunner = label: configPath: lockMode:
+    pkgs.writeShellScript "borgmatic-${label}" ''
       set -euo pipefail
       lock="$XDG_RUNTIME_DIR/borgmatic-hot-source.lock"
-      exec ${pkgs.util-linux}/bin/flock -n -E 75 "$lock" ${pkgs.bash}/bin/bash -c '
+      exec ${pkgs.util-linux}/bin/flock ${lockMode} -E 75 "$lock" ${pkgs.bash}/bin/bash -c '
         set -euo pipefail
         config="$1"
         borgmatic="$2"
@@ -265,8 +289,10 @@
         "$borgmatic" --config "$config" repo-info --verbosity -1 >/dev/null 2>&1 ||
           "$borgmatic" --config "$config" repo-create --encryption repokey --verbosity 1
         exec "$borgmatic" --config "$config" create prune compact --verbosity 1
-      ' _ ${hotConfigPath name} ${pkgs.borgmatic}/bin/borgmatic ${hotSourcePassphrasePath}
+      ' _ ${configPath} ${pkgs.borgmatic}/bin/borgmatic ${hotSourcePassphrasePath}
     '';
+  hotSourceRunner = name: borgRunner "hot-source-${name}" (hotConfigPath name) "-n";
+  worktreeRunner = name: borgRunner "worktrees-${name}" (worktreeConfigPath name) "--wait 21600";
   restoreKeyPackage = pkgs.writeShellScriptBin "storagebox-backup-key-restore" ''
     set -euo pipefail
 
@@ -376,58 +402,90 @@ in
         sopsFile = ../../secrets/api-keys.yaml;
       };
 
-      xdg.configFile = lib.mapAttrs' (name: target:
-        lib.nameValuePair "borgmatic.d/hot-source-${name}.yaml" {
-          text = builtins.toJSON (hotSourceConfig name target);
-        })
-      targets;
+      xdg.configFile =
+        (lib.mapAttrs' (name: target:
+          lib.nameValuePair "borgmatic.d/hot-source-${name}.yaml" {
+            text = builtins.toJSON (hotSourceConfig name target);
+          })
+        targets)
+        // (lib.mapAttrs' (name: target:
+          lib.nameValuePair "borgmatic.d/worktrees-${name}.yaml" {
+            text = builtins.toJSON (worktreeConfig name target);
+          })
+        targets);
 
-      systemd.user.services = lib.mapAttrs' (name: target:
-        lib.nameValuePair "hot-source-${name}" {
-          Unit = {
-            Description = "Back up hot source trees to Hetzner Storage Box ${target.description}";
-            After = ["network-online.target"];
-            Wants = ["network-online.target"];
-            X-SwitchMethod = "keep-old";
-          };
-          Service = {
-            Type = "exec";
-            ExecStartPre = "${restoreKeyPackage}/bin/storagebox-backup-key-restore";
-            ExecStart = "${hotSourceRunner name}";
-            SuccessExitStatus = [75];
-            # Was 60min: even with the pre-create validation walk removed
-            # (unsafe_skip_path_validation_before_create above), the first
-            # cold-cache "create" of these large trees observed 2026-09-24
-            # still ran 36+ min before hitting the old ceiling without
-            # finishing, so create/prune/compact has apparently never
-            # completed once. hotSourceRunner's flock is shared by both
-            # hel1 and fsn1 (same lock path for both), so a longer ceiling
-            # means whichever target is running can hold that shared lock,
-            # and so starve the other, for longer -- that tradeoff is
-            # accepted here because the starvation only ends once some
-            # create finally completes and seeds the chunk cache, after
-            # which subsequent incremental creates should be far faster.
-            RuntimeMaxSec = "115min";
-            Nice = 19;
-            IOSchedulingClass = "idle";
-            CPUWeight = 10;
-            IOWeight = 10;
-            # Same envelope as home-emergency-backup: observed peaks of
-            # 11-23G were mostly page cache, not borg anon (2026-10-10).
-            MemoryHigh = "4G";
-            MemoryMax = "10G";
-            Environment = [
-              "HOME=${homeDir}"
-            ];
-          };
-        })
-      targets;
+      systemd.user.services =
+        (lib.mapAttrs' (name: target:
+          lib.nameValuePair "hot-source-${name}" {
+            Unit = {
+              Description = "Back up hot source trees to Hetzner Storage Box ${target.description}";
+              After = ["network-online.target"];
+              Wants = ["network-online.target"];
+              X-SwitchMethod = "keep-old";
+            };
+            Service = {
+              Type = "exec";
+              ExecStartPre = "${restoreKeyPackage}/bin/storagebox-backup-key-restore";
+              ExecStart = "${hotSourceRunner name}";
+              SuccessExitStatus = [75];
+              # Was 60min: even with the pre-create validation walk removed
+              # (unsafe_skip_path_validation_before_create above), the first
+              # cold-cache "create" of these large trees observed 2026-09-24
+              # still ran 36+ min before hitting the old ceiling without
+              # finishing, so create/prune/compact has apparently never
+              # completed once. hotSourceRunner's flock is shared by both
+              # hel1 and fsn1 (same lock path for both), so a longer ceiling
+              # means whichever target is running can hold that shared lock,
+              # and so starve the other, for longer -- that tradeoff is
+              # accepted here because the starvation only ends once some
+              # create finally completes and seeds the chunk cache, after
+              # which subsequent incremental creates should be far faster.
+              RuntimeMaxSec = "115min";
+              Nice = 19;
+              IOSchedulingClass = "idle";
+              CPUWeight = 10;
+              IOWeight = 10;
+              # Same envelope as home-emergency-backup: observed peaks of
+              # 11-23G were mostly page cache, not borg anon (2026-10-10).
+              MemoryHigh = "4G";
+              MemoryMax = "10G";
+              Environment = [
+                "HOME=${homeDir}"
+              ];
+            };
+          })
+        targets)
+        // (lib.mapAttrs' (name: target:
+          lib.nameValuePair "worktrees-${name}" {
+            Unit = {
+              Description = "Back up lane worktrees to Hetzner Storage Box ${target.description} (nightly)";
+              After = ["network-online.target"];
+              Wants = ["network-online.target"];
+              X-SwitchMethod = "keep-old";
+            };
+            Service = {
+              Type = "exec";
+              ExecStartPre = "${restoreKeyPackage}/bin/storagebox-backup-key-restore";
+              ExecStart = "${worktreeRunner name}";
+              SuccessExitStatus = [75];
+              # waits up to 6h for the shared lock, then walks every worktree
+              RuntimeMaxSec = "10h";
+              Nice = 19;
+              IOSchedulingClass = "idle";
+              CPUWeight = 10;
+              IOWeight = 10;
+              MemoryHigh = "4G";
+              MemoryMax = "10G";
+              Environment = ["HOME=${homeDir}"];
+            };
+          })
+        targets);
 
       systemd.user.timers = {
         hot-source-hel1 = {
-          Unit.Description = "Hot-source backup to HEL1 every 30 minutes";
+          Unit.Description = "Hot-source backup to HEL1 every 2 hours (even hours)";
           Timer = {
-            OnCalendar = "*-*-* *:00/30:00";
+            OnCalendar = "*-*-* 00/2:00:00";
             RandomizedDelaySec = "2min";
             Persistent = true;
             Unit = "hot-source-hel1.service";
@@ -435,12 +493,32 @@ in
           Install.WantedBy = ["timers.target"];
         };
         hot-source-fsn1 = {
-          Unit.Description = "Hot-source backup to FSN1 every 30 minutes, staggered by 15 minutes";
+          Unit.Description = "Hot-source backup to FSN1 every 2 hours (odd hours), staggered from HEL1";
           Timer = {
-            OnCalendar = "*-*-* *:15/30:00";
+            OnCalendar = "*-*-* 01/2:00:00";
             RandomizedDelaySec = "2min";
             Persistent = true;
             Unit = "hot-source-fsn1.service";
+          };
+          Install.WantedBy = ["timers.target"];
+        };
+        worktrees-hel1 = {
+          Unit.Description = "Nightly lane-worktree backup to HEL1";
+          Timer = {
+            OnCalendar = "*-*-* 02:30:00";
+            RandomizedDelaySec = "5min";
+            Persistent = true;
+            Unit = "worktrees-hel1.service";
+          };
+          Install.WantedBy = ["timers.target"];
+        };
+        worktrees-fsn1 = {
+          Unit.Description = "Nightly lane-worktree backup to FSN1";
+          Timer = {
+            OnCalendar = "*-*-* 03:30:00";
+            RandomizedDelaySec = "5min";
+            Persistent = true;
+            Unit = "worktrees-fsn1.service";
           };
           Install.WantedBy = ["timers.target"];
         };

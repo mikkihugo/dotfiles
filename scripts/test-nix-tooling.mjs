@@ -157,8 +157,21 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   assert.match(backup, /"\/srv\/infra"/);
   assert.match(backup, /hot-source-hel1/);
   assert.match(backup, /hot-source-fsn1/);
-  assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* \*:00\/30:00"/);
-  assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* \*:15\/30:00"/);
+  // operator 2026-10-24: hourly staggered (hel1 even hours, fsn1 odd hours);
+  // lane worktrees leave the hot-source walk and get one nightly run per site.
+  assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* 00\/2:00:00"/);
+  assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* 01\/2:00:00"/);
+  assert.match(backup, /exclude_patterns = hotSourceExcludes \+\+ \[worktreeRoot\]/);
+  assert.match(backup, /worktreeRoot = "\$\{homeDir\}\/code\/worktrees"/);
+  assert.match(backup, /worktrees-hel1 = \{/);
+  assert.match(backup, /worktrees-fsn1 = \{/);
+  assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* 02:30:00"/);
+  assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* 03:30:00"/);
+  // one shared lock: hot-source skips when held, the nightly run waits for it
+  assert.match(backup, /hotSourceRunner = name: borgRunner "hot-source-\$\{name\}" \(hotConfigPath name\) "-n"/);
+  assert.match(backup, /worktreeRunner = name: borgRunner "worktrees-\$\{name\}" \(worktreeConfigPath name\) "--wait 21600"/);
+  assert.match(backup, /match_archives = "sh:\$\{backupHost\}-hot-source-\$\{name\}-\*"/);
+  assert.match(backup, /match_archives = "sh:\$\{backupHost\}-worktrees-\$\{name\}-\*"/);
   assert.match(backup, /RandomizedDelaySec\s*=\s*"2min"/);
   assert.match(backup, /Type\s*=\s*"exec"/);
   // Was 60min: raised so a cold-cache create (observed running 36+ min
@@ -169,7 +182,7 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   assert.match(backup, /Nice\s*=\s*19/);
   assert.match(backup, /IOSchedulingClass\s*=\s*"idle"/);
   assert.match(backup, /lock="\$XDG_RUNTIME_DIR\/borgmatic-hot-source\.lock"/);
-  assert.match(backup, /flock -n -E 75 "\$lock"/);
+  assert.match(backup, /flock \$\{lockMode\} -E 75 "\$lock"/);
   assert.match(backup, /borgmatic[^\n]*create/);
   assert.match(backup, /borg_hot_source_passphrase/);
   assert.match(backup, /BORG_PASSPHRASE/);

@@ -172,6 +172,8 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   assert.match(backup, /worktreeRunner = name: borgRunner "worktrees-\$\{name\}" \(worktreeConfigPath name\) "--wait 21600"/);
   assert.match(backup, /match_archives = "sh:\$\{backupHost\}-hot-source-\$\{name\}-\*"/);
   assert.match(backup, /match_archives = "sh:\$\{backupHost\}-worktrees-\$\{name\}-\*"/);
+  // the daily whole-home emergency backup must not walk the lane worktrees either
+  assert.match(backup, /"\$\{homeDir\}\/\.cache"\n(?:\s*#.*\n)*\s*"\$\{homeDir\}\/code\/worktrees"/);
   assert.match(backup, /RandomizedDelaySec\s*=\s*"2min"/);
   assert.match(backup, /Type\s*=\s*"exec"/);
   // Was 60min: raised so a cold-cache create (observed running 36+ min

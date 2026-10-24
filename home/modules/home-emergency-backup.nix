@@ -23,6 +23,10 @@
     source_directories = [homeDir];
     exclude_patterns = [
       "${homeDir}/.cache"
+      # Lane worktrees: hundreds of full checkouts, walked by every daily run
+      # (a 2026-10-24 fsn1 run passed 4h). The nightly worktrees-* jobs back
+      # them up to the same storage boxes.
+      "${homeDir}/code/worktrees"
       "${homeDir}/.local/share/singularity-engine/workspaces/*/root-*/mix"
       "${homeDir}/.local/share/singularity-engine/workspaces/*/root-*/hex"
       "${homeDir}/.local/share/singularity-engine/workspaces/*/root-*/rebar3"

@@ -4,49 +4,100 @@
 # Agent / Cursor shells sometimes run with stderr closed. nix-direnv <3.2 writes
 # cache-invalidation lines to >/dev/stderr and fails with ENXIO; reopen fd 2.
 if ! : >&2 2>/dev/null; then
-  _direnv_stderr_log="${XDG_STATE_HOME:-$HOME/.local/state}/direnv/stderr.log"
-  mkdir -p "$(dirname "$_direnv_stderr_log")" 2>/dev/null || true
-  exec 2>>"$_direnv_stderr_log"
+	_direnv_stderr_log="${XDG_STATE_HOME:-$HOME/.local/state}/direnv/stderr.log"
+	mkdir -p "$(dirname "$_direnv_stderr_log")" 2>/dev/null || true
+	exec 2>>"$_direnv_stderr_log"
 fi
 unset -v _direnv_stderr_log 2>/dev/null || true
 
 _nix_direnv_rc=""
 for _candidate in \
-  "${XDG_DATA_HOME:-$HOME/.local/share}/direnv/nix-direnv/direnvrc" \
-  "${HOME}/.nix-profile/share/nix-direnv/direnvrc"; do
-  if [[ -f "$_candidate" ]]; then
-    _nix_direnv_rc="$_candidate"
-    break
-  fi
+	"${XDG_DATA_HOME:-$HOME/.local/share}/direnv/nix-direnv/direnvrc" \
+	"${HOME}/.nix-profile/share/nix-direnv/direnvrc"; do
+	if [[ -f "$_candidate" ]]; then
+		_nix_direnv_rc="$_candidate"
+		break
+	fi
 done
 if [[ -n "$_nix_direnv_rc" ]]; then
-  # shellcheck source=/dev/null
-  source "$_nix_direnv_rc"
+	# shellcheck source=/dev/null
+	source "$_nix_direnv_rc"
 fi
 unset -v _nix_direnv_rc _candidate
+
+# Dev-shell evaluation admission: at most one `nix print-dev-env` per flake
+# root and DIRENV_NIX_EVAL_SLOTS (default 2) host-wide. On 2026-10-24 ~180
+# concurrent evaluations (83 for /srv/infra alone) piled up behind an
+# IOPS-saturated disk: none finished, so nix-direnv never wrote its cache and
+# every new shell started another — a self-feeding herd. A shell that cannot
+# get a slot within DIRENV_NIX_EVAL_WAIT seconds (default 20) fails the eval,
+# and nix-direnv falls back to the previous cached environment. flock locks
+# are held by an fd, so a killed eval never wedges a slot.
+if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
+	eval "_direnv_unguarded_nix() $(declare -f _nix | tail -n +2)"
+	_nix() {
+		if [[ " $* " != *" print-dev-env "* ]]; then
+			_direnv_unguarded_nix "$@"
+			return
+		fi
+		local lock_dir="${XDG_RUNTIME_DIR:-/tmp}/direnv-nix-eval"
+		local slots="${DIRENV_NIX_EVAL_SLOTS:-2}" wait_s="${DIRENV_NIX_EVAL_WAIT:-20}"
+		local root_key slot rc root_fd slot_fd
+		mkdir -p "$lock_dir" 2>/dev/null || {
+			_direnv_unguarded_nix "$@"
+			return
+		}
+		root_key=$(printf '%s' "$PWD" | cksum | cut -d' ' -f1)
+		exec {root_fd}>"$lock_dir/root-$root_key.lock"
+		if ! flock -n "$root_fd"; then
+			exec {root_fd}>&-
+			log_status "nix eval for $PWD already running; using the cached environment"
+			return 1
+		fi
+		local deadline=$((SECONDS + wait_s))
+		while :; do
+			for ((slot = 0; slot < slots; slot++)); do
+				exec {slot_fd}>"$lock_dir/slot-$slot.lock"
+				if flock -n "$slot_fd"; then
+					_direnv_unguarded_nix "$@"
+					rc=$?
+					exec {slot_fd}>&- {root_fd}>&-
+					return "$rc"
+				fi
+				exec {slot_fd}>&-
+			done
+			if ((SECONDS >= deadline)); then
+				exec {root_fd}>&-
+				log_status "all $slots nix eval slots busy for ${wait_s}s; using the cached environment"
+				return 1
+			fi
+			sleep 1
+		done
+	}
+fi
 
 # Redirect direnv cache when the project tree is not writable (e.g. /nix/store checkouts).
 : "${XDG_CACHE_HOME:=$HOME/.cache}"
 
 _layout_hash() {
-  local dir="${1:-$PWD}"
-  local name hash
-  name=$(basename "$dir")
-  if command -v sha256sum >/dev/null 2>&1; then
-    hash=$(printf '%s' "$dir" | sha256sum | cut -d' ' -f1 | head -c 7)
-  elif command -v shasum >/dev/null 2>&1; then
-    hash=$(printf '%s' "$dir" | shasum -a 256 | cut -d' ' -f1 | head -c 7)
-  else
-    hash=$(printf '%s' "$dir" | cksum | cut -d' ' -f1 | head -c 7)
-  fi
-  printf '%s-%s' "$name" "$hash"
+	local dir="${1:-$PWD}"
+	local name hash
+	name=$(basename "$dir")
+	if command -v sha256sum >/dev/null 2>&1; then
+		hash=$(printf '%s' "$dir" | sha256sum | cut -d' ' -f1 | head -c 7)
+	elif command -v shasum >/dev/null 2>&1; then
+		hash=$(printf '%s' "$dir" | shasum -a 256 | cut -d' ' -f1 | head -c 7)
+	else
+		hash=$(printf '%s' "$dir" | cksum | cut -d' ' -f1 | head -c 7)
+	fi
+	printf '%s-%s' "$name" "$hash"
 }
 
 direnv_layout_dir() {
-  if [[ -w "$PWD" ]] && mkdir -p "$PWD/.direnv" 2>/dev/null; then
-    echo "$PWD/.direnv"
-    return
-  fi
+	if [[ -w "$PWD" ]] && mkdir -p "$PWD/.direnv" 2>/dev/null; then
+		echo "$PWD/.direnv"
+		return
+	fi
 
-  echo "$XDG_CACHE_HOME/direnv/layouts/$(_layout_hash "$PWD")"
+	echo "$XDG_CACHE_HOME/direnv/layouts/$(_layout_hash "$PWD")"
 }

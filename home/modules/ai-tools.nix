@@ -24,12 +24,11 @@
 }: let
   sopsSecrets = config.sops.secrets;
   llm-pkgs = llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
-  # OpenCode 2.x built from the in-tree derivation `home/modules/opencode-2`.
-  # Originally imported from nixpkgs PR #572946 head; forked into dotfiles so
-  # we can bump to upstream tags (latest: v2.0.27) without waiting for the PR
-  # to refresh. See `home/modules/opencode-2/default.nix` for lineage and the
-  # three substituted literals (version, src.hash, node_modules.outputHash).
-  opencode-2x = pkgs.callPackage ./opencode-2/default.nix {};
+  # OpenCode 2.x is managed by pnpm (`pnpm add -g @opencode/cli`), not by Nix.
+  # The in-tree derivation at home/modules/opencode-2 was removed: OpenCode's
+  # `Service.method()` install detector recognises only curl/npm/pnpm/bun/yarn/
+  # vp/brew/winget layouts, so a Nix store binary left `opencode upgrade`
+  # failing with "Could not detect the installation method."
   # The swarm devbox CLI launcher is jcode's install_release wrapper
   # (~/.local/bin/jcode -> ~/.jcode/builds/current/jcode). Do not force-shadow
   # it with the laptop allowlist wrapper, which isolates JCODE_RUNTIME_DIR and
@@ -681,8 +680,10 @@ in {
         # Claude Code is owned by its native installer outside Home Manager.
         # Cursor Agent is resolved by the wrapper below without a raw profile bin.
         # codex is npm-managed only (see the note after this list).
-        # opencode is built from `opencode-2x` (see comment above) and is not
-        # installed by mise or any other local package manager.
+        # opencode is pnpm-managed only (see the note above): `pnpm add -g
+        # @opencode/cli`. It is deliberately NOT installed by Nix, mise, or
+        # npm, so `opencode upgrade` can detect its install method and
+        # self-upgrade.
         # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
         # droid is managed globally by mise (wrapped below for OTEL).
         gooseGatewayWrapper # binary: goose -> resolves provider; openai uses llm-gateway
@@ -696,13 +697,6 @@ in {
         codeGatewayWrapper # binary: coder -> @just-every/code via llm-gateway.svc /codex/v1
         llm-pkgs.mistral-vibe # binary: vibe
         # llm-pkgs.amp disabled until amp/token added to secrets/api-keys.yaml
-        # opencode 2.x: built in-tree from home/modules/opencode-2 (forked
-        # from nixpkgs PR #572946, bumped to v2.0.27). The wrapper at
-        # `~/.local/bin/opencode` execs the matching binary at
-        # `~/.nix-profile/bin/opencode2`, injecting OTEL/Exa env. When the
-        # upstream PR lands in nixpkgs proper, delete home/modules/opencode-2
-        # and switch to `pkgs.opencode` on nixos-unstable.
-        opencode-2x
       ]
       ++ lib.optionals (!isSwarmDevbox) [
         jcodeGatewayWrapper # binary: jcode -> llm-gateway.svc /v1 (+ strip ambient provider keys)
@@ -899,13 +893,22 @@ in {
         '';
       };
 
-      # OpenCode 2.x — built in-tree from home/modules/opencode-2/default.nix
-      # (forked from nixpkgs PR #572946, bumped to v2.0.27). `~/.local/bin/opencode`
-      # shadows the raw home-manager-managed binary at
-      # `~/.nix-profile/bin/opencode2` so we keep the OTEL + Exa env injection
-      # that the previous mise-managed wrapper provided (native OTLP when
+      # OpenCode 2.x — managed by pnpm (`pnpm add -g @opencode/cli`), NOT by
+      # Nix/Home Manager. Rationale: OpenCode's `Service.method()` detector only
+      # recognises curl/npm/pnpm/bun/yarn/vp/brew/winget layouts. A Nix store
+      # binary matches none of them, so `opencode upgrade` failed with
+      # "Could not detect the installation method." pnpm gives the CLI a
+      # recognisable install tree, so `opencode upgrade` now self-upgrades
+      # ("Using method: pnpm").
+      #
+      # `~/.local/bin/opencode` remains the HM-managed wrapper: it shadows the
+      # raw pnpm binary at `~/.local/share/pnpm/bin/opencode` so we keep the
+      # OTEL + Exa env injection (native OTLP when
       # OTEL_EXPORTER_OTLP_ENDPOINT is set; AI SDK spans via
       # `experimental.openTelemetry` in `~/.config/opencode/opencode.json`).
+      #
+      # The old in-tree Nix derivation (home/modules/opencode-2) and its
+      # `opencode-2x` package were removed for this reason.
       ".local/bin/opencode" = {
         executable = true;
         force = true;
@@ -927,7 +930,12 @@ in {
             exit 1
           fi
           export EXA_API_KEY="$exa_key"
-          exec "$HOME/.nix-profile/bin/opencode2" "$@"
+          pnpm_opencode="$HOME/.local/share/pnpm/bin/opencode"
+          if [ ! -x "$pnpm_opencode" ]; then
+            echo "opencode: pnpm-managed binary not found at $pnpm_opencode (run: pnpm add -g @opencode/cli@latest)" >&2
+            exit 127
+          fi
+          exec "$pnpm_opencode" "$@"
         '';
       };
 

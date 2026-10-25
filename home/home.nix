@@ -86,13 +86,16 @@ in {
       "$HOME/.bun/bin"
       "$HOME/.local/bin" # pip/pipx, claude CLI, local tools
       "$HOME/.local/share/mise/shims" # mise-managed tools such as kimi and copilot
-      "$HOME/.npm-global/bin" # codex, opencode, and other npm globals
+      "$HOME/.npm-global/bin" # codex and other npm globals
 
       "$HOME/.amp/bin"
       # zsh, gemini and other home-manager packages. Nothing else puts this on PATH
       # here (no /etc/profile.d/nix.sh), so `zsh` is not found from bash.
       "$HOME/.nix-profile/bin"
       # ~/.kimi-code/bin removed — kimi is managed by mise (npm:@moonshot-ai/kimi-code)
+      # pnpm global bin — opencode (pnpm-managed, so `opencode upgrade` can
+      # detect its install method and self-upgrade). pnpm itself is mise-managed.
+      "$HOME/.local/share/pnpm/bin"
     ];
 
     # Environment variables exported into every session before shell init runs.
@@ -115,6 +118,10 @@ in {
         "npm_config_cache" = "$HOME/.cache/npm";
         NPM_CONFIG_CACHE = "$HOME/.cache/npm";
         NPM_CONFIG_PREFIX = "$HOME/.npm-global";
+        # pnpm global home. Must match the pnpm global bin dir on sessionPath
+        # ($HOME/.local/share/pnpm/bin) — pnpm refuses to install globally
+        # otherwise ("ERR_PNPM_GLOBAL_BIN_DIR_NOT_IN_PATH").
+        PNPM_HOME = "$HOME/.local/share/pnpm";
         SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";
         MINIMAX_API_HOST = "https://api.minimax.io";
         # kimi-code: enable the experimental [secondary_model] subagent pool.

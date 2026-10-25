@@ -37,9 +37,26 @@ unset -v _nix_direnv_rc _candidate
 # are held by an fd, so a killed eval never wedges a slot.
 if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
 	eval "_direnv_unguarded_nix() $(declare -f _nix | tail -n +2)"
+	# Every nix call gets a hard deadline. On 2026-10-25 nix-direnv's
+	# `nix eval --impure --expr <nixpkgs>` (its gcroot step, which skips the
+	# eval slots) hung 29 min after a nix-daemon restart and held the shell, and
+	# direnv's warn_timeout only warns. A timed-out call fails, and nix-direnv
+	# falls back to the cached environment. Mirrors nix-direnv's `_nix`
+	# (`${_nix_direnv_nix}` unquoted, same flags); if that helper changes shape,
+	# this falls back to the unbounded call.
+	_direnv_bounded_nix() {
+		local limit=$1
+		shift
+		if [[ -n ${_nix_direnv_nix:-} ]] && command -v timeout >/dev/null 2>&1; then
+			# shellcheck disable=SC2086
+			timeout --kill-after=10 "$limit" ${_nix_direnv_nix} --no-warn-dirty --extra-experimental-features "nix-command flakes" "$@"
+		else
+			_direnv_unguarded_nix "$@"
+		fi
+	}
 	_nix() {
 		if [[ " $* " != *" print-dev-env "* ]]; then
-			_direnv_unguarded_nix "$@"
+			_direnv_bounded_nix "${DIRENV_NIX_CALL_TIMEOUT:-120}" "$@"
 			return
 		fi
 		local lock_dir="${XDG_RUNTIME_DIR:-/tmp}/direnv-nix-eval"
@@ -47,7 +64,7 @@ if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
 		local notice_s="${DIRENV_NIX_EVAL_NOTICE:-10}" told=""
 		local root_key slot rc root_fd slot_fd
 		mkdir -p "$lock_dir" 2>/dev/null || {
-			_direnv_unguarded_nix "$@"
+			_direnv_bounded_nix "${DIRENV_NIX_EVAL_TIMEOUT:-900}" "$@"
 			return
 		}
 		root_key=$(printf '%s' "$PWD" | cksum | cut -d' ' -f1)
@@ -62,7 +79,7 @@ if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
 			for ((slot = 0; slot < slots; slot++)); do
 				exec {slot_fd}>"$lock_dir/slot-$slot.lock"
 				if flock -n "$slot_fd"; then
-					_direnv_unguarded_nix "$@"
+					_direnv_bounded_nix "${DIRENV_NIX_EVAL_TIMEOUT:-900}" "$@"
 					rc=$?
 					exec {slot_fd}>&- {root_fd}>&-
 					return "$rc"

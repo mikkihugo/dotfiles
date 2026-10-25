@@ -59,6 +59,7 @@ in {
     ./modules/codex-managed-daemon.nix
     ./modules/sshid-key-sync.nix
     ./modules/mise-auto-update.nix
+    ./modules/prior-art-daily.nix
     ./modules/grok-leader.nix
     ./modules/repo-coord.nix
     ./modules/minimax-responses-compat.nix

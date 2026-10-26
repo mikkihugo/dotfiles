@@ -173,6 +173,34 @@ _load_sops_secrets() {
 		# "Authentication failed ... check your COPILOT_PROVIDER_API_KEY".
 		# auto-minimax is verified working end to end.
 		export COPILOT_MODEL="${COPILOT_MODEL:-auto-minimax}"
+		# Keep the BYOK identity and wire model explicit. Copilot 1.0.103
+		# otherwise re-validates the gateway alias against its hosted catalog and
+		# can replace it with claude-sonnet-5 during startup.
+		export COPILOT_PROVIDER_MODEL_ID="${COPILOT_PROVIDER_MODEL_ID:-auto-minimax}"
+		export COPILOT_PROVIDER_WIRE_MODEL="${COPILOT_PROVIDER_WIRE_MODEL:-auto-minimax}"
+
+		# Alternate providers (Copilot CLI >= 1.0.103). The flag plus a second
+		# model id lets the AGENT run a different model from the chat session,
+		# both through this one gateway:
+		#   COPILOT_ENABLE_ALT_PROVIDERS=true   opt-in flag (exact "true")
+		#   COPILOT_AGENT_MODEL=<id>            model for agent/subagent calls
+		#   COPILOT_MODEL=<id>                  model for the main session
+		# 1.0.103 wires agentModel beside model in the same session config
+		# (cli-main.js: altProvidersEnabled / agentModel / model), and on agent
+		# continuation it switches with a distinct providerId and source:"agent".
+		# Split: main sessions get auto-minimax (MiniMax-M3); agent/subagent
+		# volume work gets auto-minimax-fast (MiniMax-M3.1-Flash). Both probed
+		# HTTP 200 against the gateway 2026-10-23.
+		# NOTE: these vars are absent from the 0.0.373 / 1.0.91-1 dists still
+		# cached on this host, so an older resolved dist silently ignores them.
+		# They are present from 1.0.92-4 onward (verified against the cached
+		# ~/.copilot/pkg/linux-x64/*/cli-main.js bundles: 1.0.92-4, 1.0.103-0
+		# and 1.0.103 all carry the same four env names).
+		# Multimodel BYOK is the default: the explicit provider identity above
+		# keeps Copilot 1.0.103 from replacing the main alias with Sonnet during
+		# startup while the agent lane uses the fast gateway alias.
+		export COPILOT_ENABLE_ALT_PROVIDERS=true
+		export COPILOT_AGENT_MODEL=auto-minimax-fast
 
 		# Pin the token budget. Copilot resolves limits as: manual env vars ->
 		# built-in catalog -> defaults (see `copilot help providers`). Gateway
@@ -205,17 +233,34 @@ _load_sops_secrets() {
 		export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS="${COPILOT_PROVIDER_MAX_OUTPUT_TOKENS:-65536}"
 	fi
 
-	# Copilot BYOK is single-model by design in >=1.0.82: it never fetches the
-	# provider catalogue (no /v1/models call exists in the bundle), so /model
-	# cannot enumerate the gateway's aliases no matter what is configured. Its
-	# own help says so: "A model is required for BYOK. Set COPILOT_MODEL,
-	# COPILOT_PROVIDER_MODEL_ID, or --model."  A default is exported above;
-	# these switch model per invocation.
+	# Copilot BYOK does not enumerate the provider catalogue, so /model cannot
+	# list the gateway's aliases no matter what is configured. That is unchanged
+	# in 1.0.103: no /v1/models call exists in the bundle. Its own help says so:
+	# "A model is required for BYOK. Set COPILOT_MODEL, COPILOT_PROVIDER_MODEL_ID,
+	# or --model."  A default is exported above; these switch model per invocation.
+	#
+	# SUPERSEDED NOTE (was: "BYOK is single-model by design in >=1.0.82").
+	# Single-*endpoint* still holds -- one COPILOT_PROVIDER_BASE_URL. But
+	# single-*model* did not hold from 1.0.103, which added
+	# COPILOT_ENABLE_ALT_PROVIDERS + COPILOT_AGENT_MODEL to run a different model
+	# for agent/subagent calls than for the main session, through that endpoint.
 	copilot-minimax() { COPILOT_MODEL=auto-minimax command copilot "$@"; }
 	copilot-glm() { COPILOT_MODEL=auto-glm command copilot "$@"; }
 	copilot-kimi() { COPILOT_MODEL=auto-kimi command copilot "$@"; }
 	copilot-fast() { COPILOT_MODEL=auto-fast command copilot "$@"; }
 	copilot-auto() { COPILOT_MODEL=auto command copilot "$@"; }
+	# Volume/cheap split: strong model for the session, flash model for agents.
+	copilot-volume() {
+		COPILOT_ENABLE_ALT_PROVIDERS=true COPILOT_MODEL=auto-minimax \
+			COPILOT_AGENT_MODEL=auto-minimax-fast \
+			command copilot "$@"
+	}
+	# Full-strength everywhere (disables the fast agent tier for this run).
+	copilot-strong() {
+		COPILOT_ENABLE_ALT_PROVIDERS=true COPILOT_MODEL=auto-minimax \
+			COPILOT_AGENT_MODEL=auto-minimax \
+			command copilot "$@"
+	}
 
 	# OpenAI Gateway (ACE Coder / Goose CLI)
 	val=$(_sops_val openai_gateway api_key)

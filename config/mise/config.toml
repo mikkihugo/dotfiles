@@ -12,12 +12,18 @@
 # Qoder CLI is not in the mise registry; pin the OSS release tarball (http backend).
 "http:qodercli" = { version = "1.1.1", url = "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/1.1.1/qodercli-linux-x64.tar.gz", checksum = "sha256:21b60e3d0d9db9c35e5385c6d9523628e18735b7be5bbbc1a91996e4ed6a2b2a" }
 "github:vinhnx/vtcode" = "latest"
-"aqua:nodejs/node" = "24"
-# Pinned below latest: 1.0.83 has a hook-loading regression vs 1.0.82 -
-# session logs show zero hook-execution attempts (not even failures) under
-# 1.0.83, and `/status` reports "No hooks loaded" despite valid hook configs
-# on disk. Unpin once upstream fixes hook discovery.
-"npm:@github/copilot" = "1.0.82"
+# Node is pinned to 26 below, matching the Engine and Hightower repo pins.
+# Copilot CLI: unpinned (2026-10-24). The old "1.0.83 hook regression" pin was
+# a false premise — the installed binary was already 1.0.103, because copilot's
+# own `copilot update` rewrote the binary in place on 2026-10-22 and left the
+# mise install dir named 1.0.82 with a stale lockfile. Logs show hooks firing
+# under 1.0.103 and zero "No hooks loaded" events; upstream 1.0.88 fixed hook
+# cwd resolution and session-start hook merging.
+# 1.0.103+ is required for the copilot-volume / copilot-strong helpers in
+# shell/bash/bashrc: COPILOT_ENABLE_ALT_PROVIDERS / COPILOT_AGENT_MODEL
+# (multi-model BYOK). Those vars exist from 1.0.92-4 onward, but 1.0.103 is
+# the version this host resolves and is what the helpers were written against.
+"npm:@github/copilot" = "latest"
 "npm:@hrrrsn/mcp-vnc" = "latest"
 # 0.0.80 lost npm provenance vs 0.0.40-0.0.79 (mise's trust-policy correctly
 # flagged it) - verified benign: Microsoft's publish.yml moved npm publishing

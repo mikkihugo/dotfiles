@@ -62,6 +62,13 @@
           "$codex_cli" app-server daemon start ||
             echo "warning: codex app-server daemon start failed (unmanaged server running?); continuing" >&2
         fi
+
+        # Keep the native manager package aligned with the CLI selected by the
+        # current profile. If an unmanaged app-server is still attached, the
+        # command fails closed and the warning preserves the running session;
+        # the next switch after it exits retries the alignment.
+        "$codex_cli" app-server daemon update --from-cli --yes ||
+          echo "warning: codex app-server daemon package alignment deferred (unmanaged server running?); continuing" >&2
       fi
     '';
   };

@@ -542,7 +542,7 @@ test("Codex native daemon owns package selection and lifecycle", async () => {
   assert.doesNotMatch(home, /\.\/modules\/codex-server-auto-update\.nix/);
   assert.match(daemon, /app-server daemon bootstrap --remote-control/);
   assert.match(daemon, /app-server daemon update/);
-  assert.doesNotMatch(daemon, /--from-cli/);
+  assert.match(daemon, /app-server daemon update --from-cli --yes/);
   assert.match(daemon, /app-server daemon start/);
   assert.match(daemon, /entryBetween \["linkGeneration"\] \["writeBoundary"\]/);
   assert.match(daemon, /entryAfter \["reloadSystemd"\]/);

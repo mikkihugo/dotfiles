@@ -130,6 +130,9 @@
     # Build churn changes ctime/inode; mtime+size avoids re-reading unchanged files.
     files_cache = "mtime,size";
     exclude_caches = true;
+    # No database hooks are configured; avoid borgmatic's redundant full-tree
+    # validation walk before the real create.
+    unsafe_skip_path_validation_before_create = true;
     extra_borg_options.create = "--upload-buffer 256 --upload-ratelimit 0";
     borg_exit_codes = [
       {

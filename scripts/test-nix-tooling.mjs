@@ -136,6 +136,7 @@ test("home emergency backups bound cache, memory, bandwidth, and night schedulin
   assert.match(emergencyBackup, /chunker_params\s*=\s*"buzhash,19,23,21,4095"/);
   assert.match(emergencyBackup, /files_cache\s*=\s*"mtime,size"/);
   assert.match(emergencyBackup, /exclude_caches\s*=\s*true/);
+  assert.match(emergencyBackup, /unsafe_skip_path_validation_before_create\s*=\s*true/);
   assert.match(emergencyBackup, /configStorePath\s*=\s*name:/);
   assert.match(emergencyBackup, /--config \$\{configStorePath name\}/);
   assert.match(emergencyBackup, /IOReadBandwidthMax\s*=\s*"\/dev\/sda 40M"/);

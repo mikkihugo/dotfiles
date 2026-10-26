@@ -47,7 +47,7 @@ Host ai.hugo.dk vpn.hugo.dk jump.hugo.dk
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host cc-fi-hel-k3s-03 cc-fi-hel-k3s-03.centralcloud.net cc-fi-hel-k3s-03.centralcloud.com flow.hugo.dk portal-workflow
+Host cc-fi-hel-k3s-03 cc-fi-hel-k3s-03.centralcloud.net cc-fi-hel-k3s-03.centralcloud.com flow.hugo.dk
     HostName 157.180.79.108
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
@@ -99,17 +99,12 @@ Host cc-fr-lau-store-02 cc-fr-lau-store-02.centralcloud.net cc-fr-lau-store-02.c
     IdentitiesOnly yes
 
 # tl.centralcloud.net is the normal interactive route and uses the operator
-# account. Keep the administrative root route explicit as tl-root so ordinary
-# SSH and Tabby sessions do not silently select root.
+# account, so ordinary SSH and Tabby sessions do not silently select root.
+# For root, say so explicitly: ssh root@cc-se-sto-devbox-01 (no shorthand
+# alias, operator 2026-10-25).
 Host tl.centralcloud.net tl.hugo.dk cc-se-sto-devbox-01 cc-se-sto-devbox-01.centralcloud.net cc-se-sto-devbox-01.centralcloud.com
     HostName 82.197.73.216
     User mhugo
-    IdentityFile ~/.ssh/personal_admin_id_ed25519
-    IdentitiesOnly yes
-
-Host tl-root
-    HostName 82.197.73.216
-    User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
@@ -127,8 +122,10 @@ Host cc-de-nue-k3s-02 cc-de-nue-k3s-02.centralcloud.net cc-de-nue-k3s-02.central
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-# Private network aliases — typically internal/legacy names.
-Host mon-private
+# Hetzner private network (10.250.250.0/24) routes, full host name + -private.
+# cc-fi-hel-k3s-04 = 10.250.250.3, cc-fi-hel-k3s-03 = 10.250.250.2
+# (hcloud server describe, 2026-10-25).
+Host cc-fi-hel-k3s-04-private
     HostName 10.250.250.3
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
@@ -140,8 +137,9 @@ Host cc-fi-hel-k3s-03-private
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host storagebox
-    # Hetzner storagebox alias. Also uses the personal admin key.
+Host u579183.your-storagebox.de
+    # Hetzner Storage Box, addressed by its real FQDN (no shorthand alias).
+    # Also uses the personal admin key.
     HostName u579183.your-storagebox.de
     User u579183
     Port 23
@@ -167,20 +165,6 @@ Host cc-de-fsn-core-01 cc-de-fsn-core-01.centralcloud.net cc-de-fsn-core-01.cent
     HostName 49.13.125.237
     User root
     IdentityFile ~/.ssh/hetzner_id_ed25519
-    IdentitiesOnly yes
-
-# VectorDrive project servers — personal_admin enrolled via Hetzner
-# SSH key registry + rescue-mode authorized_keys patch (2026-05-18).
-Host vectordrive-1-core vectordrive-core
-    HostName 77.42.72.85
-    User root
-    IdentityFile ~/.ssh/personal_admin_id_ed25519
-    IdentitiesOnly yes
-
-Host vectordrive-1-firecracker vectordrive-firecracker
-    HostName 65.108.58.202
-    User root
-    IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
 # Tailscale hosts

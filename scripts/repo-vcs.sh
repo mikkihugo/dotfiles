@@ -648,8 +648,8 @@ contract-test)
 	[[ "$gh_persist" == no ]] || die "expected github.com controlpersist no, got ${gh_persist:-empty}"
 	svc_persist="$(ssh -G -F "$cfg" git.svc | awk '/^controlpersist / { print $2; exit }')"
 	[[ "$svc_persist" == no ]] || die "expected git.svc controlpersist no, got ${svc_persist:-empty}"
-	other_persist="$(ssh -G -F "$cfg" storagebox | awk '/^controlpersist / { print $2; exit }')"
-	[[ "$other_persist" == 600 ]] || die "expected Host * ControlPersist 10m for storagebox, got ${other_persist:-empty}"
+	other_persist="$(ssh -G -F "$cfg" u579183.your-storagebox.de | awk '/^controlpersist / { print $2; exit }')"
+	[[ "$other_persist" == 600 ]] || die "expected Host * ControlPersist 10m for u579183.your-storagebox.de, got ${other_persist:-empty}"
 	grep -Fq "worktree add -b \"worktree/\$name\"" "$root/scripts/repo-vcs.sh"
 	[[ "$push_timeout" == "${DOTFILES_GIT_PUSH_TIMEOUT:-300}" ]] || die 'push timeout configuration mismatch'
 	# mhugo/dotfiles#14: GIT_ASKPASS is silently ignored by git >= 2.46 when

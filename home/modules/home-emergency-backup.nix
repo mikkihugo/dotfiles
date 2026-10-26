@@ -174,7 +174,13 @@
       ];
       archive_name_format = "${backupHost}-${name}-{now:%Y-%m-%dT%H:%M:%SZ}";
     };
-  configPath = name: "${homeDir}/.config/borgmatic.d/home-emergency-${name}.yaml";
+  configStorePath = name:
+    pkgs.writeText "home-emergency-${name}.yaml"
+    (builtins.toJSON (borgmaticConfig name (builtins.getAttr name targets)));
+  ioBandwidthLimits = lib.optionalAttrs (lib.toLower hostname == "cc-se-sto-devbox-01") {
+    IOReadBandwidthMax = "/dev/sda 40M";
+    IOWriteBandwidthMax = "/dev/sda 40M";
+  };
   hotSourceDirectories = [
     "${homeDir}/.dotfiles"
     "${homeDir}/.dotfiles-worktrees"
@@ -345,7 +351,7 @@
       echo "home-emergency-backup-${name} waiting for mutable sweep lock: $lock"
       ${pkgs.util-linux}/bin/flock --exclusive --wait 43200 --conflict-exit-code 75 \
         "$lock" ${pkgs.bash}/bin/bash -c \
-        '${restoreKeyPackage}/bin/storagebox-backup-key-restore && exec ${pkgs.borgmatic}/bin/borgmatic --config ${configPath name} --verbosity 1' || {
+        '${restoreKeyPackage}/bin/storagebox-backup-key-restore && exec ${pkgs.borgmatic}/bin/borgmatic --config ${configStorePath name} --verbosity 1' || {
         status=$?
         echo "home-emergency-backup-${name} mutable sweep lock unavailable or backup failed: status=$status lock=$lock" >&2
         exit "$status"
@@ -377,28 +383,28 @@ in
             # full-home backup. The timer remains the sole start authority.
             X-SwitchMethod = "keep-old";
           };
-          Service = {
-            Type = "oneshot";
-            ExecStart = "${serializedBackupScript name}";
-            # Keep whole-home borg reads/writes below interactive and build I/O
-            # while retaining best-effort scheduling (the disk is not idle).
-            IOWeight = 20;
-            CPUWeight = 20;
-            IOSchedulingClass = "best-effort";
-            IOSchedulingPriority = 7;
-            Nice = 10;
-            IOReadBandwidthMax = "/dev/sda 40M";
-            IOWriteBandwidthMax = "/dev/sda 40M";
-            # Whole-home reads filled 9.7G+ of page cache, evicting build
-            # working sets. MemoryHigh reclaims this job's own cache first;
-            # borg's anon memory is far below the ceiling (2026-10-10).
-            MemoryHigh = "8G";
-            MemoryMax = "16G";
-            Environment = [
-              "HOME=${homeDir}"
-              "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
-            ];
-          };
+          Service =
+            {
+              Type = "oneshot";
+              ExecStart = "${serializedBackupScript name}";
+              # Keep whole-home borg reads/writes below interactive and build I/O
+              # while retaining best-effort scheduling (the disk is not idle).
+              IOWeight = 20;
+              CPUWeight = 20;
+              IOSchedulingClass = "best-effort";
+              IOSchedulingPriority = 7;
+              Nice = 10;
+              # Whole-home reads filled 9.7G+ of page cache, evicting build
+              # working sets. MemoryHigh reclaims this job's own cache first;
+              # borg's anon memory is far below the ceiling (2026-10-10).
+              MemoryHigh = "8G";
+              MemoryMax = "16G";
+              Environment = [
+                "HOME=${homeDir}"
+                "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
+              ];
+            }
+            // ioBandwidthLimits;
         })
       targets;
 

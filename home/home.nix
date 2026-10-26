@@ -43,7 +43,6 @@ in {
     ./modules/tmux.nix
     ./modules/git.nix
     ./modules/stable-shell.nix
-    ./modules/nix-gc-sweep.nix
     ./modules/reap-abandoned-searches.nix
     ./modules/home-emergency-backup.nix
     ./modules/forgejo-token-file.nix
@@ -61,7 +60,6 @@ in {
     ./modules/mise-auto-update.nix
     ./modules/prior-art-daily.nix
     ./modules/grok-leader.nix
-    ./modules/repo-coord.nix
     ./modules/minimax-responses-compat.nix
     ./modules/tailscale.nix
     ./modules/tabby.nix

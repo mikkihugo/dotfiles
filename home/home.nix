@@ -57,6 +57,7 @@ in {
     ./modules/dotfiles-auto-update.nix
     ./modules/checkout-sync.nix
     ./modules/codex-managed-daemon.nix
+    ./modules/codex-thread-gc.nix
     ./modules/sshid-key-sync.nix
     ./modules/agent-direnv.nix
     ./modules/cargo-target-prune.nix

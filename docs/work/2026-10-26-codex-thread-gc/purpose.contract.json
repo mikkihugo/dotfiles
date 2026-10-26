@@ -1,0 +1,14 @@
+{
+  "purpose": "Prevent the shared Codex app-server from retaining completed companion threads and exhausting file descriptors.",
+  "consumer": "The user systemd manager and the shared Codex daemon.",
+  "contract": "Hourly cleanup may unload only idle Codex Companion threads older than the configured age; active threads are never touched and the daemon is never restarted.",
+  "failureBoundary": "A cleanup failure leaves the daemon and all threads running; it must not kill or restart the daemon.",
+  "evidence": "node scripts/codex-thread-gc.mjs --age-hours=24; node --check scripts/codex-thread-gc.mjs; systemctl --user show codex-thread-gc.timer",
+  "falsifier": "A cleanup run sends thread/unsubscribe to an active thread or restarts/kills the app-server.",
+  "nonGoals": ["Deleting rollout JSONL history", "Changing daemon limits", "Restarting or replacing the daemon"],
+  "invariants": ["Active threads remain subscribed", "Cleanup is idempotent for notLoaded threads", "The timer is user-scoped"],
+  "assumptions": [
+    {"value": "thread/unsubscribe is the app-server unload operation", "doubt": 1, "falsifier": "The daemon returns an unsupported-method error or leaves an idle thread loaded."},
+    {"value": "Codex Companion threads identify as originator Codex Desktop and name prefix Codex Companion Task:", "doubt": 1, "falsifier": "A live companion thread has different originator/name metadata."}
+  ]
+}

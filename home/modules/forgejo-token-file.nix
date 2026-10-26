@@ -3,6 +3,7 @@
   # timer below (every 5 min; unchanged copies are left alone), so it never outlives
   # the OpenBao secret by more than one period.
   tokenFile = "/run/user/1000/forgejo-token";
+  tokenEnv = {FORGEJO_TOKEN_FILE = tokenFile;};
 
   # scripts/forgejo-token-sync renders the token from OpenBao into the runtime
   # file and into every static copy a tool reads (fj, infra scripts, the
@@ -15,6 +16,10 @@
     exec ${pkgs.bash}/bin/bash ${../../scripts/forgejo-token-sync}
   '';
 in {
+  # Login and interactive shells need the same path that user units receive.
+  # Keep one source of truth so the shell and systemd environments cannot drift.
+  home.sessionVariables = tokenEnv;
+
   # Engine's in-process Forgejo client (singularity-repo-embedded, feature
   # `forgejo`) reads FORGEJO_TOKEN_FILE and refuses group/world-readable files.
   # Materialise the token from OpenBao instead of asking anyone to stage one by
@@ -46,6 +51,6 @@ in {
     };
 
     # User services and new login sessions find the file through this variable.
-    sessionVariables.FORGEJO_TOKEN_FILE = tokenFile;
+    sessionVariables = tokenEnv;
   };
 }

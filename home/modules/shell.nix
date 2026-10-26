@@ -546,6 +546,7 @@ in {
             "/home/mhugo/code/"
             "/srv/infra/"
             "/home/mhugo/vendors/"
+            "/home/mhugo/.dotfiles-worktrees/"
           ];
           exact = ["/home/mhugo/.dotfiles/.envrc"];
         };

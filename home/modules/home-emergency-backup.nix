@@ -373,6 +373,13 @@ in
           Service = {
             Type = "oneshot";
             ExecStart = "${serializedBackupScript name}";
+            # Keep whole-home borg reads/writes below interactive and build I/O
+            # while retaining best-effort scheduling (the disk is not idle).
+            IOWeight = 20;
+            CPUWeight = 20;
+            IOSchedulingClass = "best-effort";
+            IOSchedulingPriority = 7;
+            Nice = 10;
             # Whole-home reads filled 9.7G+ of page cache, evicting build
             # working sets. MemoryHigh reclaims this job's own cache first;
             # borg's anon memory is far below the ceiling (2026-10-10).

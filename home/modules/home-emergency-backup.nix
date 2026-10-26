@@ -19,8 +19,19 @@
   keyPath = "${homeDir}/.ssh/storagebox-backup";
   sshCommand = "${pkgs.openssh}/bin/ssh -i ${keyPath} -p 23 -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ControlMaster=no -o ControlPath=none -o ControlPersist=no";
   hotSourcePassphrasePath = config.sops.secrets.borg_hot_source_passphrase.path;
+  # Emergency recovery needs operator configuration and credentials, not every
+  # generated/cache tree. The previous [homeDir] root walked the whole home
+  # (infra#3107 slice 7: 6h14m and 10.2G swap); these roots are intentionally
+  # small and all exist on the devbox.
+  emergencySourceDirectories = [
+    "${homeDir}/.config"
+    "${homeDir}/.ssh"
+    "${homeDir}/.gnupg"
+    "${homeDir}/.local/share/keyrings"
+    "${homeDir}/backups"
+  ];
   commonConfig = {
-    source_directories = [homeDir];
+    source_directories = emergencySourceDirectories;
     exclude_patterns = [
       "${homeDir}/.cache"
       # Lane worktrees: hundreds of full checkouts, walked by every daily run
@@ -187,7 +198,10 @@
   hotSourceDirectories = [
     "${homeDir}/.dotfiles"
     "${homeDir}/.dotfiles-worktrees"
-    "${homeDir}/code"
+    "${homeDir}/code/singularity-engine"
+    "${homeDir}/code/jcode"
+    "${homeDir}/code/infra"
+    "${homeDir}/code/hightower"
     "${homeDir}/workspaces"
     "${homeDir}/backups"
     "/srv/infra"
@@ -400,8 +414,8 @@ in
               # Whole-home reads filled 9.7G+ of page cache, evicting build
               # working sets. MemoryHigh reclaims this job's own cache first;
               # borg's anon memory is far below the ceiling (2026-10-10).
-              MemoryHigh = "8G";
-              MemoryMax = "16G";
+              MemoryHigh = "2G";
+              MemoryMax = "4G";
               Environment = [
                 "HOME=${homeDir}"
                 "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
@@ -476,8 +490,8 @@ in
               IOWeight = 10;
               # Same envelope as home-emergency-backup: observed peaks of
               # 11-23G were mostly page cache, not borg anon (2026-10-10).
-              MemoryHigh = "4G";
-              MemoryMax = "10G";
+              MemoryHigh = "2G";
+              MemoryMax = "4G";
               Environment = [
                 "HOME=${homeDir}"
               ];
@@ -503,8 +517,8 @@ in
               IOSchedulingClass = "idle";
               CPUWeight = 10;
               IOWeight = 10;
-              MemoryHigh = "4G";
-              MemoryMax = "10G";
+              MemoryHigh = "2G";
+              MemoryMax = "4G";
               Environment = ["HOME=${homeDir}"];
             };
           })

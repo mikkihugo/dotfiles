@@ -141,11 +141,23 @@ test("home emergency backups bound cache, memory, bandwidth, and night schedulin
   assert.match(emergencyBackup, /--config \$\{configStorePath name\}/);
   assert.match(emergencyBackup, /IOReadBandwidthMax\s*=\s*"\/dev\/sda 40M"/);
   assert.match(emergencyBackup, /IOWriteBandwidthMax\s*=\s*"\/dev\/sda 40M"/);
-  assert.match(emergencyBackup, /MemoryHigh\s*=\s*"8G"/);
-  assert.match(emergencyBackup, /MemoryMax\s*=\s*"16G"/);
+  assert.match(emergencyBackup, /MemoryHigh\s*=\s*"2G"/);
+  assert.match(emergencyBackup, /MemoryMax\s*=\s*"4G"/);
   assert.match(emergencyBackup, /schedule\s*=\s*"\*-\*-\* 02:00:00"/);
   assert.match(emergencyBackup, /schedule\s*=\s*"\*-\*-\* 04:00:00"/);
   assert.match(emergencyBackup, /code\/worktrees\/\*\*\/target/);
+});
+
+test("borg backups use explicit small source roots", async () => {
+  const backup = await source("home/modules/home-emergency-backup.nix");
+  assert.match(backup, /emergencySourceDirectories\s*=\s*\[/);
+  assert.match(backup, /code\/singularity-engine/);
+  assert.match(backup, /code\/jcode/);
+  assert.match(backup, /source_directories = emergencySourceDirectories/);
+  assert.doesNotMatch(backup, /source_directories = \[homeDir\]/);
+  assert.doesNotMatch(backup, /"\$\{homeDir\}\/code"\n/);
+  assert.match(backup, /source_directories = hotSourceDirectories/);
+  assert.match(backup, /MemoryMax = "4G"/);
 });
 
 

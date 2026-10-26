@@ -131,6 +131,20 @@ test("home emergency backup ssh command never shares an ssh connection with sibl
   );
 });
 
+test("home emergency backups bound cache, memory, bandwidth, and night scheduling", async () => {
+  const emergencyBackup = await source("home/modules/home-emergency-backup.nix");
+  assert.match(emergencyBackup, /chunker_params\s*=\s*"buzhash,19,23,21,4095"/);
+  assert.match(emergencyBackup, /files_cache\s*=\s*"mtime,size"/);
+  assert.match(emergencyBackup, /exclude_caches\s*=\s*true/);
+  assert.match(emergencyBackup, /IOReadBandwidthMax\s*=\s*"\/dev\/sda 40M"/);
+  assert.match(emergencyBackup, /IOWriteBandwidthMax\s*=\s*"\/dev\/sda 40M"/);
+  assert.match(emergencyBackup, /MemoryHigh\s*=\s*"8G"/);
+  assert.match(emergencyBackup, /MemoryMax\s*=\s*"16G"/);
+  assert.match(emergencyBackup, /schedule\s*=\s*"\*-\*-\* 02:00:00"/);
+  assert.match(emergencyBackup, /schedule\s*=\s*"\*-\*-\* 04:00:00"/);
+  assert.match(emergencyBackup, /code\/worktrees\/\*\*\/target/);
+});
+
 
 test("borgmatic hot-source backup replaces mutating git snapshots safely", async () => {
   const backup = await source("home/modules/home-emergency-backup.nix");

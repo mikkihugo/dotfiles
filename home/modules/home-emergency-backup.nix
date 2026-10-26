@@ -27,6 +27,8 @@
       # (a 2026-10-24 fsn1 run passed 4h). The nightly worktrees-* jobs back
       # them up to the same storage boxes.
       "${homeDir}/code/worktrees"
+      "${homeDir}/**/.cache"
+      "${homeDir}/code/worktrees/**/target"
       "${homeDir}/.local/share/singularity-engine/workspaces/*/root-*/mix"
       "${homeDir}/.local/share/singularity-engine/workspaces/*/root-*/hex"
       "${homeDir}/.local/share/singularity-engine/workspaces/*/root-*/rebar3"
@@ -123,6 +125,11 @@
     bootstrap.store_config_files = false;
     ssh_command = sshCommand;
     compression = "lz4";
+    # Keep Borg's default chunking explicit so cache/repository behavior is stable.
+    chunker_params = "buzhash,19,23,21,4095";
+    # Build churn changes ctime/inode; mtime+size avoids re-reading unchanged files.
+    files_cache = "mtime,size";
+    exclude_caches = true;
     extra_borg_options.create = "--upload-buffer 256 --upload-ratelimit 0";
     borg_exit_codes = [
       {
@@ -147,12 +154,12 @@
   targets = {
     hel1 = {
       description = "HEL1";
-      schedule = "*-*-* 00:00:00";
+      schedule = "*-*-* 02:00:00";
       path = "ssh://u579183-sub5@u579183-sub5.your-storagebox.de:23/./borg/${backupHost}";
     };
     fsn1 = {
       description = "FSN1";
-      schedule = "*-*-* 12:00:00";
+      schedule = "*-*-* 04:00:00";
       path = "ssh://u602823-sub5@u602823-sub5.your-storagebox.de:23/./borg/${backupHost}";
     };
   };
@@ -380,11 +387,13 @@ in
             IOSchedulingClass = "best-effort";
             IOSchedulingPriority = 7;
             Nice = 10;
+            IOReadBandwidthMax = "/dev/sda 40M";
+            IOWriteBandwidthMax = "/dev/sda 40M";
             # Whole-home reads filled 9.7G+ of page cache, evicting build
             # working sets. MemoryHigh reclaims this job's own cache first;
             # borg's anon memory is far below the ceiling (2026-10-10).
-            MemoryHigh = "4G";
-            MemoryMax = "10G";
+            MemoryHigh = "8G";
+            MemoryMax = "16G";
             Environment = [
               "HOME=${homeDir}"
               "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
@@ -395,10 +404,10 @@ in
 
       systemd.user.timers = lib.mapAttrs' (name: target:
         lib.nameValuePair "home-emergency-backup-${name}" {
-          Unit.Description = "Daily /home/mhugo emergency backup to ${name} (${target.schedule} with 30min jitter)";
+          Unit.Description = "Nightly /home/mhugo emergency backup to ${name} (${target.schedule} with 20min jitter)";
           Timer = {
             OnCalendar = target.schedule;
-            RandomizedDelaySec = "30min";
+            RandomizedDelaySec = "20min";
             Persistent = true;
             Unit = "home-emergency-backup-${name}.service";
           };

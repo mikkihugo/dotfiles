@@ -6,7 +6,11 @@
 # (b) systemd path units watch .envrc/flake.nix/flake.lock per root and fire
 #     the prewarm within seconds of a repo-config change;
 # (c) an hourly janitor timer is the only backstop.
-{pkgs, ...}: let
+{
+  lib,
+  pkgs,
+  ...
+}: let
   prewarmScript = ./scripts/agent-direnv-prewarm.sh;
 
   # direnv-agent <root> — serve a prewarmed direnv env for eval, or fall back

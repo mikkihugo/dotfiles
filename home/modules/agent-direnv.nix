@@ -28,9 +28,9 @@
     for f in .envrc flake.nix flake.lock; do
       [ -e "$root/$f" ] && fp_now="''${fp_now}$(printf '%s %s\n' "$f" "$(stat -c '%Y %s' "$root/$f")")"
     done
-    fp_snap=$(${pkgs.coreutils}/bin/sed -n 2p "$snap/fingerprint" 2>/dev/null || true)
+    fp_snap=$(${pkgs.coreutils}/bin/sed '1d;$d' "$snap/fingerprint" 2>/dev/null || true)
     fresh=true
-    gen_at=$(${pkgs.coreutils}/bin/sed -n 3p "$snap/fingerprint" 2>/dev/null || echo 0)
+    gen_at=$(${pkgs.coreutils}/bin/tail -n 1 "$snap/fingerprint" 2>/dev/null || echo 0)
     [ "$(date -u -d "$gen_at" +%s 2>/dev/null || echo 0)" -lt $(( $(date -u +%s) - 86400 )) ] && fresh=false
 
     if [ -s "$snap/env" ] && [ "$fp_now" = "$fp_snap" ] && $fresh; then

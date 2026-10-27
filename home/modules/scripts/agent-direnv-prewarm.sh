@@ -42,12 +42,14 @@ for root in "${ROOTS[@]}"; do
   new_dir="$dir.new.$$"
 
   # Contention-tolerant export: the repo singleflight returns quickly under
-  # fleet load (empty stdout, nonzero stderr status); retry inside the cycle's
-  # time budget instead of giving up on the first empty attempt.
+  # fleet load; retry inside the cycle's time budget. CRITICAL: capture the
+  # export script itself on stdout — do NOT `eval` it inside the capture
+  # (eval makes the env shell-state, never stdout; the first live cycle
+  # 2026-10-27 11:33 swallowed every "successful" export exactly that way).
   out=""
   cycle_start=$(date +%s)
   while :; do
-    out=$(timeout 120 bash -c "cd -- '$root' && eval \"\$(DIRENV_LOG_FORMAT= direnv export bash)\"" 2>/dev/null) || out=""
+    out=$(timeout 120 bash -c "cd -- '$root' && DIRENV_LOG_FORMAT= direnv export bash" 2>/dev/null) || out=""
     [ -n "$out" ] && break
     [ $(( $(date +%s) - cycle_start )) -ge 420 ] && break
     sleep 60

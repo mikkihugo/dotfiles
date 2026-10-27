@@ -41,14 +41,19 @@ for root in "${ROOTS[@]}"; do
   dir="$STATE_DIR/$hash"
   new_dir="$dir.new.$$"
 
-  before=$(fingerprint "$root" || true)
-  out=$(timeout 550 bash -c "cd -- '$root' && eval \"\$(DIRENV_LOG_FORMAT= direnv export bash)\"" 2>/dev/null) || {
-    echo "prewarm: export failed for $root; keeping existing snapshot" >&2
-    continue
-  }
+  # Contention-tolerant export: the repo singleflight returns quickly under
+  # fleet load (empty stdout, nonzero stderr status); retry inside the cycle's
+  # time budget instead of giving up on the first empty attempt.
+  out=""
+  cycle_start=$(date +%s)
+  while :; do
+    out=$(timeout 120 bash -c "cd -- '$root' && eval \"\$(DIRENV_LOG_FORMAT= direnv export bash)\"" 2>/dev/null) || out=""
+    [ -n "$out" ] && break
+    [ $(( $(date +%s) - cycle_start )) -ge 420 ] && break
+    sleep 60
+  done
+  [ -n "$out" ] || { echo "prewarm: export failed for $root after retries; keeping existing snapshot" >&2; continue; }
   after=$(fingerprint "$root" || true)
-
-  [ -n "$out" ] || { echo "prewarm: empty export for $root; keeping old snapshot" >&2; continue; }
 
   mkdir -p "$dir" "$new_dir"
   printf '%s\n' "$out" > "$new_dir/env"

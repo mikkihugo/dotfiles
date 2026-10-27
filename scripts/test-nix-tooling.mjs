@@ -563,6 +563,40 @@ test("Home Manager uses the nixpkgs mise package without a private overlay", asy
   assert.doesNotMatch(updater, /nix develop|just mise-upgrade/);
 });
 
+test("mise is managed by mise and updates itself without a flake bump", async () => {
+  const miseConfig = await source("config/mise/config.toml");
+  const updater = await source("home/modules/mise-auto-update.nix");
+
+  // The bare `mise` shorthand is not in the mise registry, so the tool alias
+  // names the upstream release backend explicitly. packslip is the
+  // upstream-preferred signed backend: it verifies the publisher's signature
+  // against the project identity the name implies and pins the signer.
+  assert.match(miseConfig, /^\[tool_alias\]$/m);
+  assert.match(miseConfig, /^mise\s*=\s*"packslip:github\.com\/jdx\/mise"$/m);
+  assert.match(miseConfig, /^mise\s*=\s*"latest"$/m);
+  // The old unsigned GitHub release backend must not come back.
+  assert.doesNotMatch(miseConfig, /^mise\s*=\s*"github:jdx\/mise"$/m);
+
+  // The auto-update service still runs mise's own install/upgrade path, which
+  // now covers mise itself.
+  assert.match(updater, /"\$mise_bin" install --yes/);
+  assert.match(updater, /"\$mise_bin" upgrade --yes/);
+
+  // nixpkgs disables `mise self-update` (.disable-self-update marker plus a
+  // read-only store), so the nixpkgs copy stays the bootstrap and the managed
+  // copy needs its own PATH entry ahead of it.
+  assert.match(updater, /\.local\/share\/mise\/installs\/mise\/latest\/bin\/mise/);
+  assert.match(updater, /\.local\/bin\/mise/);
+  // The PATH entry must be a symlink to the managed binary, not a wrapper
+  // script: mise points its shim farm at the mise it finds on PATH, and a
+  // script there breaks argv[0] dispatch for every other tool.
+  assert.match(updater, /ln -s "\$managed" "\$HOME\/\.local\/bin\/mise"/);
+  assert.doesNotMatch(updater, /home\.file\."\.local\/bin\/mise"/);
+  // The update script must not shell out to `mise self-update`: nixpkgs
+  // disables it and the store is read-only.
+  assert.doesNotMatch(updater, /"\$mise_bin" self-update/);
+});
+
 test("Codex native daemon owns package selection and lifecycle", async () => {
   const home = await source("home/home.nix");
   const daemon = await source("home/modules/codex-managed-daemon.nix");

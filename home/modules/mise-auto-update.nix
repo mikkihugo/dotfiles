@@ -9,10 +9,15 @@
   # `mise self-update` refuses to replace the binary, and the Nix store is
   # read-only anyway. The update path is therefore "mise managed by mise":
   # config/mise/config.toml lists mise itself under [tools] (via the
-  # [tool_alias] entry that names the github:jdx/mise backend, because the bare
-  # `mise` shorthand is not in the mise registry), and the auto-update service
-  # runs `mise install --yes` && `mise upgrade --yes`, which keeps that managed
-  # copy current without a dotfiles flake bump.
+  # [tool_alias] entry that names the packslip:github.com/jdx/mise backend,
+  # because the bare `mise` shorthand is not in the mise registry), and the
+  # auto-update service runs `mise install --yes` && `mise upgrade --yes`, which
+  # keeps that managed copy current without a dotfiles flake bump.
+  #
+  # The packslip backend is the upstream-preferred one for signed releases: it
+  # verifies the publisher's signature against the project identity the name
+  # implies and pins the signer it accepted, so a later release from another
+  # signer is refused instead of silently trusted.
   #
   # mise's own shim cannot do this job. Every entry in
   # ~/.local/share/mise/shims is a symlink to the mise dispatcher that mise

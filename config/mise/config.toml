@@ -4,8 +4,11 @@
 # binary. The nixpkgs copy stays the bootstrap (it is what installs the first
 # mise-managed copy); from then on `mise upgrade` keeps the managed one current
 # without a flake bump. The bare `mise` shorthand is not in the mise registry,
-# so the alias names the upstream GitHub release backend explicitly.
-mise = "github:jdx/mise"
+# so the alias names the upstream release backend explicitly. The packslip
+# backend is the upstream-preferred one: it verifies the publisher's signature
+# against the project identity the name implies and pins the signer it
+# accepted, instead of trusting a GitHub asset by filename.
+mise = "packslip:github.com/jdx/mise"
 
 [tools]
 # mise itself is a managed tool, so `mise upgrade` (run by the
@@ -67,10 +70,6 @@ claude-squad = "latest"
 azure-cli = { version = "latest", uvx_args = "--prerelease=allow" }
 "pipx:nanobot-ai" = "latest"
 "npm:wrangler" = "latest"
-# oci: pinned — both registry backends are broken on mise 2026.8.6 (asdf plugin
-# lacks bin/list-all; vfox:jdx/vfox-oci crashes in post_install.lua). 3.90.3 is
-# installed and working; bump manually after checking the plugin is fixed.
-oci = "3.90.3"
 vultr-cli = "latest"
 "pipx:b2" = "latest"
 # gogcli: renamed upstream from steipete/gogcli to openclaw/gogcli

@@ -24,9 +24,9 @@
     for f in .envrc flake.nix flake.lock; do
       [ -e "$root/$f" ] && fp_now="''${fp_now}$(printf '%s %s\n' "$f" "$(stat -c '%Y %s' "$root/$f")")"
     done
-    fp_snap=$(${pkgs.coreutils}/bin/tail -n +2 "$snap/fingerprint" 2>/dev/null || true)
+    fp_snap=$(${pkgs.coreutils}/bin/sed -n 2p "$snap/fingerprint" 2>/dev/null || true)
     fresh=true
-    gen_at=$(${pkgs.coreutils}/bin/tail -n +3 "$snap/fingerprint" 2>/dev/null || echo 0)
+    gen_at=$(${pkgs.coreutils}/bin/sed -n 3p "$snap/fingerprint" 2>/dev/null || echo 0)
     [ "$(date -u -d "$gen_at" +%s 2>/dev/null || echo 0)" -lt $(( $(date -u +%s) - 86400 )) ] && fresh=false
 
     if [ -s "$snap/env" ] && [ "$fp_now" = "$fp_snap" ] && $fresh; then
@@ -34,11 +34,13 @@
       echo "direnv-agent: served prewarmed env for $root (snapshot $gen_at)" >&2
       exit 0
     fi
-    # Self-heal: kick the prewarm and fall back to the real queued export.
+    # Self-heal: kick the prewarm; emit the queued export script for the
+    # caller's eval — a child process cannot change the parent env, so the
+    # fallback path must OUTPUT the script (direct export, never eval here).
     systemctl --user start --no-block agent-direnv-prewarm.service 2>/dev/null || true
-    echo "direnv-agent: no fresh snapshot for $root; kicked prewarm; falling back to queued direnv export" >&2
+    echo "direnv-agent: no fresh snapshot for $root; kicked prewarm; emitting queued export script" >&2
     cd -- "$root" || exit 1
-    eval "$(env DIRENV_LOG_FORMAT= "${pkgs.direnv}/bin/direnv" export bash)"
+    exec env DIRENV_LOG_FORMAT= "${pkgs.direnv}/bin/direnv" export bash
   '';
 
   prewarmUnit = {

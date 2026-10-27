@@ -58,6 +58,7 @@ in {
     ./modules/checkout-sync.nix
     ./modules/codex-managed-daemon.nix
     ./modules/sshid-key-sync.nix
+    ./modules/agent-direnv.nix
     ./modules/mise-auto-update.nix
     ./modules/prior-art-daily.nix
     ./modules/grok-leader.nix

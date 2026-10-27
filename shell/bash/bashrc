@@ -67,13 +67,6 @@ if [ -n "$mise_bin" ]; then
 		eval "$("$mise_bin" env -s bash)"
 	fi
 
-	_mise_node_bin="$("$mise_bin" which node 2>/dev/null || true)"
-	if [ -n "$_mise_node_bin" ]; then
-		_mise_node_dir="$(dirname "$_mise_node_bin")"
-		export PATH="$_mise_node_dir:$PATH"
-	fi
-	unset _mise_node_bin _mise_node_dir
-
 	# mise activate prepends tool install dirs ahead of home.sessionPath, which
 	# shadows HM wrappers in ~/.local/bin (goose → llm-gateway, kimi, …).
 	export PATH="$HOME/.local/bin:$PATH"

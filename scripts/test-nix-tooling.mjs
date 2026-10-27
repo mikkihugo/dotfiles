@@ -488,7 +488,7 @@ test("the maintenance shell supplies every executable used by the canonical chec
     "maintenance devShell packages",
   );
 
-  for (const name of ["nodejs", "python3", "nix-fast-build"]) {
+  for (const name of ["nodejs_26", "python3", "nix-fast-build"]) {
     assert.match(entries, packageEntry(name), `maintenance shell is missing ${name}`);
   }
 
@@ -636,6 +636,42 @@ test("daily python3 is nixpkgs, not mise", async () => {
   assert.match(activation, /retireMisePython/);
   assert.doesNotMatch(flake, /mise\/python-build|python@latest/);
 });
+
+test("node and pnpm are nix-owned, not mise", async () => {
+  const mise = await source("config/mise/config.toml");
+  const packages = await source("home/modules/packages.nix");
+  const aiTools = await source("home/modules/ai-tools.nix");
+  const bashrc = await source("shell/bash/bashrc");
+  const home = await source("home/home.nix");
+  const activation = await source("home/modules/activation.nix");
+
+  // mise must no longer list node or pnpm.
+  assert.doesNotMatch(mise, /^\s*node\s*=/m);
+  assert.doesNotMatch(mise, /^\s*pnpm\s*=/m);
+
+  // The profile must carry the Engine's node/pnpm contract.
+  assert.match(packages, /^\s*nodejs_26\b/m);
+  assert.match(packages, /^\s*pnpm_12\b/m);
+  assert.doesNotMatch(packages, /^\s*nodejs\s/m);
+  assert.doesNotMatch(packages, /^\s*pnpm\s/m);
+
+  // The ~/.local/bin wrappers must exec the profile, never a mise shim.
+  assert.match(aiTools, /exec "\$HOME\/\.nix-profile\/bin\/node"/);
+  assert.match(aiTools, /exec "\$HOME\/\.nix-profile\/bin\/npm"/);
+  assert.match(aiTools, /exec "\$HOME\/\.nix-profile\/bin\/npx"/);
+  assert.doesNotMatch(aiTools, /mise\/shims\/(node|npm|npx)/);
+
+  // bashrc must not prepend the mise node install dir.
+  assert.doesNotMatch(bashrc, /which node/);
+  assert.doesNotMatch(bashrc, /_mise_node_dir/);
+
+  // Activation retires leftover mise installs (no auto-update timer on main).
+  assert.match(activation, /retireMiseNodePnpm/);
+
+  // pnpm's global bin dir must stay where the opencode wrapper expects it.
+  assert.match(home, /PNPM_HOME = "\$HOME\/\.local\/share\/pnpm"/);
+});
+
 test("Home Manager activation uses the non-deprecated nix profile command", async () => {
   const flake = await source("flake.nix");
   assert.match(flake, /activationPackage = home\.activationPackage\.overrideAttrs/);

@@ -284,7 +284,7 @@
         packages = with maintenance-pkgs; [
           go # build and validate local Go tools
           cargo # build and validate local Rust tools
-          nodejs # run Node contract tests from the canonical repo check
+          nodejs_26 # run Node contract tests from the canonical repo check
           python3 # nixpkgs interpreter for repo-check Python tests (not mise)
           nix-fast-build # parallel activation evaluation/build for `repo check`
           gnumake # native builds in the maintenance shell

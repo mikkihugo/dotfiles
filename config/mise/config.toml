@@ -27,7 +27,6 @@ mise = "latest"
 # Qoder CLI is not in the mise registry; pin the OSS release tarball (http backend).
 "http:qodercli" = { version = "1.1.1", url = "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/1.1.1/qodercli-linux-x64.tar.gz", checksum = "sha256:21b60e3d0d9db9c35e5385c6d9523628e18735b7be5bbbc1a91996e4ed6a2b2a" }
 "github:vinhnx/vtcode" = "latest"
-# Node is pinned to 26 below, matching the Engine and Hightower repo pins.
 # Copilot CLI: unpinned (2026-10-24). The old "1.0.83 hook regression" pin was
 # a false premise — the installed binary was already 1.0.103, because copilot's
 # own `copilot update` rewrote the binary in place on 2026-10-22 and left the
@@ -69,8 +68,6 @@ vultr-cli = "latest"
 # gogcli: renamed upstream from steipete/gogcli to openclaw/gogcli
 "go:github.com/openclaw/gogcli/cmd/gog" = "latest"
 ollama = "0.32.14"
-node = "26.11.1"
-pnpm = "12.9.0"
 # jcode: managed by CI deploy + auto-deploy timer (~/.jcode/server/jcode), not mise.
 
 [env]

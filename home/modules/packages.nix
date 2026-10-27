@@ -46,7 +46,7 @@
 
     # Dev tools — language runtimes and package managers available globally.
     # (project-level runtimes live in per-repo flake devShells via direnv)
-    nodejs # `node` on ~/.nix-profile/bin. Grok leader is a systemd user unit whose PATH is the Nix profile, not ~/.local/bin (mise shim). Without this, Stop hooks with `#!/usr/bin/env node` exit 127. (bun was removed 2026-10-27: no consumer found — Claude Code and local CLIs embed their own runtimes)
+    nodejs_26 # `node`/`npm`/`npx` on ~/.nix-profile/bin (26.11.1 — the Engine contract, versions.json `languages.node.attr`). Grok leader is a systemd user unit whose PATH is the Nix profile, not ~/.local/bin, so the profile must carry the runtime: without it, Stop hooks with `#!/usr/bin/env node` exit 127. (bun was removed 2026-10-27: no consumer found — Claude Code and local CLIs embed their own runtimes)
     ccache # C/C++ compiler cache; CMake launcher env is set in home.nix
     # Forgejo-native CLI (binary: `fj`). Packaged upstream avoids maintaining
     # a hand-vendored CLI derivation and per-architecture hashes here.
@@ -75,7 +75,7 @@
     (python3.withPackages (ps: [ps.pyyaml])) # pyyaml for script-side YAML tooling
     pkg-config # native library discovery for remaining mise source builds
     go # build local Go tools
-    pnpm # fast, disk-efficient Node package manager
+    pnpm_12 # fast, disk-efficient Node package manager (12.9.0 — the Engine contract, versions.json `languages.pnpm.attr`; the default `pnpm` attr is 11.27.0)
     sccache # Rust compiler cache; Cargo wrapper is managed in files.nix
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin
 

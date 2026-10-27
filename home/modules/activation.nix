@@ -36,6 +36,28 @@ in {
         "$HOME/.local/share/mise/shims/python3"
     '';
 
+    # Node and pnpm are nixpkgs-owned (nodejs_26 26.11.1, pnpm_12 12.9.0).
+    # Retire the mise installs and their shims so the shim farm cannot keep
+    # winning PATH, and so the daily mise-auto-update service cannot
+    # resurrect them. Runs after linkManagedMise, because that step re-shims
+    # every installed tool and would recreate the node/pnpm shims.
+    retireMiseNodePnpm = lib.hm.dag.entryAfter ["installPackages" "linkMutableMiseConfig" "linkManagedMise"] ''
+      managed_mise="$HOME/.local/share/mise/installs/mise/latest/bin/mise"
+      for tool in node pnpm; do
+        if [ -x "$managed_mise" ]; then
+          "$managed_mise" uninstall "$tool" --all --yes >/dev/null 2>&1 || true
+        elif [ -x ${pkgs.mise}/bin/mise ]; then
+          ${pkgs.mise}/bin/mise uninstall "$tool" --all --yes >/dev/null 2>&1 || true
+        fi
+      done
+      ${pkgs.coreutils}/bin/rm -f \
+        "$HOME/.local/share/mise/shims/node" \
+        "$HOME/.local/share/mise/shims/npm" \
+        "$HOME/.local/share/mise/shims/npx" \
+        "$HOME/.local/share/mise/shims/pnpm" \
+        "$HOME/.local/share/mise/shims/pnpx"
+    '';
+
     retireUnsafeJcodeLaneSettle = lib.hm.dag.entryBefore ["reloadSystemd"] ''
       timer_load_state="$(${pkgs.systemd}/bin/systemctl --user show --property=LoadState --value jcode-lane-settle.timer)"
       if [ "$timer_load_state" != "not-found" ]; then
@@ -646,7 +668,7 @@ in {
       echo "Updating @opencode-ai/sdk..."
       export NPM_CONFIG_PREFIX="$HOME/.npm-global"
       PATH="${USER_TOOL_PATH}:$PATH" \
-      ${pkgs.nodejs}/bin/npm install -g @opencode-ai/sdk@latest && \
+      ${pkgs.nodejs_26}/bin/npm install -g @opencode-ai/sdk@latest && \
         echo "@opencode-ai/sdk ready — import via: const { OpencodeClient } = require('@opencode-ai/sdk')" || \
         echo "WARNING: @opencode-ai/sdk install failed" >&2
     '';

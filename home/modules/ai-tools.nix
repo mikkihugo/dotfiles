@@ -790,14 +790,16 @@ in {
       # node/npm/npx entry points for mise's npm backend. mise strips its own
       # install and shim dirs from the PATH of spawned backend commands (anti-
       # recursion), so `npm view` spawns fail with ENOENT unless npm is reachable
-      # on a non-mise PATH entry. ~/.local/bin survives stripping; forward to the
-      # mise shims so npm-backend tools (kimi, copilot, wrangler, ...) resolve.
+      # on a non-mise PATH entry. ~/.local/bin survives stripping, so forward to
+      # the Home Manager profile — node, npm and npx are nix-owned since
+      # 2026-10-27 (nodejs_26 = 26.11.1). The profile path is used rather than a
+      # store path so one profile switch moves all three together.
       ".local/bin/node" = {
         executable = true;
         force = true;
         text = ''
           #!/usr/bin/env bash
-          exec "$HOME/.local/share/mise/shims/node" "$@"
+          exec "$HOME/.nix-profile/bin/node" "$@"
         '';
       };
       ".local/bin/npm" = {
@@ -805,7 +807,7 @@ in {
         force = true;
         text = ''
           #!/usr/bin/env bash
-          exec "$HOME/.local/share/mise/shims/npm" "$@"
+          exec "$HOME/.nix-profile/bin/npm" "$@"
         '';
       };
       ".local/bin/npx" = {
@@ -813,7 +815,7 @@ in {
         force = true;
         text = ''
           #!/usr/bin/env bash
-          exec "$HOME/.local/share/mise/shims/npx" "$@"
+          exec "$HOME/.nix-profile/bin/npx" "$@"
         '';
       };
 

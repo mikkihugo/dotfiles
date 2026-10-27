@@ -95,7 +95,7 @@ in {
       "$HOME/.nix-profile/bin"
       # ~/.kimi-code/bin removed — kimi is managed by mise (npm:@moonshot-ai/kimi-code)
       # pnpm global bin — opencode (pnpm-managed, so `opencode upgrade` can
-      # detect its install method and self-upgrade). pnpm itself is mise-managed.
+      # detect its install method and self-upgrade). pnpm itself is nixpkgs (pnpm_12 12.9.0).
       "$HOME/.local/share/pnpm/bin"
     ];
 

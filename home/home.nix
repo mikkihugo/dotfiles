@@ -82,7 +82,6 @@ in {
 
     # PATH additions — prepended before the system PATH in every session.
     sessionPath = [
-      "$HOME/.bun/bin"
       "$HOME/.local/bin" # pip/pipx, claude CLI, local tools
       "$HOME/.local/share/mise/shims" # mise-managed tools such as kimi and copilot
       "$HOME/.npm-global/bin" # codex and other npm globals

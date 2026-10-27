@@ -10,7 +10,7 @@
   ...
 }: let
   pythonWithYaml = pkgs.python3.withPackages (ps: [ps.pyyaml]);
-  USER_TOOL_PATH = "${config.home.homeDirectory}/.local/bin:${config.home.homeDirectory}/.npm-global/bin:${config.home.homeDirectory}/.bun/bin";
+  USER_TOOL_PATH = "${config.home.homeDirectory}/.local/bin:${config.home.homeDirectory}/.npm-global/bin";
 in {
   home.activation = {
     # Retire the old host-local sweeper. It blindly recovered old Engine lanes

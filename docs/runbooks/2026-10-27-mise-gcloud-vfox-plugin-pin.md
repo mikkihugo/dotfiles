@@ -37,19 +37,48 @@ the pin loses nothing on this host.
 
 ## Lift condition
 
-When [jdx/vfox-gcloud#19](https://github.com/jdx/vfox-gcloud/issues/19) is
-closed by a commit that moves `python.lua` to `lib/` (or stops requiring it
-top-level), verify and unpin:
+Revised 2026-10-27 13:00 UTC after the fix landed upstream.
+
+The plugin defect is fixed upstream: [jdx/vfox-gcloud#19](https://github.com/jdx/vfox-gcloud/issues/19)
+was closed at 12:07 UTC 2026-10-27 by PR #20 (merge `8bc2e33aa741c0935f219e0d5791f0dc92569ed9`),
+which moves `python.lua` to `lib/`. **That alone is not enough to lift this
+pin.** mise also vendors an *embedded* copy of this plugin inside its own
+binary (`crates/vfox/embedded-plugins/vfox-gcloud` upstream), and that
+embedded copy is still broken — `lib/` contains only `components.lua` — at
+mise `v2026.10.20`, `v2026.10.21`, and mise `main` at the time of revision
+(jdx/mise#15034, the embedded-copy issue, closed 12:14 UTC 2026-10-27 saying
+a re-sync is still needed). Because mise prefers the filesystem plugin dir
+over the embedded copy, this pin's clone is what keeps gcloud working; if
+the pin is removed before a mise release re-syncs the embedded copy,
+unpinning falls back to the broken embedded copy and gcloud re-breaks.
+
+Lift the pin only when BOTH hold:
+
+1. The **latest mise release** has `crates/vfox/embedded-plugins/vfox-gcloud/lib/python.lua`
+   (check: `curl -sL "https://api.github.com/repos/jdx/mise/contents/crates/vfox/embedded-plugins/vfox-gcloud/lib?ref=<TAG>" | grep python.lua`).
+2. The locally installed mise is that release or newer (`mise version`).
+
+Then refresh the pin clone first — its HEAD is **detached** at `f815af0`,
+so a plain `git pull` fails; fetch and check out:
 
 ```sh
-cd ~/.local/share/mise/vfox-pins/vfox-gcloud && git pull   # fetch the fix
-mise reshim && mise env 2>&1 | grep -c "module 'python' not found"  # expect 0 (registry plugin again)
-mise plugin uninstall gcloud   # remove the pin if the upstream plugin works
-mise reshim && gcloud version  # confirm registry plugin serves gcloud
+git -C ~/.local/share/mise/vfox-pins/vfox-gcloud fetch origin
+git -C ~/.local/share/mise/vfox-pins/vfox-gcloud checkout -f origin/main
+mise env 2>&1 | grep -c "module 'python' not found"   # expect 0
+mise plugin uninstall gcloud                          # back to the registry plugin
+mise reshim && mise env 2>&1 | grep -c "module 'python' not found"  # expect 0
+gcloud version                                        # confirm registry plugin serves gcloud
 ```
 
-If the pulled pin still warns, re-clone: the fix commit is new and the pin
-clone is at the branch `main` history — `git pull` is enough either way.
+If the final check warns, re-create the pin: re-checkout `f815af0` in the
+pin clone is not needed (origin/main is fixed); instead re-restore the
+symlink `~/.local/share/mise/plugins/gcloud -> ~/.local/share/mise/vfox-pins/vfox-gcloud`
+and file upstream that the embedded copy regressed.
+
+A daily tracker watches this condition. If the local checkout of this
+runbook is missing while `origin/main` carries it, work off `origin/main` —
+the canonical checkout may have lagged (see the dotfiles main reconciliation
+note on the coordination mailbox).
 
 Falsifier: `mise env` emits a `module 'python' not found` warning after
 unpinning (the pin was lifted too early), or `mise which gcloud` stops

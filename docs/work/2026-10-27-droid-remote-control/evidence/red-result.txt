@@ -1,0 +1,233 @@
+✖ Droid Remote Control owns the daemon lifecycle (8.720509ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 109.566306
+
+✖ failing tests:
+
+test at scripts/test-nix-tooling.mjs:618:1
+✖ Droid Remote Control owns the daemon lifecycle (8.720509ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /\.\/modules\/droid-remote-control\.nix/. Input:
+  
+  '# home/home.nix — declarative user environment entry point\n' +
+    '#\n' +
+    '# Applies the full home-manager configuration via `hms` (alias in shell.nix).\n' +
+    '#\n' +
+    '# Structure (LazyVim-inspired — one file per concern, Nix merges them):\n' +
+    '#   modules/activation.nix  — hms activation hooks (conflict cleanup, tool installs)\n' +
+    '#   modules/packages.nix    — home.packages (CLI tools, runtimes, fonts)\n' +
+    '#   modules/shell.nix       — bash, zsh, aliases, direnv, starship, zoxide\n' +
+    '#   modules/git.nix         — git, jujutsu, gh\n' +
+    '#   modules/files.nix       — home.file symlinks (configs for ripgrep, bat, VSCode…)\n' +
+    '#\n' +
+    '# Why home-manager instead of raw dotfile symlinks?\n' +
+    '#   Atomic — either the whole generation activates or nothing changes.\n' +
+    '#   Reproducible — same flake.lock = identical environment on any machine.\n' +
+    '#   No drift — edits directly in $HOME are overwritten on the next `hms`.\n' +
+    '{\n' +
+    '  pkgs,\n' +
+    '  lib,\n' +
+    '  sops-nix,\n' +
+    '  hostname ? "",\n' +
+    '  ...\n' +
+    '}: let\n' +
+    '  localeEnvironment = {\n' +
+    '    LANG = "C.UTF-8";\n' +
+    '    LC_ALL = "C.UTF-8";\n' +
+    '  };\n' +
+    'in {\n' +
+    '  dotfiles.machine.tailnetHostname =\n' +
+    '    if lib.toLower hostname == "mikki-bunker"\n' +
+    '    then "bunker"\n' +
+    '    else null;\n' +
+    '\n' +
+    '  imports = [\n' +
+    '    sops-nix.homeManagerModules.sops\n' +
+    '    ./modules/systemd-limits.nix\n' +
+    '    ./modules/machine-role.nix\n' +
+    '    ./modules/activation.nix\n' +
+    '    ./modules/packages.nix\n' +
+    '    ./modules/ast-grep.nix\n' +
+    '    ./modules/cargo-pgrx.nix\n' +
+    '    ./modules/cargo-build-jobs.nix\n' +
+    '    ./modules/cargo-subcommand-proxies.nix\n' +
+    '    ./modules/shell.nix\n' +
+    '    ./modules/tmux.nix\n' +
+    '    ./modules/git.nix\n' +
+    '    ./modules/stable-shell.nix\n' +
+    '    ./modules/reap-abandoned-searches.nix\n' +
+    '    ./modules/home-emergency-backup.nix\n' +
+    '    ./modules/forgejo-token-file.nix\n' +
+    '    ./modules/files.nix\n' +
+    '    ./modules/ai-tools.nix\n' +
+    '    ./modules/kimi-code-otel.nix\n' +
+    '    ./modules/jcode-providers.nix\n' +
+    '    ./modules/jcode-server.nix\n' +
+    '    ./modules/ops-tools.nix\n' +
+    '    ./modules/nix-index.nix\n' +
+    '    ./modules/dotfiles-auto-update.nix\n' +
+    '    ./modules/checkout-sync.nix\n' +
+    '    ./modules/codex-managed-daemon.nix\n' +
+    '    ./modules/sshid-key-sync.nix\n' +
+    '    ./modules/agent-direnv.nix\n' +
+    '    ./modules/mise-auto-update.nix\n' +
+    '    ./modules/prior-art-daily.nix\n' +
+    '    ./modules/grok-leader.nix\n' +
+    '    ./modules/minimax-responses-compat.nix\n' +
+    '    ./modules/tailscale.nix\n' +
+    '    ./modules/tabby.nix\n' +
+    '    ./modules/wezterm.nix\n' +
+    '  ];\n' +
+    '\n' +
+    '  # Top-level SOPS key source so every managed host can decrypt its secrets.\n' +
+    '  sops.age.keyFile = "/home/mhugo/.config/sops/age/keys.txt";\n' +
+    '  sops.defaultSopsFile = ../secrets/api-keys.yaml;\n' +
+    '\n' +
+    '  home = {\n' +
+    '    username = "mhugo";\n' +
+    '    homeDirectory = "/home/mhugo";\n' +
+    '\n' +
+    '    # stateVersion pins the home-manager release that manages migration.\n' +
+    '    # Do NOT change this after first activation — it controls format upgrades,\n' +
+    '    # not the software versions (those come from nixpkgs).\n' +
+    '    stateVersion = "25.11";\n' +
+    '\n' +
+    '    # PATH additions — prepended before the system PATH in every session.\n' +
+    '    sessionPath = [\n' +
+    '      "$HOME/.local/bin" # pip/pipx, claude CLI, local tools\n' +
+    '      "$HOME/.local/share/mise/shims" # mise-managed tools such as kimi and copilot\n' +
+    '      "$HOME/.npm-global/bin" # codex and other npm globals\n' +
+    '\n' +
+    '      "$HOME/.amp/bin"\n' +
+    '      # zsh, gemini and other home-manager packages. Nothing else puts this on PATH\n' +
+    '      # here (no /etc/profile.d/nix.sh), so `zsh` is not found from bash.\n' +
+    '      "$HOME/.nix-profile/bin"\n' +
+    '      # ~/.kimi-code/bin removed — kimi is managed by mise (npm:@moonshot-ai/kimi-code)\n' +
+    '      # pnpm global bin — opencode (pnpm-managed, so `opencode upgrade` can\n' +
+    '      # detect its install method and self-upgrade). pnpm itself is mise-managed.\n' +
+    '      "$HOME/.local/share/pnpm/bin"\n' +
+    '    ];\n' +
+    '\n' +
+    '    # Environment variables exported into every session before shell init runs.\n' +
+    '    sessionVariables =\n' +
+    '      localeEnvironment\n' +
+    '      // {\n' +
+    '        # Route all nix CLI through the daemon. Without this, nix tries direct\n' +
+    '        # /nix/store writes for flake-source coercion and fails on this\n' +
+    '        # daemon-owned multi-user install (drwxrwxr-t root:nixbld).\n' +
+    '        NIX_REMOTE = "daemon";\n' +
+    '        # This host is a k3s agent — local /etc/rancher/k3s/k3s.yaml points at\n' +
+    '        # 127.0.0.1:6443 which has no listener. Use ~/.kube/config.\n' +
+    '        KUBECONFIG = "$HOME/.kube/config";\n' +
+    '        # Keep package caches in one user-scoped tree while preserving\n' +
+    '        # ~/.cargo/bin for installed Cargo tools and rustup compatibility.\n' +
+    '        XDG_CACHE_HOME = "$HOME/.cache";\n' +
+    '        CARGO_HOME = "$HOME/.cargo";\n' +
+    '        MIX_HOME = "$HOME/.cache/mix";\n' +
+    '        HEX_HOME = "$HOME/.cache/hex";\n' +
+    '        "npm_config_cache" = "$HOME/.cache/npm";\n' +
+    '        NPM_CONFIG_CACHE = "$HOME/.cache/npm";\n' +
+    '        NPM_CONFIG_PREFIX = "$HOME/.npm-global";\n' +
+    '        # pnpm global home. Must match the pnpm global bin dir on sessionPath\n' +
+    '        # ($HOME/.local/share/pnpm/bin) — pnpm refuses to install globally\n' +
+    '        # otherwise ("ERR_PNPM_GLOBAL_BIN_DIR_NOT_IN_PATH").\n' +
+    '        PNPM_HOME = "$HOME/.local/share/pnpm";\n' +
+    '        SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";\n' +
+    '        MINIMAX_API_HOST = "https://api.minimax.io";\n' +
+    '        # kimi-code: enable the experimental [secondary_model] subagent pool.\n' +
+    '        # config.toml binds it to minimax-coding-plan/MiniMax-M3 (api.minimax.io);\n' +
+    '        # the pool stays inert without this flag.\n' +
+    '        KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL = "1";\n' +
+    '        # kimi-code: master experiment gate — enables every experimental\n' +
+    '        # feature (the specific flag above is then redundant, kept to document\n' +
+    '        # the intent). Side effect: update rollout gating is skipped, so new\n' +
+    '        # kimi versions are always offered immediately (rollout.ts).\n' +
+    '        KIMI_CODE_EXPERIMENTAL_FLAG = "1";\n' +
+    '        # kimi-code: disable auto-mode permission reminders (added in 0.42.0;\n' +
+    '        # permissionModeService.ts:45). When unset or truthy, the agent-core-v2\n' +
+    '        # engine injects PermissionModeInjection reminders into the prompt\n' +
+    '        # stream on auto mode; setting to "false" suppresses them.\n' +
+    '        KIMI_CODE_PERMISSION_MODE_REMINDER = "false";\n' +
+    '        MISE_YES = "1";\n' +
+    '        COLORTERM = "truecolor";\n' +
+    '        RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";\n' +
+    '        BAT_CONFIG_PATH = "$HOME/.config/bat/config";\n' +
+    '        CCACHE_DIR = "$HOME/.cache/ccache";\n' +
+    '        CMAKE_C_COMPILER_LAUNCHER = "ccache";\n' +
+    '        CMAKE_CXX_COMPILER_LAUNCHER = "ccache";\n' +
+    '        LETTA_BASE_URL = "http://127.0.0.1:8283";\n' +
+    '        # OpenBao CLI — this devbox runs inside the k3s cluster, so the CLI\n' +
+    "        # talks to the active server's ClusterIP service directly (plain HTTP;\n" +
+    '        # the public edge kv.centralcloud.net is Authentik forward-auth gated\n' +
+    '        # and rejects CLI requests). bao appends /v1 so no trailing slash.\n' +
+    '        BAO_ADDR = "http://vault-active.vault.svc.cluster.local:8200";\n' +
+    '        FORGEJO_HOST = "git.centralcloud.net";\n' +
+    '        # Bare `bash -c` (Claude/Codex/Kimi/jcode) does not source bashrc.\n' +
+    '        # Export BASH_ENV so every non-interactive bash hits the shared\n' +
+    '        # enter-once direnv loader without inheriting a parent shell.\n' +
+    '        BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";\n' +
+    '      };\n' +
+    '  };\n' +
+    '\n' +
+    '  # GUI and background clients launched as user services do not inherit a\n' +
+    '  # login shell. Keep their locale identical to managed interactive clients,\n' +
+    '  # and export BASH_ENV so systemd-spawned `bash -c` hits the same loader.\n' +
+    '  systemd.user.sessionVariables =\n' +
+    '    localeEnvironment\n' +
+    '    // {\n' +
+    '      BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";\n' +
+    "      # Keep user services (including Grok's shared leader) on the same\n" +
+    '      # language-cache layout as interactive shells.\n' +
+    '      XDG_CACHE_HOME = "$HOME/.cache";\n' +
+    '      CARGO_HOME = "$HOME/.cargo";\n' +
+    '      MIX_HOME = "$HOME/.cache/mix";\n' +
+    '      HEX_HOME = "$HOME/.cache/hex";\n' +
+    '      "npm_config_cache" = "$HOME/.cache/npm";\n' +
+    '      NPM_CONFIG_CACHE = "$HOME/.cache/npm";\n' +
+    '      NPM_CONFIG_PREFIX = "$HOME/.npm-global";\n' +
+    '    };\n' +
+    '\n' +
+    '  # home-manager manages its own config file (~/.config/home-manager/).\n' +
+    '  programs.home-manager.enable = true;\n' +
+    '\n' +
+    '  # Silent the post-activation news readout. Upstream default is "notify",\n' +
+    '  # which prints "There are N unread and relevant news items" to stderr\n' +
+    "  # after every `home-manager switch`. We don't act on this on autopilot\n" +
+    '  # and the count grows by ~30 entries per upstream release; on this\n' +
+    '  # devbox it had ballooned to 379 before being addressed. Use\n' +
+    '  # `home-manager news` (or `hmn`) explicitly to view news when needed.\n' +
+    '  # Breaking-change news is a maintenance concern best surfaced in the\n' +
+    '  # upstream home-manager news feed (github.com/nix-community/home-manager)\n' +
+    '  # rather than via stderr after every activation.\n' +
+    '  news.display = "silent";\n' +
+    '\n' +
+    "  # Use Home Manager's standard mise module and the nixpkgs package. The shared\n" +
+    '  # runtime hook in shell/bash/bashrc remains the single activation authority\n' +
+    '  # for bash and zsh because it also restores wrapper precedence after mise\n' +
+    '  # prepends its tool directories. The mutable global tool list remains linked\n' +
+    '  # from config/mise/config.toml by activation.nix.\n' +
+    '  programs.mise = {\n' +
+    '    enable = true;\n' +
+    '    package = pkgs.mise;\n' +
+    '    enableBashIntegration = false;\n' +
+    '    enableZshIntegration = false;\n' +
+    '    enableFishIntegration = false;\n' +
+    '    enableNushellIntegration = false;\n' +
+    '  };\n' +
+    '}\n'
+  
+      at TestContext.<anonymous> (file:///home/mhugo/.dotfiles-worktrees/droid-remote-control-20261027/scripts/test-nix-tooling.mjs:620:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '# home/home.nix — declarative user environment entry point\n#\n# Applies the full home-manager configuration via `hms` (alias in shell.nix).\n#\n# Structure (LazyVim-inspired — one file per concern, Nix merges them):\n#   modules/activation.nix  — hms activation hooks (conflict cleanup, tool installs)\n#   modules/packages.nix    — home.packages (CLI tools, runtimes, fonts)\n#   modules/shell.nix       — bash, zsh, aliases, direnv, starship, zoxide\n#   modules/git.nix         — git, jujutsu, gh\n#   modules/files.nix       — home.file symlinks (configs for ripgrep, bat, VSCode…)\n#\n# Why home-manager instead of raw dotfile symlinks?\n#   Atomic — either the whole generation activates or nothing changes.\n#   Reproducible — same flake.lock = identical environment on any machine.\n#   No drift — edits directly in $HOME are overwritten on the next `hms`.\n{\n  pkgs,\n  lib,\n  sops-nix,\n  hostname ? "",\n  ...\n}: let\n  localeEnvironment = {\n    LANG = "C.UTF-8";\n    LC_ALL = "C.UTF-8";\n  };\nin {\n  dotfiles.machine.tailnetHostname =\n    if lib.toLower hostname == "mikki-bunker"\n    then "bunker"\n    else null;\n\n  imports = [\n    sops-nix.homeManagerModules.sops\n    ./modules/systemd-limits.nix\n    ./modules/machine-role.nix\n    ./modules/activation.nix\n    ./modules/packages.nix\n    ./modules/ast-grep.nix\n    ./modules/cargo-pgrx.nix\n    ./modules/cargo-build-jobs.nix\n    ./modules/cargo-subcommand-proxies.nix\n    ./modules/shell.nix\n    ./modules/tmux.nix\n    ./modules/git.nix\n    ./modules/stable-shell.nix\n    ./modules/reap-abandoned-searches.nix\n    ./modules/home-emergency-backup.nix\n    ./modules/forgejo-token-file.nix\n    ./modules/files.nix\n    ./modules/ai-tools.nix\n    ./modules/kimi-code-otel.nix\n    ./modules/jcode-providers.nix\n    ./modules/jcode-server.nix\n    ./modules/ops-tools.nix\n    ./modules/nix-index.nix\n    ./modules/dotfiles-auto-update.nix\n    ./modules/checkout-sync.nix\n    ./modules/codex-managed-daemon.nix\n    ./modules/sshid-key-sync.nix\n    ./modules/agent-direnv.nix\n    ./modules/mise-auto-update.nix\n    ./modules/prior-art-daily.nix\n    ./modules/grok-leader.nix\n    ./modules/minimax-responses-compat.nix\n    ./modules/tailscale.nix\n    ./modules/tabby.nix\n    ./modules/wezterm.nix\n  ];\n\n  # Top-level SOPS key source so every managed host can decrypt its secrets.\n  sops.age.keyFile = "/home/mhugo/.config/sops/age/keys.txt";\n  sops.defaultSopsFile = ../secrets/api-keys.yaml;\n\n  home = {\n    username = "mhugo";\n    homeDirectory = "/home/mhugo";\n\n    # stateVersion pins the home-manager release that manages migration.\n    # Do NOT change this after first activation — it controls format upgrades,\n    # not the software versions (those come from nixpkgs).\n    stateVersion = "25.11";\n\n    # PATH additions — prepended before the system PATH in every session.\n    sessionPath = [\n      "$HOME/.local/bin" # pip/pipx, claude CLI, local tools\n      "$HOME/.local/share/mise/shims" # mise-managed tools such as kimi and copilot\n      "$HOME/.npm-global/bin" # codex and other npm globals\n\n      "$HOME/.amp/bin"\n      # zsh, gemini and other home-manager packages. Nothing else puts this on PATH\n      # here (no /etc/profile.d/nix.sh), so `zsh` is not found from bash.\n      "$HOME/.nix-profile/bin"\n      # ~/.kimi-code/bin removed — kimi is managed by mise (npm:@moonshot-ai/kimi-code)\n      # pnpm global bin — opencode (pnpm-managed, so `opencode upgrade` can\n      # detect its install method and self-upgrade). pnpm itself is mise-managed.\n      "$HOME/.local/share/pnpm/bin"\n    ];\n\n    # Environment variables exported into every session before shell init runs.\n    sessionVariables =\n      localeEnvironment\n      // {\n        # Route all nix CLI through the daemon. Without this, nix tries direct\n        # /nix/store writes for flake-source coercion and fails on this\n        # daemon-owned multi-user install (drwxrwxr-t root:nixbld).\n        NIX_REMOTE = "daemon";\n        # This host is a k3s agent — local /etc/rancher/k3s/k3s.yaml points at\n        # 127.0.0.1:6443 which has no listener. Use ~/.kube/config.\n        KUBECONFIG = "$HOME/.kube/config";\n        # Keep package caches in one user-scoped tree while preserving\n        # ~/.cargo/bin for installed Cargo tools and rustup compatibility.\n        XDG_CACHE_HOME = "$HOME/.cache";\n        CARGO_HOME = "$HOME/.cargo";\n        MIX_HOME = "$HOME/.cache/mix";\n        HEX_HOME = "$HOME/.cache/hex";\n        "npm_config_cache" = "$HOME/.cache/npm";\n        NPM_CONFIG_CACHE = "$HOME/.cache/npm";\n        NPM_CONFIG_PREFIX = "$HOME/.npm-global";\n        # pnpm global home. Must match the pnpm global bin dir on sessionPath\n        # ($HOME/.local/share/pnpm/bin) — pnpm refuses to install globally\n        # otherwise ("ERR_PNPM_GLOBAL_BIN_DIR_NOT_IN_PATH").\n        PNPM_HOME = "$HOME/.local/share/pnpm";\n        SOPS_AGE_KEY_FILE = "$HOME/.config/sops/age/keys.txt";\n        MINIMAX_API_HOST = "https://api.minimax.io";\n        # kimi-code: enable the experimental [secondary_model] subagent pool.\n        # config.toml binds it to minimax-coding-plan/MiniMax-M3 (api.minimax.io);\n        # the pool stays inert without this flag.\n        KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL = "1";\n        # kimi-code: master experiment gate — enables every experimental\n        # feature (the specific flag above is then redundant, kept to document\n        # the intent). Side effect: update rollout gating is skipped, so new\n        # kimi versions are always offered immediately (rollout.ts).\n        KIMI_CODE_EXPERIMENTAL_FLAG = "1";\n        # kimi-code: disable auto-mode permission reminders (added in 0.42.0;\n        # permissionModeService.ts:45). When unset or truthy, the agent-core-v2\n        # engine injects PermissionModeInjection reminders into the prompt\n        # stream on auto mode; setting to "false" suppresses them.\n        KIMI_CODE_PERMISSION_MODE_REMINDER = "false";\n        MISE_YES = "1";\n        COLORTERM = "truecolor";\n        RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";\n        BAT_CONFIG_PATH = "$HOME/.config/bat/config";\n        CCACHE_DIR = "$HOME/.cache/ccache";\n        CMAKE_C_COMPILER_LAUNCHER = "ccache";\n        CMAKE_CXX_COMPILER_LAUNCHER = "ccache";\n        LETTA_BASE_URL = "http://127.0.0.1:8283";\n        # OpenBao CLI — this devbox runs inside the k3s cluster, so the CLI\n        # talks to the active server\'s ClusterIP service directly (plain HTTP;\n        # the public edge kv.centralcloud.net is Authentik forward-auth gated\n        # and rejects CLI requests). bao appends /v1 so no trailing slash.\n        BAO_ADDR = "http://vault-active.vault.svc.cluster.local:8200";\n        FORGEJO_HOST = "git.centralcloud.net";\n        # Bare `bash -c` (Claude/Codex/Kimi/jcode) does not source bashrc.\n        # Export BASH_ENV so every non-interactive bash hits the shared\n        # enter-once direnv loader without inheriting a parent shell.\n        BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";\n      };\n  };\n\n  # GUI and background clients launched as user services do not inherit a\n  # login shell. Keep their locale identical to managed interactive clients,\n  # and export BASH_ENV so systemd-spawned `bash -c` hits the same loader.\n  systemd.user.sessionVariables =\n    localeEnvironment\n    // {\n      BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";\n      # Keep user services (including Grok\'s shared leader) on the same\n      # language-cache layout as interactive shells.\n      XDG_CACHE_HOME = "$HOME/.cache";\n      CARGO_HOME = "$HOME/.cargo";\n      MIX_HOME = "$HOME/.cache/mix";\n      HEX_HOME = "$HOME/.cache/hex";\n      "npm_config_cache" = "$HOME/.cache/npm";\n      NPM_CONFIG_CACHE = "$HOME/.cache/npm";\n      NPM_CONFIG_PREFIX = "$HOME/.npm-global";\n    };\n\n  # home-manager manages its own config file (~/.config/home-manager/).\n  programs.home-manager.enable = true;\n\n  # Silent the post-activation news readout. Upstream default is "notify",\n  # which prints "There are N unread and relevant news items" to stderr\n  # after every `home-manager switch`. We don\'t act on this on autopilot\n  # and the count grows by ~30 entries per upstream release; on this\n  # devbox it had ballooned to 379 before being addressed. Use\n  # `home-manager news` (or `hmn`) explicitly to view news when needed.\n  # Breaking-change news is a maintenance concern best surfaced in the\n  # upstream home-manager news feed (github.com/nix-community/home-manager)\n  # rather than via stderr after every activation.\n  news.display = "silent";\n\n  # Use Home Manager\'s standard mise module and the nixpkgs package. The shared\n  # runtime hook in shell/bash/bashrc remains the single activation authority\n  # for bash and zsh because it also restores wrapper precedence after mise\n  # prepends its tool directories. The mutable global tool list remains linked\n  # from config/mise/config.toml by activation.nix.\n  programs.mise = {\n    enable = true;\n    package = pkgs.mise;\n    enableBashIntegration = false;\n    enableZshIntegration = false;\n    enableFishIntegration = false;\n    enableNushellIntegration = false;\n  };\n}\n',
+    expected: /\.\/modules\/droid-remote-control\.nix/,
+    operator: 'match',
+    diff: 'simple'
+  }

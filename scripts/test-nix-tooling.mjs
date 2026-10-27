@@ -579,6 +579,26 @@ test("Codex native daemon owns package selection and lifecycle", async () => {
   assert.doesNotMatch(daemon, /codex-guardian/);
 });
 
+test("Droid Remote Control owns the daemon lifecycle", async () => {
+  const home = await source("home/home.nix");
+  assert.match(home, /\.\/modules\/droid-remote-control\.nix/);
+
+  const service = await source("home/modules/droid-remote-control.nix");
+  assert.match(service, /lib\.toLower hostname == "cc-se-sto-devbox-01"/);
+  assert.match(service, /systemd\.user\.services\.droid-remote-control/);
+  assert.match(
+    service,
+    /ExecStart\s*=\s*"%h\/\.local\/bin\/droid daemon --remote-control"/,
+  );
+  assert.match(service, /ConditionPathExists\s*=\s*\[/);
+  assert.match(service, /"%h\/\.local\/bin\/droid"/);
+  assert.match(service, /"%h\/\.factory\/computer\.json"/);
+  assert.match(service, /Restart\s*=\s*"on-failure"/);
+  assert.match(service, /RestartSec\s*=\s*5/);
+  assert.match(service, /WantedBy\s*=\s*\["default\.target"\]/);
+  assert.doesNotMatch(service, /computer register|computer remove/);
+});
+
 test("daily python3 is nixpkgs, not mise", async () => {
   const mise = await source("config/mise/config.toml");
   const env = await source("config/common/env.sh");

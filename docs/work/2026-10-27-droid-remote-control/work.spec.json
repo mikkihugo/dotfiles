@@ -1,0 +1,181 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-10-27-droid-remote-control-work",
+  "purpose_contract_id": "2026-10-27-droid-remote-control-purpose",
+  "handover": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "droid-8efdd1f0"
+    }
+  },
+  "feature_tree_target": {
+    "kind": "component",
+    "name": "dotfiles Droid runtime management",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-10-27-droid-remote-control-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "1b70cc7a42bf0f0202cf16d0b53b9457ab64883a940175ca1f04f8a2cb4b2c19"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "The dotfiles Home Manager profile shall own one Droid Remote Control systemd user service that runs the managed Droid wrapper, starts only for a locally registered computer, restarts after failure, and is enabled at the user default target.",
+        "acceptance_criteria": [
+          "home/home.nix imports the Droid Remote Control module",
+          "The service ExecStart uses ~/.local/bin/droid daemon --remote-control",
+          "The service requires both ~/.local/bin/droid and ~/.factory/computer.json",
+          "The service is enabled at default.target and restarts on failure",
+          "The cc-se-sto-devbox-01 profile evaluates successfully",
+          "Live readback shows droid-remote-control.service active",
+          "droid computer list identifies cc-se-sto-devbox-01 as this machine",
+          "The Codex managed daemon declaration remains unchanged"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Dotfiles Home Manager profile",
+            "trigger": "the operator applies the cc-se-sto-devbox-01 profile",
+            "response": "install and enable one droid-remote-control user service that runs the registered Droid computer through the Factory relay"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "the profile has no managed Droid Remote Control service, the service does not use the managed wrapper, or live readback shows it inactive",
+          "witness_kind": "runtime-probe",
+          "expected": "rejected"
+        },
+        "risk": "medium",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "The dotfiles Home Manager profile shall own one Droid Remote Control systemd user service that runs the managed Droid wrapper, starts only for a locally registered computer, restarts after failure, and is enabled at the user default target.",
+      "acceptance_criteria": [
+        "home/home.nix imports the Droid Remote Control module",
+        "The service ExecStart uses ~/.local/bin/droid daemon --remote-control",
+        "The service requires both ~/.local/bin/droid and ~/.factory/computer.json",
+        "The service is enabled at default.target and restarts on failure",
+        "The cc-se-sto-devbox-01 profile evaluates successfully",
+        "Live readback shows droid-remote-control.service active",
+        "droid computer list identifies cc-se-sto-devbox-01 as this machine",
+        "The Codex managed daemon declaration remains unchanged"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Dotfiles Home Manager profile",
+          "trigger": "the operator applies the cc-se-sto-devbox-01 profile",
+          "response": "install and enable one droid-remote-control user service that runs the registered Droid computer through the Factory relay"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "the profile has no managed Droid Remote Control service, the service does not use the managed wrapper, or live readback shows it inactive",
+        "witness_kind": "runtime-probe",
+        "expected": "rejected"
+      },
+      "risk": "medium",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "home/home.nix",
+      "home/modules/droid-remote-control.nix",
+      "scripts/test-nix-tooling.mjs",
+      "docs/work/2026-10-27-droid-remote-control/**"
+    ],
+    "blocked": [
+      "secrets/**",
+      "config/factory/**",
+      "config/codex/**",
+      "home/modules/codex-managed-daemon.nix"
+    ],
+    "expected_files": [
+      "home/home.nix",
+      "scripts/test-nix-tooling.mjs"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "The focused dotfiles contract test fails before the module exists and proves the declared import, managed command, conditions, enablement, restart policy, and unchanged Codex ownership after implementation.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R1",
+      "kind": "smoke",
+      "description": "After applying the profile, systemctl user readback proves the service is active and droid computer list proves the current registered computer is present.",
+      "must_fail_first": false
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "node --test --test-name-pattern=\"Droid Remote Control owns the daemon lifecycle\" scripts/test-nix-tooling.mjs",
+      "nix eval --raw .#homeConfigurations.cc-se-sto-devbox-01.activationPackage.drvPath",
+      "repo check",
+      "systemctl --user is-active droid-remote-control.service",
+      "~/.local/bin/droid computer list",
+      "purpose-validate-work docs/work/2026-10-27-droid-remote-control --require-evidence"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "runtime",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "droid-8efdd1f0"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-10-27-droid-remote-control",
+    "target_planes": [
+      "host-tooling"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "unspecified",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

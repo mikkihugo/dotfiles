@@ -1,0 +1,100 @@
+{
+  "schema_version": "purpose-contract/v2",
+  "contract_id": "2026-10-27-droid-remote-control-purpose",
+  "source": {
+    "system": "tool",
+    "repository": ".",
+    "request_id": "2026-10-27-droid-remote-control"
+  },
+  "lineage": {
+    "origin": {
+      "kind": "request",
+      "id": "2026-10-27-droid-remote-control",
+      "revision": "initial"
+    },
+    "objective": {
+      "id": "2026-10-27-droid-remote-control-objective",
+      "statement": "Manage the Factory Droid Remote Control daemon lifecycle through the dotfiles Home Manager profile instead of an ad hoc foreground process.",
+      "measure": "The cc-se-sto-devbox-01 Home Manager profile owns one enabled droid-remote-control user service, the service runs the managed Droid wrapper with daemon --remote-control, and live readback shows the service active with the registered computer reachable through the relay."
+    },
+    "need": {
+      "id": "2026-10-27-droid-remote-control-need",
+      "statement": "Factory Remote Control on this devbox needs a persistent, managed daemon lifecycle.",
+      "stakeholders": [
+        "Factory Remote Control clients and the operator on cc-se-sto-devbox-01"
+      ],
+      "baseline": "Droid 0.250.0 is registered as cc-se-sto-devbox-01, but .dotfiles has no Droid daemon lifecycle module or systemd user unit; Remote Control currently depends on a foreground process started outside the managed profile.",
+      "consequence_of_no_action": "Remote Control disappears when the ad hoc process or host session ends, and no managed owner restores it.",
+      "assumptions": [],
+      "alternatives_considered": [
+        "Keep the ad hoc foreground process",
+        "Use a native Droid daemon lifecycle manager",
+        "Manage a systemd user service from the dotfiles Home Manager profile"
+      ]
+    }
+  },
+  "admission": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "droid-8efdd1f0"
+    }
+  },
+  "purpose": "Manage the Factory Droid Remote Control daemon lifecycle through the dotfiles Home Manager profile instead of an ad hoc foreground process.",
+  "consumer": "Factory Remote Control clients and the operator on cc-se-sto-devbox-01",
+  "contract": "On the cc-se-sto-devbox-01 Home Manager profile, one enabled droid-remote-control systemd user service shall run the managed ~/.local/bin/droid wrapper with daemon --remote-control, start only when the local computer registration exists, restart on failure, and be observable as active with the expected relay process.",
+  "failure_boundary": "The service remains user-scoped and fails closed when this machine is not registered. A failed Droid process is retried only by its own systemd unit, unrelated Codex daemon ownership is unchanged, and no Factory account or credential state is modified.",
+  "evidence": [
+    {
+      "kind": "test",
+      "description": "The dotfiles contract test proves the module import, managed wrapper command, registration condition, default-target enablement, and failure-restart policy.",
+      "status": "expected"
+    },
+    {
+      "kind": "runtime",
+      "description": "Live readback proves droid-remote-control.service is active and droid computer list identifies cc-se-sto-devbox-01 as this machine.",
+      "status": "expected"
+    }
+  ],
+  "falsifier": {
+    "claim": "The dotfiles profile owns a persistent Droid Remote Control daemon with the declared lifecycle contract.",
+    "executable_check": {
+      "kind": "test",
+      "description": "Any missing lifecycle declaration or failure of the focused contract test falsifies the source contract; any inactive service or missing relay readback falsifies the runtime claim.",
+      "command": "node --test --test-name-pattern=\"Droid Remote Control owns the daemon lifecycle\" scripts/test-nix-tooling.mjs"
+    }
+  },
+  "non_goals": [
+    "Automatically register or remove computers in the Factory account",
+    "Change Factory models, credentials, settings, or authentication",
+    "Change the Codex native daemon ownership",
+    "Modify unrelated dirty changes in the canonical dotfiles primary"
+  ],
+  "invariants": [
+    "The Codex managed daemon remains the sole owner of Codex app-server lifecycle",
+    "Droid computer registration remains local machine state and is not managed by dotfiles",
+    "At most one Home Manager systemd user service owns Droid Remote Control on this host",
+    "Unrelated canonical primary edits remain untouched"
+  ],
+  "assumptions": [
+    {
+      "statement": "Droid daemon --remote-control stays in the foreground under a systemd user service and exits non-zero when no local registration exists.",
+      "status": "verified",
+      "doubt": 0,
+      "falsifier": "A direct droid daemon --remote-control run exits successfully without a registered computer or returns immediately after launching its relay worker."
+    }
+  ],
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "risk": "medium",
+    "blast_radius": "service",
+    "reversibility": "easy",
+    "max_active_doubt": 1,
+    "reason": "The operator explicitly requested starting Droid through .dotfiles using the existing Codex-managed-daemon pattern."
+  },
+  "target_planes": [
+    "host-tooling"
+  ],
+  "plane_constraints": []
+}

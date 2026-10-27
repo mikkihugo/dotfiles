@@ -1,0 +1,9 @@
+{
+  "schema_version": "current-spec-snapshot/v1",
+  "snapshot_id": "2026-10-27-droid-remote-control-current-spec",
+  "source": {
+    "uri": "repository://current-spec",
+    "revision": "a1ecbee85280391f83e3df2ef7e495958b91ace0"
+  },
+  "requirements": []
+}

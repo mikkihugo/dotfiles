@@ -152,6 +152,13 @@
               };
               inherit (import nixpkgs-jujutsu {system = sys;}) jujutsu;
               inherit (nixpkgs-unstable.legacyPackages.${sys}) mise;
+              # cntb 1.7 / vultr-cli 3.11.0: from nixpkgs-unstable so the Nix
+              # build serves the same versions mise served (mise installs:
+              # cntb 1.7, vultr-cli 3.11.0; nixos-26.05 ships 1.6 / 3.10.0).
+              # The cntb-pin / vultr-cli-pin checks below fail loudly if this
+              # input moves.
+              inherit (nixpkgs-unstable.legacyPackages.${sys}) cntb;
+              vultr-cli = nixpkgs-unstable.legacyPackages.${sys}."vultr-cli";
               nix-index = prev.nix-index.overrideAttrs (old: {
                 buildCommand =
                   old.buildCommand
@@ -260,6 +267,20 @@
               inherit (pinned.jujutsu) version;
             } ''
               test "$version" = 0.46.0
+              printf '%s\n' "$version" > "$out"
+            '';
+          cntb-pin =
+            pkgs.runCommand "dotfiles-cntb-pin-${sys}" {
+              inherit (nixpkgs-unstable.legacyPackages.${sys}.cntb) version;
+            } ''
+              test "$version" = 1.7
+              printf '%s\n' "$version" > "$out"
+            '';
+          vultr-cli-pin =
+            pkgs.runCommand "dotfiles-vultr-cli-pin-${sys}" {
+              inherit (nixpkgs-unstable.legacyPackages.${sys}."vultr-cli") version;
+            } ''
+              test "$version" = 3.11.0
               printf '%s\n' "$version" > "$out"
             '';
         });

@@ -1,4 +1,16 @@
+[tool_alias]
+# mise manages itself: the nixpkgs build ships lib/mise/.disable-self-update and
+# the Nix store is read-only, so `mise self-update` can never replace the
+# binary. The nixpkgs copy stays the bootstrap (it is what installs the first
+# mise-managed copy); from then on `mise upgrade` keeps the managed one current
+# without a flake bump. The bare `mise` shorthand is not in the mise registry,
+# so the alias names the upstream GitHub release backend explicitly.
+mise = "github:jdx/mise"
+
 [tools]
+# mise itself is a managed tool, so `mise upgrade` (run by the
+# mise-auto-update systemd user timer) updates it like droid, node and awscli.
+mise = "latest"
 # codex: managed by the official npm package (`npm i -g @openai/codex`,
 # ~/.npm-global/bin/codex), not mise. The aqua registry ships only the bare
 # `codex` binary from 0.146.0 onward and drops the `codex-code-mode-host`

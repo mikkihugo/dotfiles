@@ -19,8 +19,16 @@ in {
     # remove this legacy timer and never mutate a workspace itself.
     # Python is nixpkgs (packages.nix + flake). Drop leftover mise python so
     # shims cannot keep winning PATH after this generation.
+    #
+    # Prefer the mise-managed binary when one exists: mise points its shim farm
+    # at whichever mise it finds on PATH, so running the nixpkgs copy here would
+    # re-point every shim at the nixpkgs binary and undo the managed-mise
+    # wiring that modules/mise-auto-update.nix establishes.
     retireMisePython = lib.hm.dag.entryAfter ["installPackages"] ''
-      if [ -x ${pkgs.mise}/bin/mise ]; then
+      managed_mise="$HOME/.local/share/mise/installs/mise/latest/bin/mise"
+      if [ -x "$managed_mise" ]; then
+        "$managed_mise" uninstall python --all --yes >/dev/null 2>&1 || true
+      elif [ -x ${pkgs.mise}/bin/mise ]; then
         ${pkgs.mise}/bin/mise uninstall python --all --yes >/dev/null 2>&1 || true
       fi
       ${pkgs.coreutils}/bin/rm -f \

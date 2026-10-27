@@ -134,10 +134,17 @@
             # mise 2026.10.3: pull from nixpkgs-unstable for newer version
             # (26.05 has 2026.5.12, unstable has 2026.10.3)
             #
+            # ripgrep 15.2.0: pull from nixpkgs-unstable for the .jj VCS
+            # detection + gitignore-across-dirs fixes (#3212/#3320/#3376).
+            # 26.05 has 15.1.0, where cwd-based rg inside jj lanes
+            # intermittently returns exit 1 / zero results (verified on
+            # cc-se-sto-devbox-01 2026-10-27, reproducible 10/10).
+            #
             # direnv 2.38.2: pull from the nixpkgs-direnv pinned input
             # (26.05 has 2.37.1; unstable pin predates the 2.38.2 packaging)
             (_final: prev: {
               ast-grep = nixpkgs-unstable.legacyPackages.${sys}.ast-grep;
+              inherit (nixpkgs-unstable.legacyPackages.${sys}) ripgrep;
               inherit (import nixpkgs-direnv {system = sys;}) direnv;
               inherit (import nixpkgs-jujutsu {system = sys;}) jujutsu;
               inherit (nixpkgs-unstable.legacyPackages.${sys}) mise;

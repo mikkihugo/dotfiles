@@ -51,6 +51,15 @@
       flake = false;
     };
 
+    # direnv 2.38.2 (published 2026-10-10). nixos-26.05 ships 2.37.1 and the
+    # nixpkgs-unstable pin (6510408d147d, 2026-10-10 01:01Z) predates the
+    # 2.38.2 packaging later that day. This rev is the nixos-unstable channel
+    # commit that packages 2.38.2. Bump the URL on purpose.
+    nixpkgs-direnv = {
+      url = "github:NixOS/nixpkgs/3ec636362e1816bc2f0888fa0fa2c69f1bc9e504";
+      flake = false;
+    };
+
     # Home Manager release branch follows the matching nixpkgs release.
     home-manager = {
       url = "github:nix-community/home-manager/release-26.05";
@@ -87,6 +96,7 @@
     nixpkgs,
     nixpkgs-unstable,
     nixpkgs-jujutsu,
+    nixpkgs-direnv,
     engine-nixpkgs-pin,
     home-manager,
     sops-nix,
@@ -95,10 +105,9 @@
     direnv-instant,
     ...
   }: let
-    specialArgs =
-      {
-        inherit sops-nix llm-agents direnv-instant engine-nixpkgs-pin;
-      };
+    specialArgs = {
+      inherit sops-nix llm-agents direnv-instant engine-nixpkgs-pin;
+    };
 
     # Single nixpkgs per system, shared across the outputs below. Re-using
     # this binding instead of re-importing inside the `formatter` and
@@ -124,8 +133,12 @@
             #
             # mise 2026.10.3: pull from nixpkgs-unstable for newer version
             # (26.05 has 2026.5.12, unstable has 2026.10.3)
+            #
+            # direnv 2.38.2: pull from the nixpkgs-direnv pinned input
+            # (26.05 has 2.37.1; unstable pin predates the 2.38.2 packaging)
             (_final: prev: {
               ast-grep = nixpkgs-unstable.legacyPackages.${sys}.ast-grep;
+              inherit (import nixpkgs-direnv {system = sys;}) direnv;
               inherit (import nixpkgs-jujutsu {system = sys;}) jujutsu;
               inherit (nixpkgs-unstable.legacyPackages.${sys}) mise;
               nix-index = prev.nix-index.overrideAttrs (old: {

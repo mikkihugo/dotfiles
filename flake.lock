@@ -192,6 +192,23 @@
         "type": "github"
       }
     },
+    "nixpkgs-direnv": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792773339,
+        "narHash": "sha256-rZLrzrC6i+jnTAlvPZHogKDulY7WWDEv9hJeHieO7Zw=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "3ec636362e1816bc2f0888fa0fa2c69f1bc9e504",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "3ec636362e1816bc2f0888fa0fa2c69f1bc9e504",
+        "type": "github"
+      }
+    },
     "nixpkgs-jujutsu": {
       "flake": false,
       "locked": {
@@ -265,6 +282,7 @@
         "home-manager": "home-manager",
         "llm-agents": "llm-agents",
         "nixpkgs": "nixpkgs_3",
+        "nixpkgs-direnv": "nixpkgs-direnv",
         "nixpkgs-jujutsu": "nixpkgs-jujutsu",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "sops-nix": "sops-nix"

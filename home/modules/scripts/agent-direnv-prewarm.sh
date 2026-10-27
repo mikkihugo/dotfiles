@@ -3,17 +3,21 @@
 # Purpose: agent shells (Kimi/Claude/Codex Bash tool) cannot run the
 # direnv-instant interactive hook, so every agent `direnv export` queues on the
 # repo's singleflight/nix eval. This script pre-runs the export for each
-# configured root (through the normal, queued path — once per interval, not per
-# agent call) and stores the exported env where agents can instant-eval it.
+# configured root — but ONLY for roots whose snapshot is stale. Triggers:
+# (a) direnv-agent kicks this service on demand when it serves a stale snapshot,
+# (b) systemd path units fire on .envrc/flake.nix/flake.lock changes,
+# (c) a daily janitor timer backstop. There is no fixed high-frequency timer.
 #
 # Contract:
-# - For each root: run `direnv export` in a fresh bash, capture stdout to the
-#   snapshot; failures leave the previous snapshot untouched and record one
-#   stderr note (never delete).
+# - For each root: fingerprint-compare first — unchanged, fresh snapshots skip
+#   entirely (no eval, no queue).
+# - Run `direnv export` in a fresh bash, capture the export SCRIPT to the
+#   snapshot (never eval-inside-capture: env becomes shell state, stdout stays
+#   empty — the 2026-10-27 11:33 cycle swallowed every success that way);
+#   failures leave the previous snapshot untouched.
 # - Snapshot layout: ~/.cache/agent-direnv/<sha256(rootpath)>/{env,fingerprint}
-# - fingerprint: newline-joined mtimes+sizes of .envrc, flake.nix, flake.lock
-#   (whichever exist) captured AT SNAPSHOT TIME; `direnv-agent` compares before
-#   trusting the snapshot.
+# - fingerprint: newline-joined name+mtime+size of .envrc, flake.nix, flake.lock
+#   captured at snapshot time; `direnv-agent` compares before trusting.
 # - Batch priority: niced, ionice -c3 (agent batch class).
 # Consumer: direnv-agent (wrapper), agent shells on this host.
 # Falsifier: a stale/failed snapshot must never be served as fresh; the
@@ -22,6 +26,7 @@
 set -u
 
 STATE_DIR="${AGENT_DIRENV_STATE:-$HOME/.cache/agent-direnv}"
+SNAPSHOT_MAX_AGE_S=86400
 ROOTS=(
   "/home/mhugo/code/jcode"
   "/home/mhugo/code/singularity-engine"
@@ -41,21 +46,27 @@ for root in "${ROOTS[@]}"; do
   dir="$STATE_DIR/$hash"
   new_dir="$dir.new.$$"
 
-  # Contention-tolerant export: the repo singleflight returns quickly under
-  # fleet load; retry inside the cycle's time budget. CRITICAL: capture the
-  # export script itself on stdout — do NOT `eval` it inside the capture
-  # (eval makes the env shell-state, never stdout; the first live cycle
-  # 2026-10-27 11:33 swallowed every "successful" export exactly that way).
+  # Skip-if-fresh: fingerprint match + non-empty env + younger than the cap.
+  current_fp=$(fingerprint "$root" || true)
+  if [ -s "$dir/env" ] && [ "$current_fp" = "$(tail -n +2 "$dir/fingerprint" 2>/dev/null || true)" ]; then
+    gen_at=$(tail -n +3 "$dir/fingerprint" 2>/dev/null | date -u -f - +%s 2>/dev/null || echo 0)
+    [ "$gen_at" -lt $(( $(date -u +%s) - SNAPSHOT_MAX_AGE_S )) ] || { echo "prewarm: $root fresh; skip"; continue; }
+  fi
+
+  # Export capture: retry under singleflight contention within the budget.
+  # Capture the export SCRIPT on stdout — never eval-inside-capture (env
+  # becomes shell state; stdout stays empty; the 2026-10-27 11:33 cycle
+  # swallowed every success exactly that way).
   out=""
   cycle_start=$(date +%s)
   while :; do
-    out=$(timeout 120 bash -c "cd -- '$root' && DIRENV_LOG_FORMAT= direnv export bash" 2>/dev/null) || out=""
+    out=$(timeout 180 bash -c "cd -- '$root' && DIRENV_LOG_FORMAT= direnv export bash" 2>/dev/null) || out=""
     [ -n "$out" ] && break
     [ $(( $(date +%s) - cycle_start )) -ge 420 ] && break
-    sleep 60
+    sleep 30
   done
   [ -n "$out" ] || { echo "prewarm: export failed for $root after retries; keeping existing snapshot" >&2; continue; }
-  after=$(fingerprint "$root" || true)
+  after=$(current_fp)
 
   mkdir -p "$dir" "$new_dir"
   printf '%s\n' "$out" > "$new_dir/env"

@@ -17,6 +17,11 @@
     else shortHost;
   homeDir = "/home/mhugo";
   keyPath = "${homeDir}/.ssh/storagebox-backup";
+  # 2026-10-27 operator request ("stop borg hourly"): the 2-hourly
+  # hot-source backup runs saturated the devbox's 90%-full disk and fed the
+  # direnv eval-jam episode. Flip to true and run `hms` to restore. The
+  # services stay valid for a manual `systemctl --user start hot-source-<name>`.
+  hotSourceTimersEnabled = false;
   sshCommand = "${pkgs.openssh}/bin/ssh -i ${keyPath} -p 23 -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ControlMaster=no -o ControlPath=none -o ControlPersist=no";
   hotSourcePassphrasePath = config.sops.secrets.borg_hot_source_passphrase.path;
   # Emergency recovery needs operator configuration and credentials, not every
@@ -524,47 +529,50 @@ in
           })
         targets);
 
-      systemd.user.timers = {
-        hot-source-hel1 = {
-          Unit.Description = "Hot-source backup to HEL1 every 2 hours (even hours)";
-          Timer = {
-            OnCalendar = "*-*-* 00/2:00:00";
-            RandomizedDelaySec = "2min";
-            Persistent = true;
-            Unit = "hot-source-hel1.service";
+      systemd.user.timers =
+        (lib.optionalAttrs hotSourceTimersEnabled {
+          hot-source-hel1 = {
+            Unit.Description = "Hot-source backup to HEL1 every 2 hours (even hours)";
+            Timer = {
+              OnCalendar = "*-*-* 00/2:00:00";
+              RandomizedDelaySec = "2min";
+              Persistent = true;
+              Unit = "hot-source-hel1.service";
+            };
+            Install.WantedBy = ["timers.target"];
           };
-          Install.WantedBy = ["timers.target"];
-        };
-        hot-source-fsn1 = {
-          Unit.Description = "Hot-source backup to FSN1 every 2 hours (odd hours), staggered from HEL1";
-          Timer = {
-            OnCalendar = "*-*-* 01/2:00:00";
-            RandomizedDelaySec = "2min";
-            Persistent = true;
-            Unit = "hot-source-fsn1.service";
+          hot-source-fsn1 = {
+            Unit.Description = "Hot-source backup to FSN1 every 2 hours (odd hours), staggered from HEL1";
+            Timer = {
+              OnCalendar = "*-*-* 01/2:00:00";
+              RandomizedDelaySec = "2min";
+              Persistent = true;
+              Unit = "hot-source-fsn1.service";
+            };
+            Install.WantedBy = ["timers.target"];
           };
-          Install.WantedBy = ["timers.target"];
-        };
-        worktrees-hel1 = {
-          Unit.Description = "Nightly lane-worktree backup to HEL1";
-          Timer = {
-            OnCalendar = "*-*-* 02:30:00";
-            RandomizedDelaySec = "5min";
-            Persistent = true;
-            Unit = "worktrees-hel1.service";
+        })
+        // {
+          worktrees-hel1 = {
+            Unit.Description = "Nightly lane-worktree backup to HEL1";
+            Timer = {
+              OnCalendar = "*-*-* 02:30:00";
+              RandomizedDelaySec = "5min";
+              Persistent = true;
+              Unit = "worktrees-hel1.service";
+            };
+            Install.WantedBy = ["timers.target"];
           };
-          Install.WantedBy = ["timers.target"];
-        };
-        worktrees-fsn1 = {
-          Unit.Description = "Nightly lane-worktree backup to FSN1";
-          Timer = {
-            OnCalendar = "*-*-* 03:30:00";
-            RandomizedDelaySec = "5min";
-            Persistent = true;
-            Unit = "worktrees-fsn1.service";
+          worktrees-fsn1 = {
+            Unit.Description = "Nightly lane-worktree backup to FSN1";
+            Timer = {
+              OnCalendar = "*-*-* 03:30:00";
+              RandomizedDelaySec = "5min";
+              Persistent = true;
+              Unit = "worktrees-fsn1.service";
+            };
+            Install.WantedBy = ["timers.target"];
           };
-          Install.WantedBy = ["timers.target"];
         };
-      };
     })
   ]

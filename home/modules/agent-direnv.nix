@@ -61,13 +61,14 @@
     lib.listToAttrs (lib.imap0 (i: f: {
         name = "agent-direnv-path-${baseNameOf root}-${toString i}";
         value = {
-          Unit.Description = "Prewarm agent direnv on ${f} change in ${baseNameOf root}";
+          Unit = {
+            Description = "Prewarm agent direnv on ${f} change in ${baseNameOf root}";
+            Wants = ["agent-direnv-prewarm.service"];
+          };
           Path = {
             PathChanged = "${root}/${f}";
-            PathExists = "${root}/.envrc";
           };
           Install.WantedBy = ["paths.target"];
-          Wants = ["agent-direnv-prewarm.service"];
         };
       })
       files);

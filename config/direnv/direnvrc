@@ -26,7 +26,7 @@ fi
 unset -v _nix_direnv_rc _candidate
 
 # Dev-shell evaluation admission: at most one `nix print-dev-env` per flake
-# root and DIRENV_NIX_EVAL_SLOTS (default 2) host-wide. On 2026-10-24 ~180
+# root and DIRENV_NIX_EVAL_SLOTS (default 4) host-wide. On 2026-10-24 ~180
 # concurrent evaluations (83 for /srv/infra alone) piled up behind an
 # IOPS-saturated disk: none finished, so nix-direnv never wrote its cache and
 # every new shell started another — a self-feeding herd. A shell still queued
@@ -60,7 +60,7 @@ if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
 			return
 		fi
 		local lock_dir="${XDG_RUNTIME_DIR:-/tmp}/direnv-nix-eval"
-		local slots="${DIRENV_NIX_EVAL_SLOTS:-2}" wait_s="${DIRENV_NIX_EVAL_WAIT:-300}"
+		local slots="${DIRENV_NIX_EVAL_SLOTS:-4}" wait_s="${DIRENV_NIX_EVAL_WAIT:-300}"
 		local notice_s="${DIRENV_NIX_EVAL_NOTICE:-10}" told=""
 		local root_key slot rc root_fd slot_fd
 		mkdir -p "$lock_dir" 2>/dev/null || {

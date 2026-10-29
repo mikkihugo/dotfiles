@@ -32,7 +32,6 @@ in {
 
   imports = [
     sops-nix.homeManagerModules.sops
-    ./modules/systemd-limits.nix
     ./modules/machine-role.nix
     ./modules/activation.nix
     ./modules/packages.nix
@@ -59,6 +58,7 @@ in {
     ./modules/codex-managed-daemon.nix
     ./modules/sshid-key-sync.nix
     ./modules/agent-direnv.nix
+    ./modules/cargo-target-prune.nix
     ./modules/mise-auto-update.nix
     ./modules/prior-art-daily.nix
     ./modules/grok-leader.nix
@@ -137,6 +137,13 @@ in {
         # engine injects PermissionModeInjection reminders into the prompt
         # stream on auto mode; setting to "false" suppresses them.
         KIMI_CODE_PERMISSION_MODE_REMINDER = "false";
+        # Factory (droid): BYOK-only enforcement. Airgap mode makes the CLI
+        # refuse every built-in model ("Available built-in models: None") and
+        # permit only custom models from ~/.factory/settings.json, so no
+        # inference is billed to Factory. MCP servers and plugin marketplaces
+        # stay reachable; only hosted/Factory API calls are refused.
+        # Escape hatch: FACTORY_AIRGAP_ENABLED=false droid ... for one run.
+        FACTORY_AIRGAP_ENABLED = "true";
         MISE_YES = "1";
         COLORTERM = "truecolor";
         RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";
@@ -155,6 +162,10 @@ in {
         # Export BASH_ENV so every non-interactive bash hits the shared
         # enter-once direnv loader without inheriting a parent shell.
         BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";
+        # Host-wide direnv print-dev-env concurrency (also defaulted in
+        # config/direnv/direnvrc). Raised from 2 to 4 on 2026-10-29 so
+        # Engine + infra + jcode cold loads can overlap without queue timeout.
+        DIRENV_NIX_EVAL_SLOTS = "4";
       };
   };
 
@@ -165,6 +176,7 @@ in {
     localeEnvironment
     // {
       BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";
+      DIRENV_NIX_EVAL_SLOTS = "4";
       # Keep user services (including Grok's shared leader) on the same
       # language-cache layout as interactive shells.
       XDG_CACHE_HOME = "$HOME/.cache";

@@ -34,3 +34,6 @@ fi
 # Mirrors the BAO_ADDR declaration in home/home.nix; keep the two in sync.
 # A caller-supplied BAO_ADDR still wins.
 export BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}"
+
+# Host-wide direnv print-dev-env concurrency (see config/direnv/direnvrc).
+export DIRENV_NIX_EVAL_SLOTS="${DIRENV_NIX_EVAL_SLOTS:-4}"

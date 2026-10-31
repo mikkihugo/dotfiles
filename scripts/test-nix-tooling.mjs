@@ -76,6 +76,15 @@ test("Home Manager owns nix-index database refresh wiring", async () => {
   assert.doesNotMatch(dotfilesTimer, /network-online\.target/);
 });
 
+test("Home Manager raises the systemd user-manager nofile limit", async () => {
+  const home = await source("home/home.nix");
+  assert.match(
+    home,
+    /xdg\.configFile\."systemd\/user\.conf\.d\/50-nofile\.conf"\.text\s*=\s*"\[Manager\]\\nDefaultLimitNOFILE=524288:524288\\n";/,
+    "missing durable systemd user-manager nofile drop-in",
+  );
+});
+
 test("Home Manager activation does not launch emergency backup jobs", async () => {
   const backup = await source("home/modules/home-emergency-backup.nix");
   assert.match(backup, /X-SwitchMethod\s*=\s*"keep-old"/);
@@ -131,37 +140,8 @@ test("home emergency backup ssh command never shares an ssh connection with sibl
   );
 });
 
-test("home emergency backups bound cache, memory, bandwidth, and night scheduling", async () => {
-  const emergencyBackup = await source("home/modules/home-emergency-backup.nix");
-  assert.match(emergencyBackup, /chunker_params\s*=\s*"buzhash,19,23,21,4095"/);
-  assert.match(emergencyBackup, /files_cache\s*=\s*"mtime,size"/);
-  assert.match(emergencyBackup, /exclude_caches\s*=\s*true/);
-  assert.match(emergencyBackup, /unsafe_skip_path_validation_before_create\s*=\s*true/);
-  assert.match(emergencyBackup, /configStorePath\s*=\s*name:/);
-  assert.match(emergencyBackup, /--config \$\{configStorePath name\}/);
-  assert.match(emergencyBackup, /IOReadBandwidthMax\s*=\s*"\/dev\/sda 40M"/);
-  assert.match(emergencyBackup, /IOWriteBandwidthMax\s*=\s*"\/dev\/sda 40M"/);
-  assert.match(emergencyBackup, /MemoryHigh\s*=\s*"2G"/);
-  assert.match(emergencyBackup, /MemoryMax\s*=\s*"4G"/);
-  assert.match(emergencyBackup, /schedule\s*=\s*"\*-\*-\* 02:00:00"/);
-  assert.match(emergencyBackup, /schedule\s*=\s*"\*-\*-\* 04:00:00"/);
-  assert.match(emergencyBackup, /code\/worktrees\/\*\*\/target/);
-});
 
-test("borg backups use explicit small source roots", async () => {
-  const backup = await source("home/modules/home-emergency-backup.nix");
-  assert.match(backup, /emergencySourceDirectories\s*=\s*\[/);
-  assert.match(backup, /code\/singularity-engine/);
-  assert.match(backup, /code\/jcode/);
-  assert.match(backup, /source_directories = emergencySourceDirectories/);
-  assert.doesNotMatch(backup, /source_directories = \[homeDir\]/);
-  assert.doesNotMatch(backup, /"\$\{homeDir\}\/code"\n/);
-  assert.match(backup, /source_directories = hotSourceDirectories/);
-  assert.match(backup, /MemoryMax = "4G"/);
-});
-
-
-test("borgmatic hot-source backup replaces mutating git snapshots safely", async () => {
+test("borgmatic worktree backup remains; hot-source timers and jobs are gone", async () => {
   const backup = await source("home/modules/home-emergency-backup.nix");
   const home = await source("home/home.nix");
 
@@ -184,35 +164,25 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
     assert.match(backup, new RegExp(`\\$\\{homeDir\\}\\/${root.replaceAll(".", "\\.")}`));
   }
   assert.match(backup, /"\/srv\/infra"/);
-  assert.match(backup, /hot-source-hel1/);
-  assert.match(backup, /hot-source-fsn1/);
-  // operator 2026-10-24: hourly staggered (hel1 even hours, fsn1 odd hours);
-  // lane worktrees leave the hot-source walk and get one nightly run per site.
-  assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* 00\/2:00:00"/);
-  assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* 01\/2:00:00"/);
-  assert.match(backup, /exclude_patterns = hotSourceExcludes \+\+ \[worktreeRoot\]/);
+  // 2026-10-31: hot-source hel1/fsn1 systemd jobs removed (disk saturation).
+  assert.doesNotMatch(backup, /hotSourceRunner|hotSourceTimersEnabled|hotConfigPath/);
+  assert.doesNotMatch(backup, /nameValuePair "hot-source-\$\{name\}"/);
+  // No live borgmatic.d/hot-source-*.yaml config publication (retire may still rm orphans).
+  assert.doesNotMatch(backup, /nameValuePair "borgmatic\.d\/hot-source-/);
+  assert.match(backup, /retireHotSourceBackup/);
   assert.match(backup, /worktreeRoot = "\$\{homeDir\}\/code\/worktrees"/);
   assert.match(backup, /worktrees-hel1 = \{/);
   assert.match(backup, /worktrees-fsn1 = \{/);
   assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* 02:30:00"/);
   assert.match(backup, /OnCalendar\s*=\s*"\*-\*-\* 03:30:00"/);
-  // one shared lock: hot-source skips when held, the nightly run waits for it
-  assert.match(backup, /hotSourceRunner = name: borgRunner "hot-source-\$\{name\}" \(hotConfigPath name\) "-n"/);
   assert.match(backup, /worktreeRunner = name: borgRunner "worktrees-\$\{name\}" \(worktreeConfigPath name\) "--wait 21600"/);
-  assert.match(backup, /match_archives = "sh:\$\{backupHost\}-hot-source-\$\{name\}-\*"/);
   assert.match(backup, /match_archives = "sh:\$\{backupHost\}-worktrees-\$\{name\}-\*"/);
   // the daily whole-home emergency backup must not walk the lane worktrees either
   assert.match(backup, /"\$\{homeDir\}\/\.cache"\n(?:\s*#.*\n)*\s*"\$\{homeDir\}\/code\/worktrees"/);
-  assert.match(backup, /RandomizedDelaySec\s*=\s*"2min"/);
   assert.match(backup, /Type\s*=\s*"exec"/);
-  // Was 60min: raised so a cold-cache create (observed running 36+ min
-  // without finishing even after removing the redundant pre-create
-  // validation walk) has room to complete once. See
-  // unsafe_skip_path_validation_before_create below.
-  assert.match(backup, /RuntimeMaxSec\s*=\s*"115min"/);
   assert.match(backup, /Nice\s*=\s*19/);
   assert.match(backup, /IOSchedulingClass\s*=\s*"idle"/);
-  assert.match(backup, /lock="\$XDG_RUNTIME_DIR\/borgmatic-hot-source\.lock"/);
+  assert.match(backup, /lock="\$XDG_RUNTIME_DIR\/borgmatic-worktrees\.lock"/);
   assert.match(backup, /flock \$\{lockMode\} -E 75 "\$lock"/);
   assert.match(backup, /borgmatic[^\n]*create/);
   assert.match(backup, /borg_hot_source_passphrase/);
@@ -221,23 +191,19 @@ test("borgmatic hot-source backup replaces mutating git snapshots safely", async
   assert.doesNotMatch(backup, /repo-create --encryption none/);
   assert.match(backup, /create prune compact/);
   assert.match(backup, /make_parent_directories\s*=\s*true/);
-  // Hot-source has no database hooks, so borgmatic's unconditional
-  // pre-create "borg create --dry-run --list" validation pass (meant only
-  // to confirm a runtime hook directory survives excludes) re-walks the
-  // whole large source tree for nothing. Observed 2026-09-24 consuming
-  // most of the RuntimeMaxSec budget every cycle, so every hel1 run ended
-  // "Failed with result 'timeout'" and no archive completed 2026-09-11 ->
-  // 2026-09-24. Must stay skipped.
   assert.match(backup, /unsafe_skip_path_validation_before_create\s*=\s*true/);
-  assert.match(
-    backup,
-    /hot-source-(?:hel1|fsn1)[\s\S]*?Install\.WantedBy\s*=\s*\["timers\.target"\]/,
-    "hot-source timers must activate through timers.target",
-  );
   assert.doesNotMatch(backup, /GIT_INDEX_FILE|git\s+add|update-ref|refs\/backup/);
-  for (const excluded of ["**/target", "**/node_modules", "**/.direnv", "**/.cache"]) {
-    assert.match(backup, new RegExp(excluded.replaceAll("*", "\\*").replaceAll("/", "\\/")));
+  for (const excluded of ["**/target", "**/.target", "**/node_modules", "**/.direnv"]) {
+    assert.match(
+      backup,
+      new RegExp(excluded.replaceAll(".", "\\.").replaceAll("*", "\\*").replaceAll("/", "\\/")),
+    );
   }
+  // .cache uses a regex exclude (not **/ glob) so a source root under .cache is kept.
+  assert.match(backup, /re:\(\^\|\/\)\\\\\.cache\$/);
+  // Home emergency backup must skip both Cargo target spellings too.
+  assert.match(backup, /\$\{homeDir\}\/\*\*\/target/);
+  assert.match(backup, /\$\{homeDir\}\/\*\*\/\.target/);
 });
 
 test("Home Manager gives every managed agent client a deterministic UTF-8 locale", async () => {
@@ -553,17 +519,16 @@ test("Home Manager uses the nixpkgs mise package without a private overlay", asy
   assert.match(flake, /packages\.home-manager\s*=\s*home-manager\.packages\.\$\{sys\}\.home-manager;/);
   assert.match(bootstrap, /"path:\$ROOT_DIR#home-manager" -- switch/);
   assert.doesNotMatch(bootstrap, /home-manager\/master|nix profile install/);
-  assert.match(updater, /"\$mise_bin" install --yes/);
-  assert.match(updater, /"\$mise_bin" upgrade --yes/);
   assert.match(packages, /^\s*gnumake\b/m);
   assert.match(packages, /^\s*pkg-config\b/m);
   assert.match(packages, /\bpython3\b/m);
-  assert.match(updater, /uninstall python --all --yes/);
   assert.doesNotMatch(updater, /pythonBuildDeps|NIX_CFLAGS_COMPILE|NIX_LDFLAGS/);
   assert.doesNotMatch(updater, /nix develop|just mise-upgrade/);
+  // No systemd auto-update timer (crush/cosign failures); operator upgrades.
+  assert.doesNotMatch(updater, /systemd\.user\.(services|timers)\.mise-auto-update/);
 });
 
-test("mise is managed by mise and updates itself without a flake bump", async () => {
+test("mise is managed by mise without a flake bump; no auto-update timer", async () => {
   const miseConfig = await source("config/mise/config.toml");
   const updater = await source("home/modules/mise-auto-update.nix");
 
@@ -577,26 +542,20 @@ test("mise is managed by mise and updates itself without a flake bump", async ()
   // The old unsigned GitHub release backend must not come back.
   assert.doesNotMatch(miseConfig, /^mise\s*=\s*"github:jdx\/mise"$/m);
 
-  // The auto-update service still runs mise's own install/upgrade path, which
-  // now covers mise itself.
-  assert.match(updater, /"\$mise_bin" install --yes/);
-  assert.match(updater, /"\$mise_bin" upgrade --yes/);
-
   // nixpkgs disables `mise self-update` (.disable-self-update marker plus a
   // read-only store), so the nixpkgs copy stays the bootstrap and the managed
-  // copy needs its own PATH entry ahead of it.
+  // copy needs its own PATH entry ahead of it (activation linkManagedMise).
   assert.match(updater, /\.local\/share\/mise\/installs\/mise\/latest\/bin\/mise/);
   assert.match(updater, /\.local\/bin\/mise/);
+  assert.match(updater, /home\.activation\.linkManagedMise/);
   // The PATH entry must be a symlink to the managed binary, not a wrapper
   // script: mise points its shim farm at the mise it finds on PATH, and a
   // script there breaks argv[0] dispatch for every other tool.
   assert.match(updater, /ln -s "\$managed" "\$HOME\/\.local\/bin\/mise"/);
   assert.doesNotMatch(updater, /home\.file\."\.local\/bin\/mise"/);
-  // The update script must not shell out to `mise self-update`: nixpkgs
-  // disables it and the store is read-only.
-  assert.doesNotMatch(updater, /"\$mise_bin" self-update/);
+  assert.doesNotMatch(updater, /self-update/);
+  assert.doesNotMatch(updater, /systemd\.user\.(services|timers)\.mise-auto-update/);
 });
-
 test("Codex native daemon owns package selection and lifecycle", async () => {
   const home = await source("home/home.nix");
   const daemon = await source("home/modules/codex-managed-daemon.nix");
@@ -620,18 +579,15 @@ test("daily python3 is nixpkgs, not mise", async () => {
   const env = await source("config/common/env.sh");
   const packages = await source("home/modules/packages.nix");
   const flake = await source("flake.nix");
-  const updater = await source("home/modules/mise-auto-update.nix");
   const activation = await source("home/modules/activation.nix");
 
   assert.doesNotMatch(mise, /^\s*python\s*=/m);
   assert.doesNotMatch(env, /^export MISE_ECOSYSTEM_PYTHON=/m);
   assert.match(packages, /\bpython3\b/m);
   assert.match(flake, /^\s*python3\b/m);
-  assert.match(updater, /uninstall python --all --yes/);
   assert.match(activation, /retireMisePython/);
   assert.doesNotMatch(flake, /mise\/python-build|python@latest/);
 });
-
 test("Home Manager activation uses the non-deprecated nix profile command", async () => {
   const flake = await source("flake.nix");
   assert.match(flake, /activationPackage = home\.activationPackage\.overrideAttrs/);

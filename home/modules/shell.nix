@@ -304,6 +304,14 @@ in {
       '';
     };
 
+    # Cursor Agent spawns this absolute path for Shell (`zsh -c`). Must be
+    # real pkgs.zsh (programs.zsh already enables it in the profile). Do not
+    # replace with a bash trampoline — that caused spawn EACCES when mode 644.
+    ".local/bin/zsh" = {
+      source = "${pkgs.zsh}/bin/zsh";
+      force = true;
+    };
+
     # Cursor agent terminal snap helpers (no-op; silences command-not-found).
     ".local/bin/dump_zsh_state" = {
       executable = true;
@@ -390,6 +398,9 @@ in {
     ll = "eza -la --group-directories-first --git";
     lt = "eza --tree --level=2 --group-directories-first";
     la = "eza -la --group-directories-first --git --all";
+
+    # Rust disk-usage scanner; keep scans single-threaded and on one filesystem.
+    du = "dust -T 1 -x";
 
     # bat-powered man pages
     man = "batman";
@@ -509,6 +520,7 @@ in {
     # already keeps the built shell; per-input roots fan out across worktrees.
     direnv = {
       enable = true;
+      package = pkgs.direnv;
       # The devbox installs direnv-instant from its NixOS host module. A second
       # Home Manager hook would synchronously evaluate the same .envrc after
       # the instant hook, defeating non-blocking activation. Other Home Manager

@@ -28,6 +28,32 @@ test("SHELL points directly at an immutable store wrapper", async () => {
   assert.doesNotMatch(source, /sessionVariables\.SHELL = stableBash/);
 });
 
+// Cursor Agent spawns ~/.local/bin/zsh by absolute path. That must be real
+// pkgs.zsh from shell.nix — never a bash trampoline in stable-shell (a
+// mode-644 trampoline caused spawn EACCES; a bash symlink lies about the shell).
+test("stable-shell does not own ~/.local/bin/zsh", async () => {
+  const stable = await readFile("home/modules/stable-shell.nix", "utf8");
+  assert.doesNotMatch(
+    stable,
+    /\.local\/bin\/zsh/,
+    "zsh belongs in shell.nix as pkgs.zsh, not as a stable-shell bash trampoline",
+  );
+});
+
+test("shell.nix publishes ~/.local/bin/zsh as real pkgs.zsh", async () => {
+  const shell = await readFile("home/modules/shell.nix", "utf8");
+  assert.match(
+    shell,
+    /\.local\/bin\/zsh/,
+    "home.file must install ~/.local/bin/zsh for Cursor Agent spawn",
+  );
+  assert.match(
+    shell,
+    /source = "\$\{pkgs\.zsh\}\/bin\/zsh"/,
+    "~/.local/bin/zsh must symlink to pkgs.zsh, not a bash wrapper",
+  );
+});
+
 test("stable-shell delegates non-interactive direnv loading to BASH_ENV", async () => {
   const source = await readFile("home/modules/stable-shell.nix", "utf8");
   assert.equal(source.match(/export BASH_ENV=/g)?.length, 2);
@@ -110,6 +136,14 @@ test("ordinary non-interactive shells enter direnv once with a bounded wait", as
   assert.equal(otherRepo.status, 0);
   assert.equal(otherRepo.stdout, "1", "cross-repo shell must load the new environment");
   assert.equal(await readFile(log, "utf8"), "export bash\n");
+});
+
+test("Home Manager direnv uses export-shell guard overlay", async () => {
+  const flake = await readFile("flake.nix", "utf8");
+  assert.match(flake, /direnv-export-shell-guard\.nix/);
+  assert.match(flake, /config\/direnv\/direnv-export-shell-guard/);
+  const shellModule = await readFile("home/modules/shell.nix", "utf8");
+  assert.match(shellModule, /package = pkgs\.direnv;/);
 });
 
 test("Home Manager uses direnv-instant for interactive shells", async () => {

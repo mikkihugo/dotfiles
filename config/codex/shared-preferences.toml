@@ -2,103 +2,26 @@
 # Update from a machine with: codex-preferences save
 # Applied to each machine by Home Manager activation.
 
-# Operator 2026-09-22: default to Luna Reserve (gpt-reserve); terra/sol only when a task needs them.
 model = "gpt-reserve"
 model_provider = "openai"
 model_reasoning_effort = "medium"
-developer_instructions = """
-## Purpose PDD + ADR-0000
-
-Iron law: no behavior change without a PurposeContract and failing or stale
-proof first.
-
-PDD nine fields (mandatory for non-trivial bounded work):
-purpose, consumer, contract, failureBoundary, evidence, falsifier, nonGoals,
-invariants, assumptions (each `doubt=0..4` plus a falsifier).
-
-Evidence is executable (test, command, metric, repro, live-state check, or
-`[MANUAL: reviewer + scenario]`). Prose is not evidence. Do not invent system
-state, command results, API behavior, or successful verification.
-
-ADR-0000 lifecycle:
-1. Capture bounded intent.
-2. Translate it into a PurposeContract/PDD.
-3. Research missing context and expose assumptions.
-4. Run-control: risk, doubt, reversibility, blast radius, cost, approval.
-5. Map to the Feature Tree and generate a WorkSpec.
-6. Contract tests or executable evidence before implementation.
-7. Smallest satisfying change.
-8. Verify tests, quality, runtime, deployment, and falsifier evidence.
-9. Persist an EvidenceBundle, close the work, scoped learning.
-
-Cosmetic self-contained work with no behavior, policy, proof, consumer, or
-public-contract impact is out of scope. Everything else is in.
-
-Load `using-skills`, then `purpose-first`. Full doctrine:
-`~/.agents/skills/purpose-first/SKILL.md`. ADR:
-`docs/adr/0000-purpose-to-software-fabric.md` in singularity-engine.
-
-Done: named purpose, named consumer, proof run (failed first for a behavior
-change), evidence on disk, named falsifier.
-
-## Subagent routing
-
-At every `spawn_agent` call, select and state the least-cost capable model and
-reasoning effort. Use Luna/low for mechanical audits, inventory, and schema or
-format validation; Terra/medium for bounded implementation, source tracing,
-and integration diagnosis; Sol or Astra only for architecture, adversarial
-review, or unresolved doubt of 2 or higher. Never silently use the default
-model for delegated work.
-"""
-# Hosted web search is enabled for the OpenAI primary profile.
 web_search = "live"
-
-# AGENTS.md read cap. Default is 32768, verified by measurement: a 89,970-byte
-# AGENTS.md in a scratch repo was truncated at exactly 32 KiB (markers past that
-# were invisible to the model). That silently discarded 55% of
-# singularity-forge/AGENTS.md, 36% of singularity-engine and 24% of unity-coder,
-# including the "MCP tools you will need" and "Skill index" sections.
+developer_instructions = "## Purpose PDD + ADR-0000\n\nIron law: no behavior change without a PurposeContract and failing or stale\nproof first.\n\nPDD nine fields (mandatory for non-trivial bounded work):\npurpose, consumer, contract, failureBoundary, evidence, falsifier, nonGoals,\ninvariants, assumptions (each `doubt=0..4` plus a falsifier).\n\nEvidence is executable (test, command, metric, repro, live-state check, or\n`[MANUAL: reviewer + scenario]`). Prose is not evidence. Do not invent system\nstate, command results, API behavior, or successful verification.\n\nADR-0000 lifecycle:\n1. Capture bounded intent.\n2. Translate it into a PurposeContract/PDD.\n3. Research missing context and expose assumptions.\n4. Run-control: risk, doubt, reversibility, blast radius, cost, approval.\n5. Map to the Feature Tree and generate a WorkSpec.\n6. Contract tests or executable evidence before implementation.\n7. Smallest satisfying change.\n8. Verify tests, quality, runtime, deployment, and falsifier evidence.\n9. Persist an EvidenceBundle, close the work, scoped learning.\n\nCosmetic self-contained work with no behavior, policy, proof, consumer, or\npublic-contract impact is out of scope. Everything else is in.\n\nLoad `using-skills`, then `purpose-first`. Full doctrine:\n`~/.agents/skills/purpose-first/SKILL.md`. ADR:\n`docs/adr/0000-purpose-to-software-fabric.md` in singularity-engine.\n\nDone: named purpose, named consumer, proof run (failed first for a behavior\nchange), evidence on disk, named falsifier.\n\n## Subagent routing\n\nAt every `spawn_agent` call, select and state the least-cost capable model and\nreasoning effort. Use Luna/low for mechanical audits, inventory, and schema or\nformat validation; Terra/medium for bounded implementation, source tracing,\nand integration diagnosis; Sol or Astra only for architecture, adversarial\nreview, or unresolved doubt of 2 or higher. Never silently use the default\nmodel for delegated work.\n\n## Response discipline\n\nFor direct questions and status checks, answer in at most three concise lines.\nDo not restate unchanged context, prior plans, or already-reported evidence.\nFor implementation work, report only changed state, verification, and blockers.\nDo not narrate routine tool calls.\nIf the action is clear, act; ask only for missing authority or irreversible choices.\n"
 project_doc_max_bytes = 131072
-
-# Per-tool-output storage budget. Measured across 8,434 real tool outputs:
-# p50 145 tok, p95 8.9k, p99 10.9k, max 58.7k. 32k truncates 0.1% of them, so it
-# only clips pathological outliers before they consume the context window.
 tool_output_token_limit = 32000
 
-# Codex's own on-disk memory store is off. Durable agent memory belongs in the
-# repo_memory bank reached through the CentralCloud MCP gateway: a per-client
-# store is invisible to every other coding client, so a fact learned in Codex is
-# re-learned or contradicted in Claude Code, Cursor, or Qoder, and nothing
-# supersedes, retains, or purges across them.
-#
-# ~/.codex/config.toml is mutable and rewritten by Codex itself, which is why
-# these live here (re-applied every activation) and not only in config.toml
-# (seeded once). ~/.codex/memories/skills and ~/.codex/memories/.agents are the
-# authored instruction plane, not memory, and are untouched by these flags.
+[tui]
+status_line = ["model-with-reasoning", "current-dir", "project-name", "git-branch", "run-state", "five-hour-limit", "weekly-limit", "thread-id", "thread-title", "task-progress"]
+
 [features]
+memories = false
 context_management = true
 step_model_switching = true
 mcp_2026_07_28 = true
-memories = false
 
 [memories]
 use_memories = false
 generate_memories = false
-
-# Signal-specific OTLP/HTTP paths are required by the collector. This block is
-# applied on every activation so mutable ~/.codex/config.toml cannot retain a
-# stale root endpoint that returns 404.
-[otel]
-environment = "devbox"
-log_user_prompt = false
-exporter = {otlp-http = {endpoint = "http://otel-collector.monitoring.svc.cluster.local:4318/v1/logs", protocol = "binary", headers = {}}}
-trace_exporter = {otlp-http = {endpoint = "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces", protocol = "binary", headers = {}}}
-
-[model_providers.minimax]
-name = "MiniMax"
-base_url = "https://api.minimax.io/v1"
-env_key = "MINIMAX_API_KEY"
-wire_api = "responses"
 
 [agents.scout]
 description = "Read-only scout (GPT-6 Luna): mechanical inventory, structural audit, and bounded evidence collection."
@@ -111,6 +34,3 @@ config_file = "agents/implementer.toml"
 [agents.reviewer]
 description = "Adversarial reviewer (GPT-5.6 Sol): architectural review, risk analysis, and evidence challenge."
 config_file = "agents/reviewer.toml"
-
-[tui]
-status_line = ["model-with-reasoning", "current-dir", "project-name", "git-branch", "run-state", "five-hour-limit", "weekly-limit", "thread-id", "thread-title", "task-progress"]

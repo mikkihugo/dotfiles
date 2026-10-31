@@ -8,7 +8,8 @@
   "terminal.integrated.fontSize": 13,
   "terminal.integrated.lineHeight": 1.2,
 
-  // Use zsh (managed by home-manager) as the default terminal shell in WSL
+  // Interactive terminal profile only. Cursor Agent Shell spawns
+  // ~/.local/bin/zsh (HM → pkgs.zsh in shell.nix), not this path.
   "terminal.integrated.defaultProfile.linux": "zsh",
   "terminal.integrated.profiles.linux": {
     "zsh": {

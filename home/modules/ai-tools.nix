@@ -685,7 +685,7 @@ in {
         # npm, so `opencode upgrade` can detect its install method and
         # self-upgrade.
         # llm-pkgs.goose-cli # disabled — Rust rebuild on aarch64
-        # droid is managed globally by mise (wrapped below for OTEL).
+        # droid is managed globally by npm (wrapped below for OTEL).
         gooseGatewayWrapper # binary: goose -> resolves provider; openai uses llm-gateway
         gooseModels # binary: goose-models -> list llm-gateway /v1/models
         gooseClaude # binary: goose-claude -> claude-acp
@@ -979,7 +979,7 @@ in {
         text = cursorAgentEntrypoint;
       };
 
-      # Factory Droid — mise-managed; inject OTEL.
+      # Factory Droid — npm-managed; inject OTEL.
       ".local/bin/droid" = {
         executable = true;
         force = true;
@@ -989,7 +989,7 @@ in {
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
           export OTEL_SERVICE_NAME="factory-droid"
-          exec "$HOME/.local/share/mise/shims/droid" "$@"
+          exec "$HOME/.npm-global/bin/droid" "$@"
         '';
       };
 

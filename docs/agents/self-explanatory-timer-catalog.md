@@ -1,7 +1,7 @@
 # Self-explanatory timer catalog (cc-se-sto-devbox-01)
 
 Date: 2026-09-11
-Source: `systemctl --user list-unit-files '*.timer'` + `systemctl --user list-timers --all` + `systemctl list-timers --all`. Total: 35 timer unit-files on disk (25 user + 10 system); 23 user unit-files currently appear in `list-timers --all` (21 distinct names; `hot-source-fsn1.timer` and `engine-workspace-reconcile.timer` are loaded but have no `NEXT` schedule on the captured snapshot).
+Source: `systemctl --user list-unit-files '*.timer'` + `systemctl --user list-timers --all` + `systemctl list-timers --all`. Counts drift; re-measure after Home Manager changes. Removed 2026-10-31: `hot-source-*`, `mise-auto-update`, `prior-art-daily`, `budget-autofix-watchdog`, `codex-tick-salvage`.
 Naming convention: `<scope>-<subject>-<verb>.timer` (best-effort; many entries use parens as placeholders where the unit name does not decompose cleanly).
 Scope note: this catalog covers only **devbox systemd timers**. Kubernetes CronJobs on the cluster (≈30 entries; `kubectl get cronjobs -A`) are tracked separately and out of scope.
 
@@ -23,10 +23,7 @@ question without leaving the terminal.
 | `jcode-swarm-fleet-watchdog.timer` | 5m | jcode | swarm fleet | watchdog | Pings the jcode swarm Fleet remote to confirm its heartbeat is fresh; pages if it has been silent too long |
 | `reap-abandoned-searches.timer` | 5m | (jcode) | abandoned searches | reap | Sweeps jcode search tables for `status='abandoned'` rows older than the grace window and drops them |
 | `dotfiles-auto-update.timer` | 30m | dotfiles | (sources) | auto-update | Re-evaluates `~/.dotfiles` flake and rebuilds home-manager activation when inputs change |
-| `hot-source-hel1.timer` | 30m | hot-source | hel1 | (rebuild) | Rebuilds the devbox hot-path nix closures used by interactive `direnv` sessions (e.g. `se-vcs`, `repo`) |
-| `hot-source-fsn1.timer` | 30m (`OnCalendar=*:15/30:00`; loaded but no `NEXT` on snapshot) | hot-source | fsn1 | (rebuild) | FSN1 counterpart of `hot-source-hel1.timer`; unit file present, currently outside the active schedule |
 | `sshid-key-sync.timer` | 30m | sshid | key | sync | Pulls the operator SSH pubkey into `~/.ssh/authorized_keys` so the nixos-host-operator can reach this host |
-| `budget-autofix-watchdog.timer` | 20m | budget | (events) | autofix watchdog | Watches for budget-overshoot events and auto-applies a cost-cap fixup |
 | `jcode-swarm-auto-deploy.timer` | 25m | jcode | swarm | auto-deploy | Triggers a fleet auto-deploy of jcode-worker if a newer image is published |
 | `jcode-workspace-janitor.timer` | 30m | jcode | workspace | janitor | Cleans orphan jcode worktrees under `~/.kimi-code/scratch` |
 | `disk-cleanup.timer` | 1h | (system) | disk | cleanup | Trims the devbox's `/var/log` and `/tmp` when disk usage crosses threshold |
@@ -39,7 +36,6 @@ question without leaving the terminal.
 | `nix-gc-sweep.timer` | 24h | nix | gc roots | sweep | Prunes nix-direnv gc roots, `nix-collect-garbage --delete-older-than 1d`, then `nix-gc-reprovision` (direnv warm for Engine/jcode/`/srv/infra` + `se_repo_vcs_bin.sh` on Engine) |
 | `nix-gc-reprovision.service` | (OnSuccess) | nix | dev shells | reprovision | Standalone warm step; also runs after `nix-gc.service` and at end of `nix-gc-sweep` (not post-land; Engine/JCode land queues `engine-default-refresh` / `jcode-primary-refresh` via `repo`) |
 | `systemd-tmpfiles-clean.timer` | 24h | systemd | tmpfiles | clean | Runs `systemd-tmpfiles --clean` for `/tmp` age-out |
-| `mise-auto-update.timer` | 24h | mise | (toolchain) | auto-update | Refreshes `mise` runtime shims to the latest pinned toolchain |
 | `long-term-cleanup.timer` | weekly (Sun 04:00) | nix | long-term cache | cleanup | Weekly Nix-managed long-term cache cleanup (Sunday 04:00) |
 | `nix-index-update.timer` | weekly | nix | (file index) | update | Weekly Nix-generated file-index update |
 > Note: repository workspace reconciliation is owned by the NixOS operator's
@@ -83,13 +79,10 @@ Each is a 1-line change in the corresponding unit file or `.nix` source:
 | `workspace-janitor.timer` | `workspace-janitor-half-hourly.timer` |
 | `jcode-swarm-auto-deploy.timer` | `jcode-swarm-auto-deploy-quarter-hourly.timer` |
 | `jcode-swarm-fleet-watchdog.timer` | `jcode-swarm-fleet-watchdog-five-minutely.timer` |
-| `budget-autofix-watchdog.timer` | `budget-autofix-watchdog-twenty-minutely.timer` |
 | `reap-abandoned-searches.timer` | `reap-abandoned-searches-five-minutely.timer` |
-| `hot-source-hel1.timer` | `hot-source-hel1-rebuild-half-hourly.timer` |
 | `disk-cleanup.timer` | `disk-cleanup-hourly.timer` |
 | `dotfiles-auto-update.timer` | `dotfiles-auto-update-half-hourly.timer` |
 | `sshid-key-sync.timer` | `sshid-key-sync-half-hourly.timer` |
-| `mise-auto-update.timer` | `mise-auto-update-daily.timer` |
 | `home-emergency-backup-fsn1.timer` | `home-emergency-backup-fsn1-twelve-hourly.timer` |
 | `home-emergency-backup-hel1.timer` | `home-emergency-backup-hel1-daily.timer` |
 | `devbox-disk-pressure.timer` | `devbox-disk-pressure-five-minutely.timer` |

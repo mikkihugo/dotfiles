@@ -18,6 +18,8 @@
     # VSCode: terminal font (Nerd Font), shell (zsh), editor defaults.
     # WSL2: also install the font on the Windows side for VSCode Remote:
     #   winget install -e --id DEVCOM.JetBrainsMonoNerdFont
+    # Cursor Agent Shell is NOT controlled here — see shell.nix
+    # home.file.".local/bin/zsh" → pkgs.zsh.
     ".config/Code/User/settings.json" = {
       source = ../../config/vscode/settings.json;
       force = true;
@@ -179,6 +181,31 @@
 
     ".factory/droids/user-testing-flow-validator.md" = {
       source = ../../config/factory/droids/user-testing-flow-validator.md;
+      force = true;
+    };
+
+    ".factory/droids/mission-plan-validator.md" = {
+      source = ../../config/factory/droids/mission-plan-validator.md;
+      force = true;
+    };
+
+    ".factory/droids/repo-explorer.md" = {
+      source = ../../config/factory/droids/repo-explorer.md;
+      force = true;
+    };
+
+    ".factory/droids/debugger.md" = {
+      source = ../../config/factory/droids/debugger.md;
+      force = true;
+    };
+
+    ".factory/droids/security-reviewer.md" = {
+      source = ../../config/factory/droids/security-reviewer.md;
+      force = true;
+    };
+
+    ".factory/droids/release-readiness.md" = {
+      source = ../../config/factory/droids/release-readiness.md;
       force = true;
     };
 

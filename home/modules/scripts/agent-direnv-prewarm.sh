@@ -27,17 +27,25 @@ set -u
 
 STATE_DIR="${AGENT_DIRENV_STATE:-$HOME/.cache/agent-direnv}"
 SNAPSHOT_MAX_AGE_S=86400
+EXPORT_TIMEOUT_S="${AGENT_DIRENV_EXPORT_TIMEOUT_S:-600}"
+EXPORT_BUDGET_S="${AGENT_DIRENV_EXPORT_BUDGET_S:-1200}"
+EVAL_LOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/codex-fleet-nix-evaluation.lock"
 ROOTS=(
   "/home/mhugo/code/jcode"
   "/home/mhugo/code/singularity-engine"
   "/srv/infra"
 )
 
+# Single-line fingerprint: entries space-joined, no trailing newline. Both
+# producer and consumer must build the string identically (or via $( ) so
+# trailing-newline stripping cannot diverge them).
 fingerprint() {
   local root="$1"
+  local out=""
   for f in .envrc flake.nix flake.lock; do
-    [ -e "$root/$f" ] && printf '%s %s\n' "$f" "$(stat -c '%Y %s' "$root/$f")"
+    [ -e "$root/$f" ] && out="$out$(printf '%s %s ' "$f" "$(stat -c '%Y %s' "$root/$f")")"
   done
+  printf '%s' "$out"
 }
 
 for root in "${ROOTS[@]}"; do
@@ -48,9 +56,24 @@ for root in "${ROOTS[@]}"; do
 
   # Skip-if-fresh: fingerprint match + non-empty env + younger than the cap.
   current_fp=$(fingerprint "$root" || true)
-  if [ -s "$dir/env" ] && [ "$current_fp" = "$(tail -n +2 "$dir/fingerprint" 2>/dev/null || true)" ]; then
-    gen_at=$(tail -n +3 "$dir/fingerprint" 2>/dev/null | date -u -f - +%s 2>/dev/null || echo 0)
-    [ "$gen_at" -lt $(( $(date -u +%s) - SNAPSHOT_MAX_AGE_S )) ] || { echo "prewarm: $root fresh; skip"; continue; }
+  if [ -s "$dir/env" ] && [ "$current_fp" = "$(sed '1d;$d' "$dir/fingerprint" 2>/dev/null || true)" ]; then
+    gen_at=$(tail -n 1 "$dir/fingerprint" 2>/dev/null || echo 0)
+    gen_epoch=$(date -u -d "$gen_at" +%s 2>/dev/null || echo 0)
+    [ "$gen_epoch" -lt $(( $(date -u +%s) - SNAPSHOT_MAX_AGE_S )) ] || { echo "prewarm: $root fresh; skip"; continue; }
+  fi
+
+  fleet_helper="${HOME}/.dotfiles/shell/bash/agent-direnv-fleet-v2-apply.sh"
+  if [ -f "$fleet_helper" ]; then
+    # shellcheck source=/dev/null
+    . "$fleet_helper"
+    if agent_direnv_fleet_v2_write_snapshot "$root" "$new_dir"; then
+      rm -rf "$dir"
+      mv "$new_dir" "$dir"
+      echo "prewarm: hydrated $root from fleet v2 -> $dir/env ($(wc -c <"$dir/env") bytes)"
+      continue
+    fi
+    rm -rf "$new_dir"
+    new_dir="$dir.new.$$"
   fi
 
   # Export capture: retry under singleflight contention within the budget.
@@ -59,18 +82,32 @@ for root in "${ROOTS[@]}"; do
   # swallowed every success exactly that way).
   out=""
   cycle_start=$(date +%s)
+  attempt=0
   while :; do
-    out=$(timeout 180 bash -c "cd -- '$root' && DIRENV_LOG_FORMAT= direnv export bash" 2>/dev/null) || out=""
+    attempt=$((attempt + 1))
+    elapsed=$(( $(date +%s) - cycle_start ))
+    echo "prewarm: export attempt $attempt for $root (${elapsed}s / ${EXPORT_BUDGET_S}s budget); waiting for eval lock (up to ${EXPORT_TIMEOUT_S}s)..." >&2
+    stderr_file="$(mktemp "${TMPDIR:-/tmp}/agent-direnv-prewarm.XXXXXX")"
+    out=$(
+      flock -w "$EXPORT_TIMEOUT_S" "$EVAL_LOCK" \
+        timeout "$EXPORT_TIMEOUT_S" bash -c "cd -- '$root' && DIRENV_LOG_FORMAT= direnv export bash" 2>"$stderr_file"
+    ) || out=""
+    if [ -s "$stderr_file" ]; then
+      sed 's/^/prewarm: direnv: /' "$stderr_file" >&2
+    fi
+    rm -f "$stderr_file"
     [ -n "$out" ] && break
-    [ $(( $(date +%s) - cycle_start )) -ge 420 ] && break
+    [ "$elapsed" -ge "$EXPORT_BUDGET_S" ] && break
+    echo "prewarm: export produced no script for $root; retry in 30s (lock contention or nix still evaluating)" >&2
     sleep 30
   done
   [ -n "$out" ] || { echo "prewarm: export failed for $root after retries; keeping existing snapshot" >&2; continue; }
-  after=$(current_fp)
+  after=$(fingerprint "$root" || true)
 
-  mkdir -p "$dir" "$new_dir"
+  mkdir -p "$new_dir"
   printf '%s\n' "$out" > "$new_dir/env"
   { printf '%s\n' "$root"; printf '%s\n' "$after"; date -u +%FT%TZ; } > "$new_dir/fingerprint"
-  mv -fT "$new_dir" "$dir"
+  rm -rf "$dir"
+  mv "$new_dir" "$dir"
   echo "prewarm: refreshed $root -> $dir/env ($(printf '%s' "$out" | wc -c) bytes)"
 done

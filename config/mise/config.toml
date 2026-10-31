@@ -58,7 +58,10 @@ awscli = { version = "latest", symlink_bins = "true" }
 # claude: managed by the native installer (~/.local/bin/claude, auto-updating), not mise.
 claude-squad = "latest"
 "npm:@kilocode/cli" = "latest"
-"npm:droid" = "latest"
+# droid: managed by the official npm package (`npm i -g droid`,
+# ~/.npm-global/bin/droid), not mise. The mise npm backend reinstalls the
+# package but its postinstall (downloads the platform binary) is blocked by
+# npm's install-scripts policy, which leaves the binary missing.
 azure-cli = { version = "latest", uvx_args = "--prerelease=allow" }
 "npm:wrangler" = "latest"
 vultr-cli = "latest"

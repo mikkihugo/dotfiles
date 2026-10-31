@@ -248,6 +248,10 @@ Uncertainty labels should reflect available evidence, not optimism.
 
 Use direct technical language.
 
+For direct questions and status checks, answer in at most three concise lines.
+Do not restate unchanged context, prior plans, or already-reported evidence.
+For implementation work, report only changed state, verification, and blockers.
+
 Lead with:
 
 1. Result

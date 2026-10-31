@@ -105,7 +105,7 @@ swarm_lane_provisioning = true
 
 # Ambient mode on (operator 2026-10-18): one background agent at a time,
 # OAuth/free routes only, pauses while an interactive session is active.
-# Its first queued job is the jcode `repo lane sweep` follow-up.
+# Its first queued job is the jcode `repo lane cleanup` follow-up.
 [ambient]
 enabled = true
 allow_api_keys = false

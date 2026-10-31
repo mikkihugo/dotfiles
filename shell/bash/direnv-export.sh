@@ -96,7 +96,7 @@ _direnv_cleanup() {
 	unset -f _direnv_restore_caller_path 2>/dev/null || true
 	unset -f _direnv_skip_enter _direnv_cleanup _direnv_envrc_root \
 		_direnv_cache_key _direnv_store_paths_exist _direnv_eval_hit _direnv_fill_cache \
-		_direnv_prune_dead_dumps _direnv_do_enter 2>/dev/null || true
+		_direnv_try_prewarm_snapshot _direnv_prune_dead_dumps _direnv_do_enter 2>/dev/null || true
 }
 
 # Re-append every caller PATH entry the applied environment dropped. Append and
@@ -324,8 +324,89 @@ _direnv_prune_root_generations() {
 		done
 }
 
+# Serve a trusted ~/.cache/agent-direnv snapshot into the runtime dump cache.
+# Agent shells load this file via BASH_ENV; they do not call `direnv-agent`, so
+# a warm prewarm snapshot was invisible to them and every miss restarted a
+# cold `direnv export` under the eval lock (2026-10-30 jcode wait storm).
+_direnv_try_prewarm_snapshot() {
+	[ -n "${_direnv_root:-}" ] && [ -n "${_direnv_key:-}" ] || return 1
+	command -v sha256sum >/dev/null 2>&1 || return 1
+	_direnv_prewarm_state="${AGENT_DIRENV_STATE:-$HOME/.cache/agent-direnv}"
+	_direnv_prewarm_hash=$(printf '%s' "$_direnv_root" | sha256sum)
+	_direnv_prewarm_hash=${_direnv_prewarm_hash%% *}
+	_direnv_prewarm_dir="${_direnv_prewarm_state}/${_direnv_prewarm_hash}"
+	[ -s "${_direnv_prewarm_dir}/env" ] || return 1
+
+	_direnv_fp_now=""
+	for _direnv_f in .envrc flake.nix flake.lock; do
+		[ -e "${_direnv_root}/${_direnv_f}" ] &&
+			_direnv_fp_now="${_direnv_fp_now}$(printf '%s %s ' "$_direnv_f" "$(stat -c '%Y %s' "${_direnv_root}/${_direnv_f}")")"
+	done
+	_direnv_fp_snap=$(sed '1d;$d' "${_direnv_prewarm_dir}/fingerprint" 2>/dev/null || true)
+	[ -n "$_direnv_fp_now" ] && [ "$_direnv_fp_now" = "$_direnv_fp_snap" ] || {
+		unset _direnv_prewarm_state _direnv_prewarm_hash _direnv_prewarm_dir _direnv_fp_now _direnv_fp_snap _direnv_f
+		return 1
+	}
+	_direnv_gen_at=$(tail -n 1 "${_direnv_prewarm_dir}/fingerprint" 2>/dev/null || echo 0)
+	_direnv_gen_epoch=$(date -u -d "$_direnv_gen_at" +%s 2>/dev/null || echo 0)
+	if [ "$_direnv_gen_epoch" -le 0 ] ||
+		[ "$_direnv_gen_epoch" -lt $(($(date -u +%s) - 86400)) ]; then
+		unset _direnv_prewarm_state _direnv_prewarm_hash _direnv_prewarm_dir _direnv_fp_now _direnv_fp_snap _direnv_f _direnv_gen_at _direnv_gen_epoch
+		return 1
+	fi
+	if grep -qF 'NIX_DIRENV_DID_FALLBACK=' "${_direnv_prewarm_dir}/env" 2>/dev/null; then
+		unset _direnv_prewarm_state _direnv_prewarm_hash _direnv_prewarm_dir _direnv_fp_now _direnv_fp_snap _direnv_f _direnv_gen_at _direnv_gen_epoch
+		return 1
+	fi
+
+	_direnv_tmp="${_direnv_cache_dir}/.${_direnv_key}.$$.prewarm.tmp"
+	_direnv_stripped="${_direnv_tmp}.stripped"
+	_direnv_strip_helper="${HOME}/.dotfiles/shell/bash/direnv-strip-snapshot.py"
+	mkdir -p -- "$_direnv_cache_dir" 2>/dev/null || true
+	# Snapshot may already carry an agent-direnv header (fleet v2 hydrate) or be
+	# a raw `direnv export bash` script from prewarm capture.
+	IFS= read -r _direnv_prewarm_hdr <"${_direnv_prewarm_dir}/env" || true
+	case "$_direnv_prewarm_hdr" in
+	"# agent-direnv-envrc-root:${_direnv_root}" | "# agent-direnv-root:${_direnv_root}")
+		cp -f -- "${_direnv_prewarm_dir}/env" "$_direnv_tmp" 2>/dev/null || {
+			unset _direnv_prewarm_state _direnv_prewarm_hash _direnv_prewarm_dir _direnv_fp_now _direnv_fp_snap _direnv_f _direnv_gen_at _direnv_gen_epoch _direnv_tmp _direnv_stripped _direnv_strip_helper _direnv_prewarm_hdr
+			return 1
+		}
+		;;
+	*)
+		if ! command -v python3 >/dev/null 2>&1 ||
+			[ ! -f "$_direnv_strip_helper" ] ||
+			! python3 "$_direnv_strip_helper" <"${_direnv_prewarm_dir}/env" >"$_direnv_stripped" ||
+			[ ! -s "$_direnv_stripped" ]; then
+			rm -f -- "$_direnv_tmp" "$_direnv_stripped"
+			unset _direnv_prewarm_state _direnv_prewarm_hash _direnv_prewarm_dir _direnv_fp_now _direnv_fp_snap _direnv_f _direnv_gen_at _direnv_gen_epoch _direnv_tmp _direnv_stripped _direnv_strip_helper _direnv_prewarm_hdr
+			return 1
+		fi
+		# No `else` before later `direnv export bash` in this file: a static
+		# contract test forbids that shape (else[\s\S]+direnv export bash).
+		{
+			[ -f "${_direnv_root}/.envrc" ] &&
+				printf '# agent-direnv-envrc-root:%s\n' "$_direnv_root"
+			[ -f "${_direnv_root}/.envrc" ] ||
+				printf '# agent-direnv-root:%s\n' "$_direnv_root"
+			cat -- "$_direnv_stripped"
+		} >"$_direnv_tmp"
+		rm -f -- "$_direnv_stripped"
+		;;
+	esac
+	chmod 0600 "$_direnv_tmp" 2>/dev/null || true
+	mv -f -- "$_direnv_tmp" "${_direnv_cache_dir}/${_direnv_key}.bash"
+	_direnv_prune_root_generations
+	unset _direnv_prewarm_state _direnv_prewarm_hash _direnv_prewarm_dir _direnv_fp_now _direnv_fp_snap _direnv_f _direnv_gen_at _direnv_gen_epoch _direnv_tmp _direnv_stripped _direnv_strip_helper _direnv_prewarm_hdr
+	printf 'agent-direnv: served prewarm snapshot for %s\n' "$_direnv_root" >&2
+	_direnv_eval_hit
+}
+
 _direnv_fill_cache() {
 	unset DIRENV_DIFF DIRENV_WATCHES
+	if _direnv_try_prewarm_snapshot; then
+		return 0
+	fi
 	_direnv_tmp="${_direnv_cache_dir}/.${_direnv_key}.$$.tmp"
 	_direnv_stripped="${_direnv_tmp}.stripped"
 	_direnv_strip_helper="${HOME}/.dotfiles/shell/bash/direnv-strip-snapshot.py"
@@ -581,6 +662,16 @@ if [ -n "$_direnv_key" ] && _direnv_stale_file=$(_direnv_stale_dump) && [ -n "$_
 	return 0
 fi
 unset _direnv_stale_file
+
+# Prefer a trusted prewarm snapshot over queueing on the export lock. Publishes
+# a runtime dump so peers hit the cache instead of joining the wait storm.
+if [ -n "$_direnv_key" ] && _direnv_try_prewarm_snapshot; then
+	_direnv_cleanup
+	export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
+	return 0
+fi
+# Self-heal: kick prewarm when the runtime dump and snapshot are both missing.
+systemctl --user start --no-block agent-direnv-prewarm.service 2>/dev/null || true
 
 if command -v flock >/dev/null 2>&1 && (
 	umask 077

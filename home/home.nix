@@ -60,7 +60,6 @@ in {
     ./modules/agent-direnv.nix
     ./modules/cargo-target-prune.nix
     ./modules/mise-auto-update.nix
-    ./modules/prior-art-daily.nix
     ./modules/grok-leader.nix
     ./modules/minimax-responses-compat.nix
     ./modules/tailscale.nix
@@ -137,13 +136,11 @@ in {
         # engine injects PermissionModeInjection reminders into the prompt
         # stream on auto mode; setting to "false" suppresses them.
         KIMI_CODE_PERMISSION_MODE_REMINDER = "false";
-        # Factory (droid): BYOK-only enforcement. Airgap mode makes the CLI
-        # refuse every built-in model ("Available built-in models: None") and
-        # permit only custom models from ~/.factory/settings.json, so no
-        # inference is billed to Factory. MCP servers and plugin marketplaces
-        # stay reachable; only hosted/Factory API calls are refused.
-        # Escape hatch: FACTORY_AIRGAP_ENABLED=false droid ... for one run.
-        FACTORY_AIRGAP_ENABLED = "true";
+        # Factory (droid): airgap off — Remote Control / computer SSH and
+        # hosted Factory APIs need cloud. Re-enable ("true") for BYOK-only
+        # (built-in models refused; MCP/marketplaces still ok).
+        # One-shot: FACTORY_AIRGAP_ENABLED=true droid ...
+        FACTORY_AIRGAP_ENABLED = "false";
         MISE_YES = "1";
         COLORTERM = "truecolor";
         RIPGREP_CONFIG_PATH = "$HOME/.config/ripgrep/config";

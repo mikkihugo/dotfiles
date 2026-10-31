@@ -46,6 +46,14 @@ format validation; Terra/medium for bounded implementation, source tracing,
 and integration diagnosis; Sol or Astra only for architecture, adversarial
 review, or unresolved doubt of 2 or higher. Never silently use the default
 model for delegated work.
+
+## Response discipline
+
+For direct questions and status checks, answer in at most three concise lines.
+Do not restate unchanged context, prior plans, or already-reported evidence.
+For implementation work, report only changed state, verification, and blockers.
+Do not narrate routine tool calls.
+If the action is clear, act; ask only for missing authority or irreversible choices.
 """
 web_search = "live"
 sandbox_mode = "danger-full-access"

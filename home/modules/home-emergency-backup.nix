@@ -17,34 +17,19 @@
     else shortHost;
   homeDir = "/home/mhugo";
   keyPath = "${homeDir}/.ssh/storagebox-backup";
-  # 2026-10-27 operator request ("stop borg hourly"): the 2-hourly
-  # hot-source backup runs saturated the devbox's 90%-full disk and fed the
-  # direnv eval-jam episode. Flip to true and run `hms` to restore. The
-  # services stay valid for a manual `systemctl --user start hot-source-<name>`.
-  hotSourceTimersEnabled = false;
+  # 2026-10-31: hot-source hel1/fsn1 timers+services removed (disk saturation /
+  # never-completing creates). Nightly worktrees-* jobs remain; they reuse the
+  # same borg passphrase and flock. Manual hot-source units are gone.
   sshCommand = "${pkgs.openssh}/bin/ssh -i ${keyPath} -p 23 -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ControlMaster=no -o ControlPath=none -o ControlPersist=no";
   hotSourcePassphrasePath = config.sops.secrets.borg_hot_source_passphrase.path;
-  # Emergency recovery needs operator configuration and credentials, not every
-  # generated/cache tree. The previous [homeDir] root walked the whole home
-  # (infra#3107 slice 7: 6h14m and 10.2G swap); these roots are intentionally
-  # small and all exist on the devbox.
-  emergencySourceDirectories = [
-    "${homeDir}/.config"
-    "${homeDir}/.ssh"
-    "${homeDir}/.gnupg"
-    "${homeDir}/.local/share/keyrings"
-    "${homeDir}/backups"
-  ];
   commonConfig = {
-    source_directories = emergencySourceDirectories;
+    source_directories = [homeDir];
     exclude_patterns = [
       "${homeDir}/.cache"
       # Lane worktrees: hundreds of full checkouts, walked by every daily run
       # (a 2026-10-24 fsn1 run passed 4h). The nightly worktrees-* jobs back
       # them up to the same storage boxes.
       "${homeDir}/code/worktrees"
-      "${homeDir}/**/.cache"
-      "${homeDir}/code/worktrees/**/target"
       "${homeDir}/.local/share/singularity-engine/workspaces/*/root-*/mix"
       "${homeDir}/.local/share/singularity-engine/workspaces/*/root-*/hex"
       "${homeDir}/.local/share/singularity-engine/workspaces/*/root-*/rebar3"
@@ -78,6 +63,9 @@
       "${homeDir}/**/node_modules"
       "${homeDir}/**/.venv"
       "${homeDir}/**/target"
+      # jcode historically wrote cargo output to in-tree `.target/` (hidden
+      # name); untracked 2026-10-05 but orphan dirs remain on old lanes.
+      "${homeDir}/**/.target"
       "${homeDir}/**/dist"
       "${homeDir}/**/build"
       "${homeDir}/**/.next"
@@ -141,14 +129,6 @@
     bootstrap.store_config_files = false;
     ssh_command = sshCommand;
     compression = "lz4";
-    # Keep Borg's default chunking explicit so cache/repository behavior is stable.
-    chunker_params = "buzhash,19,23,21,4095";
-    # Build churn changes ctime/inode; mtime+size avoids re-reading unchanged files.
-    files_cache = "mtime,size";
-    exclude_caches = true;
-    # No database hooks are configured; avoid borgmatic's redundant full-tree
-    # validation walk before the real create.
-    unsafe_skip_path_validation_before_create = true;
     extra_borg_options.create = "--upload-buffer 256 --upload-ratelimit 0";
     borg_exit_codes = [
       {
@@ -173,12 +153,12 @@
   targets = {
     hel1 = {
       description = "HEL1";
-      schedule = "*-*-* 02:00:00";
+      schedule = "*-*-* 00:00:00";
       path = "ssh://u579183-sub5@u579183-sub5.your-storagebox.de:23/./borg/${backupHost}";
     };
     fsn1 = {
       description = "FSN1";
-      schedule = "*-*-* 04:00:00";
+      schedule = "*-*-* 12:00:00";
       path = "ssh://u602823-sub5@u602823-sub5.your-storagebox.de:23/./borg/${backupHost}";
     };
   };
@@ -193,20 +173,11 @@
       ];
       archive_name_format = "${backupHost}-${name}-{now:%Y-%m-%dT%H:%M:%SZ}";
     };
-  configStorePath = name:
-    pkgs.writeText "home-emergency-${name}.yaml"
-    (builtins.toJSON (borgmaticConfig name (builtins.getAttr name targets)));
-  ioBandwidthLimits = lib.optionalAttrs (lib.toLower hostname == "cc-se-sto-devbox-01") {
-    IOReadBandwidthMax = "/dev/sda 40M";
-    IOWriteBandwidthMax = "/dev/sda 40M";
-  };
+  configPath = name: "${homeDir}/.config/borgmatic.d/home-emergency-${name}.yaml";
   hotSourceDirectories = [
     "${homeDir}/.dotfiles"
     "${homeDir}/.dotfiles-worktrees"
-    "${homeDir}/code/singularity-engine"
-    "${homeDir}/code/jcode"
-    "${homeDir}/code/infra"
-    "${homeDir}/code/hightower"
+    "${homeDir}/code"
     "${homeDir}/workspaces"
     "${homeDir}/backups"
     "/srv/infra"
@@ -223,6 +194,10 @@
     "**/.direnv"
     "**/node_modules"
     "**/target"
+    # jcode: in-tree `.target/` was an accidental cargo dir (untracked
+    # 2026-10-05); current builds use ~/.cache/jcode/cargo-target. Orphan
+    # `.target/` trees on old lanes still inflate worktree backups.
+    "**/.target"
     "**/dist"
     "**/build"
     "**/.venv"
@@ -309,15 +284,13 @@
       keep_weekly = 8;
       keep_monthly = 6;
     };
-  hotConfigPath = name: "${homeDir}/.config/borgmatic.d/hot-source-${name}.yaml";
   worktreeConfigPath = name: "${homeDir}/.config/borgmatic.d/worktrees-${name}.yaml";
-  # One lock for hot-source and worktree runs on both sites, so no two borg
-  # walks of this disk ever overlap. Hot-source skips (-n, exit 75) when the
-  # lock is held; the nightly worktree run waits for it.
+  # One lock for worktree runs on both sites, so no two borg walks of this
+  # disk ever overlap. A second worktrees job waits for the lock.
   borgRunner = label: configPath: lockMode:
     pkgs.writeShellScript "borgmatic-${label}" ''
       set -euo pipefail
-      lock="$XDG_RUNTIME_DIR/borgmatic-hot-source.lock"
+      lock="$XDG_RUNTIME_DIR/borgmatic-worktrees.lock"
       exec ${pkgs.util-linux}/bin/flock ${lockMode} -E 75 "$lock" ${pkgs.bash}/bin/bash -c '
         set -euo pipefail
         config="$1"
@@ -330,7 +303,6 @@
         exec "$borgmatic" --config "$config" create prune compact --verbosity 1
       ' _ ${configPath} ${pkgs.borgmatic}/bin/borgmatic ${hotSourcePassphrasePath}
     '';
-  hotSourceRunner = name: borgRunner "hot-source-${name}" (hotConfigPath name) "-n";
   worktreeRunner = name: borgRunner "worktrees-${name}" (worktreeConfigPath name) "--wait 21600";
   restoreKeyPackage = pkgs.writeShellScriptBin "storagebox-backup-key-restore" ''
     set -euo pipefail
@@ -373,7 +345,7 @@
       echo "home-emergency-backup-${name} waiting for mutable sweep lock: $lock"
       ${pkgs.util-linux}/bin/flock --exclusive --wait 43200 --conflict-exit-code 75 \
         "$lock" ${pkgs.bash}/bin/bash -c \
-        '${restoreKeyPackage}/bin/storagebox-backup-key-restore && exec ${pkgs.borgmatic}/bin/borgmatic --config ${configStorePath name} --verbosity 1' || {
+        '${restoreKeyPackage}/bin/storagebox-backup-key-restore && exec ${pkgs.borgmatic}/bin/borgmatic --config ${configPath name} --verbosity 1' || {
         status=$?
         echo "home-emergency-backup-${name} mutable sweep lock unavailable or backup failed: status=$status lock=$lock" >&2
         exit "$status"
@@ -405,37 +377,35 @@ in
             # full-home backup. The timer remains the sole start authority.
             X-SwitchMethod = "keep-old";
           };
-          Service =
-            {
-              Type = "oneshot";
-              ExecStart = "${serializedBackupScript name}";
-              # Keep whole-home borg reads/writes below interactive and build I/O
-              # while retaining best-effort scheduling (the disk is not idle).
-              IOWeight = 20;
-              CPUWeight = 20;
-              IOSchedulingClass = "best-effort";
-              IOSchedulingPriority = 7;
-              Nice = 10;
-              # Whole-home reads filled 9.7G+ of page cache, evicting build
-              # working sets. MemoryHigh reclaims this job's own cache first;
-              # borg's anon memory is far below the ceiling (2026-10-10).
-              MemoryHigh = "2G";
-              MemoryMax = "4G";
-              Environment = [
-                "HOME=${homeDir}"
-                "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
-              ];
-            }
-            // ioBandwidthLimits;
+          Service = {
+            Type = "oneshot";
+            ExecStart = "${serializedBackupScript name}";
+            # Keep whole-home borg reads/writes below interactive and build I/O
+            # while retaining best-effort scheduling (the disk is not idle).
+            IOWeight = 20;
+            CPUWeight = 20;
+            IOSchedulingClass = "best-effort";
+            IOSchedulingPriority = 7;
+            Nice = 10;
+            # Whole-home reads filled 9.7G+ of page cache, evicting build
+            # working sets. MemoryHigh reclaims this job's own cache first;
+            # borg's anon memory is far below the ceiling (2026-10-10).
+            MemoryHigh = "4G";
+            MemoryMax = "10G";
+            Environment = [
+              "HOME=${homeDir}"
+              "BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=yes"
+            ];
+          };
         })
       targets;
 
       systemd.user.timers = lib.mapAttrs' (name: target:
         lib.nameValuePair "home-emergency-backup-${name}" {
-          Unit.Description = "Nightly /home/mhugo emergency backup to ${name} (${target.schedule} with 20min jitter)";
+          Unit.Description = "Daily /home/mhugo emergency backup to ${name} (${target.schedule} with 30min jitter)";
           Timer = {
             OnCalendar = target.schedule;
-            RandomizedDelaySec = "20min";
+            RandomizedDelaySec = "30min";
             Persistent = true;
             Unit = "home-emergency-backup-${name}.service";
           };
@@ -450,129 +420,79 @@ in
         sopsFile = ../../secrets/api-keys.yaml;
       };
 
-      xdg.configFile =
-        (lib.mapAttrs' (name: target:
-          lib.nameValuePair "borgmatic.d/hot-source-${name}.yaml" {
-            text = builtins.toJSON (hotSourceConfig name target);
-          })
-        targets)
-        // (lib.mapAttrs' (name: target:
-          lib.nameValuePair "borgmatic.d/worktrees-${name}.yaml" {
-            text = builtins.toJSON (worktreeConfig name target);
-          })
-        targets);
+      # Drop leftover hot-source units from older generations (timers were
+      # already disabled; services and wants links may still be present).
+      home.activation.retireHotSourceBackup = lib.hm.dag.entryBefore ["reloadSystemd"] ''
+        for unit in hot-source-hel1.timer hot-source-fsn1.timer hot-source-hel1.service hot-source-fsn1.service; do
+          if [ "$(${pkgs.systemd}/bin/systemctl --user show --property=LoadState --value "$unit" 2>/dev/null || true)" != "not-found" ]; then
+            ${pkgs.systemd}/bin/systemctl --user disable --now "$unit" 2>/dev/null || true
+            ${pkgs.systemd}/bin/systemctl --user stop "$unit" 2>/dev/null || true
+          fi
+        done
+        ${pkgs.coreutils}/bin/rm -f \
+          "$HOME/.config/systemd/user/hot-source-hel1.service" \
+          "$HOME/.config/systemd/user/hot-source-hel1.timer" \
+          "$HOME/.config/systemd/user/hot-source-fsn1.service" \
+          "$HOME/.config/systemd/user/hot-source-fsn1.timer" \
+          "$HOME/.config/systemd/user/timers.target.wants/hot-source-hel1.timer" \
+          "$HOME/.config/systemd/user/timers.target.wants/hot-source-fsn1.timer" \
+          "$HOME/.config/borgmatic.d/hot-source-hel1.yaml" \
+          "$HOME/.config/borgmatic.d/hot-source-fsn1.yaml"
+      '';
 
-      systemd.user.services =
-        (lib.mapAttrs' (name: target:
-          lib.nameValuePair "hot-source-${name}" {
-            Unit = {
-              Description = "Back up hot source trees to Hetzner Storage Box ${target.description}";
-              After = ["network-online.target"];
-              Wants = ["network-online.target"];
-              X-SwitchMethod = "keep-old";
-            };
-            Service = {
-              Type = "exec";
-              ExecStartPre = "${restoreKeyPackage}/bin/storagebox-backup-key-restore";
-              ExecStart = "${hotSourceRunner name}";
-              SuccessExitStatus = [75];
-              # Was 60min: even with the pre-create validation walk removed
-              # (unsafe_skip_path_validation_before_create above), the first
-              # cold-cache "create" of these large trees observed 2026-09-24
-              # still ran 36+ min before hitting the old ceiling without
-              # finishing, so create/prune/compact has apparently never
-              # completed once. hotSourceRunner's flock is shared by both
-              # hel1 and fsn1 (same lock path for both), so a longer ceiling
-              # means whichever target is running can hold that shared lock,
-              # and so starve the other, for longer -- that tradeoff is
-              # accepted here because the starvation only ends once some
-              # create finally completes and seeds the chunk cache, after
-              # which subsequent incremental creates should be far faster.
-              RuntimeMaxSec = "115min";
-              Nice = 19;
-              IOSchedulingClass = "idle";
-              CPUWeight = 10;
-              IOWeight = 10;
-              # Same envelope as home-emergency-backup: observed peaks of
-              # 11-23G were mostly page cache, not borg anon (2026-10-10).
-              MemoryHigh = "2G";
-              MemoryMax = "4G";
-              Environment = [
-                "HOME=${homeDir}"
-              ];
-            };
-          })
-        targets)
-        // (lib.mapAttrs' (name: target:
-          lib.nameValuePair "worktrees-${name}" {
-            Unit = {
-              Description = "Back up lane worktrees to Hetzner Storage Box ${target.description} (nightly)";
-              After = ["network-online.target"];
-              Wants = ["network-online.target"];
-              X-SwitchMethod = "keep-old";
-            };
-            Service = {
-              Type = "exec";
-              ExecStartPre = "${restoreKeyPackage}/bin/storagebox-backup-key-restore";
-              ExecStart = "${worktreeRunner name}";
-              SuccessExitStatus = [75];
-              # waits up to 6h for the shared lock, then walks every worktree
-              RuntimeMaxSec = "10h";
-              Nice = 19;
-              IOSchedulingClass = "idle";
-              CPUWeight = 10;
-              IOWeight = 10;
-              MemoryHigh = "2G";
-              MemoryMax = "4G";
-              Environment = ["HOME=${homeDir}"];
-            };
-          })
-        targets);
+      xdg.configFile = lib.mapAttrs' (name: target:
+        lib.nameValuePair "borgmatic.d/worktrees-${name}.yaml" {
+          text = builtins.toJSON (worktreeConfig name target);
+        })
+      targets;
 
-      systemd.user.timers =
-        (lib.optionalAttrs hotSourceTimersEnabled {
-          hot-source-hel1 = {
-            Unit.Description = "Hot-source backup to HEL1 every 2 hours (even hours)";
-            Timer = {
-              OnCalendar = "*-*-* 00/2:00:00";
-              RandomizedDelaySec = "2min";
-              Persistent = true;
-              Unit = "hot-source-hel1.service";
-            };
-            Install.WantedBy = ["timers.target"];
+      systemd.user.services = lib.mapAttrs' (name: target:
+        lib.nameValuePair "worktrees-${name}" {
+          Unit = {
+            Description = "Back up lane worktrees to Hetzner Storage Box ${target.description} (nightly)";
+            After = ["network-online.target"];
+            Wants = ["network-online.target"];
+            X-SwitchMethod = "keep-old";
           };
-          hot-source-fsn1 = {
-            Unit.Description = "Hot-source backup to FSN1 every 2 hours (odd hours), staggered from HEL1";
-            Timer = {
-              OnCalendar = "*-*-* 01/2:00:00";
-              RandomizedDelaySec = "2min";
-              Persistent = true;
-              Unit = "hot-source-fsn1.service";
-            };
-            Install.WantedBy = ["timers.target"];
+          Service = {
+            Type = "exec";
+            ExecStartPre = "${restoreKeyPackage}/bin/storagebox-backup-key-restore";
+            ExecStart = "${worktreeRunner name}";
+            SuccessExitStatus = [75];
+            # waits up to 6h for the shared lock, then walks every worktree
+            RuntimeMaxSec = "10h";
+            Nice = 19;
+            IOSchedulingClass = "idle";
+            CPUWeight = 10;
+            IOWeight = 10;
+            MemoryHigh = "4G";
+            MemoryMax = "10G";
+            Environment = ["HOME=${homeDir}"];
           };
         })
-        // {
-          worktrees-hel1 = {
-            Unit.Description = "Nightly lane-worktree backup to HEL1";
-            Timer = {
-              OnCalendar = "*-*-* 02:30:00";
-              RandomizedDelaySec = "5min";
-              Persistent = true;
-              Unit = "worktrees-hel1.service";
-            };
-            Install.WantedBy = ["timers.target"];
+      targets;
+
+      systemd.user.timers = {
+        worktrees-hel1 = {
+          Unit.Description = "Nightly lane-worktree backup to HEL1";
+          Timer = {
+            OnCalendar = "*-*-* 02:30:00";
+            RandomizedDelaySec = "5min";
+            Persistent = true;
+            Unit = "worktrees-hel1.service";
           };
-          worktrees-fsn1 = {
-            Unit.Description = "Nightly lane-worktree backup to FSN1";
-            Timer = {
-              OnCalendar = "*-*-* 03:30:00";
-              RandomizedDelaySec = "5min";
-              Persistent = true;
-              Unit = "worktrees-fsn1.service";
-            };
-            Install.WantedBy = ["timers.target"];
-          };
+          Install.WantedBy = ["timers.target"];
         };
+        worktrees-fsn1 = {
+          Unit.Description = "Nightly lane-worktree backup to FSN1";
+          Timer = {
+            OnCalendar = "*-*-* 03:30:00";
+            RandomizedDelaySec = "5min";
+            Persistent = true;
+            Unit = "worktrees-fsn1.service";
+          };
+          Install.WantedBy = ["timers.target"];
+        };
+      };
     })
   ]

@@ -52,10 +52,19 @@ jca() { tmux attach -t jcode; }
 # Detect zsh vs bash so the right integration is loaded.
 mise_bin="$(command -v mise 2>/dev/null || true)"
 if [ -n "$mise_bin" ]; then
+	# mise activate installs shell completion (complete -F …). Non-interactive
+	# shells (direnv export, CI, agent Shell) source this file without
+	# bash-completion, which yields "complete: command not found".
 	if [ -n "${ZSH_VERSION:-}" ]; then
-		eval "$("$mise_bin" activate zsh)"
-	else
+		if [[ $- == *i* ]]; then
+			eval "$("$mise_bin" activate zsh)"
+		else
+			eval "$("$mise_bin" env -s zsh)"
+		fi
+	elif [[ $- == *i* ]]; then
 		eval "$("$mise_bin" activate bash)"
+	else
+		eval "$("$mise_bin" env -s bash)"
 	fi
 
 	_mise_node_bin="$("$mise_bin" which node 2>/dev/null || true)"
@@ -121,8 +130,10 @@ _load_sops_secrets() {
 	}
 
 	# Helper: extract value under a YAML section (searches up to 5 children)
-	_sops_val() { echo "$decrypted" | grep -A5 "^$1:" | grep "$2:" | head -1 | sed "s/.*$2: *//;s/^ *//;s/ *$//" | tr -d '"'; }
-	_sops_sf_val() { echo "$decrypted" | grep -A80 "^sf:" | grep "$1:" | head -1 | sed "s/.*$1: *//;s/^ *//;s/ *$//" | tr -d '"'; }
+	# Strip inline YAML comments: a value may carry a trailing "# pragma: allowlist
+	# secret", which is metadata for the secret scanner, not part of the secret.
+	_sops_val() { echo "$decrypted" | grep -A5 "^$1:" | grep "$2:" | head -1 | sed "s/.*$2: *//;s/^ *//;s/ *$//" | sed 's/ *#.*$//' | tr -d '"'; }
+	_sops_sf_val() { echo "$decrypted" | grep -A80 "^sf:" | grep "$1:" | head -1 | sed "s/.*$1: *//;s/^ *//;s/ *$//" | sed 's/ *#.*$//' | tr -d '"'; }
 
 	# LLM Gateway (proxies all providers through a single endpoint)
 	local val url
@@ -249,6 +260,23 @@ _load_sops_secrets() {
 	copilot-kimi() { COPILOT_MODEL=auto-kimi command copilot "$@"; }
 	copilot-fast() { COPILOT_MODEL=auto-fast command copilot "$@"; }
 	copilot-auto() { COPILOT_MODEL=auto command copilot "$@"; }
+	# Start Copilot on GitHub's built-in provider/model catalogue.  The normal
+	# `copilot` entrypoint inherits the gateway BYOK variables loaded above;
+	# unset them only for this child so the caller's shell remains unchanged.
+	copilot-cp() {
+		env \
+			-u COPILOT_PROVIDER_BASE_URL \
+			-u COPILOT_PROVIDER_API_KEY \
+			-u COPILOT_PROVIDER_TYPE \
+			-u COPILOT_PROVIDER_MODEL_ID \
+			-u COPILOT_PROVIDER_WIRE_MODEL \
+			-u COPILOT_PROVIDER_MAX_PROMPT_TOKENS \
+			-u COPILOT_PROVIDER_MAX_OUTPUT_TOKENS \
+			-u COPILOT_AGENT_MODEL \
+			COPILOT_MODEL=auto \
+			COPILOT_ENABLE_ALT_PROVIDERS=false \
+			copilot "$@"
+	}
 	# Volume/cheap split: strong model for the session, flash model for agents.
 	copilot-volume() {
 		COPILOT_ENABLE_ALT_PROVIDERS=true COPILOT_MODEL=auto-minimax \
@@ -490,8 +518,3 @@ _load_sops_secrets 2>/dev/null || true
 # shellcheck disable=SC1091
 [ -f "$HOME/.dotfiles/shell/bash/direnv-export.sh" ] &&
 	. "$HOME/.dotfiles/shell/bash/direnv-export.sh"
-
-# ── Homebrew (Linux Homebrew, present on some machines) ───────────────────────
-if [ -x "/home/linuxbrew/.linuxbrew/bin/brew" ]; then
-	eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
-fi

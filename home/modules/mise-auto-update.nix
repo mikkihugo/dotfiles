@@ -7,12 +7,11 @@
   #
   # nixpkgs' mise build writes $out/lib/mise/.disable-self-update, so
   # `mise self-update` refuses to replace the binary, and the Nix store is
-  # read-only anyway. The update path is therefore "mise managed by mise":
-  # config/mise/config.toml lists mise itself under [tools] (via the
-  # [tool_alias] entry that names the packslip:github.com/jdx/mise backend,
-  # because the bare `mise` shorthand is not in the mise registry), and the
-  # auto-update service runs `mise install --yes` && `mise upgrade --yes`, which
-  # keeps that managed copy current without a dotfiles flake bump.
+  # read-only anyway. Day-to-day currency is operator `mise install` /
+  # `mise upgrade` against config/mise/config.toml (mise listed under [tools]
+  # via packslip:github.com/jdx/mise). No user timer auto-upgrades tools —
+  # the previous mise-auto-update.timer failed on signed-release verification
+  # and was removed.
   #
   # The packslip backend is the upstream-preferred one for signed releases: it
   # verifies the publisher's signature against the project identity the name
@@ -61,44 +60,6 @@
     # dispatch against the same mise the shell runs.
     PATH="$HOME/.local/bin:$PATH" "$managed" reshim --force >/dev/null 2>&1 || true
   '';
-
-  updateScript = pkgs.writeShellScript "mise-auto-update" ''
-    set -euo pipefail
-
-    export HOME="/home/mhugo"
-    export MISE_YES=1
-    export MISE_JOBS=4
-    export PATH="${pkgs.mise}/bin:${pkgs.python3}/bin:${pkgs.coreutils}/bin:${pkgs.bash}/bin:$PATH"
-
-    mise_bin="${pkgs.mise}/bin/mise"
-    if [ ! -x "$mise_bin" ]; then
-      echo "mise-auto-update: mise missing at $mise_bin" >&2
-      exit 0
-    fi
-
-    # Python is nixpkgs-owned. Drop any leftover mise python so shims cannot
-    # shadow ~/.nix-profile/bin/python3 on the next login.
-    "$mise_bin" uninstall python --all --yes >/dev/null 2>&1 || true
-    ${pkgs.coreutils}/bin/rm -f \
-      "$HOME/.local/share/mise/shims/python" \
-      "$HOME/.local/share/mise/shims/python3"
-
-    # `install` creates the managed mise (config/mise/config.toml lists it under
-    # [tools]); `upgrade` moves it to the newest release. Both are the mise
-    # binary's own update path, because nixpkgs disables `mise self-update`.
-    "$mise_bin" install --yes
-    "$mise_bin" upgrade --yes
-
-    # install/upgrade read ~/.config/mise/config.toml, which may still be a
-    # symlink to a stale ~/.dotfiles checkout that pins python=latest.
-    "$mise_bin" uninstall python --all --yes >/dev/null 2>&1 || true
-    ${pkgs.coreutils}/bin/rm -f \
-      "$HOME/.local/share/mise/shims/python" \
-      "$HOME/.local/share/mise/shims/python3"
-
-    # Point PATH's mise at the freshly upgraded managed binary.
-    ${linkManagedMise}
-  '';
 in {
   # A fresh activation must converge on the managed mise too: the symlink
   # target is a mutable path, so it cannot be a declarative home.file link.
@@ -113,29 +74,4 @@ in {
     ] ''
       ${linkManagedMise}
     '';
-
-  systemd.user.services.mise-auto-update = {
-    Unit = {
-      Description = "Update mise and mise-managed tools";
-      After = ["network-online.target"];
-      Wants = ["network-online.target"];
-    };
-    Service = {
-      Type = "oneshot";
-      Nice = 10;
-      IOSchedulingClass = "idle";
-      ExecStart = "${updateScript}";
-    };
-  };
-
-  systemd.user.timers.mise-auto-update = {
-    Unit.Description = "Periodically update mise-managed tools";
-    Timer = {
-      OnCalendar = "*-*-* 04:30:00";
-      RandomizedDelaySec = "1h";
-      Persistent = true;
-      Unit = "mise-auto-update.service";
-    };
-    Install.WantedBy = ["timers.target"];
-  };
 }

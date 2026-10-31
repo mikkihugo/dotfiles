@@ -398,6 +398,7 @@ const main = () => {
   const release = acquireLock(dir);
   let record = null;
   let child = null;
+  let signalChild = null;
   let lockedError = null;
   try {
     const active = reconcile(dir);
@@ -472,6 +473,27 @@ const main = () => {
         stdio: "inherit",
         detached: process.platform === "linux",
       });
+      // Install forwarding before publishing the child PID. The record is
+      // visible to an observer as soon as it is written; publishing first
+      // leaves a race where a SIGTERM can kill the launcher before its
+      // handler exists, yielding a null signal exit instead of 143.
+      signalChild = (signal) => {
+        try {
+          if (process.platform === "linux" && child.pid) {
+            process.kill(-child.pid, signal);
+          } else {
+            child.kill(signal);
+          }
+        } catch {
+          // Child (or its group) already gone; the exit handler reports the outcome.
+        }
+      };
+      for (const signal of ["SIGINT", "SIGTERM"]) {
+        process.on(signal, () => {
+          signalChild(signal);
+          setTimeout(() => signalChild("SIGKILL"), 5000).unref();
+        });
+      }
       record.child_pid = child.pid;
       writeRecordAtomic(recordPath, record);
     }
@@ -494,24 +516,6 @@ const main = () => {
   // ignores the forwarded signal is killed so provenance and budget are not
   // orphaned behind a dead launcher. On Linux the signal goes to the child's
   // whole process group (negative PID) so grandchildren cannot survive.
-  const signalChild = (signal) => {
-    try {
-      if (process.platform === "linux" && child.pid) {
-        process.kill(-child.pid, signal);
-      } else {
-        child.kill(signal);
-      }
-    } catch {
-      // Child (or its group) already gone; the exit handler reports the outcome.
-    }
-  };
-  for (const signal of ["SIGINT", "SIGTERM"]) {
-    process.on(signal, () => {
-      signalChild(signal);
-      setTimeout(() => signalChild("SIGKILL"), 5000).unref();
-    });
-  }
-
   child.on("error", (error) => {
     record.ended_at = new Date().toISOString();
     record.status = "launch_failed";

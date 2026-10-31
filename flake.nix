@@ -105,6 +105,7 @@
     direnv-instant,
     ...
   }: let
+    direnvExportShellGuard = ./config/direnv/direnv-export-shell-guard.nix;
     specialArgs = {
       inherit sops-nix llm-agents direnv-instant engine-nixpkgs-pin;
     };
@@ -140,12 +141,15 @@
             # intermittently returns exit 1 / zero results (verified on
             # cc-se-sto-devbox-01 2026-10-27, reproducible 10/10).
             #
-            # direnv 2.38.2: pull from the nixpkgs-direnv pinned input
-            # (26.05 has 2.37.1; unstable pin predates the 2.38.2 packaging)
-            (_final: prev: {
+            # direnv 2.38.2 + export-shell guard (AIP-193-style CLI errors).
+            (_final: prev: let
+              direnvBase = (import nixpkgs-direnv {system = sys;}).direnv;
+            in {
               ast-grep = nixpkgs-unstable.legacyPackages.${sys}.ast-grep;
               inherit (nixpkgs-unstable.legacyPackages.${sys}) ripgrep;
-              inherit (import nixpkgs-direnv {system = sys;}) direnv;
+              direnv = prev.callPackage direnvExportShellGuard {
+                direnv = direnvBase;
+              };
               inherit (import nixpkgs-jujutsu {system = sys;}) jujutsu;
               inherit (nixpkgs-unstable.legacyPackages.${sys}) mise;
               nix-index = prev.nix-index.overrideAttrs (old: {

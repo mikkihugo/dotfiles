@@ -15,7 +15,9 @@ Host git.infra.centralcloud.com git.centralcloud.net
     ControlPersist no
 
 # In-cluster Forgejo service name used by the repository facade.
-Host git.svc
+# `forgejo` is a local convenience alias resolving to the same in-cluster
+# transport (git.svc:22); it is not the public edge at git.centralcloud.net:2222.
+Host git.svc forgejo
     HostName git.svc
     Port 22
     User git
@@ -29,6 +31,20 @@ Host github.com
     HostName github.com
     User git
     IdentityFile ~/.ssh/github_mikkihugo
+    IdentitiesOnly yes
+    ControlMaster no
+    ControlPath none
+    ControlPersist no
+
+# Factory Remote Control (VS Code Remote SSH / `droid computer ssh`).
+# Mux off: ProxyCommand + ControlMaster auto from Host * breaks the proxy.
+# Identity/known_hosts under ~/.factory/.ssh are created by Factory CLI.
+Host factory-*
+    ProxyCommand droid computer ssh %h --proxy
+    User factory-user
+    StrictHostKeyChecking accept-new
+    UserKnownHostsFile ~/.factory/.ssh/known_hosts
+    IdentityFile ~/.factory/.ssh/id_ed25519
     IdentitiesOnly yes
     ControlMaster no
     ControlPath none

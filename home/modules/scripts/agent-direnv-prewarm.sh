@@ -55,6 +55,9 @@ for root in "${ROOTS[@]}"; do
   new_dir="$dir.new.$$"
 
   # Skip-if-fresh: fingerprint match + non-empty env + younger than the cap.
+  # fingerprint line 3 is ISO-8601 (date -u +%FT%TZ), not epoch — parse it the
+  # same way direnv-agent does. Integer-comparing the ISO string fails with
+  # "integer expected" and the `|| fresh; skip` branch always wins (2026-10-30).
   current_fp=$(fingerprint "$root" || true)
   if [ -s "$dir/env" ] && [ "$current_fp" = "$(sed '1d;$d' "$dir/fingerprint" 2>/dev/null || true)" ]; then
     gen_at=$(tail -n 1 "$dir/fingerprint" 2>/dev/null || echo 0)

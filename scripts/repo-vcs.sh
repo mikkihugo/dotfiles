@@ -631,7 +631,8 @@ contract-test)
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
 	cfg="$root/config/ssh_config"
 	git_host_line="$(awk '/^Host / && /git\.centralcloud\.net/ { print NR; exit }' "$cfg")"
-	svc_host_line="$(awk '/^Host git\.svc$/ { print NR; exit }' "$cfg")"
+	# Match `Host git.svc` even when aliases share the line (e.g. `Host git.svc forgejo`).
+	svc_host_line="$(awk '/^Host / && /(^| )git\.svc( |$)/ { print NR; exit }' "$cfg")"
 	github_host_line="$(awk '/^Host github\.com$/ { print NR; exit }' "$cfg")"
 	star_line="$(awk '/^Host \*$/ { print NR; exit }' "$cfg")"
 	[[ -n "$git_host_line" && -n "$star_line" && "$git_host_line" -lt "$star_line" ]] ||

@@ -389,7 +389,9 @@ test("serializes concurrent reservations without exceeding the global ceiling", 
           "--coordinator": `codex-lane-${index}`,
           "--workspace": laneWorkspace,
         }),
-        { FAKE_CHILD_SLEEP: "1.5" },
+        // Hold long enough that all four attempts overlap under parallel
+        // repo-check load; 1.5s let early finishers free budget for the 4th.
+        { FAKE_CHILD_SLEEP: "4" },
       ),
     );
   }

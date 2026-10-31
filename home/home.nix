@@ -32,6 +32,7 @@ in {
 
   imports = [
     sops-nix.homeManagerModules.sops
+    ./modules/systemd-limits.nix
     ./modules/machine-role.nix
     ./modules/activation.nix
     ./modules/packages.nix

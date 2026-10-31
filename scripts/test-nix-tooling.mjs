@@ -78,9 +78,11 @@ test("Home Manager owns nix-index database refresh wiring", async () => {
 
 test("Home Manager raises the systemd user-manager nofile limit", async () => {
   const home = await source("home/home.nix");
+  const limits = await source("home/modules/systemd-limits.nix");
+  assert.match(home, /\.\/modules\/systemd-limits\.nix/, "home.nix must import systemd-limits.nix");
   assert.match(
-    home,
-    /xdg\.configFile\."systemd\/user\.conf\.d\/50-nofile\.conf"\.text\s*=\s*"\[Manager\]\\nDefaultLimitNOFILE=524288:524288\\n";/,
+    limits,
+    /xdg\.configFile\."systemd\/user\.conf\.d\/50-nofile\.conf"\.text\s*=\s*''[\s\S]*DefaultLimitNOFILE=524288:524288/,
     "missing durable systemd user-manager nofile drop-in",
   );
 });

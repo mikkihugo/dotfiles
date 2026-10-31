@@ -68,6 +68,11 @@
       "message": "expected file exists: home/home.nix"
     },
     {
+      "id": "scope:file:home/modules/droid-remote-control.nix",
+      "status": "pass",
+      "message": "expected file exists: home/modules/droid-remote-control.nix"
+    },
+    {
       "id": "scope:file:scripts/test-nix-tooling.mjs",
       "status": "pass",
       "message": "expected file exists: scripts/test-nix-tooling.mjs"

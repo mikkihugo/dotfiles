@@ -42,17 +42,17 @@
   },
   "purpose": "Manage the Factory Droid Remote Control daemon lifecycle through the dotfiles Home Manager profile instead of an ad hoc foreground process.",
   "consumer": "Factory Remote Control clients and the operator on cc-se-sto-devbox-01",
-  "contract": "On the cc-se-sto-devbox-01 Home Manager profile, one enabled droid-remote-control systemd user service shall run the managed ~/.local/bin/droid wrapper with daemon --remote-control, start only when the local computer registration exists, restart on failure, and be observable as active with the expected relay process.",
-  "failure_boundary": "The service remains user-scoped and fails closed when this machine is not registered. A failed Droid process is retried only by its own systemd unit, unrelated Codex daemon ownership is unchanged, and no Factory account or credential state is modified.",
+  "contract": "On the cc-se-sto-devbox-01 Home Manager profile, one enabled droid-remote-control systemd user service shall run the managed ~/.local/bin/droid wrapper with daemon --remote-control, start only when the local computer registration exists, restart on failure, and receive the MiniMax primary, MiniMax backup, Kimi, and Ollama API-key environment variables from a mode-0600 provider-env file rendered from SOPS secrets before the daemon starts; the live Factory custom-model catalog shall expose the MiniMax backup key as a distinct BYOK route while the primary routes continue to use MINIMAX_API_KEY, and the service must be observable as active with the expected relay process and provider environment.",
+  "failure_boundary": "The service remains user-scoped and fails closed when this machine is not registered. Provider keys exist only in mode-0600 runtime env files sourced from existing SOPS secrets; tracked files and Nix-store artifacts contain no key values. A failed Droid process is retried only by its own systemd unit, unrelated Codex daemon ownership is unchanged, and no Factory account or credential state is modified.",
   "evidence": [
     {
       "kind": "test",
-      "description": "The dotfiles contract test proves the module import, managed wrapper command, registration condition, default-target enablement, and failure-restart policy.",
+      "description": "The dotfiles contract test proves the module import, managed wrapper command, registration condition, default-target enablement, ordered SOPS-backed primary and MiniMax-backup provider-env rendering, environment injection, and failure-restart policy.",
       "status": "expected"
     },
     {
       "kind": "runtime",
-      "description": "Live readback proves droid-remote-control.service is active and droid computer list identifies cc-se-sto-devbox-01 as this machine.",
+      "description": "Live readback proves droid-remote-control.service is active, the service process contains the MiniMax primary, MiniMax backup, Kimi, and Ollama API-key variables without exposing their values, the Factory custom-model catalog contains one distinct MiniMax backup route, droid computer list identifies cc-se-sto-devbox-01 as this machine, and a controlled native-daemon termination causes systemd to restart the unit.",
       "status": "expected"
     }
   ],
@@ -73,6 +73,8 @@
   "invariants": [
     "The Codex managed daemon remains the sole owner of Codex app-server lifecycle",
     "Droid computer registration remains local machine state and is not managed by dotfiles",
+    "Provider API-key values remain outside tracked files and Nix-store artifacts",
+    "The MiniMax primary and backup credentials remain distinct and independently selectable",
     "At most one Home Manager systemd user service owns Droid Remote Control on this host",
     "Unrelated canonical primary edits remain untouched"
   ],

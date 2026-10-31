@@ -26,6 +26,61 @@
   "requirement_delta": {
     "added": [
       {
+        "id": "R3",
+        "statement": "The live Factory custom-model catalog shall expose one MiniMax backup route backed by MINIMAX_BACKUP_API_KEY while existing MiniMax routes continue to use MINIMAX_API_KEY.",
+        "acceptance_criteria": [
+          "Exactly one custom model is named MiniMax Backup: MiniMax-M3",
+          "The backup model references ${MINIMAX_BACKUP_API_KEY}, uses https://api.minimax.io/anthropic, uses the anthropic provider, and selects MiniMax-M3",
+          "Existing MiniMax custom models continue to reference ${MINIMAX_API_KEY}",
+          "The primary and backup MiniMax keys compare as different values without exposing either value",
+          "No plaintext MiniMax backup key appears in tracked files or Nix-store artifacts"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Factory Droid custom-model catalog",
+            "trigger": "the operator adds the managed MiniMax backup BYOK route",
+            "response": "expose one separately selectable backup model backed only by MINIMAX_BACKUP_API_KEY"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B3",
+          "condition": "the backup model is absent, duplicates the primary credential, changes an existing primary route, or leaks the backup key into tracked content",
+          "witness_kind": "runtime-probe",
+          "expected": "rejected"
+        },
+        "risk": "high",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "The dotfiles profile shall render a mode-0600 Droid provider environment from the existing SOPS-backed MiniMax primary, MiniMax backup, Kimi, and Ollama secrets and inject it into droid-remote-control.service only after sops-nix materializes those secrets and before Droid starts.",
+        "acceptance_criteria": [
+          "A droid-provider-config service renders the provider environment after sops-nix.service and before droid-remote-control.service",
+          "The rendered environment contains MINIMAX_API_KEY, MINIMAX_BACKUP_API_KEY, KIMI_API_KEY, and OLLAMA_API_KEY without exposing their values",
+          "The rendered environment file is mode 0600 and outside tracked files and Nix-store artifacts",
+          "droid-remote-control.service requires and follows droid-provider-config.service and consumes the rendered environment file",
+          "The live Droid service process contains all four provider variables",
+          "Factory custom-model configuration no longer reports MINIMAX_API_KEY as missing"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "event-driven",
+            "system": "Dotfiles Home Manager profile",
+            "trigger": "the operator applies the cc-se-sto-devbox-01 profile or the provider environment must be refreshed",
+            "response": "render the mode-0600 provider environment from SOPS materialization and inject it into Droid before the daemon starts"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "the Droid process lacks a referenced provider variable, the provider env file is not mode 0600, or a provider secret value appears in tracked or Nix-store content",
+          "witness_kind": "runtime-probe",
+          "expected": "rejected"
+        },
+        "risk": "high",
+        "source": "purpose_contract"
+      },
+      {
         "id": "R1",
         "statement": "The dotfiles Home Manager profile shall own one Droid Remote Control systemd user service that runs the managed Droid wrapper, starts only for a locally registered computer, restarts after failure, and is enabled at the user default target.",
         "acceptance_criteria": [
@@ -35,6 +90,7 @@
           "The service is enabled at default.target and restarts on failure",
           "The cc-se-sto-devbox-01 profile evaluates successfully",
           "Live readback shows droid-remote-control.service active",
+          "A controlled native-daemon termination causes the systemd unit to restart and return to active state",
           "droid computer list identifies cc-se-sto-devbox-01 as this machine",
           "The Codex managed daemon declaration remains unchanged"
         ],
@@ -62,6 +118,61 @@
   },
   "requirements": [
     {
+      "id": "R3",
+      "statement": "The live Factory custom-model catalog shall expose one MiniMax backup route backed by MINIMAX_BACKUP_API_KEY while existing MiniMax routes continue to use MINIMAX_API_KEY.",
+      "acceptance_criteria": [
+        "Exactly one custom model is named MiniMax Backup: MiniMax-M3",
+        "The backup model references ${MINIMAX_BACKUP_API_KEY}, uses https://api.minimax.io/anthropic, uses the anthropic provider, and selects MiniMax-M3",
+        "Existing MiniMax custom models continue to reference ${MINIMAX_API_KEY}",
+        "The primary and backup MiniMax keys compare as different values without exposing either value",
+        "No plaintext MiniMax backup key appears in tracked files or Nix-store artifacts"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Factory Droid custom-model catalog",
+          "trigger": "the operator adds the managed MiniMax backup BYOK route",
+          "response": "expose one separately selectable backup model backed only by MINIMAX_BACKUP_API_KEY"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B3",
+        "condition": "the backup model is absent, duplicates the primary credential, changes an existing primary route, or leaks the backup key into tracked content",
+        "witness_kind": "runtime-probe",
+        "expected": "rejected"
+      },
+      "risk": "high",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "The dotfiles profile shall render a mode-0600 Droid provider environment from the existing SOPS-backed MiniMax, Kimi, and Ollama secrets and inject it into droid-remote-control.service only after sops-nix materializes those secrets and before Droid starts.",
+      "acceptance_criteria": [
+        "A droid-provider-config service renders the provider environment after sops-nix.service and before droid-remote-control.service",
+        "The rendered environment contains MINIMAX_API_KEY, KIMI_API_KEY, and OLLAMA_API_KEY without exposing their values",
+        "The rendered environment file is mode 0600 and outside tracked files and Nix-store artifacts",
+        "droid-remote-control.service requires and follows droid-provider-config.service and consumes the rendered environment file",
+        "The live Droid service process contains all three provider variables",
+        "Factory custom-model configuration no longer reports MINIMAX_API_KEY as missing"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "event-driven",
+          "system": "Dotfiles Home Manager profile",
+          "trigger": "the operator applies the cc-se-sto-devbox-01 profile or the provider environment must be refreshed",
+          "response": "render the mode-0600 provider environment from SOPS materialization and inject it into Droid before the daemon starts"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "the Droid process lacks a referenced provider variable, the provider env file is not mode 0600, or a provider secret value appears in tracked or Nix-store content",
+        "witness_kind": "runtime-probe",
+        "expected": "rejected"
+      },
+      "risk": "high",
+      "source": "purpose_contract"
+    },
+    {
       "id": "R1",
       "statement": "The dotfiles Home Manager profile shall own one Droid Remote Control systemd user service that runs the managed Droid wrapper, starts only for a locally registered computer, restarts after failure, and is enabled at the user default target.",
       "acceptance_criteria": [
@@ -71,6 +182,7 @@
         "The service is enabled at default.target and restarts on failure",
         "The cc-se-sto-devbox-01 profile evaluates successfully",
         "Live readback shows droid-remote-control.service active",
+        "A controlled native-daemon termination causes the systemd unit to restart and return to active state",
         "droid computer list identifies cc-se-sto-devbox-01 as this machine",
         "The Codex managed daemon declaration remains unchanged"
       ],
@@ -97,17 +209,19 @@
       "home/home.nix",
       "home/modules/droid-remote-control.nix",
       "scripts/test-nix-tooling.mjs",
+      "secrets/api-keys.yaml",
       "docs/work/2026-10-27-droid-remote-control/**"
     ],
     "blocked": [
-      "secrets/**",
       "config/factory/**",
       "config/codex/**",
       "home/modules/codex-managed-daemon.nix"
     ],
     "expected_files": [
       "home/home.nix",
-      "scripts/test-nix-tooling.mjs"
+      "home/modules/droid-remote-control.nix",
+      "scripts/test-nix-tooling.mjs",
+      "secrets/api-keys.yaml"
     ]
   },
   "test_plan": [
@@ -115,14 +229,35 @@
       "id": "T1",
       "requirement_id": "R1",
       "kind": "contract",
-      "description": "The focused dotfiles contract test fails before the module exists and proves the declared import, managed command, conditions, enablement, restart policy, and unchanged Codex ownership after implementation.",
+      "description": "The focused dotfiles contract test fails before the module exists and proves the declared import, managed command, registration conditions, enablement, restart policy, and unchanged Codex ownership after implementation.",
       "must_fail_first": true
     },
     {
       "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "The focused dotfiles contract test fails before provider-env support exists and then proves ordered SOPS-backed rendering, mode-0600 runtime output, environment injection, and absence of literal provider values in tracked source.",
+      "must_fail_first": true
+    },
+    {
+      "id": "T3",
       "requirement_id": "R1",
       "kind": "smoke",
-      "description": "After applying the profile, systemctl user readback proves the service is active and droid computer list proves the current registered computer is present.",
+      "description": "After applying the profile, systemd readback proves the service is active, the registered computer is present, and a controlled native-daemon termination causes the unit to restart.",
+      "must_fail_first": false
+    },
+    {
+      "id": "T4",
+      "requirement_id": "R2",
+      "kind": "smoke",
+      "description": "After applying the profile, runtime readback proves the service process contains the MiniMax primary, MiniMax backup, Kimi, and Ollama variables without exposing their values and the provider env file is mode 0600.",
+      "must_fail_first": false
+    },
+    {
+      "id": "T5",
+      "requirement_id": "R3",
+      "kind": "smoke",
+      "description": "Live Factory settings readback proves exactly one MiniMax backup custom model references MINIMAX_BACKUP_API_KEY, existing primary MiniMax models remain on MINIMAX_API_KEY, and the two credential values are distinct.",
       "must_fail_first": false
     }
   ],
@@ -133,6 +268,7 @@
       "repo check",
       "systemctl --user is-active droid-remote-control.service",
       "~/.local/bin/droid computer list",
+      "python3 docs/work/2026-10-27-droid-remote-control/evidence/check-runtime.py",
       "purpose-validate-work docs/work/2026-10-27-droid-remote-control --require-evidence"
     ],
     "evidence_required": [

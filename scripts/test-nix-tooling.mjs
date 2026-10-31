@@ -579,13 +579,14 @@ test("Codex native daemon owns package selection and lifecycle", async () => {
   assert.doesNotMatch(daemon, /codex-guardian/);
 });
 
-test("Droid Remote Control owns the daemon lifecycle", async () => {
+test("Droid Remote Control owns the daemon lifecycle and provider environment", async () => {
   const home = await source("home/home.nix");
   assert.match(home, /\.\/modules\/droid-remote-control\.nix/);
 
   const service = await source("home/modules/droid-remote-control.nix");
   assert.match(service, /lib\.toLower hostname == "cc-se-sto-devbox-01"/);
   assert.match(service, /systemd\.user\.services\.droid-remote-control/);
+  assert.match(service, /systemd\.user\.services\.droid-provider-config/);
   assert.match(
     service,
     /ExecStart\s*=\s*"%h\/\.local\/bin\/droid daemon --remote-control"/,
@@ -594,8 +595,30 @@ test("Droid Remote Control owns the daemon lifecycle", async () => {
   assert.match(service, /"%h\/\.local\/bin\/droid"/);
   assert.match(service, /"%h\/\.factory\/computer\.json"/);
   assert.match(service, /Restart\s*=\s*"on-failure"/);
-  assert.match(service, /RestartSec\s*=\s*5/);
+  assert.match(service, /RestartSec\s*=\s*"5s"/);
   assert.match(service, /WantedBy\s*=\s*\["default\.target"\]/);
+  assert.match(service, /Requires\s*=\s*\["sops-nix\.service"\]/);
+  assert.match(service, /After\s*=\s*\["sops-nix\.service"\]/);
+  assert.match(service, /Before\s*=\s*\["droid-remote-control\.service"\]/);
+  assert.match(service, /Requires\s*=\s*\["droid-provider-config\.service"\]/);
+  assert.match(
+    service,
+    /After\s*=\s*\[\s*"default\.target"\s*"droid-provider-config\.service"\s*\]/,
+  );
+  assert.match(
+    service,
+    /EnvironmentFile\s*=\s*"%h\/\.config\/factory\/droid\.env"/,
+  );
+  for (const key of ["MINIMAX_API_KEY", "KIMI_API_KEY", "OLLAMA_API_KEY"]) {
+    assert.match(service, new RegExp(key));
+  }
+  assert.match(service, /config\.sops\.secrets\.minimax_api_key\.path/);
+  assert.match(service, /config\.sops\.secrets\.kimi_api_key\.path/);
+  assert.match(service, /config\.sops\.secrets\.ollama_api_key\.path/);
+  assert.doesNotMatch(
+    service,
+    /(?:MINIMAX|KIMI|OLLAMA)_API_KEY\s*=\s*["'][A-Za-z0-9_-]{16,}["']/,
+  );
   assert.doesNotMatch(service, /computer register|computer remove/);
 });
 

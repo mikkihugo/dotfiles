@@ -1,4 +1,4 @@
-✔ Droid Remote Control owns the daemon lifecycle (7.123637ms)
+✔ Droid Remote Control owns the daemon lifecycle and provider environment (6.495589ms)
 ℹ tests 1
 ℹ suites 0
 ℹ pass 1
@@ -6,4 +6,4 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 100.694374
+ℹ duration_ms 99.17289

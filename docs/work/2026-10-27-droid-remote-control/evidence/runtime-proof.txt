@@ -1,0 +1,26 @@
+observed_at=2026-10-27T18:11:05Z
+--- enabled ---
+enabled
+--- active ---
+active
+--- unit properties ---
+LoadState=loaded
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+ConditionResult=yes
+Restart=on-failure
+RestartUSec=5s
+MainPID=2752666
+ExecMainStatus=0
+--- journal ---
+Oct 27 18:00:27 cc-se-sto-devbox-01 systemd[2055]: Started Factory Droid Remote Control daemon.
+Oct 27 18:00:32 cc-se-sto-devbox-01 droid[2752725]: [droid daemon] Daemon is running
+Oct 27 18:00:32 cc-se-sto-devbox-01 droid[2752725]:   Version: 0.250.0
+Oct 27 18:00:32 cc-se-sto-devbox-01 droid[2752725]:   PID: 2752725
+Oct 27 18:00:32 cc-se-sto-devbox-01 droid[2752725]:   Logs: /home/mhugo/.factory/logs
+Oct 27 18:00:32 cc-se-sto-devbox-01 droid[2752725]:   Relay: wss://relay.factory.ai/v0/computer/78a59ad0-a257-4ed0-a2ed-3a9fb61a82c1/agent (Computer: cc-se-sto-devbox-01, ID: 78a59ad0-a257-4ed0-a2ed-3a9fb61a82c1)
+Oct 27 18:00:32 cc-se-sto-devbox-01 droid[2752725]:   Press Ctrl+C to stop
+--- registered computers ---
+cc-se-sto-devbox-01	78a59ad0-a257-4ed0-a2ed-3a9fb61a82c1 (this machine)
+mikki-bunker	aa128258-bcf4-4e87-872e-e28e06d7abcc

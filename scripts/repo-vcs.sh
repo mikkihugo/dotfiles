@@ -229,7 +229,7 @@ show)
 	[[ $# -eq 1 ]] || die 'show requires one revision'
 	git -C "$root" show "$1"
 	;;
-worktree-list) git -C "$root" worktree list --porcelain ;;
+lane-list) git -C "$root" worktree list --porcelain ;;
 fetch)
 	[[ $# -eq 0 ]] || die 'fetch takes no arguments'
 	fetch_forgejo_pruned "$root"
@@ -331,7 +331,7 @@ sync-main)
 	cat >&2 <<'DIV_HELP'
 recovery:
   - if these commits are yours and not yet on a lane:
-      repo vcs worktree-create <lane-name> main    # lifts your commits onto a worktree/* branch
+      repo lane create <lane-name> main            # lifts your commits onto a worktree/* branch
       # then re-run sync-main from the canonical primary
   - if these commits are yours and you want them kept on main:
       repo vcs converge-main                       # rebases main onto origin/main keeping your commits
@@ -423,7 +423,7 @@ primary-to-main)
 	done < <(git -C "$primary" status --porcelain=v1 -z)
 	if ((${#unproven[@]})); then
 		printf 'unproven_dirt=%s\n' "${unproven[@]}" >&2
-		die "primary checkout $primary has changes that are not in origin/main history; land them first: repo vcs worktree-create <name> origin/main, copy the files, then repo vcs land"
+		die "primary checkout $primary has changes that are not in origin/main history; land them first: repo lane create <name> origin/main, copy the files, then repo vcs land"
 	fi
 	if [[ -n "$detached_head" ]]; then
 		git -C "$primary" update-ref "refs/dotfiles-primary-backup/$detached_head" "$detached_head"
@@ -508,41 +508,41 @@ land)
 	fetch_forgejo_main "$root"
 	printf 'landed=main revision=%s forgejo_readback=true github_readback=true source=%s\n' "$local_revision" "$branch"
 	;;
-worktree-create)
-	[[ $# -eq 2 ]] || die 'worktree-create requires name and revision'
+lane-create)
+	[[ $# -eq 2 ]] || die 'lane-create requires name and revision'
 	name="$1"
 	revision="$2"
 	valid_name "$name"
 	path="$HOME/.dotfiles-worktrees/$name"
-	[[ ! -e "$path" ]] || die "worktree path exists: $path"
+	[[ ! -e "$path" ]] || die "lane path exists: $path"
 	git -C "$root" worktree add -b "worktree/$name" "$path" "$revision"
 	;;
-worktree-delete | worktree-drop)
-	[[ $# -eq 1 ]] || die 'worktree-delete requires name'
+lane-delete | lane-drop)
+	[[ $# -eq 1 ]] || die 'lane-delete requires name'
 	name="$1"
 	valid_name "$name"
 	path="$HOME/.dotfiles-worktrees/$name"
-	[[ "$(realpath "$root")" != "$(realpath "$path")" ]] || die 'cannot delete current worktree'
-	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'worktree is not registered'
-	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'worktree is dirty'
+	[[ "$(realpath "$root")" != "$(realpath "$path")" ]] || die 'cannot delete current lane'
+	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'lane is not registered'
+	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'lane is dirty'
 	if ! git -C "$root" merge-base --is-ancestor "$(task_branch_for "$name")" main; then
 		fetch_forgejo_main "$root"
-		git -C "$root" merge-base --is-ancestor "$(task_branch_for "$name")" origin/main || die 'worktree branch is not integrated into main'
+		git -C "$root" merge-base --is-ancestor "$(task_branch_for "$name")" origin/main || die 'lane branch is not integrated into main'
 	fi
 	git -C "$root" worktree remove "$path"
 	# The primary checkout may intentionally lag origin/main. Integration was
 	# proven above, so delete the local task ref without re-checking stale main.
 	git -C "$root" branch -D "$(task_branch_for "$name")"
 	;;
-worktree-abandon)
-	[[ $# -eq 2 ]] || die 'worktree-abandon requires name and discard-unintegrated'
+lane-abandon)
+	[[ $# -eq 2 ]] || die 'lane-abandon requires name and discard-unintegrated'
 	name="$1"
 	confirmation="$2"
 	valid_name "$name"
-	[[ "$confirmation" == discard-unintegrated ]] || die 'worktree-abandon requires exact discard-unintegrated confirmation'
+	[[ "$confirmation" == discard-unintegrated ]] || die 'lane-abandon requires exact discard-unintegrated confirmation'
 	path="$HOME/.dotfiles-worktrees/$name"
-	[[ "$(realpath "$root")" != "$(realpath -m "$path")" ]] || die 'cannot abandon current worktree'
-	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'worktree is not registered'
+	[[ "$(realpath "$root")" != "$(realpath -m "$path")" ]] || die 'cannot abandon current lane'
+	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'lane is not registered'
 	if [[ ! -e "$path" ]]; then
 		git -C "$root" worktree prune
 		revision="$(git -C "$root" rev-parse "$(task_branch_for "$name")")"
@@ -550,11 +550,11 @@ worktree-abandon)
 		printf 'abandoned=%s revision=%s clean=true live_process=false missing_path=true\n' "$name" "$revision"
 		exit 0
 	fi
-	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'worktree is dirty'
+	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'lane is dirty'
 	for process_cwd in /proc/[0-9]*/cwd; do
 		resolved_cwd="$(readlink "$process_cwd" 2>/dev/null || true)"
 		case "$resolved_cwd" in
-		"$path" | "$path"/*) die "worktree is owned by a live process: $process_cwd -> $resolved_cwd" ;;
+		"$path" | "$path"/*) die "lane is owned by a live process: $process_cwd -> $resolved_cwd" ;;
 		esac
 	done
 	revision="$(git -C "$root" rev-parse "$(task_branch_for "$name")")"
@@ -686,5 +686,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main [--divergence-only]|converge-main|primary-to-main|describe|amend|push|push-github|land|worktree-create|worktree-delete|worktree-abandon|branch-delete|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|lane-list|fetch|rebase|sync-main [--divergence-only]|converge-main|primary-to-main|describe|amend|push|push-github|land|lane-create|lane-delete|lane-abandon|branch-delete|contract-test|config}' ;;
 esac

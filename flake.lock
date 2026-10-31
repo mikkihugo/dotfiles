@@ -62,10 +62,13 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1791781423,
-        "narHash": "sha256-c1Lk/bSIM9ESLtj5JplxI0C+pzrz7uZnBo8qgOi+rAw=",
-        "path": "/home/mhugo/code/worktrees/jj/singularity-engine/engine-nixpkgs-lock-20261012/nix/toolchains/nixpkgs-pin",
-        "type": "path"
+        "dir": "nix/toolchains/nixpkgs-pin",
+        "lastModified": 1793153899,
+        "narHash": "sha256-lLXhK6adYYitV+njNZ/N6p4RB3Mb/mQk8Hb/gXRuW0A=",
+        "rev": "590cda0767f450ffa8f3d8e747b2ae8a7a047c6f",
+        "revCount": 17761,
+        "type": "git",
+        "url": "ssh://git@git.centralcloud.net:2222/singularity/singularity-engine"
       },
       "original": {
         "dir": "nix/toolchains/nixpkgs-pin",

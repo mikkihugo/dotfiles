@@ -94,19 +94,20 @@
     },
     {
       "path": [
-        "vcs",
-        "worktree-list"
+        "lane",
+        "list"
       ],
-      "description": "List registered worktrees",
-      "class": "vcs",
+      "description": "List registered task lanes (git worktree backend)",
+      "class": "lane",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
         "args": [
-          "worktree-list"
+          "lane-list"
         ],
         "authority": "repository-vcs-facade"
-      }
+      },
+      "example": "repo lane list"
     },
     {
       "path": [
@@ -254,50 +255,68 @@
     },
     {
       "path": [
-        "vcs",
-        "worktree-create"
+        "lane",
+        "create"
       ],
-      "description": "Create an isolated task worktree",
-      "class": "vcs",
+      "description": "Create an isolated task lane (git worktree backend)",
+      "class": "lane",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
         "args": [
-          "worktree-create"
+          "lane-create"
         ],
         "authority": "repository-vcs-facade"
+      },
+      "usage": "<name> <revision>",
+      "example": "repo lane create my-fix origin/main",
+      "argument_arity": {
+        "minimum": 2,
+        "maximum": 2
       }
     },
     {
       "path": [
-        "vcs",
-        "worktree-drop"
+        "lane",
+        "drop"
       ],
-      "description": "Remove an integrated clean task worktree",
-      "class": "vcs",
+      "description": "Remove an integrated clean task lane",
+      "class": "lane",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
         "args": [
-          "worktree-drop"
+          "lane-delete"
         ],
         "authority": "repository-vcs-facade"
+      },
+      "usage": "<name>",
+      "example": "repo lane drop my-fix",
+      "argument_arity": {
+        "minimum": 1,
+        "maximum": 1
       }
     },
     {
       "path": [
-        "vcs",
-        "worktree-abandon"
+        "lane",
+        "abandon"
       ],
-      "description": "Discard an explicitly abandoned clean inactive task worktree",
-      "class": "vcs",
+      "description": "Discard an explicitly abandoned clean inactive task lane",
+      "class": "lane",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
         "args": [
-          "worktree-abandon"
+          "lane-abandon"
         ],
         "authority": "repository-vcs-facade"
+      },
+      "usage": "<name> discard-unintegrated",
+      "example": "repo lane abandon my-fix discard-unintegrated",
+      "argument_arity": {
+        "minimum": 2,
+        "maximum": 2
       }
     },
     {

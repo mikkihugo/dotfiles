@@ -13,4 +13,5 @@ Host home-manager may mirror binaries on PATH; PATH is not the instruction sourc
 | Readable build | `nom build` when on PATH |
 | Switch + diff | `hms` (`command ls` + `nvd`) when HM aliases applied |
 
-Agents: never raw `jj`/`git` — only `repo vcs`.
+Agents: never raw `jj`/`git` — only `repo lane` for lifecycle and `repo vcs`
+for jj/git-shaped verbs. Do not teach `worktree-*` as the lifecycle noun.

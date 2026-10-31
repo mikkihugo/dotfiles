@@ -65,7 +65,7 @@ into the tri-lane, even when the lanes above are unavailable:
 - Verify before claiming success: run the relevant test/build/lint,
   reproduce the original symptom, or read back the resulting state.
 - Long-running or multi-file work belongs in a registered jj task lane
-  (`repo vcs workspace-create`), not in-place on the read-only canonical
+  (`repo lane create`), not in-place on the read-only canonical
   primary.
 
 ## When not to escalate

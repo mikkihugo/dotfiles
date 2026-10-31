@@ -18,11 +18,100 @@
   },
   "groups": [
     "check",
+    "lane",
     "sync",
     "test",
     "vcs"
   ],
   "commands": [
+    {
+      "path": [
+        "lane",
+        "list"
+      ],
+      "command": "repo lane list",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "lane",
+      "what": "List registered task lanes (git worktree backend)",
+      "when": "Before choosing a workspace lifecycle transition.",
+      "steps": [
+        "Run `repo lane list`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": "repo lane list"
+    },
+    {
+      "path": [
+        "lane",
+        "abandon"
+      ],
+      "command": "repo lane abandon",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "lane",
+      "what": "Discard an explicitly abandoned clean inactive task lane",
+      "when": "Before choosing a workspace lifecycle transition.",
+      "steps": [
+        "Run `repo lane abandon <name> discard-unintegrated`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": "<name> discard-unintegrated",
+      "example": "repo lane abandon my-fix discard-unintegrated"
+    },
+    {
+      "path": [
+        "lane",
+        "create"
+      ],
+      "command": "repo lane create",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "lane",
+      "what": "Create an isolated task lane (git worktree backend)",
+      "when": "Before choosing a workspace lifecycle transition.",
+      "steps": [
+        "Run `repo lane create <name> <revision>`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": "<name> <revision>",
+      "example": "repo lane create my-fix origin/main"
+    },
+    {
+      "path": [
+        "lane",
+        "drop"
+      ],
+      "command": "repo lane drop",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "lane",
+      "what": "Remove an integrated clean task lane",
+      "when": "Before choosing a workspace lifecycle transition.",
+      "steps": [
+        "Run `repo lane drop <name>`.",
+        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": "<name>",
+      "example": "repo lane drop my-fix"
+    },
     {
       "path": [
         "vcs",
@@ -346,94 +435,6 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs test`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
-      ],
-      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
-      "access": null,
-      "usage": null,
-      "example": null
-    },
-    {
-      "path": [
-        "vcs",
-        "worktree-abandon"
-      ],
-      "command": "repo vcs worktree-abandon",
-      "listed": true,
-      "hidden": false,
-      "alias_of": null,
-      "deprecated": false,
-      "class": "vcs",
-      "what": "Discard an explicitly abandoned clean inactive task worktree",
-      "when": "Before choosing a repository lifecycle transition.",
-      "steps": [
-        "Run `repo vcs worktree-abandon`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
-      ],
-      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
-      "access": null,
-      "usage": null,
-      "example": null
-    },
-    {
-      "path": [
-        "vcs",
-        "worktree-create"
-      ],
-      "command": "repo vcs worktree-create",
-      "listed": true,
-      "hidden": false,
-      "alias_of": null,
-      "deprecated": false,
-      "class": "vcs",
-      "what": "Create an isolated task worktree",
-      "when": "Before choosing a repository lifecycle transition.",
-      "steps": [
-        "Run `repo vcs worktree-create`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
-      ],
-      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
-      "access": null,
-      "usage": null,
-      "example": null
-    },
-    {
-      "path": [
-        "vcs",
-        "worktree-drop"
-      ],
-      "command": "repo vcs worktree-drop",
-      "listed": true,
-      "hidden": false,
-      "alias_of": null,
-      "deprecated": false,
-      "class": "vcs",
-      "what": "Remove an integrated clean task worktree",
-      "when": "Before choosing a repository lifecycle transition.",
-      "steps": [
-        "Run `repo vcs worktree-drop`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
-      ],
-      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
-      "access": null,
-      "usage": null,
-      "example": null
-    },
-    {
-      "path": [
-        "vcs",
-        "worktree-list"
-      ],
-      "command": "repo vcs worktree-list",
-      "listed": true,
-      "hidden": false,
-      "alias_of": null,
-      "deprecated": false,
-      "class": "vcs",
-      "what": "List registered worktrees",
-      "when": "Before choosing a repository lifecycle transition.",
-      "steps": [
-        "Run `repo vcs worktree-list`.",
         "Read back repository state through `repo workspace` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",

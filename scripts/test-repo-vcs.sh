@@ -194,11 +194,23 @@ grep -q 'conflict markers remain in' "$root/scripts/repo-vcs.sh" || {
 	exit 1
 }
 grep -q 'repo vcs sync-main' <<<"$repo_help"
-grep -q 'repo vcs worktree-abandon' <<<"$repo_help"
+grep -q 'repo lane abandon' <<<"$repo_help"
+grep -q 'repo lane create' <<<"$repo_help"
+grep -q 'repo lane list' <<<"$repo_help"
+grep -q 'repo lane drop' <<<"$repo_help"
 grep -q 'repo vcs branch-retire' <<<"$repo_help"
+# Taught lifecycle is repo lane *; worktree-* must not appear in default help.
+if grep -q 'repo vcs worktree-create' <<<"$repo_help"; then
+	printf 'default help must not teach repo vcs worktree-create; use repo lane create\n' >&2
+	exit 1
+fi
+if grep -q 'repo vcs worktree-abandon' <<<"$repo_help"; then
+	printf 'default help must not teach repo vcs worktree-abandon; use repo lane abandon\n' >&2
+	exit 1
+fi
 # mhugo/dotfiles#13: sync-main must report local-only commits with a
 # divergence report naming each commit's sha/author/subject, and the
-# recovery block must point to worktree-create + converge-main. The
+# recovery block must point to lane create + converge-main. The
 # helper --divergence-only exits 2 with the report and no reset.
 grep -q 'divergence=primary_main ahead_of_upstream commits=' "$root/scripts/repo-vcs.sh" || {
 	printf 'sync-main must emit a structured divergence=primary_main report (mhugo/dotfiles#13)\n' >&2
@@ -208,8 +220,8 @@ grep -q 'local_commit=.*author=' "$root/scripts/repo-vcs.sh" || {
 	printf 'sync-main must emit a per-commit local_commit=author=subject=files= line (mhugo/dotfiles#13)\n' >&2
 	exit 1
 }
-grep -q 'repo vcs worktree-create <lane-name> main' "$root/scripts/repo-vcs.sh" || {
-	printf 'sync-main recovery must point at repo vcs worktree-create <lane-name> main (mhugo/dotfiles#13)\n' >&2
+grep -q 'repo lane create <lane-name> main' "$root/scripts/repo-vcs.sh" || {
+	printf 'sync-main recovery must point at repo lane create <lane-name> main (mhugo/dotfiles#13)\n' >&2
 	exit 1
 }
 grep -q 'repo vcs converge-main' "$root/scripts/repo-vcs.sh" || {
@@ -232,15 +244,15 @@ grep -q 'symbolic-ref --quiet --short HEAD' "$root/scripts/repo-vcs.sh" || {
 	exit 1
 }
 grep -q 'worktree prune' "$root/scripts/repo-vcs.sh" || {
-	printf 'worktree-abandon must prune a registered missing checkout\n' >&2
+	printf 'lane-abandon must prune a registered missing checkout\n' >&2
 	exit 1
 }
 if "$root/scripts/repo-vcs.sh" rebase >/dev/null 2>&1; then
 	printf 'rebase unexpectedly accepted a missing revision\n' >&2
 	exit 1
 fi
-if "$root/scripts/repo-vcs.sh" worktree-abandon ast-grep-sg wrong-confirmation >/dev/null 2>&1; then
-	printf 'worktree-abandon unexpectedly accepted an invalid confirmation\n' >&2
+if "$root/scripts/repo-vcs.sh" lane-abandon ast-grep-sg wrong-confirmation >/dev/null 2>&1; then
+	printf 'lane-abandon unexpectedly accepted an invalid confirmation\n' >&2
 	exit 1
 fi
 if "$root/scripts/repo-vcs.sh" branch-retire main >/dev/null 2>&1; then

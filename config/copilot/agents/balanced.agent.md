@@ -61,7 +61,7 @@ actually need to.
   `repo vcs describe`, `repo vcs publish`). Raw `git` and raw `jj` are
   forbidden.
 - Long-running or multi-file work belongs in a registered jj task lane
-  (`repo vcs workspace-create <name> --objective '...'`), not in-place
+  (`repo lane create <name> <revision>`), not in-place
   edits on the read-only canonical primary. The lane's lease expires
   in 4h — heartbeat if the work will exceed that.
 - Never edit a file under `/home/mhugo/code/singularity-engine`. That

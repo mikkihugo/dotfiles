@@ -41,7 +41,7 @@
   "invariants": ["Codex developer_instructions retain the existing doctrine text byte-for-byte", "Canonical doctrine has one tracked source", "Home Manager owns ~/.jcode/prompt-overlay.md", "Umans is not a routing option"],
   "assumptions": [
     {"statement": "Home Manager Nix evaluation can read the tracked canonical Markdown file with builtins.readFile.", "status": "inferred", "doubt": 1, "falsifier": "The declared home configuration fails Nix evaluation because the path cannot be read."},
-    {"statement": "The dotfiles facade's worktree-create command is the current equivalent of the requested workspace-create command.", "status": "verified", "doubt": 0, "falsifier": "Live facade help exposes a workspace-create command and rejects worktree-create."}
+    {"statement": "The taught create path is repo lane create; git worktree remains the isolation backend.", "status": "verified", "doubt": 0, "falsifier": "Live facade help teaches repo vcs worktree-create as the create path, or omits repo lane create."}
   ],
   "run_control": {"autonomous_allowed": true, "risk": "medium", "blast_radius": "managed instruction and provider-routing surfaces", "reversibility": "easy", "max_active_doubt": 1},
   "target_planes": ["client", "tool"],

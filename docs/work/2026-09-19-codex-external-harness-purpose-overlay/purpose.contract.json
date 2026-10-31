@@ -37,7 +37,7 @@
   "invariants": ["Codex root orchestrates and remains sole publication authority", "Profiles and launcher remain Home Manager-managed", "Purpose Tool alone owns the reusable skill source", "Economical verifier effort is none"],
   "assumptions": [
     {"statement": "Engine will release the canonical external-harness-orchestration skill before host sync.", "status": "unverified", "doubt": 1, "falsifier": "Engine land fails or Forgejo main lacks the canonical skill."},
-    {"statement": "The dotfiles worktree is isolated and owned for this objective.", "status": "verified", "doubt": 0, "falsifier": "repo vcs worktree-list no longer lists the named branch/path."}
+    {"statement": "The dotfiles lane is isolated and owned for this objective.", "status": "verified", "doubt": 0, "falsifier": "repo lane list no longer lists the named branch/path."}
   ],
   "run_control": {"autonomous_allowed": true, "risk": "medium", "blast_radius": "repo", "reversibility": "easy", "max_active_doubt": 1},
   "target_planes": ["client", "tool"],

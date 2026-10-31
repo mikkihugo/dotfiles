@@ -112,6 +112,19 @@ This repository does not ship a GPU worker Home Manager module. Do not
 propose embedding-worker / inference-fabric workloads on mikki-laptop
 (aarch64, no GPU).
 
+## Repository lifecycle
+
+- Taught agent lifecycle is `repo lane <verb>`: `create`, `list`, `drop`,
+  `abandon`. Use a lane even when the work is only a checkout or VCS change.
+- VCS stays jj/git-shaped under `repo vcs` (`status`, `describe`, `push`,
+  `land`, …). Isolation backend here is a git worktree under
+  `~/.dotfiles-worktrees/<name>` on branch `worktree/<name>`.
+- Prefer `repo lane create <name> <revision>` over any `worktree-*` noun.
+  Hidden compat aliases (`repo vcs worktree-*`, `repo vcs workspace-*`) may
+  still resolve; do not teach them as the lifecycle surface.
+- Never raw `git` / `jj` for repository transitions — only `repo vcs` and
+  `repo lane`.
+
 ## Scoped Codex verification
 
 Run `repo check nix` once after exact-root direnv entry; it checks only the environment. `repo test codex-preferences` verifies managed GPT6 defaults, feature save/apply, and preservation of unrelated profiles and roles. `repo test check-entry` proves startup checks cannot invoke the full gate. `repo check` remains the required full verification before publication.

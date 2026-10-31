@@ -395,7 +395,8 @@ primary-to-main)
 		# Modified, staged-add, or untracked: prove the on-disk blob already
 		# exists in origin/main's history for this path (same content, safe to
 		# discard when aligning the primary onto main).
-		' M' | 'M ' | 'MM' | 'A ' | 'AM' | '??') ;;
+		# ' A' is intent-to-add (git add -N) or an unstaged new path vs HEAD.
+		' M' | 'M ' | 'MM' | 'A ' | ' A' | 'AM' | '??') ;;
 		' D' | 'D ')
 			# A deletion is provable only when origin/main already lacks the
 			# path; deleting a path main still has is unique work.

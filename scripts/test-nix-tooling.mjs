@@ -553,7 +553,10 @@ test("mise is managed by mise without a flake bump; no auto-update timer", async
   // script there breaks argv[0] dispatch for every other tool.
   assert.match(updater, /ln -s "\$managed" "\$HOME\/\.local\/bin\/mise"/);
   assert.doesNotMatch(updater, /home\.file\."\.local\/bin\/mise"/);
-  assert.doesNotMatch(updater, /self-update/);
+  // Comments may name nixpkgs' `.disable-self-update` / refused `mise
+  // self-update`; forbid an actual self-update invocation or timer unit.
+  assert.match(updater, /\.disable-self-update/);
+  assert.doesNotMatch(updater, /\$mise_bin"\s+self-update|ExecStart=.*self-update/);
   assert.doesNotMatch(updater, /systemd\.user\.(services|timers)\.mise-auto-update/);
 });
 test("Codex native daemon owns package selection and lifecycle", async () => {

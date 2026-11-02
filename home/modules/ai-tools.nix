@@ -938,7 +938,7 @@ in {
           pnpm_shim="$HOME/.local/share/pnpm/bin/opencode"
           pnpm_opencode=""
           if [ -f "$pnpm_shim" ]; then
-            pnpm_opencode="$(grep '^# cmd-shim-target=' "$pnpm_shim" 2>/dev/null | head -1 | cut -d= -f2-)"
+            pnpm_opencode="$(grep '^# cmd-shim-target=' "$pnpm_shim" 2>/dev/null | head -1 | cut -d= -f2- || true)"
           fi
           if [ -z "$pnpm_opencode" ] || [ ! -x "$pnpm_opencode" ]; then
             pnpm_opencode="$HOME/.local/share/pnpm/global/v11/917e035189f54688689c746c0f955a5fe2f55e26b16f39032a627ff5e27b1327/node_modules/@opencode/cli/bin/opencode.exe"

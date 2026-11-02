@@ -932,6 +932,9 @@ in {
             exit 1
           fi
           export EXA_API_KEY="$exa_key"
+          if [ "''${1:-}" = "serve" ]; then
+            exec "$HOME/.config/opencode/serve-with-otel.sh" "$@"
+          fi
           pnpm_opencode="$HOME/.local/share/pnpm/bin/opencode"
           if [ ! -x "$pnpm_opencode" ]; then
             echo "opencode: pnpm-managed binary not found at $pnpm_opencode (run: pnpm add -g @opencode/cli@latest)" >&2

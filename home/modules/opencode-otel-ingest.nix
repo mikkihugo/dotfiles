@@ -1,0 +1,43 @@
+{pkgs, ...}: let
+  refresh = pkgs.writeShellScript "opencode-otel-ingest" ''
+    export PATH=${pkgs.lib.makeBinPath [pkgs.coreutils pkgs.gawk]}
+    export BAO_BIN=${pkgs.openbao}/bin/bao
+    exec ${pkgs.bash}/bin/bash ${../../scripts/sync-opencode-swarm-otel-from-bao.sh}
+  '';
+in {
+  home.file.".config/centralcloud/otel-ingest.env.example" = {
+    source = ../../config/centralcloud/otel-ingest.env.example;
+    force = true;
+  };
+
+  home.file.".config/opencode/serve-with-otel.sh" = {
+    source = ../../config/opencode/serve-with-otel.sh;
+    executable = true;
+    force = true;
+  };
+
+  systemd.user = {
+    services.opencode-otel-ingest = {
+      Unit = {
+        Description = "Render opencode-swarm OTLP ingest env from OpenBao (0600)";
+        X-SwitchMethod = "keep-old";
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${refresh}";
+        Nice = 19;
+        TimeoutStartSec = "1min";
+      };
+    };
+
+    timers.opencode-otel-ingest = {
+      Unit.Description = "Poll OpenBao and keep opencode OTLP ingest env current";
+      Timer = {
+        OnStartupSec = "25s";
+        OnUnitActiveSec = "5min";
+        Persistent = true;
+      };
+      Install.WantedBy = ["timers.target"];
+    };
+  };
+}

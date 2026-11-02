@@ -47,6 +47,7 @@ in {
     ./modules/reap-abandoned-searches.nix
     ./modules/home-emergency-backup.nix
     ./modules/forgejo-token-file.nix
+    ./modules/opencode-otel-ingest.nix
     ./modules/files.nix
     ./modules/ai-tools.nix
     ./modules/kimi-code-otel.nix

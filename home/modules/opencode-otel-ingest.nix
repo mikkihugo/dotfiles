@@ -16,6 +16,18 @@ in {
     force = true;
   };
 
+  # pnpm's global shim execs the store binary directly and bypasses ~/.local/bin/opencode,
+  # so TUI-spawned `serve --service` missed fleet OTLP. Delegate to the HM wrapper.
+  home.file.".local/share/pnpm/bin/opencode" = {
+    executable = true;
+    force = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+      exec "$HOME/.local/bin/opencode" "$@"
+    '';
+  };
+
   systemd.user = {
     services.opencode-otel-ingest = {
       Unit = {

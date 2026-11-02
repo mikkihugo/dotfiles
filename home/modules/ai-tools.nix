@@ -935,9 +935,16 @@ in {
           if [ "''${1:-}" = "serve" ]; then
             exec "$HOME/.config/opencode/serve-with-otel.sh" "$@"
           fi
-          pnpm_opencode="$HOME/.local/share/pnpm/bin/opencode"
+          pnpm_shim="$HOME/.local/share/pnpm/bin/opencode"
+          pnpm_opencode=""
+          if [ -f "$pnpm_shim" ]; then
+            pnpm_opencode="$(grep '^# cmd-shim-target=' "$pnpm_shim" 2>/dev/null | head -1 | cut -d= -f2-)"
+          fi
+          if [ -z "$pnpm_opencode" ] || [ ! -x "$pnpm_opencode" ]; then
+            pnpm_opencode="$HOME/.local/share/pnpm/global/v11/917e035189f54688689c746c0f955a5fe2f55e26b16f39032a627ff5e27b1327/node_modules/@opencode/cli/bin/opencode.exe"
+          fi
           if [ ! -x "$pnpm_opencode" ]; then
-            echo "opencode: pnpm-managed binary not found at $pnpm_opencode (run: pnpm add -g @opencode/cli@latest)" >&2
+            echo "opencode: pnpm-managed binary not found (run: pnpm add -g @opencode/cli@latest)" >&2
             exit 127
           fi
           exec "$pnpm_opencode" "$@"

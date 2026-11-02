@@ -40,6 +40,28 @@ _cc_otel_env_load() {
 		return 0
 	fi
 
+	# Devbox fleet ingest: prefer the OpenBao-rendered env file (see
+	# opencode-otel-ingest timer + ~/.agents/host/observability-otel-devbox.md).
+	# Avoids the in-cluster probe when mesh reachability would bypass public ingest.
+	local ingest_env="${HOME}/.config/centralcloud/otel-ingest.env"
+	if [ -r "$ingest_env" ]; then
+		set -a
+		# shellcheck disable=SC1090
+		. "$ingest_env"
+		set +a
+		if [ -n "${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}" ]; then
+			export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT%/v1/traces}"
+		fi
+		export OTEL_TRACES_EXPORTER=otlp
+		export OTEL_METRICS_EXPORTER=otlp
+		export OTEL_LOGS_EXPORTER=otlp
+		export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-centralcloud-devbox}"
+		export OTEL_RESOURCE_ATTRIBUTES="${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=prod,service.namespace=devbox}"
+		export CLAUDE_CODE_ENABLE_TELEMETRY=1
+		export CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1
+		return 0
+	fi
+
 	local curl_bin base64_bin bao_bin
 	curl_bin="$(_cc_otel_resolve curl 2>/dev/null || true)"
 	base64_bin="$(_cc_otel_resolve base64 2>/dev/null || true)"

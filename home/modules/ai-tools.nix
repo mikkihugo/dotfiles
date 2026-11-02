@@ -919,7 +919,7 @@ in {
           set -euo pipefail
           # shellcheck source=/dev/null
           [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="opencode"
+          export OTEL_SERVICE_NAME="''${OTEL_SERVICE_NAME:-opencode}"
           export OPENCODE_ENABLE_EXA=1
           exa_key_file="${config.sops.secrets.exa_api_key.path}"
           if [ ! -r "$exa_key_file" ]; then

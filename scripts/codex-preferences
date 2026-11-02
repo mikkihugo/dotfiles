@@ -178,6 +178,19 @@ def apply(args) -> None:
     if not prefs and not section_prefs and not agent_prefs:
         return
 
+    # A managed key whose value is a table has two legal shapes in a live TOML
+    # config: an inline `key = {...}` under the managed section, or
+    # `[section.key.sub]` table headers — Codex rewrites the OTLP exporters into
+    # that second shape. The managed value always renders inline, so the table
+    # shape has to be dropped: its content is already merged into the managed
+    # value, and keeping both declares the same table twice (unparsable TOML).
+    managed_table_prefixes = {
+        f"{name}.{key}"
+        for name, picked in section_prefs.items()
+        for key in APPLY_SECTION_KEYS[name]
+        if key in picked and isinstance(picked[key], dict)
+    }
+
     target.parent.mkdir(parents=True, exist_ok=True)
     original = target.read_text().splitlines() if target.exists() else []
     seen = set()
@@ -187,6 +200,7 @@ def apply(args) -> None:
     section_header = re.compile(r"^\s*\[([^]]+)]\s*$")
     section = None
     skipped_agent_section = None
+    dropped_section = None
     seen_agents = set()
 
     def flush_section(name):
@@ -224,6 +238,16 @@ def apply(args) -> None:
         if section_match:
             flush_section(section)
             section = section_match.group(1)
+            if any(
+                section == prefix or section.startswith(f"{prefix}.")
+                for prefix in managed_table_prefixes
+            ):
+                # Table shape of a managed key: drop it, the merged managed
+                # value renders the same content inline.
+                dropped_section = section
+                skipped_agent_section = None
+                continue
+            dropped_section = None
             if section.startswith("agents.") and section.removeprefix("agents.") in agent_prefs:
                 name = section.removeprefix("agents.")
                 output.extend(render_agent_section(name, agent_prefs[name]))
@@ -232,7 +256,7 @@ def apply(args) -> None:
                 skipped_agent_section = name
                 continue
             skipped_agent_section = None
-        if skipped_agent_section is not None:
+        if skipped_agent_section is not None or dropped_section is not None:
             continue
         match = top_level_key.match(line)
         if section is None and match and match.group(1) in prefs:

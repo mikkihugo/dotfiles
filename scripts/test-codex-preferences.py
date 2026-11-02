@@ -260,6 +260,48 @@ class CodexPreferencesTest(unittest.TestCase):
             self.assertEqual(data["otel"]["metrics_exporter"], "statsig")
             self.assertEqual(data["otel"]["exporter"]["otlp-http"]["headers"]["authorization"], "keep-local-secret")
 
+    def test_apply_replaces_codex_table_form_exporters_without_declaring_them_twice(self):
+        # Codex rewrites ~/.codex/config.toml with [otel.exporter.otlp-http]
+        # table headers. The managed value renders inline, so the table shape
+        # has to be dropped (its content is merged into the managed value)
+        # instead of being declared a second time.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source, target = root / "shared.toml", root / "config.toml"
+            source.write_text(
+                '[otel]\n'
+                'environment = "devbox"\n'
+                'log_user_prompt = false\n'
+                'exporter = {otlp-http = {endpoint = "http://collector:4318/v1/logs", protocol = "binary", headers = {}}}\n'
+                'trace_exporter = {otlp-http = {endpoint = "http://collector:4318/v1/traces", protocol = "binary", headers = {}}}\n'
+            )
+            target.write_text(
+                '[otel]\n'
+                'environment = "devbox"\n'
+                'log_user_prompt = false\n\n'
+                '[otel.exporter.otlp-http]\n'
+                'endpoint = "http://collector:4318/v1/logs"\n'
+                'protocol = "binary"\n\n'
+                '[otel.exporter.otlp-http.headers]\n'
+                'authorization = "keep-local-secret"\n\n'
+                '[otel.trace_exporter.otlp-http]\n'
+                'endpoint = "http://collector:4318/v1/traces"\n'
+                'protocol = "binary"\n\n'
+                '[otel.trace_exporter.otlp-http.headers]\n'
+            )
+            subprocess.run([str(SCRIPT), "apply", "--source", str(source), "--target", str(target)], check=True)
+            rendered = target.read_text()
+            data = tomllib.loads(rendered)
+            self.assertEqual(data["otel"]["exporter"]["otlp-http"]["endpoint"], "http://collector:4318/v1/logs")
+            self.assertEqual(data["otel"]["exporter"]["otlp-http"]["headers"]["authorization"], "keep-local-secret")
+            self.assertEqual(data["otel"]["trace_exporter"]["otlp-http"]["endpoint"], "http://collector:4318/v1/traces")
+            self.assertNotIn("[otel.exporter.otlp-http]", rendered)
+            self.assertNotIn("[otel.trace_exporter.otlp-http]", rendered)
+
+            # Idempotent: the rewritten file parses and applies again cleanly.
+            subprocess.run([str(SCRIPT), "apply", "--source", str(source), "--target", str(target)], check=True)
+            self.assertEqual(tomllib.loads(target.read_text())["otel"]["exporter"]["otlp-http"]["endpoint"], "http://collector:4318/v1/logs")
+
     def test_roundtrip_managed_features_preserves_unmanaged_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

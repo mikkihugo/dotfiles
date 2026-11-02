@@ -35,14 +35,14 @@ _cc_otel_env_load() {
 	[ -n "${ZSH_VERSION:-}" ] && setopt localoptions
 	set +x
 
-	# Respect an explicit operator override.
-	if [ -n "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" ] || [ -n "${CENTRALCLOUD_OTEL_SKIP:-}" ]; then
+	if [ -n "${CENTRALCLOUD_OTEL_SKIP:-}" ]; then
 		return 0
 	fi
 
 	# Devbox fleet ingest: prefer the OpenBao-rendered env file (see
 	# opencode-otel-ingest timer + ~/.agents/host/observability-otel-devbox.md).
-	# Avoids the in-cluster probe when mesh reachability would bypass public ingest.
+	# Runs before the explicit-endpoint early return so an inherited in-cluster
+	# OTEL_EXPORTER_OTLP_ENDPOINT from otel-env's old probe cannot block it.
 	local ingest_env="${HOME}/.config/centralcloud/otel-ingest.env"
 	if [ -r "$ingest_env" ]; then
 		set -a
@@ -59,6 +59,11 @@ _cc_otel_env_load() {
 		export OTEL_RESOURCE_ATTRIBUTES="${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=prod,service.namespace=devbox}"
 		export CLAUDE_CODE_ENABLE_TELEMETRY=1
 		export CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1
+		return 0
+	fi
+
+	# Respect an explicit operator override when no rendered ingest file exists.
+	if [ -n "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" ]; then
 		return 0
 	fi
 

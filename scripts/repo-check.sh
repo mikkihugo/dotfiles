@@ -85,6 +85,7 @@ main() {
 	python3 "$root/scripts/test-merge-authorized-keys.py"
 	bash "$root/scripts/test-nix-gate-script-coverage.sh"
 	bash "$root/scripts/test-sccache-profile-scope.sh"
+	(cd "$root/scripts/prewarm-regression" && go test -count=1 ./...)
 	bash "$root/scripts/test-language-cache-layout.sh"
 	bash "$root/scripts/test-codex-rollout-gc.sh"
 	bash "$root/scripts/test-git-credential-forgejo-bao.sh"

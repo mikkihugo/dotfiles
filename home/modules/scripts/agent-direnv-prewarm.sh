@@ -70,6 +70,23 @@ for root in "${ROOTS[@]}"; do
     # shellcheck source=/dev/null
     . "$fleet_helper"
     if agent_direnv_fleet_v2_write_snapshot "$root" "$new_dir"; then
+      after=$(fingerprint "$root" || true)
+      if [ -z "$current_fp" ] || [ "$current_fp" != "$after" ]; then
+        echo "prewarm: inputs changed during fleet hydration for $root; keeping existing snapshot" >&2
+        continue
+      fi
+      if generated_at=$(date -u +%FT%TZ) && [ -n "$generated_at" ]; then
+        :
+      else
+        echo "prewarm: could not timestamp fleet fingerprint for $root; keeping existing snapshot" >&2
+        continue
+      fi
+      if printf '%s\n' "$root" "$after" "$generated_at" > "$new_dir/fingerprint"; then
+        :
+      else
+        echo "prewarm: could not write fleet fingerprint for $root; keeping existing snapshot" >&2
+        continue
+      fi
       rm -rf "$dir"
       mv "$new_dir" "$dir"
       echo "prewarm: hydrated $root from fleet v2 -> $dir/env ($(wc -c <"$dir/env") bytes)"

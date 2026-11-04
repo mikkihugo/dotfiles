@@ -3,6 +3,21 @@
 # Mirrors agent_direnv_try_shared_dump in hosts/_shared/nix-direnv-3.2.0.nix for
 # BASH_ENV / agent-direnv-prewarm when /etc/direnv is not on the load path.
 
+_agent_direnv_prebuilt_strip_helper() {
+	local candidate
+	for candidate in \
+		"${STRIP_AGENT_DIRENV_SNAPSHOT:-}" \
+		/srv/infra/scripts/strip-agent-direnv-snapshot \
+		"$(command -v strip-agent-direnv-snapshot 2>/dev/null)" \
+		/run/current-system/sw/bin/strip-agent-direnv-snapshot; do
+		[ -n "$candidate" ] && [ -x "$candidate" ] && {
+			printf '%s\n' "$candidate"
+			return 0
+		}
+	done
+	return 1
+}
+
 _agent_direnv_prebuilt_schema_ok() {
 	case "$1" in
 	centralcloud.agent-direnv/prebuilt | centralcloud.agent-direnv/v2) return 0 ;;
@@ -23,8 +38,7 @@ _agent_direnv_prebuilt_apply_dump() {
 	local root="$1" repo="$2" consumer_kind="$3" identity_root="$4" dump="$5"
 	local apply_dump strip_helper
 
-	strip_helper="/srv/infra/scripts/strip-agent-direnv-snapshot.py"
-	[ -f "$strip_helper" ] || return 1
+	strip_helper="$(_agent_direnv_prebuilt_strip_helper)" || return 1
 	[ -f "$dump" ] && [ -r "$dump" ] || return 1
 
 	apply_dump="$dump"
@@ -36,7 +50,7 @@ _agent_direnv_prebuilt_apply_dump() {
 		}
 	fi
 
-	if ! python3 "$strip_helper" --validate --admit-root "$root" --repository "$repo" --bash "$(command -v bash)" <"$apply_dump" 2>/dev/null; then
+	if ! "$strip_helper" --validate --admit-root "$root" --repository "$repo" --bash "$(command -v bash)" <"$apply_dump" 2>/dev/null; then
 		[ "$apply_dump" != "$dump" ] && rm -f "$apply_dump"
 		return 1
 	fi
@@ -195,10 +209,9 @@ agent_direnv_prebuilt_try_apply() {
 		}
 	fi
 
-	strip_helper="/srv/infra/scripts/strip-agent-direnv-snapshot.py"
-	[ -f "$strip_helper" ] || return 1
+	strip_helper="$(_agent_direnv_prebuilt_strip_helper)" || return 1
 
-	if ! python3 "$strip_helper" --validate --admit-root "$root" --repository "$repo" --bash "$(command -v bash)" <"$apply_dump" 2>/dev/null; then
+	if ! "$strip_helper" --validate --admit-root "$root" --repository "$repo" --bash "$(command -v bash)" <"$apply_dump" 2>/dev/null; then
 		[ "$apply_dump" != "$dump" ] && rm -f "$apply_dump"
 		return 1
 	fi
@@ -282,10 +295,9 @@ agent_direnv_prebuilt_write_snapshot() {
 	IFS= read -r header <"$dump" || return 1
 	_agent_direnv_prebuilt_header_matches "$header" "$repo" "$key" "$system" "$devshell" || return 1
 
-	strip_helper="/srv/infra/scripts/strip-agent-direnv-snapshot.py"
-	[ -f "$strip_helper" ] || return 1
+	strip_helper="$(_agent_direnv_prebuilt_strip_helper)" || return 1
 	stripped="$(mktemp "${TMPDIR:-/tmp}/agent-direnv-prebuilt.XXXXXX")" || return 1
-	if ! python3 "$strip_helper" --admit-root "$root" --repository "$repo" --bash "$(command -v bash)" <"$dump" >"$stripped" 2>/dev/null ||
+	if ! "$strip_helper" --admit-root "$root" --repository "$repo" --bash "$(command -v bash)" <"$dump" >"$stripped" 2>/dev/null ||
 		[ ! -s "$stripped" ]; then
 		rm -f "$stripped"
 		return 1

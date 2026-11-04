@@ -57,12 +57,24 @@ for root in "${ROOTS[@]}"; do
   # Skip-if-fresh: fingerprint match + non-empty env + younger than the cap.
   # fingerprint line 3 is ISO-8601 (date -u +%FT%TZ), not epoch — parse it the
   # same way direnv-agent does. Integer-comparing the ISO string fails with
-  # "integer expected" and the `|| fresh; skip` branch always wins (2026-10-30).
+  # "integer expected" and the `|| fingerprint-match` branch always wins
+  # (2026-10-30).
+  #
+  # The fingerprint proves only that the CHECKOUT is unchanged since the last
+  # snapshot; it says nothing about whether the captured env is usable. An
+  # eval that lost the cold-eval lock race stamps the export with
+  # NIX_DIRENV_DID_FALLBACK=1, and that fallback dump must never be served
+  # as fresh (the header falsifier above). 2026-11-04: the 23:04 snapshot
+  # carried the fallback marker while every run to 09:57 said "fresh; skip".
   current_fp=$(fingerprint "$root" || true)
   if [ -s "$dir/env" ] && [ "$current_fp" = "$(sed '1d;$d' "$dir/fingerprint" 2>/dev/null || true)" ]; then
-    gen_at=$(tail -n 1 "$dir/fingerprint" 2>/dev/null || echo 0)
-    gen_epoch=$(date -u -d "$gen_at" +%s 2>/dev/null || echo 0)
-    [ "$gen_epoch" -lt $(( $(date -u +%s) - SNAPSHOT_MAX_AGE_S )) ] || { echo "prewarm: $root fresh; skip"; continue; }
+    if grep -q "NIX_DIRENV_DID_FALLBACK" "$dir/env" 2>/dev/null; then
+      echo "prewarm: $root fingerprint-match but env is a fallback dump; re-hydrating" >&2
+    else
+      gen_at=$(tail -n 1 "$dir/fingerprint" 2>/dev/null || echo 0)
+      gen_epoch=$(date -u -d "$gen_at" +%s 2>/dev/null || echo 0)
+      [ "$gen_epoch" -lt $(( $(date -u +%s) - SNAPSHOT_MAX_AGE_S )) ] || { echo "prewarm: $root fingerprint-match, env clean, within age; skip"; continue; }
+    fi
   fi
 
   fleet_helper="${HOME}/.dotfiles/shell/bash/agent-direnv-fleet-v2-apply.sh"

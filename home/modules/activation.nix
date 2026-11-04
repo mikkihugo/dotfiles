@@ -76,6 +76,19 @@ in {
         "$HOME/.local/bin/jcode-lane-settle.sh"
     '';
 
+    retireBudgetAutofixWatchdog = lib.hm.dag.entryBefore ["reloadSystemd"] ''
+      for unit in budget-autofix-watchdog.timer budget-autofix-watchdog.service; do
+        load_state="$(${pkgs.systemd}/bin/systemctl --user show --property=LoadState --value "$unit")"
+        if [ "$load_state" != "not-found" ]; then
+          ${pkgs.systemd}/bin/systemctl --user disable --now "$unit" 2>/dev/null || true
+        fi
+      done
+      ${pkgs.coreutils}/bin/rm -f \
+        "$HOME/.config/systemd/user/budget-autofix-watchdog.timer" \
+        "$HOME/.config/systemd/user/budget-autofix-watchdog.service" \
+        "$HOME/.config/jcode/budget-autofix.env"
+    '';
+
     # A previous transient user-unit failure makes home-manager report the whole
     # user manager as degraded before it reloads services. Clear stale failed
     # states first; real failures during this activation will still be reported.

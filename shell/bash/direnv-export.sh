@@ -363,7 +363,7 @@ _direnv_try_prewarm_snapshot() {
 	_direnv_stripped="${_direnv_tmp}.stripped"
 	_direnv_strip_helper="${HOME}/.dotfiles/shell/bash/direnv-strip-snapshot.py"
 	mkdir -p -- "$_direnv_cache_dir" 2>/dev/null || true
-	# Snapshot may already carry an agent-direnv header (fleet v2 hydrate) or be
+	# Snapshot may already carry an agent-direnv header (prebuilt export hydrate) or be
 	# a raw `direnv export bash` script from prewarm capture.
 	IFS= read -r _direnv_prewarm_hdr <"${_direnv_prewarm_dir}/env" || true
 	case "$_direnv_prewarm_hdr" in
@@ -474,7 +474,7 @@ if ! _direnv_root=$(_direnv_envrc_root); then
 	return 0
 fi
 
-# Canonical read-only Engine observation tree: fleet v2 prewarm + .envrc
+# Canonical read-only Engine observation tree: host prebuilt direnv export + .envrc
 # agent_direnv_try_shared_dump are authoritative. Do not publish a parallel
 # per-agent dump here; still honor an existing hit, otherwise one direnv export.
 # This branch returns before the nested-root guard further down. direnv's own

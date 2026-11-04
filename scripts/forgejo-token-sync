@@ -12,7 +12,6 @@
 #     ~/.config/forgejo/token                      exact token, no newline
 #     ~/.local/share/forgejo-cli/keys.json         .hosts["git.centralcloud.net"].token
 #     ~/.config/fj/config.toml                     token in [hosts."https://git.centralcloud.net"]
-#     ~/.config/jcode/budget-autofix.env           FORGEJO_TOKEN= (quote style kept)
 #   If bao fails or returns an empty token, exit 1 and touch nothing. The token
 #   never reaches stdout, stderr or argv: it moves file to file. A copy that already
 #   matches is left untouched ("unchanged"), so the timer can poll every few minutes.
@@ -99,19 +98,6 @@ if [[ -e "$dest" ]]; then
 		{ print }
 	' "$dest" >"$tmp"
 	install_from fj-config.toml "$dest" "$tmp"
-fi
-
-# budget-autofix.env
-dest="$HOME/.config/jcode/budget-autofix.env"
-if [[ -e "$dest" ]]; then
-	tmp="$(mktemp "$dest.XXXXXX")"
-	awk -v tf="$work/token" '
-		BEGIN { getline t < tf }
-		/^FORGEJO_TOKEN="/ { print "FORGEJO_TOKEN=\"" t "\""; next }
-		/^FORGEJO_TOKEN=/ { print "FORGEJO_TOKEN=" t; next }
-		{ print }
-	' "$dest" >"$tmp"
-	install_from budget-autofix.env "$dest" "$tmp"
 fi
 
 exit "$status"

@@ -70,6 +70,8 @@ for root in "${ROOTS[@]}"; do
   if [ -s "$dir/env" ] && [ "$current_fp" = "$(sed '1d;$d' "$dir/fingerprint" 2>/dev/null || true)" ]; then
     if grep -q "NIX_DIRENV_DID_FALLBACK" "$dir/env" 2>/dev/null; then
       echo "prewarm: $root fingerprint-match but env is a fallback dump; re-hydrating" >&2
+    elif [ ! -e "$root/.direnv/flake-profile" ] && ! compgen -G "$root/.direnv/flake-profile-*" >/dev/null; then
+      echo "prewarm: $root fingerprint-match but nix-direnv profile missing; re-hydrating" >&2
     else
       gen_at=$(tail -n 1 "$dir/fingerprint" 2>/dev/null || echo 0)
       gen_epoch=$(date -u -d "$gen_at" +%s 2>/dev/null || echo 0)
@@ -77,14 +79,14 @@ for root in "${ROOTS[@]}"; do
     fi
   fi
 
-  fleet_helper="${HOME}/.dotfiles/shell/bash/agent-direnv-fleet-v2-apply.sh"
-  if [ -f "$fleet_helper" ]; then
+  prebuilt_helper="${HOME}/.dotfiles/shell/bash/agent-direnv-prebuilt-apply.sh"
+  if [ -f "$prebuilt_helper" ]; then
     # shellcheck source=/dev/null
-    . "$fleet_helper"
-    if agent_direnv_fleet_v2_write_snapshot "$root" "$new_dir"; then
+    . "$prebuilt_helper"
+    if agent_direnv_prebuilt_write_snapshot "$root" "$new_dir"; then
       rm -rf "$dir"
       mv "$new_dir" "$dir"
-      echo "prewarm: hydrated $root from fleet v2 -> $dir/env ($(wc -c <"$dir/env") bytes)"
+      echo "prewarm: hydrated $root from prebuilt direnv export -> $dir/env ($(wc -c <"$dir/env") bytes)"
       continue
     fi
     rm -rf "$new_dir"

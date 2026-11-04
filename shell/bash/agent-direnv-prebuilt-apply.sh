@@ -1,8 +1,25 @@
-# agent-direnv-fleet-v2-apply.sh — apply host-published v2 dumps without nix eval.
+# agent-direnv-prebuilt-apply.sh — apply host-published prebuilt direnv export dumps (no nix eval).
+# Producer: devshell-prewarm on cc-se-sto-devbox-01 → $XDG_RUNTIME_DIR/agent-direnv/*.{bash,meta}
 # Mirrors agent_direnv_try_shared_dump in hosts/_shared/nix-direnv-3.2.0.nix for
 # BASH_ENV / agent-direnv-prewarm when /etc/direnv is not on the load path.
 
-_agent_direnv_fleet_v2_apply_dump() {
+_agent_direnv_prebuilt_schema_ok() {
+	case "$1" in
+	centralcloud.agent-direnv/prebuilt | centralcloud.agent-direnv/v2) return 0 ;;
+	*) return 1 ;;
+	esac
+}
+
+_agent_direnv_prebuilt_header_matches() {
+	local header="$1" repo="$2" key="$3" system="$4" devshell="$5"
+	case "$header" in
+	"# agent-direnv-prebuilt repo=$repo key=$key system=$system devshell=$devshell rebind="*) return 0 ;;
+	"# agent-direnv-v2 repo=$repo key=$key system=$system devshell=$devshell rebind="*) return 0 ;;
+	*) return 1 ;;
+	esac
+}
+
+_agent_direnv_prebuilt_apply_dump() {
 	local root="$1" repo="$2" consumer_kind="$3" identity_root="$4" dump="$5"
 	local apply_dump strip_helper
 
@@ -34,7 +51,7 @@ _agent_direnv_fleet_v2_apply_dump() {
 	return 0
 }
 
-_agent_direnv_fleet_v2_newest_dump_for_repo() {
+_agent_direnv_prebuilt_newest_dump_for_repo() {
 	local repo="$1"
 	local meta m meta_repo expires_at created now best_created=0 best_dump=
 	now="$(date +%s)"
@@ -62,7 +79,7 @@ _agent_direnv_fleet_v2_newest_dump_for_repo() {
 	printf '%s\n' "$best_dump"
 }
 
-agent_direnv_fleet_v2_try_apply() {
+agent_direnv_prebuilt_try_apply() {
 	local root="${1:-$PWD}"
 	local repo consumer_kind identity_root apply_dump
 	local system devshell rebind rebind_digest inputs_digest material name path digest key
@@ -155,7 +172,7 @@ agent_direnv_fleet_v2_try_apply() {
 	meta_rebind="$(awk -F= '$1 == "rebind" {print $2}' "$meta")"
 	expires_at="$(awk -F= '$1 == "expires_at" {print $2}' "$meta")"
 	now="$(date +%s)"
-	[ "$schema" = centralcloud.agent-direnv/v2 ] || return 1
+	_agent_direnv_prebuilt_schema_ok "$schema" || return 1
 	[ "$meta_repo" = "$repo" ] || return 1
 	[ "$meta_key" = "$key" ] || return 1
 	[ "$meta_system" = "$system" ] || return 1
@@ -167,7 +184,7 @@ agent_direnv_fleet_v2_try_apply() {
 	[ "$now" -le "$expires_at" ] || return 1
 
 	IFS= read -r header <"$dump" || return 1
-	[ "$header" = "# agent-direnv-v2 repo=$repo key=$key system=$system devshell=$devshell rebind=$rebind" ] || return 1
+	_agent_direnv_prebuilt_header_matches "$header" "$repo" "$key" "$system" "$devshell" || return 1
 
 	apply_dump="$dump"
 	if [ "$consumer_kind" = lane ] && [ "$identity_root" != "$root" ]; then
@@ -196,8 +213,8 @@ agent_direnv_fleet_v2_try_apply() {
 	return 0
 }
 
-# Write a ~/.cache/agent-direnv snapshot from a valid fleet v2 dump (no nix eval).
-agent_direnv_fleet_v2_write_snapshot() {
+# Write a ~/.cache/agent-direnv snapshot from a valid prebuilt dump (no nix eval).
+agent_direnv_prebuilt_write_snapshot() {
 	local root="$1"
 	local out_dir="$2"
 	local repo identity_root
@@ -254,7 +271,7 @@ agent_direnv_fleet_v2_write_snapshot() {
 	meta_key="$(awk -F= '$1 == "key" {print $2}' "$meta")"
 	expires_at="$(awk -F= '$1 == "expires_at" {print $2}' "$meta")"
 	now="$(date +%s)"
-	[ "$schema" = centralcloud.agent-direnv/v2 ] || return 1
+	_agent_direnv_prebuilt_schema_ok "$schema" || return 1
 	[ "$meta_repo" = "$repo" ] || return 1
 	[ "$meta_key" = "$key" ] || return 1
 	case "$expires_at" in
@@ -263,14 +280,11 @@ agent_direnv_fleet_v2_write_snapshot() {
 	[ "$now" -le "$expires_at" ] || return 1
 
 	IFS= read -r header <"$dump" || return 1
-	case "$header" in
-	"# agent-direnv-v2 repo=$repo key=$key system=$system devshell=$devshell rebind="*) ;;
-	*) return 1 ;;
-	esac
+	_agent_direnv_prebuilt_header_matches "$header" "$repo" "$key" "$system" "$devshell" || return 1
 
 	strip_helper="/srv/infra/scripts/strip-agent-direnv-snapshot.py"
 	[ -f "$strip_helper" ] || return 1
-	stripped="$(mktemp "${TMPDIR:-/tmp}/agent-direnv-fleet-v2.XXXXXX")" || return 1
+	stripped="$(mktemp "${TMPDIR:-/tmp}/agent-direnv-prebuilt.XXXXXX")" || return 1
 	if ! python3 "$strip_helper" --admit-root "$root" --repository "$repo" --bash "$(command -v bash)" <"$dump" >"$stripped" 2>/dev/null ||
 		[ ! -s "$stripped" ]; then
 		rm -f "$stripped"

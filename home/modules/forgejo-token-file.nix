@@ -6,8 +6,8 @@
   tokenEnv = {FORGEJO_TOKEN_FILE = tokenFile;};
 
   # scripts/forgejo-token-sync renders the token from OpenBao into the runtime
-  # file and into every static copy a tool reads (fj, infra scripts, the
-  # budget-autofix watchdog), so rotating is one `bao kv patch` plus a refresh.
+  # file and into every static copy a tool reads (fj, infra scripts), so
+  # rotating is one `bao kv patch` plus a refresh.
   # The value goes file-to-file only: never argv, never the journal.
   refresh = pkgs.writeShellScript "forgejo-token-file" ''
     export PATH=${pkgs.lib.makeBinPath [pkgs.coreutils pkgs.gawk pkgs.jq]}

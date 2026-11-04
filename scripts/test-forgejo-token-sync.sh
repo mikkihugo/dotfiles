@@ -6,7 +6,6 @@
 #   - ~/.config/forgejo/token (0600, exact token, no newline)
 #   - ~/.local/share/forgejo-cli/keys.json  .hosts["git.centralcloud.net"].token
 #   - ~/.config/fj/config.toml  [hosts."https://git.centralcloud.net"] token
-#   - ~/.config/jcode/budget-autofix.env  FORGEJO_TOKEN=
 # Only the token value changes; every other field and line survives. A file that
 # does not exist is skipped, never created. If bao fails or returns an empty
 # token NOTHING is touched. The token never reaches stdout, stderr or argv.
@@ -59,10 +58,6 @@ name = "mhugo"
 default = true
 token = "$OLD"
 TOML
-	cat >"$h/.config/jcode/budget-autofix.env" <<ENV
-# budget-autofix-watchdog environment (managed locally; contains a secret)
-FORGEJO_TOKEN=$OLD
-ENV
 	chmod 0644 "$h/.config/fj/config.toml" "$h/.config/forgejo/token"
 }
 
@@ -87,23 +82,21 @@ rc="$(run "$h" ok)"
 grep -Fxq "token = \"$NEW\"" "$h/.config/fj/config.toml" || fail 'fj config.toml token not updated'
 grep -Fxq 'name = "mhugo"' "$h/.config/fj/config.toml" || fail 'fj config.toml lost the name line'
 grep -Fxq 'default = true' "$h/.config/fj/config.toml" || fail 'fj config.toml lost the default line'
-grep -Fxq "FORGEJO_TOKEN=$NEW" "$h/.config/jcode/budget-autofix.env" || fail 'budget-autofix.env token not updated (must stay unquoted)'
-grep -Fq '# budget-autofix-watchdog environment' "$h/.config/jcode/budget-autofix.env" || fail 'budget-autofix.env lost its comment'
-for f in run/forgejo-token .config/forgejo/token .local/share/forgejo-cli/keys.json .config/fj/config.toml .config/jcode/budget-autofix.env; do
+for f in run/forgejo-token .config/forgejo/token .local/share/forgejo-cli/keys.json .config/fj/config.toml; do
 	[[ "$(mode "$h/$f")" == 600 ]] || fail "$f mode is $(mode "$h/$f"), want 600"
 done
 grep -rqF -e "$OLD" "$h" && fail 'old token still present in a copy'
 grep -qF -e "$NEW" "$tmp/out" "$tmp/err" && fail 'token leaked to the script output'
 
 # --- idempotent, and a no-op sync rewrites nothing (a 5-minute poll must not churn files)
-files=(run/forgejo-token .config/forgejo/token .local/share/forgejo-cli/keys.json .config/fj/config.toml .config/jcode/budget-autofix.env)
+files=(run/forgejo-token .config/forgejo/token .local/share/forgejo-cli/keys.json .config/fj/config.toml)
 inodes() { for f in "${files[@]}"; do stat -c '%i' "$h/$f"; done | tr '\n' ' '; }
 before_inodes="$(inodes)"
 rc="$(run "$h" ok)"
 [[ "$rc" == 0 ]] || fail "second sync exit $rc, want 0"
 [[ "$(jq -r '.hosts["git.centralcloud.net"].token' "$h/.local/share/forgejo-cli/keys.json")" == "$NEW" ]] || fail 'second sync changed keys.json'
 [[ "$(inodes)" == "$before_inodes" ]] || fail 'a sync with nothing to change rewrote a file'
-[[ "$(grep -c 'unchanged' "$tmp/out")" == 5 ]] || fail 'a no-op sync must report all five copies as unchanged'
+[[ "$(grep -c 'unchanged' "$tmp/out")" == 4 ]] || fail 'a no-op sync must report all four copies as unchanged'
 
 # --- one drifted copy is repaired; the others are left alone
 jq --arg t "$OLD" '.hosts["git.centralcloud.net"].token = $t' "$h/.local/share/forgejo-cli/keys.json" >"$tmp/keys.drift"
@@ -114,17 +107,16 @@ rc="$(run "$h" ok)"
 [[ "$(jq -r '.hosts["git.centralcloud.net"].token' "$h/.local/share/forgejo-cli/keys.json")" == "$NEW" ]] || fail 'drifted keys.json was not repaired'
 read -r -a b <<<"$before_inodes"
 read -r -a a <<<"$(inodes)"
-for i in 0 1 3 4; do [[ "${a[$i]}" == "${b[$i]}" ]] || fail "an unrelated copy (index $i) was rewritten during a drift repair"; done
+for i in 0 1 3; do [[ "${a[$i]}" == "${b[$i]}" ]] || fail "an unrelated copy (index $i) was rewritten during a drift repair"; done
 grep -q 'fj-keys.json updated' "$tmp/out" || fail 'drift repair must report keys.json as updated'
 [[ "$(mode "$h/.local/share/forgejo-cli/keys.json")" == 600 ]] || fail 'repaired keys.json must be 0600'
 
 # --- missing files are skipped, not created
 h="$tmp/h2"
 fixture "$h"
-rm -f "$h/.config/jcode/budget-autofix.env" "$h/.local/share/forgejo-cli/keys.json"
+rm -f "$h/.local/share/forgejo-cli/keys.json"
 rc="$(run "$h" ok)"
 [[ "$rc" == 0 ]] || fail "sync with missing files exit $rc, want 0"
-[[ ! -e "$h/.config/jcode/budget-autofix.env" ]] || fail 'sync created a missing budget-autofix.env'
 [[ ! -e "$h/.local/share/forgejo-cli/keys.json" ]] || fail 'sync created a missing keys.json'
 [[ "$(cat "$h/.config/forgejo/token")" == "$NEW" ]] || fail 'present files must still update when others are missing'
 

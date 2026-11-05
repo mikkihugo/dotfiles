@@ -121,8 +121,9 @@
     gitui # terminal git UI (fast, keyboard-driven)
     flyctl # Fly.io CLI (deploy, scale, monitor)
     hcloud # Hetzner Cloud CLI
-    # Contabo provider CLI — nixpkgs cntb 1.7 (nixpkgs-unstable pin; 26.05 has 1.6).
-    cntb
+    # Contabo provider CLI is NOT a nix package: manual pinned binary at
+    # ~/.local/share/cntb/cntb behind the ~/.local/bin/cntb -> cntb-bao
+    # OpenBao-credentials shim (2026-11-05).
     # Vultr provider CLI — nixpkgs vultr-cli 3.11.0 (nixpkgs-unstable pin; 26.05 has 3.10.0).
     vultr-cli
     cloudflared # Cloudflare tunnel client/CLI

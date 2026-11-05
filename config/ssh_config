@@ -207,3 +207,23 @@ Host mikki-laptop
     User mhugo
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
+
+# cluster-eu-0001 kubeadm plane (added 2026-11-05).
+# Host keys recorded in /srv/infra/secrets/hosts.nix.
+Host de-fsn-0001
+    HostName 178.104.218.38
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host fi-hel-0001
+    HostName 2.29.127.137
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host fr-lau-0001
+    HostName 164.68.96.20
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes

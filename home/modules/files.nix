@@ -158,7 +158,7 @@
       force = true;
     };
 
-    # Nix user config: build locally, consume shared binary caches.
+    # Nix user config: remote builders only, consume shared binary caches.
     ".config/nix/nix.conf" = {
       source = ../../config/nix/local-build.nix.conf;
       force = true;

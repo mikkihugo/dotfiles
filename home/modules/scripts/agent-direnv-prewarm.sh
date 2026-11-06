@@ -29,7 +29,8 @@ STATE_DIR="${AGENT_DIRENV_STATE:-$HOME/.cache/agent-direnv}"
 SNAPSHOT_MAX_AGE_S=86400
 EXPORT_TIMEOUT_S="${AGENT_DIRENV_EXPORT_TIMEOUT_S:-600}"
 EXPORT_BUDGET_S="${AGENT_DIRENV_EXPORT_BUDGET_S:-1200}"
-EVAL_LOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/codex-fleet-nix-evaluation.lock"
+# Same lock the devbox swarm runtime creates for direnv Nix evals.
+EVAL_LOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/jcode-nix-direnv-eval.lock"
 ROOTS=(
   "/home/mhugo/code/jcode"
   "/home/mhugo/code/singularity-engine"

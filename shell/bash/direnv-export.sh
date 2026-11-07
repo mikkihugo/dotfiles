@@ -671,7 +671,8 @@ if [ -n "$_direnv_key" ] && _direnv_try_prewarm_snapshot; then
 	return 0
 fi
 # Self-heal: kick prewarm when the runtime dump and snapshot are both missing.
-systemctl --user start --no-block agent-direnv-prewarm.service 2>/dev/null || true
+/run/wrappers/bin/sudo -n systemctl start --no-block agent-direnv-publish.service 2>/dev/null ||
+	systemctl start --no-block agent-direnv-publish.service 2>/dev/null || true
 
 if command -v flock >/dev/null 2>&1 && (
 	umask 077

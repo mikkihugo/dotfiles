@@ -1,31 +1,33 @@
 {pkgs, ...}: let
   refresh = pkgs.writeShellScript "opencode-otel-ingest" ''
-    export PATH=${pkgs.lib.makeBinPath [pkgs.coreutils pkgs.gawk]}
+    export PATH="$HOME/.local/bin:/run/current-system/sw/bin:${pkgs.lib.makeBinPath [pkgs.coreutils pkgs.gawk pkgs.openbao pkgs.kubectl]}"
     export BAO_BIN=${pkgs.openbao}/bin/bao
     exec ${pkgs.bash}/bin/bash ${../../scripts/sync-opencode-swarm-otel-from-bao.sh}
   '';
 in {
-  home.file.".config/centralcloud/otel-ingest.env.example" = {
-    source = ../../config/centralcloud/otel-ingest.env.example;
-    force = true;
-  };
-
-  home.file.".config/opencode/serve-with-otel.sh" = {
-    source = ../../config/opencode/serve-with-otel.sh;
-    executable = true;
-    force = true;
-  };
-
-  # pnpm's global shim execs the store binary directly and bypasses ~/.local/bin/opencode,
-  # so TUI-spawned `serve --service` missed fleet OTLP. Delegate to the HM wrapper.
-  home.file.".local/share/pnpm/bin/opencode" = {
-    executable = true;
-    force = true;
-    text = ''
-      #!/usr/bin/env bash
-      set -euo pipefail
-      exec "$HOME/.local/bin/opencode" "$@"
-    '';
+  home = {
+    file = {
+      ".config/centralcloud/otel-ingest.env.example" = {
+        source = ../../config/centralcloud/otel-ingest.env.example;
+        force = true;
+      };
+      ".config/opencode/serve-with-otel.sh" = {
+        source = ../../config/opencode/serve-with-otel.sh;
+        executable = true;
+        force = true;
+      };
+      # pnpm's global shim execs the store binary directly and bypasses ~/.local/bin/opencode,
+      # so TUI-spawned `serve --service` missed fleet OTLP. Delegate to the HM wrapper.
+      ".local/share/pnpm/bin/opencode" = {
+        executable = true;
+        force = true;
+        text = ''
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec "$HOME/.local/bin/opencode" "$@"
+        '';
+      };
+    };
   };
 
   systemd.user = {

@@ -6,7 +6,17 @@
 #
 # Agent hooks are NOT managed here: each CLI owns its hook files as plain
 # files in its own home (see AGENTS.md "Agent hooks — not managed here").
-{pkgs, ...}: {
+{
+  pkgs,
+  lib,
+  hostname ? "",
+  ...
+}: let
+  # This host's Nix and direnv configuration is the NixOS module under
+  # /srv/infra. A user nix.conf is loaded after /etc/nix/nix.conf and wins,
+  # which is how keep-derivations=false used to undo the daemon.
+  nixosOwnsHostNix = lib.toLower hostname == "cc-se-sto-devbox-01";
+in {
   home.file = {
     ".config/ripgrep/config" = {
       source = ../../config/ripgreprc;
@@ -158,8 +168,9 @@
       force = true;
     };
 
-    # Nix user config: remote builders only, consume shared binary caches.
-    ".config/nix/nix.conf" = {
+    # Other Home Manager profiles still use the user builder file.
+    # cc-se-sto-devbox-01 does not: /etc/nix/nix.conf is the config.
+    ".config/nix/nix.conf" = lib.mkIf (!nixosOwnsHostNix) {
       source = ../../config/nix/local-build.nix.conf;
       force = true;
     };

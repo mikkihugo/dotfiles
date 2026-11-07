@@ -1,18 +1,8 @@
 # agent-direnv.nix — instant direnv envs for agent shells (non-interactive)
 #
-# Trigger model (2026-10-27, operator steer): no fixed high-frequency timer.
-# (a) direnv-agent self-heals: on a stale/missing snapshot it kicks the prewarm
-#     service (no-block) and falls back to the queued export;
-# (b) systemd path units watch .envrc/flake.nix/flake.lock per root and fire
-#     the prewarm within seconds of a repo-config change;
-# (c) an hourly janitor timer is the only backstop.
-{
-  lib,
-  pkgs,
-  ...
-}: let
-  prewarmScript = ./scripts/agent-direnv-prewarm.sh;
-
+# Prewarming is owned by the host's /srv/infra NixOS module. This user module
+# only serves snapshots and provides a queue-tolerant fallback export.
+{pkgs, ...}: let
   # direnv-agent <root> — serve a prewarmed direnv env for eval, or fall back
   # to the real (queued) direnv export. Snapshot trusted only when its stored
   # .envrc/flake fingerprint matches and it is younger than 24h.
@@ -38,11 +28,10 @@
       echo "direnv-agent: served prewarmed env for $root (snapshot $gen_at)" >&2
       exit 0
     fi
-    # Self-heal: kick the prewarm; emit the queued export script for the
+    # Emit the queued export script for the
     # caller's eval — a child process cannot change the parent env, so the
     # fallback path must OUTPUT the script (direct export, never eval here).
-    systemctl --user start --no-block agent-direnv-prewarm.service 2>/dev/null || true
-    echo "direnv-agent: no fresh snapshot for $root; kicked prewarm; emitting queued export script" >&2
+    echo "direnv-agent: no fresh snapshot for $root; emitting queued export script" >&2
     cd -- "$root" || exit 1
     # Queue-tolerant: raise the repo .envrc's own lock timeout (jcode honors
     # JCODE_DIRENV_LOCK_TIMEOUT_S, engine SE_DIRENV_LOCK_TIMEOUT_SECONDS) so
@@ -56,50 +45,6 @@
     done
     printf '%s\n' "$out"
   '';
-
-  prewarmUnit = {
-    Unit.Description = "Prewarm agent direnv envs (on-demand, change- and janitor-triggered)";
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash ${prewarmScript}";
-      Nice = 19;
-      IOSchedulingClass = "idle";
-    };
-  };
-
-  pathUnit = root: files:
-    lib.listToAttrs (lib.imap0 (i: f: {
-        name = "agent-direnv-path-${baseNameOf root}-${toString i}";
-        value = {
-          Unit = {
-            Description = "Prewarm agent direnv on ${f} change in ${baseNameOf root}";
-            Wants = ["agent-direnv-prewarm.service"];
-          };
-          Path = {
-            PathChanged = "${root}/${f}";
-          };
-          Install.WantedBy = ["paths.target"];
-        };
-      })
-      files);
-
-  jcodePathUnits = pathUnit "/home/mhugo/code/jcode" [".envrc" "flake.nix" "flake.lock"];
-  infraPathUnits = pathUnit "/srv/infra" [".envrc" "flake.nix" "flake.lock"];
-  enginePathUnits = pathUnit "/home/mhugo/code/singularity-engine" [".envrc" "flake.nix" "flake.lock"];
 in {
   home.packages = [direnvAgent];
-
-  systemd.user = {
-    services.agent-direnv-prewarm = prewarmUnit;
-    paths = jcodePathUnits // infraPathUnits // enginePathUnits;
-    timers.agent-direnv-prewarm = {
-      Unit.Description = "Janitor backstop for agent direnv prewarm";
-      Timer = {
-        OnCalendar = "hourly";
-        RandomizedDelaySec = "10m";
-        Persistent = true;
-      };
-      Install.WantedBy = ["timers.target"];
-    };
-  };
 }

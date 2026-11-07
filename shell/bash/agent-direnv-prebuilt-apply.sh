@@ -1,7 +1,7 @@
 # agent-direnv-prebuilt-apply.sh — apply host-published prebuilt direnv export dumps (no nix eval).
-# Producer: devshell-prewarm on cc-se-sto-devbox-01 → $XDG_RUNTIME_DIR/agent-direnv/*.{bash,meta}
+# Producer: agent-direnv-publish on cc-se-sto-devbox-01 → $XDG_RUNTIME_DIR/agent-direnv/*.{bash,meta}
 # Mirrors agent_direnv_try_shared_dump in hosts/_shared/nix-direnv-3.2.0.nix for
-# BASH_ENV / agent-direnv-prewarm when /etc/direnv is not on the load path.
+# BASH_ENV / agent-direnv cache sync when /etc/direnv is not on the load path.
 
 _agent_direnv_prebuilt_strip_helper() {
 	local candidate

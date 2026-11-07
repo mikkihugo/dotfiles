@@ -33,8 +33,7 @@ question without leaving the terminal.
 | `engine-workspace-reconcile.timer` | 24h | engine | workspace | reconcile | Reconciles `engine-git-bind-mount` and lane registry rows; closes the `engine-workspace-reconcile` sweep cycle |
 | `purpose-first-audit.timer` | 24h | purpose-first | (drift) | audit | Audits every repo's `.purpose/lock.json` against the live managed block and reports drift |
 | `jcode-gc.timer` | 24h | jcode | (build artifacts) | gc | Garbage-collects jcode session/build artifacts |
-| `nix-gc-sweep.timer` | 24h | nix | gc roots | sweep | Prunes nix-direnv gc roots, `nix-collect-garbage --delete-older-than 1d`, then `nix-gc-reprovision` (direnv warm for Engine/jcode/`/srv/infra` + `se_repo_vcs_bin.sh` on Engine) |
-| `nix-gc-reprovision.service` | (OnSuccess) | nix | dev shells | reprovision | Standalone warm step; also runs after `nix-gc.service` and at end of `nix-gc-sweep` (not post-land; Engine/JCode land queues `engine-default-refresh` / `jcode-primary-refresh` via `repo`) |
+| `nix-direnv-roots-sweep-daily.timer` | 24h | nix | gc roots | sweep | Prunes stale nix-direnv gc roots, then starts system `nix-gc.service` (no collector; warm via `agent-direnv-publish` OnSuccess of `nix-gc`) |
 | `systemd-tmpfiles-clean.timer` | 24h | systemd | tmpfiles | clean | Runs `systemd-tmpfiles --clean` for `/tmp` age-out |
 | `long-term-cleanup.timer` | weekly (Sun 04:00) | nix | long-term cache | cleanup | Weekly Nix-managed long-term cache cleanup (Sunday 04:00) |
 | `nix-index-update.timer` | weekly | nix | (file index) | update | Weekly Nix-generated file-index update |
@@ -55,8 +54,8 @@ question without leaving the terminal.
 | `jcode-primary-refresh.timer` | 30m | jcode | primary | refresh | Refreshes the jcode canonical primary checkout (per NixosHost operator) |
 | `logrotate.timer` | daily | (system) | logs | rotate | Standard logrotate |
 | `engine-default-refresh.timer` | 30m | engine | default | refresh | Re-evaluates the singularity-engine default branch into the read-only mount |
-| `devshell-prewarm.timer` | 1h | devbox | devshells | prewarm | Pre-warms direnv shells for active lanes so `cd` is instant |
-| `nix-gc.timer` | 12h | nix | (store) | gc | `nix-collect-garbage` based on the nix-gc-sweep output |
+| `agent-direnv-publish-hourly.timer` | 1h | devbox | agent-direnv | publish | Publishes canonical agent direnv dumps; runs after successful `nix-gc` |
+| `nix-gc.timer` | 12h | nix | (store) | gc | `nix-collect-garbage`; on success triggers `agent-direnv-publish` |
 | `nix-generation-prune.timer` | 24h | nix | generations | prune | Removes old Nix system generations |
 | `systemd-tmpfiles-clean.timer` | 24h | systemd | tmpfiles | clean | Same name as user-level one but for system paths |
 | `fstrim.timer` | weekly | (system) | (ssds) | fstrim | TRIMs SSDs |
@@ -71,7 +70,7 @@ Each is a 1-line change in the corresponding unit file or `.nix` source:
 |---|---|
 | `jcode-gc.timer` | `jcode-build-artifacts-gc-daily.timer` |
 | `nix-gc.timer` | `nix-store-gc-twelve-hourly.timer` |
-| `nix-gc-sweep.timer` | `nix-gc-roots-sweep-daily.timer` |
+| `nix-gc-sweep.timer` | `nix-direnv-roots-sweep-daily.timer` (landed: use new name only) |
 | `engine-default-refresh.timer` | `engine-default-branch-refresh-half-hourly.timer` |
 | `engine-workspace-reconcile.timer` | `engine-workspace-reconcile-daily.timer` |
 | `purpose-first-audit.timer` | `purpose-first-drift-audit-daily.timer` |
@@ -86,7 +85,7 @@ Each is a 1-line change in the corresponding unit file or `.nix` source:
 | `home-emergency-backup-fsn1.timer` | `home-emergency-backup-fsn1-twelve-hourly.timer` |
 | `home-emergency-backup-hel1.timer` | `home-emergency-backup-hel1-daily.timer` |
 | `devbox-disk-pressure.timer` | `devbox-disk-pressure-five-minutely.timer` |
-| `devshell-prewarm.timer` | `devshell-prewarm-hourly.timer` |
+| `devshell-prewarm.timer` | `agent-direnv-publish-hourly.timer` (landed: use new name only) |
 | `jcode-primary-refresh.timer` | `jcode-primary-refresh-half-hourly.timer` |
 | `k3s-host-split-dns.timer` | `k3s-host-split-dns-weekly.timer` |
 | `fstrim.timer` | `ssd-fstrim-weekly.timer` |

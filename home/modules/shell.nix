@@ -146,7 +146,7 @@ in {
 
     # Global direnvrc: nix-direnv source + read-only-checkout layout_dir. Stderr
     # guard avoids nix-direnv 3.1.1 ENXIO on >/dev/stderr in agent shells.
-    ".config/direnv/direnvrc" = {
+    ".config/direnv/direnvrc" = lib.mkIf (!nixosOwnsInteractiveDirenv) {
       force = true;
       source = ../../config/direnv/direnvrc;
     };
@@ -519,7 +519,10 @@ in {
     # Overlay: do not GC-root every `nix flake archive` input. The flake-profile
     # already keeps the built shell; per-input roots fan out across worktrees.
     direnv = {
-      enable = true;
+      # NixOS programs.direnv owns /etc/direnv on this host, including the
+      # loader that used to be config/direnv/direnvrc. Enabling it here would
+      # write a second nix-direnv and a toml that DIRENV_CONFIG ignores.
+      enable = !nixosOwnsInteractiveDirenv;
       package = pkgs.direnv;
       # The devbox installs direnv-instant from its NixOS host module. A second
       # Home Manager hook would synchronously evaluate the same .envrc after

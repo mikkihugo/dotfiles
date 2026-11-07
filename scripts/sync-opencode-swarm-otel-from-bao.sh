@@ -5,8 +5,20 @@
 set -euo pipefail
 
 BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}"
+export BAO_ADDR
 OUT="${HOME}/.config/centralcloud/otel-ingest.env"
 PUBLIC_BASE="https://otel-ingest.centralcloud.net"
+# The user unit's Nix wrapper used to replace PATH with coreutils only.
+# Keep the login helper, bao, and kubectl visible before that happens.
+export PATH="${HOME}/.local/bin:/run/current-system/sw/bin:${PATH:-}"
+
+login="${HOME}/.local/bin/bao-login"
+if [[ ! -x "$login" ]]; then
+	echo "sync-opencode-swarm-otel-from-bao: bao-login missing at ${login}" >&2
+	exit 1
+fi
+# Renews ~/.vault-token when it is missing or inside 10 minutes of expiry.
+"$login"
 
 if ! command -v bao >/dev/null 2>&1; then
 	echo "sync-opencode-swarm-otel-from-bao: bao not in PATH" >&2

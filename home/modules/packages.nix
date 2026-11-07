@@ -46,7 +46,8 @@
 
     # Dev tools — language runtimes and package managers available globally.
     # (project-level runtimes live in per-repo flake devShells via direnv)
-    nodejs_26 # `node`/`npm`/`npx` on ~/.nix-profile/bin (26.11.1 — the Engine contract, versions.json `languages.node.attr`). Grok leader is a systemd user unit whose PATH is the Nix profile, not ~/.local/bin, so the profile must carry the runtime: without it, Stop hooks with `#!/usr/bin/env node` exit 127. (bun was removed 2026-10-27: no consumer found — Claude Code and local CLIs embed their own runtimes)
+    nodejs_26 # `node`/`npm`/`npx` on ~/.nix-profile/bin (26.11.1 — the Engine contract, versions.json `languages.node.attr`). Grok leader is a systemd user unit whose PATH is the Nix profile, not ~/.local/bin, so the profile must carry the runtime: without it, Stop hooks with `#!/usr/bin/env node` exit 127.
+    bun # opencode-swarm's declared test/build runtime (`package.json` requires Bun >=1.3.13)
     ccache # C/C++ compiler cache; CMake launcher env is set in home.nix
     # Forgejo-native CLI (binary: `fj`). Packaged upstream avoids maintaining
     # a hand-vendored CLI derivation and per-architecture hashes here.

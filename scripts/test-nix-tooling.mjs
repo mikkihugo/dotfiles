@@ -673,6 +673,14 @@ test("node and pnpm are nix-owned, not mise", async () => {
   assert.match(home, /PNPM_HOME = "\$HOME\/\.local\/share\/pnpm"/);
 });
 
+test("dotfiles direnv exports Engine org NIX_CONFIG before the flake", async () => {
+  const envrc = await source(".envrc");
+  const orgDirenv = await source(".nix/direnv.sh");
+  assert.match(envrc, /source_env \.nix\/direnv\.sh/);
+  assert.match(orgDirenv, /org-nix-config\.sh/);
+  assert.match(orgDirenv, /se_org_nix_config_activate/);
+});
+
 test("Home Manager activation uses the non-deprecated nix profile command", async () => {
   const flake = await source("flake.nix");
   assert.match(flake, /activationPackage = home\.activationPackage\.overrideAttrs/);

@@ -3,7 +3,7 @@ name: repo-explorer
 description: >-
   Read-only codebase mapper for locating owners, runtime paths, contracts,
   tests, and existing capabilities before a Mission task is assigned.
-model: custom:9Router-2
+model: custom:9Router-3
 reasoningEffort: none
 ---
 # Repository Explorer

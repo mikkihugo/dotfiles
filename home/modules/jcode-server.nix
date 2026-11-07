@@ -5,6 +5,7 @@
   hostname ? "",
   lib,
   pkgs,
+  toolchain,
   ...
 }: let
   homeDir = config.home.homeDirectory;
@@ -176,7 +177,7 @@ in
         # isolate the client from %t/jcode.sock.
         ".config/systemd/user/jcode-swarm-fleet-watchdog.service.d/50-server-jcode.conf".text = ''
           [Service]
-          Environment=PATH=${jcodeLauncher}/bin:${pkgs.python3}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
+          Environment=PATH=${jcodeLauncher}/bin:${toolchain.python}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
         '';
 
         # 90-exact-root replaces PATH from its EnvironmentFile. Reassert the
@@ -188,7 +189,7 @@ in
         # every pass (2026-09-15).
         ".config/systemd/user/jcode-swarm-fleet-watchdog.service.d/95-server-jcode-path.conf".text = ''
           [Service]
-          Environment=PATH=${jcodeLauncher}/bin:${pkgs.python3}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
+          Environment=PATH=${jcodeLauncher}/bin:${toolchain.python}/bin:/run/current-system/sw/bin:/run/wrappers/bin:${homeDir}/.local/bin
         '';
 
         # OnUnitActiveSec alone leaves NEXT=- after a failed oneshot across a

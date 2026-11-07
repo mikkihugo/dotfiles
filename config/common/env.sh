@@ -18,7 +18,7 @@ export HISTFILESIZE=20000
 # Mise/ASDF compatibility
 export MISE_SHELL="$SHELL"
 export MISE_EXPERIMENTAL=1
-# python3 is nixpkgs (Home Manager + flake), not mise. Do not export an
+# python3 is nixpkgs python314 (Home Manager + flake), not mise. Do not export an
 # ecosystem-python flag — that made tools prefer the broken mise interpreter.
 
 # Rust

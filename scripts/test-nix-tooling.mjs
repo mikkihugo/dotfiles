@@ -488,7 +488,7 @@ test("the maintenance shell supplies every executable used by the canonical chec
     "maintenance devShell packages",
   );
 
-  for (const name of ["nodejs_26", "python3", "nix-fast-build"]) {
+  for (const name of ["nodejs_26", "python314", "nix-fast-build"]) {
     assert.match(entries, packageEntry(name), `maintenance shell is missing ${name}`);
   }
 
@@ -622,7 +622,7 @@ test("Droid Remote Control owns the daemon lifecycle and provider environment", 
   assert.doesNotMatch(service, /computer register|computer remove/);
 });
 
-test("daily python3 is nixpkgs, not mise", async () => {
+test("daily python314 is nixpkgs, not mise", async () => {
   const mise = await source("config/mise/config.toml");
   const env = await source("config/common/env.sh");
   const packages = await source("home/modules/packages.nix");
@@ -631,8 +631,8 @@ test("daily python3 is nixpkgs, not mise", async () => {
 
   assert.doesNotMatch(mise, /^\s*python\s*=/m);
   assert.doesNotMatch(env, /^export MISE_ECOSYSTEM_PYTHON=/m);
-  assert.match(packages, /\bpython3\b/m);
-  assert.match(flake, /^\s*python3\b/m);
+  assert.match(packages, /toolchain\.pythonWithYaml/m);
+  assert.match(flake, /^\s*python314\b/m);
   assert.match(activation, /retireMisePython/);
   assert.doesNotMatch(flake, /mise\/python-build|python@latest/);
 });
@@ -666,7 +666,8 @@ test("node and pnpm are nix-owned, not mise", async () => {
   assert.doesNotMatch(bashrc, /_mise_node_dir/);
 
   // Activation retires leftover mise installs (no auto-update timer on main).
-  assert.match(activation, /retireMiseNodePnpm/);
+  assert.match(activation, /retireMiseFleetRuntimes/);
+  assert.match(activation, /retireMiseClaudeSquad/);
 
   // pnpm's global bin dir must stay where the opencode wrapper expects it.
   assert.match(home, /PNPM_HOME = "\$HOME\/\.local\/share\/pnpm"/);

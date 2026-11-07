@@ -7,10 +7,14 @@
 # pushing is git-auto-backup's job, and applying the new key stays tied to
 # `hms`, same as every other dotfiles change -- see scripts/sync-sshid-keys
 # for why that boundary matters here.
-{pkgs, ...}: let
+{
+  pkgs,
+  toolchain,
+  ...
+}: let
   sync = pkgs.writeShellApplication {
     name = "sshid-key-sync";
-    runtimeInputs = [pkgs.python3 pkgs.curl pkgs.git pkgs.libnotify];
+    runtimeInputs = [toolchain.python pkgs.curl pkgs.git pkgs.libnotify];
     text = ''
       python3 "$HOME/.dotfiles/scripts/sync-sshid-keys"
     '';

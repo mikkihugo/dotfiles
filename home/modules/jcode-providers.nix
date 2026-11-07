@@ -4,6 +4,7 @@
 {
   config,
   pkgs,
+  toolchain,
   ...
 }: let
   homeDir = config.home.homeDirectory;
@@ -24,7 +25,7 @@
     '';
   configureJcodeProviders = pkgs.writeShellApplication {
     name = "configure-jcode-providers";
-    runtimeInputs = [pkgs.coreutils pkgs.python3];
+    runtimeInputs = [pkgs.coreutils toolchain.python];
     text = ''
       provider_dir="${providerDir}"
       install -d -m 700 "$provider_dir"

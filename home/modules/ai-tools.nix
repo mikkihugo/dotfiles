@@ -19,6 +19,7 @@
   hostname ? "",
   lib,
   pkgs,
+  toolchain,
   llm-agents,
   ...
 }: let
@@ -134,7 +135,7 @@
           provider="$GOOSE_PROVIDER"
         elif [ -f "$cfg" ]; then
           provider="$(
-            ${pkgs.python3}/bin/python3 - "$cfg" <<'PY'
+            ${toolchain.python}/bin/python3 - "$cfg" <<'PY'
     import sys
     from pathlib import Path
     try:
@@ -214,7 +215,7 @@
         echo "# gateway: $gateway_url/v1/models"
         curl -sS --max-time 15 -H "authorization: Bearer $edge_token" \
           "$gateway_url/v1/models" \
-          | ${pkgs.python3}/bin/python3 -c '
+          | ${toolchain.python}/bin/python3 -c '
     import json,sys
     data=json.load(sys.stdin).get("data") or []
     for item in data:

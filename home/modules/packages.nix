@@ -2,7 +2,11 @@
 #
 # Installed into the user profile (available on PATH without a shell hook).
 # Grouped by role — remove a whole group if a machine doesn't need it.
-{pkgs, ...}: {
+{
+  pkgs,
+  toolchain,
+  ...
+}: {
   home.packages = with pkgs; [
     # Networking — resilient remote shell and DNS diagnostics.
     tmux # multiplexed shells (HM config in modules/tmux.nix; jc/jcode-ui use it too)
@@ -47,7 +51,7 @@
     # Dev tools — language runtimes and package managers available globally.
     # (project-level runtimes live in per-repo flake devShells via direnv)
     nodejs_26 # `node`/`npm`/`npx` on ~/.nix-profile/bin (26.11.1 — the Engine contract, versions.json `languages.node.attr`). Grok leader is a systemd user unit whose PATH is the Nix profile, not ~/.local/bin, so the profile must carry the runtime: without it, Stop hooks with `#!/usr/bin/env node` exit 127.
-    bun # opencode-swarm's declared test/build runtime (`package.json` requires Bun >=1.3.13)
+    toolchain.bun # opencode-swarm engines.bun >=1.3.13; nixpkgs attr `bun` only (no bun_1_* on 26.05)
     ccache # C/C++ compiler cache; CMake launcher env is set in home.nix
     # Forgejo-native CLI (binary: `fj`). Packaged upstream avoids maintaining
     # a hand-vendored CLI derivation and per-architecture hashes here.
@@ -69,13 +73,11 @@
     '')
     mold # linker selected via -fuse-mold=mold
     cmake # native dependency builds (llama-cpp-sys and similar -sys crates)
-    # Daily python3 is nixpkgs, not mise. Linked against its own bzip2/lzma
-    # closure so `import bz2` works without nix-ld search-path hacks.
-    # withPackages: plain python3Packages.* profile entries land in a
-    # site-packages python does not search (`import yaml` fails).
-    (python3.withPackages (ps: [ps.pyyaml])) # pyyaml for script-side YAML tooling
+    # Daily Python is python314 (Engine contract), not mise or pkgs.python3 (3.13 on 26.05).
+    # withPackages keeps pyyaml on the interpreter search path (`import yaml` works).
+    toolchain.pythonWithYaml
     pkg-config # native library discovery for remaining mise source builds
-    go # build local Go tools
+    toolchain.go # go_1_27 — Engine contract; default pkgs.go is 1.26 on 26.05
     pnpm_12 # fast, disk-efficient Node package manager (12.9.0 — the Engine contract, versions.json `languages.pnpm.attr`; the default `pnpm` attr is 11.27.0)
     sccache # Rust compiler cache; Cargo wrapper is managed in files.nix
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin

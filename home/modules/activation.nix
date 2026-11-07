@@ -7,9 +7,10 @@
   config,
   pkgs,
   lib,
+  toolchain,
   ...
 }: let
-  pythonWithYaml = pkgs.python3.withPackages (ps: [ps.pyyaml]);
+  inherit (toolchain) pythonWithYaml;
   USER_TOOL_PATH = "${config.home.homeDirectory}/.local/bin:${config.home.homeDirectory}/.npm-global/bin";
 in {
   home.activation = {
@@ -36,14 +37,12 @@ in {
         "$HOME/.local/share/mise/shims/python3"
     '';
 
-    # Node and pnpm are nixpkgs-owned (nodejs_26 26.11.1, pnpm_12 12.9.0).
-    # Retire the mise installs and their shims so the shim farm cannot keep
-    # winning PATH, and so the daily mise-auto-update service cannot
-    # resurrect them. Runs after linkManagedMise, because that step re-shims
-    # every installed tool and would recreate the node/pnpm shims.
-    retireMiseNodePnpm = lib.hm.dag.entryAfter ["installPackages" "linkMutableMiseConfig" "linkManagedMise"] ''
+    # Fleet runtimes are nixpkgs-owned (nodejs_26, pnpm_12, python314, go_1_27, bun).
+    # Retire leftover mise installs and shims after linkManagedMise so reshim
+    # does not recreate them on the same activation.
+    retireMiseFleetRuntimes = lib.hm.dag.entryAfter ["installPackages" "linkMutableMiseConfig" "linkManagedMise"] ''
       managed_mise="$HOME/.local/share/mise/installs/mise/latest/bin/mise"
-      for tool in node pnpm; do
+      for tool in node pnpm go bun; do
         if [ -x "$managed_mise" ]; then
           "$managed_mise" uninstall "$tool" --all --yes >/dev/null 2>&1 || true
         elif [ -x ${pkgs.mise}/bin/mise ]; then
@@ -55,7 +54,22 @@ in {
         "$HOME/.local/share/mise/shims/npm" \
         "$HOME/.local/share/mise/shims/npx" \
         "$HOME/.local/share/mise/shims/pnpm" \
-        "$HOME/.local/share/mise/shims/pnpx"
+        "$HOME/.local/share/mise/shims/pnpx" \
+        "$HOME/.local/share/mise/shims/go" \
+        "$HOME/.local/share/mise/shims/gofmt" \
+        "$HOME/.local/share/mise/shims/bun" \
+        "$HOME/.local/share/mise/shims/bunx"
+    '';
+
+    # claude-squad dropped from config/mise/config.toml — purge stale install.
+    retireMiseClaudeSquad = lib.hm.dag.entryAfter ["installPackages" "linkMutableMiseConfig" "linkManagedMise"] ''
+      managed_mise="$HOME/.local/share/mise/installs/mise/latest/bin/mise"
+      if [ -x "$managed_mise" ]; then
+        "$managed_mise" uninstall claude-squad --all --yes >/dev/null 2>&1 || true
+      elif [ -x ${pkgs.mise}/bin/mise ]; then
+        ${pkgs.mise}/bin/mise uninstall claude-squad --all --yes >/dev/null 2>&1 || true
+      fi
+      ${pkgs.coreutils}/bin/rm -f "$HOME/.local/share/mise/shims/claude-squad"
     '';
 
     retireUnsafeJcodeLaneSettle = lib.hm.dag.entryBefore ["reloadSystemd"] ''
@@ -238,7 +252,7 @@ in {
     '';
 
     applySharedCodexPreferences = lib.hm.dag.entryAfter ["seedMutableCodexConfig"] ''
-      ${pkgs.python3}/bin/python3 "${../../scripts/codex-preferences}" apply \
+      ${toolchain.python}/bin/python3 "${../../scripts/codex-preferences}" apply \
         --source "${../../config/codex/shared-preferences.toml}" \
         --backbone "${../../config/agents/purpose-backbone.md}"
       chmod 600 "$HOME/.codex/config.toml"
@@ -669,7 +683,7 @@ in {
     # overwrite would silently revoke them. The key list is checked in and never
     # fetched during activation. See scripts/merge-authorized-keys.
     mergeDeclaredAuthorizedKeys = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      ${pkgs.python3}/bin/python3 "${../../scripts/merge-authorized-keys}" \
+      ${toolchain.python}/bin/python3 "${../../scripts/merge-authorized-keys}" \
         --declared "${../../config/ssh/authorized_keys.sshid}" \
         --target "${config.home.homeDirectory}/.ssh/authorized_keys"
     '';

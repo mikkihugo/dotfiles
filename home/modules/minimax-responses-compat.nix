@@ -1,6 +1,7 @@
 {
   lib,
   pkgs,
+  toolchain,
   hostname ? "",
   ...
 }: let
@@ -10,7 +11,7 @@
     if ! ${pkgs.systemd}/bin/systemctl --user is-active --quiet "$unit"; then
       ${pkgs.systemd}/bin/systemctl --user restart "$unit"
     fi
-    if ! ${pkgs.python3}/bin/python3 -c 'import json, urllib.request; r=urllib.request.urlopen("http://127.0.0.1:18787/v1/models-v2", timeout=10); d=json.load(r); assert r.status == 200 and any(x.get("id") == "minimax-m3-responses" for x in d.get("data", []))'; then
+    if ! ${toolchain.python}/bin/python3 -c 'import json, urllib.request; r=urllib.request.urlopen("http://127.0.0.1:18787/v1/models-v2", timeout=10); d=json.load(r); assert r.status == 200 and any(x.get("id") == "minimax-m3-responses" for x in d.get("data", []))'; then
       ${pkgs.systemd}/bin/systemctl --user restart "$unit"
     fi
     listing="$(${pkgs.bash}/bin/bash -lc '$HOME/.local/bin/grok leader list 2>&1' || true)"
@@ -33,7 +34,7 @@ in
           After = ["default.target"];
         };
         Service = {
-          ExecStart = "${pkgs.python3}/bin/python3 %h/.local/bin/minimax-responses-compat";
+          ExecStart = "${toolchain.python}/bin/python3 %h/.local/bin/minimax-responses-compat";
           Restart = "on-failure";
           RestartSec = 3;
           Environment = [

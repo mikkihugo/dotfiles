@@ -1,9 +1,13 @@
-{pkgs, ...}: let
+{
+  pkgs,
+  toolchain,
+  ...
+}: let
   checkoutSync = pkgs.writeShellApplication {
     name = "checkout-sync";
-    runtimeInputs = [pkgs.python3 pkgs.git pkgs.coreutils];
+    runtimeInputs = [toolchain.python pkgs.git pkgs.coreutils];
     text = ''
-      exec ${pkgs.python3}/bin/python3 ${../../scripts/checkout-sync} "$@"
+      exec ${toolchain.python}/bin/python3 ${../../scripts/checkout-sync} "$@"
     '';
   };
 in {

@@ -41,7 +41,7 @@ mise = "latest"
 "npm:@hrrrsn/mcp-vnc" = "latest"
 gcloud = "latest"
 "npm:firebase-tools" = "latest"
-# Python is NOT managed by mise: Home Manager + flake.nix ship nixpkgs python3.
+# Python is NOT managed by mise: Home Manager ships nixpkgs python314 (Engine contract).
 # The mise-built interpreter could not import bz2 (libbz2.so.1 dlopen miss) and
 # sat ahead of nixpkgs on PATH via shims. Uninstalled by activation.
 java = "latest"
@@ -54,7 +54,7 @@ crush = "latest"
 "github:ovh/ovhcloud-cli" = "latest"
 awscli = { version = "latest", symlink_bins = "true" }
 # claude: managed by the native installer (~/.local/bin/claude, auto-updating), not mise.
-claude-squad = "latest"
+# claude-squad removed 2026-11-07 — not fleet-maintained; use tmux/abduco or ad-hoc install.
 "npm:@kilocode/cli" = "latest"
 # droid: managed by the official npm package (`npm i -g droid`,
 # ~/.npm-global/bin/droid), not mise. The mise npm backend reinstalls the

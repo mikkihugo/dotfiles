@@ -45,7 +45,6 @@ in {
     ./modules/git.nix
     ./modules/stable-shell.nix
     ./modules/reap-abandoned-searches.nix
-    ./modules/home-emergency-backup.nix
     ./modules/forgejo-token-file.nix
     ./modules/opencode-otel-ingest.nix
     ./modules/files.nix

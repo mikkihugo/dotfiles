@@ -237,10 +237,10 @@ Version control:
       2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs land
-    What: Verify and publish a clean task workspace as main
+    What: Deprecated compatibility alias; use repo lane publish <name> [main]
     When: Before choosing a repository lifecycle transition.
     Steps:
-      1. Run `repo vcs land`.
+      1. Run `repo lane publish <name> [main]`.
       2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs push
@@ -586,10 +586,10 @@ Version control:
       2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs land
-    What: Verify and publish a clean task workspace as main
+    What: Deprecated compatibility alias; use repo lane publish <name> [main]
     When: Before choosing a repository lifecycle transition.
     Steps:
-      1. Run `repo vcs land`.
+      1. Run `repo lane publish <name> [main]`.
       2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs push
@@ -783,10 +783,10 @@ Version control:
   Read state, isolate work, mutate, then land/publish.
 
   repo vcs land
-    What: Verify and publish a clean task workspace as main
+    What: Deprecated compatibility alias; use repo lane publish <name> [main]
     When: Before choosing a repository lifecycle transition.
     Steps:
-      1. Run `repo vcs land`.
+      1. Run `repo lane publish <name> [main]`.
       2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 

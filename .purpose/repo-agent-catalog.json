@@ -188,10 +188,10 @@
       "alias_of": null,
       "deprecated": false,
       "class": "vcs",
-      "what": "Verify and publish a clean task workspace as main",
+      "what": "Deprecated compatibility alias; use repo lane publish <name> [main]",
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
-        "Run `repo vcs land`.",
+        "Run `repo lane publish <name> [main]`.",
         "Read back repository state through `repo workspace` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",

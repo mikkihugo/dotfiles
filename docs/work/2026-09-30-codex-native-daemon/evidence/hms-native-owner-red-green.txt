@@ -1,0 +1,10 @@
+Purpose: keep Home Manager out of Codex app-server runtime ownership.
+Consumer: Home Manager activation and the native Codex app-server daemon.
+
+RED (before implementation):
+  command: grep -nE 'daemon (bootstrap|enable-remote-control|start|update)' home/modules/codex-managed-daemon.nix
+  result: matched activation hooks; proof exited 1 with "RED: hms still owns native daemon lifecycle".
+
+GREEN (after implementation):
+  command: grep -nE 'codex-managed-daemon|daemon (bootstrap|enable-remote-control|start|update)' home/home.nix home/modules/codex-managed-daemon.nix
+  result: no matches; proof exited 0 with "PASS: no Home Manager Codex daemon lifecycle hooks".

@@ -57,7 +57,6 @@ in {
     ./modules/nix-index.nix
     ./modules/dotfiles-auto-update.nix
     ./modules/checkout-sync.nix
-    ./modules/codex-managed-daemon.nix
     ./modules/codex-thread-gc.nix
     ./modules/droid-remote-control.nix
     ./modules/sshid-key-sync.nix

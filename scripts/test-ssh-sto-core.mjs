@@ -13,9 +13,8 @@ test("ssh_config declares cc-se-sto-core-01 so fleet loops can reach it", () => 
     sshConfig,
     /^Host .*cc-se-sto-core-01(?:\.centralcloud\.com)?\b/m,
   );
-  assert.match(
-    sshConfig,
-    /^Host cc-se-sto-core-01 cc-se-sto-core-01\.centralcloud\.net cc-se-sto-core-01\.centralcloud\.com$/m,
-  );
+  // The ssh config names the inventory host (2026-11-06, 25bbb6f3): the
+  // .net and .com aliases are not separate Host entries.
+  assert.match(sshConfig, /^Host cc-se-sto-core-01$/m);
   assert.match(sshConfig, /HostName 207\.2\.123\.59/);
 });

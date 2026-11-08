@@ -26,10 +26,14 @@
       ${pkgs.bash}/bin/bash ${prune} "$@" 2>&1 | tail -5
     }
     run --apply --days 3
+    # Canonical pools: one per repo, at <checkout>/.worktrees. Engine's
+    # pre-move ext4 pool still holds lanes until its whole-pool cutover, so
+    # it stays a prune root.
     for root in \
-      "$HOME/code/worktrees/jj/jcode" \
-      "$HOME/code/worktrees/jj/singularity-engine" \
-      "$HOME/code/worktrees/jj/infra"
+      "$HOME/code/jcode/.worktrees" \
+      "$HOME/code/singularity-engine/.worktrees" \
+      "/srv/infra/.worktrees" \
+      "$HOME/code/worktrees/jj/singularity-engine"
     do
       if [ -d "$root" ]; then
         run --worktrees-root "$root" --apply --days 3 || true

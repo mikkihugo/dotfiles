@@ -88,10 +88,13 @@ in {
           {
             "--when".repositories = [
               "/home/mhugo/code/singularity-engine"
+              "/home/mhugo/code/singularity-engine/.worktrees"
               "/home/mhugo/code/worktrees/jj/singularity-engine"
               "/home/mhugo/code/jcode"
+              "/home/mhugo/code/jcode/.worktrees"
               "/home/mhugo/code/worktrees/jj/jcode"
               "/srv/infra"
+              "/srv/infra/.worktrees"
               "/home/mhugo/code/worktrees/jj/infra"
               "/home/mhugo/.dotfiles"
             ];

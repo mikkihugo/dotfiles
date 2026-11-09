@@ -221,7 +221,7 @@
     # (demos + readme media, 25 files / 177332713 B, byte-identical across lanes
     # and to code/jcode/assets). The canonical copy stays in the archive.
     "${homeDir}/code/worktrees/jj/jcode/*/assets"
-    "${homeDir}/code/jcode/.worktrees/*/assets"
+    "${homeDir}/code/jcode/.workspaces/*/assets"
   ];
   # ~/code/worktrees holds hundreds of full lane checkouts (2026-10-24: 229
   # Engine, 163 jcode, 86 infra). Walking them every cycle kept each hot-source

@@ -108,17 +108,17 @@ agent_direnv_prebuilt_try_apply() {
 	/home/mhugo/code/jcode) repo=jcode; consumer_kind=canonical ;;
 	/home/mhugo/code/singularity-engine) repo=singularity-engine; consumer_kind=canonical ;;
 	/srv/infra) repo=infra; consumer_kind=canonical ;;
-	/home/mhugo/code/jcode/.worktrees/* | /home/mhugo/code/worktrees/jj/jcode/* | /home/mhugo/code/worktrees/git/jcode/*)
+	/home/mhugo/code/jcode/.workspaces/* | /home/mhugo/code/worktrees/jj/jcode/* | /home/mhugo/code/worktrees/git/jcode/*)
 		repo=jcode
 		consumer_kind=lane
 		identity_root=/home/mhugo/code/jcode
 		;;
-	/home/mhugo/code/singularity-engine/.worktrees/* | /home/mhugo/code/worktrees/jj/singularity-engine/* | /home/mhugo/code/worktrees/git/singularity-engine/* | /home/mhugo/code/.worktrees/singularity-engine/*)
+	/home/mhugo/code/singularity-engine/.workspaces/* | /home/mhugo/code/worktrees/jj/singularity-engine/* | /home/mhugo/code/worktrees/git/singularity-engine/* | /home/mhugo/code/.worktrees/singularity-engine/*)
 		repo=singularity-engine
 		consumer_kind=lane
 		identity_root=/home/mhugo/code/singularity-engine
 		;;
-	/home/mhugo/code/worktrees/jj/infra/* | /home/mhugo/code/worktrees/git/infra/* | /srv/infra/.worktrees/* | /srv/infra-worktrees/* | /srv/worktrees/*/infra/*)
+	/home/mhugo/code/worktrees/jj/infra/* | /home/mhugo/code/worktrees/git/infra/* | /srv/infra/.workspaces/* | /srv/infra-worktrees/* | /srv/worktrees/*/infra/*)
 		repo=infra
 		consumer_kind=lane
 		identity_root=/srv/infra

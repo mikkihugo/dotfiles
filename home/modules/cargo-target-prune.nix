@@ -30,9 +30,9 @@
     # pre-move ext4 pool still holds lanes until its whole-pool cutover, so
     # it stays a prune root.
     for root in \
-      "$HOME/code/jcode/.worktrees" \
-      "$HOME/code/singularity-engine/.worktrees" \
-      "/srv/infra/.worktrees" \
+      "$HOME/code/jcode/.workspaces" \
+      "$HOME/code/singularity-engine/.workspaces" \
+      "/srv/infra/.workspaces" \
       "$HOME/code/worktrees/jj/singularity-engine"
     do
       if [ -d "$root" ]; then

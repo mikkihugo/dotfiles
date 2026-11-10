@@ -1,0 +1,7 @@
+FAIL: flake-utils still referenced by root flake
+FAIL: root flake has no flake-parts input
+FAIL: flake.nix does not use flake-parts.lib.mkFlake
+FAIL: flake.nix does not import ./flake
+FAIL: flake.nix still contains inline per-system wiring
+FAIL: unexpected flake-parts systems list: []
+baseline written to docs/work/2026-11-10-flake-parts-migration/evidence/post-outputs.json

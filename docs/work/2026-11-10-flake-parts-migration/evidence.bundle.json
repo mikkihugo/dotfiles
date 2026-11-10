@@ -1,0 +1,171 @@
+{
+  "schema_version": "evidence-bundle/v3",
+  "evidence_bundle_id": "2026-11-10-flake-parts-migration-evidence",
+  "workspec_id": "2026-11-10-flake-parts-migration-workspec",
+  "purpose_contract_id": "2026-11-10-flake-parts-migration-contract",
+  "purpose_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "raw-bytes",
+    "value": "637b26a401ce5921eb5c32c401804756cc99af955bac102d85ebc1a759cbcb1d"
+  },
+  "workspec_subject_digest": {
+    "algorithm": "sha256",
+    "canonicalization": "raw-bytes",
+    "value": "0169689ef1fcbd3d06bb6a08c34b6d454963b841edfbba9cfdc9a64f26cf2042"
+  },
+  "workflow_run_id": "2026-11-10-flake-parts-migration-run",
+  "execution": {
+    "execution_id": "2026-11-10-flake-parts-migration-execution",
+    "tool": {
+      "id": "manual-evidence-assembly",
+      "version": "unavailable: purpose_tool MCP refused /home/mhugo/.dotfiles as outside allowed roots for scaffold_work/validate_work; purpose-sign-work-packet CLI broken (missing cryptography module). Schema conformance verified manually against the packaged templates (purpose-contract/v2, workspec/v4, current-spec-snapshot/v1); all packet JSON parses and carries EARS on every requirement. Re-validate with validate_work on a host where the tool is available."
+    },
+    "result": {
+      "result_id": "2026-11-10-flake-parts-migration-result",
+      "digest": {
+        "algorithm": "sha256",
+        "canonicalization": "raw-bytes",
+        "value": "3c1c1c2437b6ae523a5cd8fbd4daa047226196e516a5b3c63ed94c2846770351"
+      }
+    },
+    "artifacts": [
+      {
+        "artifact_id": "equivalence-test",
+        "uri": "evidence/equivalence-check.sh",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "1c85ed18d07ca86515a5a3e8fe74407b26c8b4690fc40c74a34f8d941e23b778" }
+      },
+      {
+        "artifact_id": "baseline-outputs",
+        "uri": "evidence/baseline-outputs.json",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "0c3c591d8fd2d5de25e30d91f5f02a18e7ed66c6f8d2496fe3e52fb4f087f716" }
+      },
+      {
+        "artifact_id": "post-outputs",
+        "uri": "evidence/post-outputs.json",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "4b1628c67d151f6bebd2aa712e671da66633dd2a2ebde2b5f21a33434a9e1b45" }
+      },
+      {
+        "artifact_id": "same-tree-reference",
+        "uri": "evidence/reference-mkhome.nix",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "2a1e8596b8ea3c5ef8535d984710b188f8774bd51ae777e4a5bcf07cb1d4ea3b" }
+      },
+      {
+        "artifact_id": "t1-red",
+        "uri": "evidence/t1-red-pre-change.txt",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "1fb56b3b71e4619018c23ab77380c8a081b155f51b33e6d8c335972d14b5b80d" }
+      },
+      {
+        "artifact_id": "t1-green-final",
+        "uri": "evidence/t1-green-final.txt",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "3c1c1c2437b6ae523a5cd8fbd4daa047226196e516a5b3c63ed94c2846770351" }
+      },
+      {
+        "artifact_id": "t3-x86-checks",
+        "uri": "evidence/t3-x86-checks.txt",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "a9e89a4fb4dae0fc36468571b5406b576325ab20cf47bf8f9d73fd5bee95244c" }
+      },
+      {
+        "artifact_id": "capture-script",
+        "uri": "evidence/capture-baseline.sh",
+        "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "0d4fb72eb8f16f9beb8b624789dccf6748592a58b3bb3751ff80b788dd3275f6" }
+      }
+    ]
+  },
+  "trace": {
+    "trace_id": "2026-11-10-flake-parts-migration-trace",
+    "started_at": "2026-11-10T06:55:00Z",
+    "completed_at": "2026-11-10T10:05:00Z"
+  },
+  "tests": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "description": "Structural assertions failed first on the pre-change flake (t1-red-pre-change.txt: six FAIL lines, exit 1) and pass on the final implementation (t1-green-final.txt, exit 0).",
+      "result_id": "2026-11-10-flake-parts-migration-result",
+      "artifact_ids": ["t1-red", "t1-green-final"],
+      "output_uri": "evidence/t1-green-final.txt",
+      "green_observed_at": "2026-11-10T10:05:00Z"
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "status": "passed",
+      "description": "Store-path equivalence: non-home outputs byte-identical to the pre-change baseline; homeConfigurations byte-identical to the same-tree old-mechanism reference; lint-check derivations identical modulo normalized src/out. Final run exit 0.",
+      "result_id": "2026-11-10-flake-parts-migration-result",
+      "artifact_ids": ["baseline-outputs", "post-outputs", "same-tree-reference", "t1-green-final"],
+      "output_uri": "evidence/t1-green-final.txt",
+      "green_observed_at": "2026-11-10T10:05:00Z"
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R4",
+      "status": "passed",
+      "description": "Repo gate chain green: five x86_64 checks built locally in 4.9s (exit 0) after deadnix/statix caught and fixed three real lint bugs in the new files. Scoped per work.spec.json T3 amendment: aarch64 check builds pending a native aarch64 host (mikki-laptop); full unscoped nix flake check aborted due to first-time QEMU-emulated Rust builds on this x86_64 host. Remote builders skipped for trivial checks (~100x round-trip overhead measured).",
+      "result_id": "2026-11-10-flake-parts-migration-result",
+      "artifact_ids": ["t3-x86-checks"],
+      "output_uri": "evidence/t3-x86-checks.txt",
+      "green_observed_at": "2026-11-10T09:55:00Z"
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "quality",
+      "kind": "quality",
+      "status": "passed",
+      "subject_digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "0169689ef1fcbd3d06bb6a08c34b6d454963b841edfbba9cfdc9a64f26cf2042" },
+      "artifact_ids": ["t3-x86-checks"],
+      "producer": { "kind": "agent", "id": "kimi-code-flake-parts-migration" },
+      "observed_at": "2026-11-10T09:55:00Z",
+      "rationale": "alejandra format check, statix, deadnix, jujutsu-pin, vultr-cli-pin all green on x86_64-linux. Cross-check: cross-repo guard gate (infra scripts/test-direnv-export-shell-guard.sh) green/red/green against the single-sourced wiring. Note: validate_work could not execute on this host (MCP path refusal; broken purpose CLI); packet validated manually against packaged schemas."
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "changed_file_manifest": {
+      "source": "repository-vcs-facade",
+      "artifact_id": "changed-files",
+      "digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "see-jj-working-copy" },
+      "files": [
+        "flake.nix",
+        "flake.lock",
+        "flake/default.nix",
+        "flake/per-system.nix",
+        "flake/home-configurations.nix",
+        "flake/overlay.nix",
+        "config/direnv/direnv-export-shell-guard.nix (deleted)",
+        "config/direnv/direnv-export-shell-guard.sh (deleted)",
+        "docs/work/2026-11-10-flake-parts-migration/** (new packet)"
+      ]
+    }
+  },
+  "falsifier": {
+    "executed": true,
+    "status": "passed",
+    "evidence": "The declared falsifier (equivalence-check.sh: any mismatch vs baseline/reference, flake-utils residue, or follows violation disproves the claim) was executed against the final bytes and did not disprove the contract: exit 0, PASS line observed.",
+    "output_uri": "evidence/t1-green-final.txt"
+  },
+  "contract_preserved": {
+    "status": true,
+    "scope_drift": false,
+    "requirement_drift": false
+  },
+  "reconciliation": {
+    "status": "reconciled",
+    "snapshot_digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "622e5ec7dff7a2caac9098b0e5fb73915c522a36457e7d40be0ad809b7bcf170" },
+    "witness_artifact_id": "t1-green-final"
+  },
+  "reviews": [],
+  "breaker_witnesses": [
+    {
+      "breaker_id": "B1",
+      "requirement_id": "R1",
+      "status": "passed",
+      "witness_kind": "contract-test",
+      "observed_outcome": "rejected",
+      "artifact_id": "t1-red",
+      "subject_digest": { "algorithm": "sha256", "canonicalization": "raw-bytes", "value": "1fb56b3b71e4619018c23ab77380c8a081b155f51b33e6d8c335972d14b5b80d" },
+      "observed_at": "2026-11-10T08:10:00Z"
+    }
+  ]
+}

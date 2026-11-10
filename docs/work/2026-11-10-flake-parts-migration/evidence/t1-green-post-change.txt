@@ -1,0 +1,3 @@
+baseline written to docs/work/2026-11-10-flake-parts-migration/evidence/post-outputs.json
+PASS: flake-parts wiring in place; all consumer outputs store-path-identical to baseline
+exit=0

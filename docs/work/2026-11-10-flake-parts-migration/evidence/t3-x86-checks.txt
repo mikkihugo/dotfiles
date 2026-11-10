@@ -1,0 +1,14 @@
+these 4 derivations will be built:
+  /nix/store/8bmspnks8xw9brjd85sgmka75by89w54-dotfiles-format-check-x86_64-linux.drv
+  /nix/store/f7ypqjqbn587f2bsgdxq4f95qf4qg96h-dotfiles-deadnix-check-x86_64-linux.drv
+  /nix/store/nfq7rgwb5pksnbcg465qnd46rcnqdn6k-dotfiles-statix-check-x86_64-linux.drv
+  /nix/store/zvcadamlkgj6bdial8d5xalf8ar88pki-dotfiles-vultr-cli-pin-x86_64-linux.drv
+building '/nix/store/f7ypqjqbn587f2bsgdxq4f95qf4qg96h-dotfiles-deadnix-check-x86_64-linux.drv'...
+building '/nix/store/8bmspnks8xw9brjd85sgmka75by89w54-dotfiles-format-check-x86_64-linux.drv'...
+building '/nix/store/nfq7rgwb5pksnbcg465qnd46rcnqdn6k-dotfiles-statix-check-x86_64-linux.drv'...
+building '/nix/store/zvcadamlkgj6bdial8d5xalf8ar88pki-dotfiles-vultr-cli-pin-x86_64-linux.drv'...
+
+real	0m4.948s
+user	0m1.127s
+sys	0m0.354s
+exit=0

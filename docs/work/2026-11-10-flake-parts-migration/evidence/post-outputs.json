@@ -1,0 +1,514 @@
+{
+  "homeConfigurations": {
+    "cc-se-sto-devbox-01": "/nix/store/66q4la1d3cg05b5n8xy1f8h637q9a8py-home-manager-generation",
+    "mhugo": "/nix/store/nvka6h17a5sqqz0wbgb06wycaishafm3-home-manager-generation",
+    "mikki-bunker": "/nix/store/k7klss35wqpbkvvllgq2h7cfcc3n9w59-home-manager-generation",
+    "mikki-laptop": "/nix/store/w97yrq34laan96hhbbv4vsdc2ixlagyn-home-manager-generation"
+  },
+  "packages.home-manager": {
+    "x86_64-linux": "/nix/store/360qn8hbgispj0ppg2df3ri53l83sxd2-home-manager",
+    "aarch64-linux": "/nix/store/kkzfl3235lms44zwzp84k5k9bfw6jy5m-home-manager"
+  },
+  "devShells.default": {
+    "x86_64-linux": "/nix/store/109jdxrpqlvbhdgvi75izx2n6w8m6bjf-nix-shell",
+    "aarch64-linux": "/nix/store/80m5r5qnnd8wcxd14dcv84sm4mk03hl2-nix-shell"
+  },
+  "formatter": {
+    "x86_64-linux": "/nix/store/4kbc3cmi32hfsqymcn2l9md6q58l5k9l-alejandra-4.0.0",
+    "aarch64-linux": "/nix/store/imbh5yq692qqm8hzyv5mvpxjqkqz14cz-alejandra-4.0.0"
+  },
+  "checks.attrNames": {
+    "x86_64-linux": [
+      "deadnix-check",
+      "format",
+      "jujutsu-pin",
+      "statix-check",
+      "vultr-cli-pin"
+    ],
+    "aarch64-linux": [
+      "deadnix-check",
+      "format",
+      "jujutsu-pin",
+      "statix-check",
+      "vultr-cli-pin"
+    ]
+  },
+  "checks.pin-outPaths": {
+    "jujutsu-pin": {
+      "x86_64-linux": "/nix/store/rv105nhqpza1kpskmfjhz481hm007vyl-dotfiles-jujutsu-pin-x86_64-linux",
+      "aarch64-linux": "/nix/store/3xzbfz9mkm6kvpfjzdbqkcaasbmpmcsd-dotfiles-jujutsu-pin-aarch64-linux"
+    },
+    "vultr-cli-pin": {
+      "x86_64-linux": "/nix/store/idqgqh9wblx97akjnhqnjk3srs6ixcdi-dotfiles-vultr-cli-pin-x86_64-linux",
+      "aarch64-linux": "/nix/store/6y42xfgbjvqppf7imhms5s33jp00cxb2-dotfiles-vultr-cli-pin-aarch64-linux"
+    }
+  },
+  "checks.lintDrvsNormalized": {
+    "x86_64-linux": [
+      {
+        "args": [
+          "-e",
+          "/nix/store/l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+          "/nix/store/shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+        ],
+        "builder": "/nix/store/jnyfsf2mp08d1xyz2m72ic2vz2kcx0sd-bash-5.3p9/bin/bash",
+        "env": {
+          "__structuredAttrs": "",
+          "buildCommand": "cd \"$src\"\n# 1.3 dropped --no-unused/--error. --fail matches lefthook.\ndeadnix --fail .\ntouch $out\n",
+          "buildInputs": "/nix/store/9x7fsnlpdiw59hd39k35x5qxn4vya7ks-deadnix-1.3.2",
+          "builder": "/nix/store/jnyfsf2mp08d1xyz2m72ic2vz2kcx0sd-bash-5.3p9/bin/bash",
+          "cmakeFlags": "",
+          "configureFlags": "",
+          "depsBuildBuild": "",
+          "depsBuildBuildPropagated": "",
+          "depsBuildTarget": "",
+          "depsBuildTargetPropagated": "",
+          "depsHostHost": "",
+          "depsHostHostPropagated": "",
+          "depsTargetTarget": "",
+          "depsTargetTargetPropagated": "",
+          "doCheck": "",
+          "doInstallCheck": "",
+          "enableParallelBuilding": "1",
+          "enableParallelChecking": "1",
+          "enableParallelInstalling": "1",
+          "mesonFlags": "",
+          "name": "dotfiles-deadnix-check-x86_64-linux",
+          "nativeBuildInputs": "",
+          "out": "<OUT>",
+          "outputs": "out",
+          "passAsFile": "buildCommand",
+          "patches": "",
+          "propagatedBuildInputs": "",
+          "propagatedNativeBuildInputs": "",
+          "src": "<FLAKE_SRC>",
+          "stdenv": "/nix/store/4lgbwpg4r41kcsms7nlwrzdlmhw83skj-stdenv-linux",
+          "strictDeps": "",
+          "system": "x86_64-linux"
+        },
+        "inputs": {
+          "drvs": {
+            "4j2l0cvsy5izi98k7flqj166iqzcn2lr-stdenv-linux.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "f13dw1l416dhsf1gck4wizy79hjvqp9d-bash-5.3p9.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "i667wzsnh2829k758kqclwdf7i4r56wn-deadnix-1.3.2.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            }
+          },
+          "srcs": [
+            "<FLAKE_SRC>",
+            "l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+            "shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+          ]
+        },
+        "name": "dotfiles-deadnix-check-x86_64-linux",
+        "outputs": {
+          "out": {
+            "path": "<OUT>"
+          }
+        },
+        "system": "x86_64-linux",
+        "version": 4
+      },
+      {
+        "args": [
+          "-e",
+          "/nix/store/l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+          "/nix/store/shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+        ],
+        "builder": "/nix/store/jnyfsf2mp08d1xyz2m72ic2vz2kcx0sd-bash-5.3p9/bin/bash",
+        "env": {
+          "__structuredAttrs": "",
+          "buildCommand": "cd \"$src\"\nalejandra --check .\ntouch $out\n",
+          "buildInputs": "/nix/store/4kbc3cmi32hfsqymcn2l9md6q58l5k9l-alejandra-4.0.0",
+          "builder": "/nix/store/jnyfsf2mp08d1xyz2m72ic2vz2kcx0sd-bash-5.3p9/bin/bash",
+          "cmakeFlags": "",
+          "configureFlags": "",
+          "depsBuildBuild": "",
+          "depsBuildBuildPropagated": "",
+          "depsBuildTarget": "",
+          "depsBuildTargetPropagated": "",
+          "depsHostHost": "",
+          "depsHostHostPropagated": "",
+          "depsTargetTarget": "",
+          "depsTargetTargetPropagated": "",
+          "doCheck": "",
+          "doInstallCheck": "",
+          "enableParallelBuilding": "1",
+          "enableParallelChecking": "1",
+          "enableParallelInstalling": "1",
+          "mesonFlags": "",
+          "name": "dotfiles-format-check-x86_64-linux",
+          "nativeBuildInputs": "",
+          "out": "<OUT>",
+          "outputs": "out",
+          "passAsFile": "buildCommand",
+          "patches": "",
+          "propagatedBuildInputs": "",
+          "propagatedNativeBuildInputs": "",
+          "src": "<FLAKE_SRC>",
+          "stdenv": "/nix/store/4lgbwpg4r41kcsms7nlwrzdlmhw83skj-stdenv-linux",
+          "strictDeps": "",
+          "system": "x86_64-linux"
+        },
+        "inputs": {
+          "drvs": {
+            "4j2l0cvsy5izi98k7flqj166iqzcn2lr-stdenv-linux.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "f13dw1l416dhsf1gck4wizy79hjvqp9d-bash-5.3p9.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "ijygn7nmp4fc7bzx0ha7s91ilvkfh79g-alejandra-4.0.0.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            }
+          },
+          "srcs": [
+            "<FLAKE_SRC>",
+            "l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+            "shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+          ]
+        },
+        "name": "dotfiles-format-check-x86_64-linux",
+        "outputs": {
+          "out": {
+            "path": "<OUT>"
+          }
+        },
+        "system": "x86_64-linux",
+        "version": 4
+      },
+      {
+        "args": [
+          "-e",
+          "/nix/store/l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+          "/nix/store/shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+        ],
+        "builder": "/nix/store/jnyfsf2mp08d1xyz2m72ic2vz2kcx0sd-bash-5.3p9/bin/bash",
+        "env": {
+          "__structuredAttrs": "",
+          "buildCommand": "cd \"$src\"\nstatix check .\ntouch $out\n",
+          "buildInputs": "/nix/store/a29s5apc8g2623r4pcykd2gkwysxkywa-statix-0-unstable-2026-05-14",
+          "builder": "/nix/store/jnyfsf2mp08d1xyz2m72ic2vz2kcx0sd-bash-5.3p9/bin/bash",
+          "cmakeFlags": "",
+          "configureFlags": "",
+          "depsBuildBuild": "",
+          "depsBuildBuildPropagated": "",
+          "depsBuildTarget": "",
+          "depsBuildTargetPropagated": "",
+          "depsHostHost": "",
+          "depsHostHostPropagated": "",
+          "depsTargetTarget": "",
+          "depsTargetTargetPropagated": "",
+          "doCheck": "",
+          "doInstallCheck": "",
+          "enableParallelBuilding": "1",
+          "enableParallelChecking": "1",
+          "enableParallelInstalling": "1",
+          "mesonFlags": "",
+          "name": "dotfiles-statix-check-x86_64-linux",
+          "nativeBuildInputs": "",
+          "out": "<OUT>",
+          "outputs": "out",
+          "passAsFile": "buildCommand",
+          "patches": "",
+          "propagatedBuildInputs": "",
+          "propagatedNativeBuildInputs": "",
+          "src": "<FLAKE_SRC>",
+          "stdenv": "/nix/store/4lgbwpg4r41kcsms7nlwrzdlmhw83skj-stdenv-linux",
+          "strictDeps": "",
+          "system": "x86_64-linux"
+        },
+        "inputs": {
+          "drvs": {
+            "2z71ys4k2dwbzj7vyyrf1d3lprjvwx35-statix-0-unstable-2026-05-14.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "4j2l0cvsy5izi98k7flqj166iqzcn2lr-stdenv-linux.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "f13dw1l416dhsf1gck4wizy79hjvqp9d-bash-5.3p9.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            }
+          },
+          "srcs": [
+            "<FLAKE_SRC>",
+            "l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+            "shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+          ]
+        },
+        "name": "dotfiles-statix-check-x86_64-linux",
+        "outputs": {
+          "out": {
+            "path": "<OUT>"
+          }
+        },
+        "system": "x86_64-linux",
+        "version": 4
+      }
+    ],
+    "aarch64-linux": [
+      {
+        "args": [
+          "-e",
+          "/nix/store/l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+          "/nix/store/shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+        ],
+        "builder": "/nix/store/k56s4lq6d6rljdxg26a34iij3xdvwzz7-bash-5.3p9/bin/bash",
+        "env": {
+          "__structuredAttrs": "",
+          "buildCommand": "cd \"$src\"\n# 1.3 dropped --no-unused/--error. --fail matches lefthook.\ndeadnix --fail .\ntouch $out\n",
+          "buildInputs": "/nix/store/amyjvgxqi1l6kdlq9x66f14xjz8fpcd6-deadnix-1.3.2",
+          "builder": "/nix/store/k56s4lq6d6rljdxg26a34iij3xdvwzz7-bash-5.3p9/bin/bash",
+          "cmakeFlags": "",
+          "configureFlags": "",
+          "depsBuildBuild": "",
+          "depsBuildBuildPropagated": "",
+          "depsBuildTarget": "",
+          "depsBuildTargetPropagated": "",
+          "depsHostHost": "",
+          "depsHostHostPropagated": "",
+          "depsTargetTarget": "",
+          "depsTargetTargetPropagated": "",
+          "doCheck": "",
+          "doInstallCheck": "",
+          "enableParallelBuilding": "1",
+          "enableParallelChecking": "1",
+          "enableParallelInstalling": "1",
+          "mesonFlags": "",
+          "name": "dotfiles-deadnix-check-aarch64-linux",
+          "nativeBuildInputs": "",
+          "out": "<OUT>",
+          "outputs": "out",
+          "passAsFile": "buildCommand",
+          "patches": "",
+          "propagatedBuildInputs": "",
+          "propagatedNativeBuildInputs": "",
+          "src": "<FLAKE_SRC>",
+          "stdenv": "/nix/store/dzvc8faww9ld3ycnafsxaxqm176yfq35-stdenv-linux",
+          "strictDeps": "",
+          "system": "aarch64-linux"
+        },
+        "inputs": {
+          "drvs": {
+            "fx5w31jw1d6lxnn65apz2lqwdzgdcars-stdenv-linux.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "pqx6pl28xi7nnpif5mkl9nama9sc3p4n-bash-5.3p9.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "sklm9yvkkhfv6mnyzsqbrkl6n0bigyqj-deadnix-1.3.2.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            }
+          },
+          "srcs": [
+            "<FLAKE_SRC>",
+            "l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+            "shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+          ]
+        },
+        "name": "dotfiles-deadnix-check-aarch64-linux",
+        "outputs": {
+          "out": {
+            "path": "<OUT>"
+          }
+        },
+        "system": "aarch64-linux",
+        "version": 4
+      },
+      {
+        "args": [
+          "-e",
+          "/nix/store/l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+          "/nix/store/shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+        ],
+        "builder": "/nix/store/k56s4lq6d6rljdxg26a34iij3xdvwzz7-bash-5.3p9/bin/bash",
+        "env": {
+          "__structuredAttrs": "",
+          "buildCommand": "cd \"$src\"\nalejandra --check .\ntouch $out\n",
+          "buildInputs": "/nix/store/imbh5yq692qqm8hzyv5mvpxjqkqz14cz-alejandra-4.0.0",
+          "builder": "/nix/store/k56s4lq6d6rljdxg26a34iij3xdvwzz7-bash-5.3p9/bin/bash",
+          "cmakeFlags": "",
+          "configureFlags": "",
+          "depsBuildBuild": "",
+          "depsBuildBuildPropagated": "",
+          "depsBuildTarget": "",
+          "depsBuildTargetPropagated": "",
+          "depsHostHost": "",
+          "depsHostHostPropagated": "",
+          "depsTargetTarget": "",
+          "depsTargetTargetPropagated": "",
+          "doCheck": "",
+          "doInstallCheck": "",
+          "enableParallelBuilding": "1",
+          "enableParallelChecking": "1",
+          "enableParallelInstalling": "1",
+          "mesonFlags": "",
+          "name": "dotfiles-format-check-aarch64-linux",
+          "nativeBuildInputs": "",
+          "out": "<OUT>",
+          "outputs": "out",
+          "passAsFile": "buildCommand",
+          "patches": "",
+          "propagatedBuildInputs": "",
+          "propagatedNativeBuildInputs": "",
+          "src": "<FLAKE_SRC>",
+          "stdenv": "/nix/store/dzvc8faww9ld3ycnafsxaxqm176yfq35-stdenv-linux",
+          "strictDeps": "",
+          "system": "aarch64-linux"
+        },
+        "inputs": {
+          "drvs": {
+            "dah2lf26k1x8akghcza1053pg5z0bdsh-alejandra-4.0.0.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "fx5w31jw1d6lxnn65apz2lqwdzgdcars-stdenv-linux.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "pqx6pl28xi7nnpif5mkl9nama9sc3p4n-bash-5.3p9.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            }
+          },
+          "srcs": [
+            "<FLAKE_SRC>",
+            "l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+            "shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+          ]
+        },
+        "name": "dotfiles-format-check-aarch64-linux",
+        "outputs": {
+          "out": {
+            "path": "<OUT>"
+          }
+        },
+        "system": "aarch64-linux",
+        "version": 4
+      },
+      {
+        "args": [
+          "-e",
+          "/nix/store/l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+          "/nix/store/shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+        ],
+        "builder": "/nix/store/k56s4lq6d6rljdxg26a34iij3xdvwzz7-bash-5.3p9/bin/bash",
+        "env": {
+          "__structuredAttrs": "",
+          "buildCommand": "cd \"$src\"\nstatix check .\ntouch $out\n",
+          "buildInputs": "/nix/store/kmmiphr5pkbgqyahmlx4spdffb0q7m6h-statix-0-unstable-2026-05-14",
+          "builder": "/nix/store/k56s4lq6d6rljdxg26a34iij3xdvwzz7-bash-5.3p9/bin/bash",
+          "cmakeFlags": "",
+          "configureFlags": "",
+          "depsBuildBuild": "",
+          "depsBuildBuildPropagated": "",
+          "depsBuildTarget": "",
+          "depsBuildTargetPropagated": "",
+          "depsHostHost": "",
+          "depsHostHostPropagated": "",
+          "depsTargetTarget": "",
+          "depsTargetTargetPropagated": "",
+          "doCheck": "",
+          "doInstallCheck": "",
+          "enableParallelBuilding": "1",
+          "enableParallelChecking": "1",
+          "enableParallelInstalling": "1",
+          "mesonFlags": "",
+          "name": "dotfiles-statix-check-aarch64-linux",
+          "nativeBuildInputs": "",
+          "out": "<OUT>",
+          "outputs": "out",
+          "passAsFile": "buildCommand",
+          "patches": "",
+          "propagatedBuildInputs": "",
+          "propagatedNativeBuildInputs": "",
+          "src": "<FLAKE_SRC>",
+          "stdenv": "/nix/store/dzvc8faww9ld3ycnafsxaxqm176yfq35-stdenv-linux",
+          "strictDeps": "",
+          "system": "aarch64-linux"
+        },
+        "inputs": {
+          "drvs": {
+            "fx5w31jw1d6lxnn65apz2lqwdzgdcars-stdenv-linux.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "pqx6pl28xi7nnpif5mkl9nama9sc3p4n-bash-5.3p9.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            },
+            "qfg9q57lyjrx13vdfa9dr566rllrgfkl-statix-0-unstable-2026-05-14.drv": {
+              "dynamicOutputs": {},
+              "outputs": [
+                "out"
+              ]
+            }
+          },
+          "srcs": [
+            "<FLAKE_SRC>",
+            "l622p70vy8k5sh7y5wizi5f2mic6ynpg-source-stdenv.sh",
+            "shkw4qm9qcw5sc5n1k5jznc83ny02r39-default-builder.sh"
+          ]
+        },
+        "name": "dotfiles-statix-check-aarch64-linux",
+        "outputs": {
+          "out": {
+            "path": "<OUT>"
+          }
+        },
+        "system": "aarch64-linux",
+        "version": 4
+      }
+    ]
+  }
+}

@@ -10,6 +10,13 @@
 #
 #   devShells.default  — lightweight shell for dotfiles maintenance.
 #
+# This file declares inputs only. All outputs are wired through flake-parts
+# by the module files under flake/ (flake/default.nix is the entry):
+# per-system outputs in flake/per-system.nix, home configurations in
+# flake/home-configurations.nix, tool-version pins in flake/overlay.nix.
+# flake-utils was removed 2026-11-10; see
+# docs/work/2026-11-10-flake-parts-migration.
+#
 {
   description = "mhugo dotfiles — home-manager + SOPS (multi-arch)";
 
@@ -42,12 +49,11 @@
     # jujutsu is not on this input. A channel update must not move it.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # Exact jujutsu 0.46.0. nixos-26.05 still ships 0.41.0. This rev is the
+    # Exact jujutsu 0.47.1. nixos-26.05 still ships 0.41.0. This rev is the
     # nixpkgs commit whose pkgs/by-name/ju/jujutsu/package.nix sets
-    # version = "0.46.0" (the first release that colocates a non-default
-    # workspace as a Git worktree). Bump the URL on purpose.
+    # version = "0.47.1". Bump the URL on purpose.
     nixpkgs-jujutsu = {
-      url = "github:NixOS/nixpkgs/6510408d147d8c5e6d76043e899e9251756f6a75";
+      url = "github:NixOS/nixpkgs/3becb8ab5af12344c3b0cfb93314f99eaf430213";
       flake = false;
     };
 
@@ -74,9 +80,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # flake-utils: builds the devShell for all default systems without
-    # copy-pasting the per-system boilerplate.
-    flake-utils.url = "github:numtide/flake-utils";
+    # flake-parts: single module system for all per-system outputs. Its lib
+    # input is named nixpkgs-lib in v1.x; following our nixpkgs keeps the
+    # lock on one nixpkgs tree. Replaced flake-utils 2026-11-10.
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
 
     # llm-agents: daily-updated Nix packages for AI coding agents (codex,
     # gemini-cli, opencode, amp, goose-cli, cursor-agent, droid, …).
@@ -90,249 +100,22 @@
       url = "github:Mic92/direnv-instant/1.3.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Canonical source of the direnv export-shell guard wrapper
+    # (hosts/_shared/direnv-export-shell-guard.nix). flake/overlay.nix wraps
+    # pkgs.direnv with it; the previous vendored copy under config/direnv
+    # drifted from this canonical implementation and was removed
+    # 2026-11-10. flake = false: only the source tree is consumed (like
+    # nixpkgs-jujutsu) — infra's own outputs and input closure, including
+    # its stale jcode/engine pins, are never evaluated.
+    infra = {
+      url = "git+ssh://git@git.centralcloud.net:2222/centralcloud/infra";
+      flake = false;
+    };
   };
 
-  outputs = {
-    nixpkgs,
-    nixpkgs-unstable,
-    nixpkgs-jujutsu,
-    nixpkgs-direnv,
-    engine-nixpkgs-pin,
-    home-manager,
-    sops-nix,
-    flake-utils,
-    llm-agents,
-    direnv-instant,
-    ...
-  }: let
-    direnvExportShellGuard = ./config/direnv/direnv-export-shell-guard.nix;
-    specialArgs = {
-      inherit sops-nix llm-agents direnv-instant engine-nixpkgs-pin;
+  outputs = inputs @ {flake-parts, ...}:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      imports = [./flake];
     };
-
-    # Single nixpkgs per system, shared across the outputs below. Re-using
-    # this binding instead of re-importing inside the `formatter` and
-    # `checks` blocks keeps the closure shareable (substituters cache the
-    # same store path for the same args) and avoids the per-system evaluation
-    # cost of two `import nixpkgs` calls.
-    pkgsFor = system:
-      import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
-
-    # Single home.nix works on all arches. targetSystem is passed as
-    # specialArgs so imports can branch without referencing pkgs.
-    mkHome = sys: hostname: let
-      pkgs = import nixpkgs {
-        system = sys;
-        config.allowUnfree = true;
-        overlays = [
-          # jujutsu 0.46.0 comes from the exact nixpkgs-jujutsu input.
-          # 26.05 still ships 0.41.0. Do not take it from nixpkgs-unstable.
-          #
-          # mise 2026.10.3: pull from nixpkgs-unstable for newer version
-          # (26.05 has 2026.5.12, unstable has 2026.10.3)
-          #
-          # ripgrep 15.2.0: pull from nixpkgs-unstable for the .jj VCS
-          # detection + gitignore-across-dirs fixes (#3212/#3320/#3376).
-          # 26.05 has 15.1.0, where cwd-based rg inside jj lanes
-          # intermittently returns exit 1 / zero results (verified on
-          # cc-se-sto-devbox-01 2026-10-27, reproducible 10/10).
-          #
-          # direnv 2.38.2 + export-shell guard (AIP-193-style CLI errors).
-          (_final: prev: let
-            direnvBase = (import nixpkgs-direnv {system = sys;}).direnv;
-          in {
-            ast-grep = nixpkgs-unstable.legacyPackages.${sys}.ast-grep;
-            inherit (nixpkgs-unstable.legacyPackages.${sys}) ripgrep;
-            direnv = prev.callPackage direnvExportShellGuard {
-              direnv = direnvBase;
-            };
-            inherit (import nixpkgs-jujutsu {system = sys;}) jujutsu;
-            inherit (nixpkgs-unstable.legacyPackages.${sys}) mise;
-            # vultr-cli 3.11.0: from nixpkgs-unstable so the Nix build serves
-            # the same version mise served (3.11.0; nixos-26.05 ships 3.10.0).
-            # The vultr-cli-pin check below fails loudly if this input moves.
-            # cntb is NOT a nix package here anymore: it is a manual pinned
-            # binary at ~/.local/share/cntb/cntb, driven through the
-            # ~/.local/bin/cntb -> cntb-bao shim (OpenBao credentials).
-            vultr-cli = nixpkgs-unstable.legacyPackages.${sys}."vultr-cli";
-            nix-index = prev.nix-index.overrideAttrs (old: {
-              buildCommand =
-                old.buildCommand
-                + ''
-                  command_not_found=$out/etc/profile.d/command-not-found.sh
-                  command_not_found_source=$(readlink -f "$command_not_found")
-                  rm -f "$command_not_found"
-                  cp "$command_not_found_source" "$command_not_found"
-                  chmod u+w "$command_not_found"
-                  substituteInPlace "$command_not_found" \
-                    --replace-fail "nix profile install" "nix profile add"
-                '';
-            });
-          })
-        ];
-      };
-      toolchain = import ./home/lib/toolchain.nix pkgs;
-      home = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
-        extraSpecialArgs =
-          specialArgs
-          // {
-            targetSystem = sys;
-            inherit hostname toolchain;
-          };
-        modules = [
-          direnv-instant.homeModules.direnv-instant
-          ./home/home.nix
-        ];
-      };
-    in
-      home
-      // {
-        # Home Manager upstream still emits the deprecated Nix 2.34 alias.
-        # Patch only the generated activation entrypoint until upstream #9598
-        # replaces `profile install` with `profile add`.
-        activationPackage = home.activationPackage.overrideAttrs (old: {
-          buildCommand =
-            old.buildCommand
-            + ''
-              substituteInPlace $out/activate \
-                --replace-fail "profile install" "profile add"
-            '';
-        });
-      };
-  in
-    {
-      homeConfigurations = {
-        # mikki-bunker: x86_64 WSL2 desktop.
-        "mikki-bunker" = mkHome "x86_64-linux" "mikki-bunker";
-        # mikki-laptop: aarch64 portable machine.
-        "mikki-laptop" = mkHome "aarch64-linux" "mikki-laptop";
-        # CentralCloud development host: x86_64 without the bunker GPU role.
-        "cc-se-sto-devbox-01" = mkHome "x86_64-linux" "cc-se-sto-devbox-01";
-        # Generic username fallback. Named machines use their explicit profile,
-        # so pure evaluation never depends on evaluator state and an unknown
-        # host cannot accidentally enable the bunker GPU role.
-        "mhugo" = mkHome "x86_64-linux" "";
-      };
-
-      # `nix fmt` runs alejandra on every .nix file in the repo.
-      formatter =
-        nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"]
-        (sys: (pkgsFor sys).alejandra);
-
-      # `nix flake check` runs the same lint chain the pre-commit hook
-      # enforces. Canonical Nix shape: each check is a NAMED derivation
-      # under `checks.<system>` (not a single derivation per system;
-      # that's the schema trap because an unnamed `checks.<sys> =
-      # derivation;` is read as a derivation whose `.outPath` is then
-      # checked as if it were itself a derivation).
-      checks =
-        nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"]
-        (sys: let
-          pkgs = pkgsFor sys;
-        in {
-          format =
-            pkgs.runCommand "dotfiles-format-check-${sys}" {
-              src = ./.;
-              buildInputs = [pkgs.alejandra];
-            } ''
-              cd "$src"
-              alejandra --check .
-              touch $out
-            '';
-          statix-check =
-            pkgs.runCommand "dotfiles-statix-check-${sys}" {
-              src = ./.;
-              buildInputs = [pkgs.statix];
-            } ''
-              cd "$src"
-              statix check .
-              touch $out
-            '';
-          deadnix-check =
-            pkgs.runCommand "dotfiles-deadnix-check-${sys}" {
-              src = ./.;
-              buildInputs = [pkgs.deadnix];
-            } ''
-              cd "$src"
-              # 1.3 dropped --no-unused/--error. --fail matches lefthook.
-              deadnix --fail .
-              touch $out
-            '';
-          jujutsu-pin = let
-            pinned = import nixpkgs-jujutsu {system = sys;};
-          in
-            pkgs.runCommand "dotfiles-jujutsu-pin-${sys}" {
-              inherit (pinned.jujutsu) version;
-            } ''
-              test "$version" = 0.46.0
-              printf '%s\n' "$version" > "$out"
-            '';
-          vultr-cli-pin =
-            pkgs.runCommand "dotfiles-vultr-cli-pin-${sys}" {
-              inherit (nixpkgs-unstable.legacyPackages.${sys}."vultr-cli") version;
-            } ''
-              test "$version" = 3.11.0
-              printf '%s\n' "$version" > "$out"
-            '';
-        });
-    }
-    // flake-utils.lib.eachDefaultSystem (sys: let
-      # Re-use the shared `pkgsFor` binding so this block's derivations
-      # are path-equal to the `formatter` / `checks` ones above. Without
-      # this, each system would have two nixpkgs instances differing only
-      # by file id, which breaks `nix path-info --requisites` deduplication
-      # for any consumer of multiple outputs.
-      maintenance-pkgs = pkgsFor sys;
-    in {
-      # Bootstrap runner from the same locked Home Manager input used to build
-      # the profiles. `nix run path:.#home-manager -- switch ...` therefore
-      # cannot drift to a mutable Home Manager branch.
-      packages.home-manager = home-manager.packages.${sys}.home-manager;
-
-      # `nix develop` — for editing secrets and running dotfiles linters.
-      # Not the daily shell (home-manager provides that); this shell is
-      # only needed when working on the dotfiles repo itself.
-      devShells.default = maintenance-pkgs.mkShell {
-        packages = with maintenance-pkgs; [
-          go_1_27 # Engine contract (versions.json languages.go.attr)
-          cargo # build and validate local Rust tools
-          nodejs_26 # run Node contract tests from the canonical repo check
-          python314 # Engine contract (versions.json languages.python.attr)
-          nix-fast-build # parallel activation evaluation/build for `repo check`
-          gnumake # native builds in the maintenance shell
-          pkg-config # native dependency discovery for rust crates when needed
-          sops # encrypt/decrypt secrets/api-keys.yaml
-          age # age key generation and encryption backend
-          ssh-to-age # derive age public key from SSH ed25519 key
-          shellcheck # lint shell scripts
-          shfmt # format shell scripts
-        ];
-
-        shellHook = ''
-          export DOTFILES_ROOT="$(pwd -P)"
-          export PATH="$DOTFILES_ROOT/bin:$PATH"
-          # Contract tests scope this immutable Git path to child processes
-          # that need native Git while keeping the agent-facing facade intact.
-          export SE_GIT_BIN="${maintenance-pkgs.git}/bin/git"
-          export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
-          mkdir -p "$(dirname "$SOPS_AGE_KEY_FILE")"
-
-          echo "dotfiles maintenance shell (${sys})"
-          echo "  secrets-view  — decrypt and print api-keys.yaml"
-          echo "  secrets-edit  — open api-keys.yaml in \$EDITOR via sops"
-          echo "  age-keygen    — print age pubkey derived from SSH key"
-
-          # Convenience aliases for the secrets workflow.
-          # sops set/unset must be used for in-place edits (never redirect stdout
-          # back to the same file — sops overwrites it atomically).
-          alias age-keygen="ssh-to-age -i ~/.ssh/id_ed25519.pub"
-          alias secrets-edit="sops secrets/api-keys.yaml"
-          alias secrets-view="sops -d secrets/api-keys.yaml"
-        '';
-      };
-    });
 }

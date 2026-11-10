@@ -1,0 +1,4 @@
+baseline written to docs/work/2026-11-10-flake-parts-migration/evidence/post-outputs.json
+waiting for another Nix process to finish fetching input 'github:Mic92/direnv-instant/dc2f615c958e4301b04c09540ff7d6ea6b464cd4?narHash=sha256-LVHm/pAZMvfTFCd/NGaerqszZ4O9Mps4XOoV1rXa62Y%3D'...
+PASS: flake-parts wiring in place; all consumer outputs store-path-identical to baseline
+exit=0

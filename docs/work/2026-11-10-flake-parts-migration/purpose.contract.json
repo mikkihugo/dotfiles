@@ -1,0 +1,107 @@
+{
+	"schema_version": "purpose-contract/v2",
+	"contract_id": "2026-11-10-flake-parts-migration-contract",
+	"source": {
+		"system": "tool",
+		"repository": "/home/mhugo/.dotfiles",
+		"request_id": "2026-11-10-flake-parts-migration"
+	},
+	"lineage": {
+		"origin": { "kind": "request", "id": "2026-11-10-flake-parts-migration", "revision": "expanded-operator-directive" },
+		"objective": {
+			"id": "2026-11-10-flake-parts-migration-objective",
+			"statement": "Restructure the dotfiles flake to the full DRY flake technique set (flake-parts module system, modular per-system files, extracted central overlay) as the model for the four live repos.",
+			"measure": "flake.nix is a thin entry (inputs + mkFlake wiring importing ./flake); per-system outputs live in flake module files; the tool-version overlay is a single extracted file; flake-utils is gone; every consumer-visible output evaluates to the same store paths as the recorded baseline for x86_64-linux and aarch64-linux; nix flake check passes."
+		},
+		"need": {
+			"id": "2026-11-10-flake-parts-migration-need",
+			"statement": "Per-system outputs are wired through flake-utils.lib.eachDefaultSystem plus hand-rolled genAttrs blocks, and the tool-version overlay is an inline 40-line block inside mkHome; the operator wants the flake-parts module system with modular sub-files and a centrally extracted overlay (the four DRY techniques from the 2026-11-10 session), applied as the biggest-satisfying refactor, using the current dirty working tree (jujutsu 0.47.1 bump) as the base.",
+			"stakeholders": ["dotfiles maintainers", "agent editors of the flake", "the other three live repos (engine, jcode, infra) as reference consumers of the pattern"],
+			"baseline": "flake.nix at working-tree state 2026-11-10 (includes the operator's uncommitted jujutsu 0.46.0->0.47.1 bump) uses flake-utils.lib.eachDefaultSystem with inline overlays; baseline store paths of all consumer outputs recorded in docs/work/2026-11-10-flake-parts-migration/evidence/baseline-outputs.json before any edit.",
+			"consequence_of_no_action": "The flake keeps two divergent per-system mechanisms and an inline overlay that cannot be reused or reviewed in isolation, and the DRY pattern is not exemplified anywhere in the fleet (engine excepted).",
+			"assumptions": [],
+			"alternatives_considered": ["Keep flake-utils (status quo)", "Minimal flake-parts swap without modular files (smaller than the operator directive)"]
+		}
+	},
+	"admission": {
+		"state": "accepted",
+		"producer": { "kind": "agent", "id": "kimi-code-flake-parts-migration" },
+		"authority": { "kind": "operator", "id": "operator-directive-2026-11-10-expanded" }
+	},
+	"purpose": "Make the dotfiles flake the fleet's reference implementation of the DRY flake techniques: flake-parts module system, one module file per output family, a single central overlay file, follows discipline — with zero consumer-visible behavior change except the operator-directed guard single-sourcing (home direnv now builds from infra's canonical wrapper via a flake input, replacing a drifted vendored copy), all proved by store-path identity against pre-change baselines and same-tree references.",
+	"consumer": "dotfiles maintainers and agent editors; runtime consumers are home-manager switch --flake .#<host> (and the hms/nh alias), nix develop, nix flake check, and nix run .#home-manager on x86_64-linux and aarch64-linux; the pattern itself is referenced by engine/jcode/infra maintainers.",
+	"contract": "After the change: (1) flake.nix declares inputs and calls flake-parts.lib.mkFlake with imports = [ ./flake ]; systems = the two real hosts (the unused flake-utils-era i686/darwin devShell surface is intentionally dropped); (2) flake module files own the output families: per-system outputs (formatter, checks, packages.home-manager, devShells.default) in one module, homeConfigurations in another, the tool-version overlay in a single extracted file; (3) formatter, devShells.default, packages.home-manager, and checks (same five named checks per system; the three src-carrying lint checks compared via src-normalized derivations) evaluate exactly as recorded in evidence/baseline-outputs.json for both systems, and homeConfigurations are byte-identical to a same-tree reconstruction of the pre-change mkHome mechanism (evidence/reference-mkhome.nix) — their outPaths move with any tree addition by pre-existing design, so the pre-change baseline cannot be the reference for them; (4) flake-utils is absent from inputs and root lock references; root flake-parts has inputs.nixpkgs-lib.follows = \"nixpkgs\"; (5) nix flake check exits 0 and alejandra --check flake.nix flake/ passes.",
+	"failure_boundary": "If output paths diverge from baseline or nix flake check fails, the change must not ship; the pre-change flake remains the live configuration (no home-manager activation is performed by this work at all). Blast radius is limited to this repo's flake evaluation. Pre-existing unrelated dirty files are never staged or committed.",
+	"evidence": [
+		{
+			"kind": "test",
+			"description": "Structural + equivalence check: flake-parts wiring and module-file layout present, flake-utils gone from root lock references, and every output in evidence/baseline-outputs.json matches the post-change evaluation (evidence/equivalence-check.sh output).",
+			"status": "expected"
+		},
+		{
+			"kind": "command",
+			"description": "nix flake check exits 0 after the change.",
+			"status": "expected"
+		},
+		{
+			"kind": "command",
+			"description": "alejandra --check passes on flake.nix and the new flake/ module files.",
+			"status": "expected"
+		},
+		{
+			"kind": "command",
+			"description": "Infra guard gate passes: /srv/infra/scripts/test-direnv-export-shell-guard.sh (host mode) exits 0 against the single-sourced wiring, and its negative cases still fail.",
+			"status": "expected"
+		}
+	],
+	"falsifier": {
+		"claim": "The DRY restructure kept every consumer-visible output identical.",
+		"executable_check": {
+			"kind": "test",
+			"description": "Run evidence/equivalence-check.sh: any missing/changed store path vs baseline-outputs.json, flake-utils still referenced, missing module files, or follows violation falsifies the claim.",
+			"command": "bash docs/work/2026-11-10-flake-parts-migration/evidence/equivalence-check.sh"
+		}
+	},
+	"non_goals": [
+		"Changing any package version, overlay semantic content, check definitions, or devShell contents (file location may change; content must not) — EXCEPT the operator-directed direnv wrapper single-sourcing: the home direnv store path changes to infra's canonical versioned wrapper, and the drifted vendored copy under config/direnv is removed",
+		"Adding new outputs, inputs (beyond the infra source-only input), or systems",
+		"Running home-manager switch / activation",
+		"Refactoring jcode or infra flakes (report-only audit, plus the guard-test/doc contract updates the gate required)",
+		"Committing the pre-existing unrelated dirty files (config/factory/droids/*, home/modules/*, operator flake.lock/flake.nix edits beyond what this change itself makes to those same two files)"
+	],
+	"invariants": [
+		"The four homeConfigurations mikki-bunker, mikki-laptop, cc-se-sto-devbox-01, mhugo remain, with the activationPackage 'profile add' patch intact",
+		"Overlay override set unchanged (ast-grep, ripgrep, direnv+guard, jujutsu, mise, vultr-cli, nix-index patch) with the same input sources, except direnv's guard wrapper which is single-sourced from the infra flake input (flake = false) per the operator's long-term-fix directive",
+		"checks keep exactly: format, statix-check, deadnix-check, jujutsu-pin, vultr-cli-pin per system",
+		"devShells.default contents and shellHook are unchanged",
+		"Every check derivation's `src` still resolves to the flake-root store path, not a subdirectory",
+		"The drifted vendored guard copy does not return: config/direnv/direnv-export-shell-guard.{nix,sh} stay deleted",
+		"Unrelated working-tree modifications are never staged or committed by this work"
+	],
+	"assumptions": [
+		{
+			"statement": "flake-parts is compatible with the pinned nixpkgs 26.05 lib and Home Manager release-26.05 evaluation.",
+			"status": "unverified",
+			"doubt": 1,
+			"falsifier": "nix eval fails after the refactor, or the root flake-parts input fails to follow nixpkgs."
+		},
+		{
+			"statement": "The restructure can be output-path-identical because moving expressions into module files and extracting the overlay verbatim does not change any derivation input; maintenance outputs and pin checks are tree-insensitive and match the pre-change baseline byte for byte, while homeConfigurations embed the flake source tree by design and are therefore proven against a same-tree old-mechanism reference (evidence/reference-mkhome.nix).",
+			"status": "unverified",
+			"doubt": 1,
+			"falsifier": "equivalence-check.sh reports any mismatch: non-home outputs vs baseline-outputs.json, normalized lint-check drvs, or homeConfigurations vs reference-mkhome.nix."
+		}
+	],
+	"run_control": {
+		"autonomous_allowed": true,
+		"risk": "low",
+		"blast_radius": "repo",
+		"reversibility": "easy",
+		"max_active_doubt": 1
+	},
+	"target_planes": ["dotfiles"],
+	"plane_constraints": [
+		"Consumer-visible outputs must be store-path-identical to the pre-change baseline.",
+		"This flake is the reference implementation of the DRY flake technique set for the fleet."
+	]
+}

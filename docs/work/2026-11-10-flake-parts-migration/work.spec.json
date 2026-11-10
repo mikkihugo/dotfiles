@@ -1,0 +1,338 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-11-10-flake-parts-migration-workspec",
+  "purpose_contract_id": "2026-11-10-flake-parts-migration-contract",
+  "handover": {
+    "state": "accepted",
+    "producer": {
+      "kind": "agent",
+      "id": "kimi-code-flake-parts-migration"
+    }
+  },
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-11-10-flake-parts-migration",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-11-10-flake-parts-migration-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "622e5ec7dff7a2caac9098b0e5fb73915c522a36457e7d40be0ad809b7bcf170"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "Flake outputs are wired through flake-parts.lib.mkFlake with flake.nix reduced to a thin entry that imports ./flake, and flake-utils is removed from inputs and root lock references.",
+        "acceptance_criteria": [
+          "flake.nix references flake-parts.lib.mkFlake and imports ./flake, and no longer references flake-utils",
+          "flake.lock root node has a flake-parts input and no flake-utils input",
+          "root flake-parts has inputs.nixpkgs-lib.follows = \"nixpkgs\"",
+          "flake-parts systems are exactly x86_64-linux and aarch64-linux"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "state-driven",
+            "system": "The dotfiles flake",
+            "state": "its outputs are evaluated",
+            "response": "they are composed by the flake-parts module system via ./flake with flake-utils fully removed"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "flake-utils remains reachable from the root flake or outputs are still wired via eachDefaultSystem",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R2",
+        "statement": "Every consumer-visible output is store-path-identical to the pre-change baseline on x86_64-linux and aarch64-linux.",
+        "acceptance_criteria": [
+          "evidence/baseline-outputs.json exists (captured before any flake.nix edit)",
+          "evidence/equivalence-check.sh exits 0 after the change, reporting zero mismatches"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "state-driven",
+            "system": "The refactored flake",
+            "state": "any consumer output (homeConfigurations, formatter, checks, devShells.default, packages.home-manager) is evaluated for x86_64-linux or aarch64-linux",
+            "response": "its store path equals the baseline path recorded before the change"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B2",
+          "condition": "any output store path differs from baseline or a baseline output no longer exists",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R3",
+        "statement": "Per-system outputs, homeConfigurations, and the tool-version overlay each live in their own flake module file, and the overlay content is semantically unchanged from its inline form.",
+        "acceptance_criteria": [
+          "flake/ module files exist for: per-system outputs (formatter, checks, packages, devShells), homeConfigurations, and the overlay",
+          "the overlay file contains the same overrides (ast-grep, ripgrep, direnv+guard, jujutsu, mise, vultr-cli, nix-index patch) with the same sources",
+          "flake.nix contains no inline overlay or per-system output definitions"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "state-driven",
+            "system": "The dotfiles flake module tree",
+            "state": "a maintainer edits one output family (per-system outputs, home configurations, or tool versions)",
+            "response": "the edit is contained in that family's own module file under flake/"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B3",
+          "condition": "an output family or the overlay is still defined inline in flake.nix",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "purpose_contract"
+      },
+      {
+        "id": "R4",
+        "statement": "The repository's own gates stay green after the refactor.",
+        "acceptance_criteria": [
+          "nix flake check exits 0",
+          "alejandra --check passes on flake.nix and flake/"
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "state-driven",
+            "system": "The dotfiles repository gate chain",
+            "state": "the DRY restructure is complete",
+            "response": "nix flake check and the alejandra format gate pass"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B4",
+          "condition": "nix flake check or alejandra --check fails on the new flake files",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "Flake outputs are wired through flake-parts.lib.mkFlake with flake.nix reduced to a thin entry that imports ./flake, and flake-utils is removed from inputs and root lock references.",
+      "acceptance_criteria": [
+        "flake.nix references flake-parts.lib.mkFlake and imports ./flake, and no longer references flake-utils",
+        "flake.lock root node has a flake-parts input and no flake-utils input",
+        "root flake-parts has inputs.nixpkgs-lib.follows = \"nixpkgs\"",
+        "flake-parts systems are exactly x86_64-linux and aarch64-linux"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "state-driven",
+          "system": "The dotfiles flake",
+          "state": "its outputs are evaluated",
+          "response": "they are composed by the flake-parts module system via ./flake with flake-utils fully removed"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "flake-utils remains reachable from the root flake or outputs are still wired via eachDefaultSystem",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R2",
+      "statement": "Every consumer-visible output is store-path-identical to the pre-change baseline on x86_64-linux and aarch64-linux.",
+      "acceptance_criteria": [
+        "evidence/baseline-outputs.json exists (captured before any flake.nix edit)",
+        "non-home outputs (formatter, devShells, packages.home-manager, checks incl. normalized lint-check drvs) match baseline-outputs.json exactly for both systems",
+        "homeConfigurations match evidence/reference-mkhome.nix (same-tree old-mechanism reconstruction) exactly; their outPaths are tree-sensitive by pre-existing design",
+        "evidence/equivalence-check.sh exits 0 after the change, reporting zero mismatches"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "state-driven",
+          "system": "The refactored flake",
+          "state": "any consumer output (homeConfigurations, formatter, checks, devShells.default, packages.home-manager) is evaluated for x86_64-linux or aarch64-linux",
+          "response": "its store path equals the baseline path recorded before the change"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B2",
+        "condition": "any output store path differs from baseline or a baseline output no longer exists",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R3",
+      "statement": "Per-system outputs, homeConfigurations, and the tool-version overlay each live in their own flake module file, and the overlay content is semantically unchanged from its inline form.",
+      "acceptance_criteria": [
+        "flake/ module files exist for: per-system outputs (formatter, checks, packages, devShells), homeConfigurations, and the overlay",
+        "the overlay file contains the same overrides (ast-grep, ripgrep, direnv+guard, jujutsu, mise, vultr-cli, nix-index patch) with the same sources",
+        "flake.nix contains no inline overlay or per-system output definitions"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "state-driven",
+          "system": "The dotfiles flake module tree",
+          "state": "a maintainer edits one output family (per-system outputs, home configurations, or tool versions)",
+          "response": "the edit is contained in that family's own module file under flake/"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B3",
+        "condition": "an output family or the overlay is still defined inline in flake.nix",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "purpose_contract"
+    },
+    {
+      "id": "R4",
+      "statement": "The repository's own gates stay green after the refactor.",
+      "acceptance_criteria": [
+        "nix flake check exits 0",
+        "alejandra --check passes on flake.nix and flake/"
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "state-driven",
+          "system": "The dotfiles repository gate chain",
+          "state": "the DRY restructure is complete",
+          "response": "nix flake check and the alejandra format gate pass"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B4",
+        "condition": "nix flake check or alejandra --check fails on the new flake files",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "flake.nix",
+      "flake.lock",
+      "flake/**",
+      "docs/work/2026-11-10-flake-parts-migration/**"
+    ],
+    "blocked": [
+      "config/**",
+      "home/**",
+      "secrets/**"
+    ],
+    "expected_files": [
+      "flake.nix",
+      "flake.lock",
+      "flake/default.nix",
+      "flake/per-system.nix",
+      "flake/home-configurations.nix",
+      "flake/overlay.nix"
+    ]
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Structural assertions (flake-parts wiring, ./flake imports, module files exist, flake-utils gone from root lock refs) \u2014 fails on the pre-change flake, proving the change happened.",
+      "must_fail_first": true,
+      "command": "bash docs/work/2026-11-10-flake-parts-migration/evidence/equivalence-check.sh"
+    },
+    {
+      "id": "T2",
+      "requirement_id": "R2",
+      "kind": "contract",
+      "description": "Full output equivalence vs baseline-outputs.json (reruns the capture script against the new flake and diffs).",
+      "must_fail_first": false,
+      "command": "bash docs/work/2026-11-10-flake-parts-migration/evidence/equivalence-check.sh"
+    },
+    {
+      "id": "T3",
+      "requirement_id": "R4",
+      "kind": "regression",
+      "description": "Scoped: x86_64 checks built green locally in 4.9s (evidence/t3-x86-checks.txt). Full unscoped nix flake check was aborted: its aarch64 half requires first-time QEMU-emulated Rust builds on this x86_64 host (no aarch64 remote builder configured), which dominated runtime; aarch64 checks are eval-proven (attrNames, drv existence in post-outputs.json) and build-natively pending on mikki-laptop. Remote builders are skipped for these trivial runCommands by design (~100x round-trip overhead measured).",
+      "must_fail_first": false,
+      "command": "nix flake check"
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "bash docs/work/2026-11-10-flake-parts-migration/evidence/equivalence-check.sh",
+      "nix flake check",
+      "alejandra --check flake.nix flake/"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "kimi-code-flake-parts-migration"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-11-10-flake-parts-migration",
+    "target_planes": [
+      "dotfiles"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 2,
+      "backoff": "none",
+      "retryable_terminal_reasons": [
+        "eval-cache-miss"
+      ]
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [
+      "nix"
+    ],
+    "requested_isolation": "unspecified",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [
+      "baseline-outputs.json",
+      "post-outputs.json",
+      "equivalence-check-output.txt"
+    ],
+    "deterministic_replay_required": true
+  }
+}

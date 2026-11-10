@@ -1,11 +1,12 @@
 # home/modules/cargo-build-jobs.nix — bound how many rustc ONE cargo may spawn.
-# Devbox-only: this is tuned to a measured 16-core host, see WHY -8 below.
+# Devbox-only: this is tuned to a measured host, see WHY -2 below.
 #
 # WHY
-# This box has 16 cores and runs many AI coding agents concurrently. Cargo
-# defaults `-j` to nproc, so every agent's build claims 16 rustc regardless of
-# how many other builds are already running. 47 concurrent cargo/rustc was
-# measured on 2026-09-07 — roughly 3x oversubscription of the CPU.
+# This box runs many AI coding agents concurrently. Cargo defaults `-j` to
+# nproc, so every agent's build claims every core regardless of how many other
+# builds are already running. 47 concurrent cargo/rustc was measured on
+# 2026-09-07 — roughly 3x oversubscription of the CPU. On the 32-core host of
+# 2026-11-07 the same oversubscription reached a load average above 1300.
 #
 # WHAT ACTUALLY GOES WRONG (measured 2026-09-07, not assumed)
 # The visible failure is builds dying with "terminated by signal 15". That is
@@ -56,16 +57,27 @@
 # jobserver here needs a supervised holder that resets the pool; that is a
 # separate change and is not smuggled in with this one.
 #
-# WHY -8, AND WHY DEVBOX-ONLY
+# WHY -2, AND WHY DEVBOX-ONLY
 # Negative values mean "nproc - N", so this tracks core count rather than
-# pinning a number. On this 16-core host that yields 8: two concurrent builds
-# then land at exactly nproc instead of 2x over, four at 2x instead of 4x.
-# It is scoped to the devbox because -8 only makes sense against a measured
-# core count — on a smaller laptop cargo clamps the negative result instead of
-# erroring (verified: CARGO_BUILD_JOBS=-20 on this 16-core box still builds),
-# so a shared value would silently serialize those hosts. Raise toward -4 if
-# builds feel starved when the box is quiet; lower toward -12 if
-# oversubscription still causes stalls.
+# pinning a number. On this 32-core host that yields 30 — which is NOT a cap:
+# three agents at 30 jobs each is ~3x oversubscription, measured 2026-11-07
+# with load average above 1300 on 32 cores. The value below is chosen so the
+# RESULT is the intended concurrency, not so the arithmetic looks tidy.
+#
+# It is scoped to the devbox because the number only makes sense against a
+# measured core count — on a smaller laptop cargo clamps the negative result
+# instead of erroring (verified: CARGO_BUILD_JOBS=-20 on a 16-core box still
+# builds), so a shared value would silently serialize those hosts.
+#
+# WHY CARGO IS LOCAL AND NIX IS NOT (measured 2026-11-07)
+# The remote fleet builders are a NIX feature, not a cargo feature. nix.conf
+# declares `builders = ssh-ng://...` for three fleet hosts with `max-jobs = 0`,
+# so `nix build` offloads every derivation it can. Cargo has no equivalent:
+# `cargo build` compiles on whichever machine runs it, and only reaches the
+# fleet by being wrapped in a Nix derivation (buildRustPackage / crate2nix).
+# So a cargo test for the operator crate is ALWAYS local, and the only lever
+# on this host for cargo concurrency is this cap. Nix's own budget is
+# `cores = 2` per builder, which is unrelated to this value.
 #
 # FALSIFIER / SCOPE
 # `CARGO_BUILD_JOBS=0` errors with `error: jobs may not be 0`, which is how
@@ -99,11 +111,18 @@
   ...
 }:
 lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
-  # nproc - 8 (= 8 on this 16-core host).
-  home.sessionVariables.CARGO_BUILD_JOBS = "-8";
+  # An ABSOLUTE job count, not "nproc - N".
+  #
+  # The old value was "-8", chosen when this host had 16 cores, where it
+  # yielded 8 jobs. The host now has 32 cores, so "-8" yields 24 — the
+  # opposite of a cap — and three agents each claiming 24 jobs oversubscribed
+  # the box to a load average above 1300 on 32 cores (measured 2026-11-07).
+  # An absolute 2 holds regardless of how many cores the host has, which is
+  # the property this setting is actually for.
+  home.sessionVariables.CARGO_BUILD_JOBS = "2";
   # Builds started from user services (jcode-server and friends) do not
   # inherit a login shell, so declare the same bound there.
-  systemd.user.sessionVariables.CARGO_BUILD_JOBS = "-8";
+  systemd.user.sessionVariables.CARGO_BUILD_JOBS = "2";
 
   home.packages = [
     (pkgs.writeShellApplication {

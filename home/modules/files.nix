@@ -180,20 +180,13 @@ in {
     # symlink blocks in-client setting changes. Seeded as a mutable file by
     # seedMutableCopilotConfig in activation.nix (same pattern as goose).
 
-    ".factory/droids/worker.md" = {
-      source = ../../config/factory/droids/worker.md;
-      force = true;
-    };
-
-    ".factory/droids/scrutiny-feature-reviewer.md" = {
-      source = ../../config/factory/droids/scrutiny-feature-reviewer.md;
-      force = true;
-    };
-
-    ".factory/droids/user-testing-flow-validator.md" = {
-      source = ../../config/factory/droids/user-testing-flow-validator.md;
-      force = true;
-    };
+    # The Factory CLI ships three BUILT-IN droids (worker,
+    # scrutiny-feature-reviewer, user-testing-flow-validator) and writes them
+    # into ~/.factory/droids itself on every start, with `model: inherit` and
+    # its own prompt body. Home Manager must NOT manage them: a store symlink
+    # is read-only, so the CLI's write of its built-in fails and it then stops
+    # updating all three. The five user droids below stay repo-managed, with
+    # their model pins in config/factory/droids/.
 
     ".factory/droids/mission-plan-validator.md" = {
       source = ../../config/factory/droids/mission-plan-validator.md;

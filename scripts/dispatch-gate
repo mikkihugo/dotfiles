@@ -1,0 +1,338 @@
+#!/usr/bin/env bash
+# Version: dispatch-gate/v1
+# Purpose: bound how many agent workers may run concurrently on this host, and
+#   spread them across distinct upstream models so they do not stampede one
+#   provider. The host's model router (127.0.0.1:20128) fronts many upstream
+#   models; every 9Router-N id is a DIFFERENT upstream. Dispatching N workers
+#   that all resolve to the SAME id is what produced the provider's rate limit.
+# Consumer: any agent (orchestrator or worker) about to dispatch a subagent or
+#   a background worker.
+# Contract:
+#   - `acquire <label>` reserves ONE slot and prints
+#     "<slot> <complexity> <model-id>". Exit 2 when no slot is free: that is
+#     the throttle, not an error - wait for a slot instead of dispatching anyway.
+#   - `release <slot>` frees a slot. Always release, including on failure.
+#   - `status` prints the ledger.
+#   - MAX_SLOTS defaults to 20, overridable with DISPATCH_GATE_MAX.
+#     Capacity (operator-set 2026-10-31): 4 workers on MiniMax M3
+#     (custom:9Router-4, minimax-m3) and 12 workers on MiniMax M3.1 Flash
+#     (custom:9Router-5, minimax-m3.1-flash), plus 4 seats spread across the
+#     other live upstreams.
+#     Measured 2026-10-31: 12 concurrent minimax-m3.1-flash + 4 concurrent
+#     minimax-m3 all returned HTTP 200 in a 2.2 s wall clock.
+#     MAX_PER_UPSTREAM (default 12) is the per-upstream ceiling.
+#   - The slot->model map spreads across distinct upstreams. Use the printed
+#     complexity with the Task tool so the worker lands on that upstream.
+# Failure modes: a stale slot file (older than DISPATCH_GATE_STALE_SECONDS,
+#   default 6h) is reclaimed automatically, so a crashed worker cannot wedge
+#   the gate forever. The lock is a flock, so two agents racing to acquire
+#   cannot both take the same slot.
+# Evidence: the slot ledger under $DISPATCH_GATE_STATE.
+# Falsifier: two agents hold the same slot at once, or `acquire` succeeds when
+#   MAX_SLOTS workers are already registered.
+set -uo pipefail
+
+STATE="${DISPATCH_GATE_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/dispatch-gate}"
+MAX_SLOTS="${DISPATCH_GATE_MAX:-20}"
+MAX_PER_UPSTREAM="${DISPATCH_GATE_MAX_PER_UPSTREAM:-12}"
+STALE_SECONDS="${DISPATCH_GATE_STALE_SECONDS:-21600}"
+REAP_GRACE="${DISPATCH_GATE_REAP_GRACE:-300}"
+mkdir -p "$STATE"
+
+# slot -> "<complexity> <model-id>". Distinct upstream per slot.
+# Only LIVE upstreams are listed. Point a slot at a dead upstream and every
+# worker on it dies with model_provider_unreachable.
+#
+# Measured 2026-10-28 with the CORRECT probe (the configured `model` id, not
+# displayName): every configured id answered HTTP 200, 10/10 each.
+#
+# Current id -> combo mapping (2026-11-09, after the Factory slots were
+# remapped from raw provider models to 9router combos). Every model below is
+# a combo id, so the router's own fallback chain applies.
+#   custom:9Router-0 -> glm-5.3-flash
+#   custom:9Router-1 -> glm-5.3
+#   custom:9Router-2 -> deepseek-v4-pro
+#   custom:9Router-3 -> deepseek-v4.1-flash
+#   custom:9Router-4 -> minimax-m3
+#   custom:9Router-5 -> minimax-m3.1-flash
+#   custom:9Router-6 -> Qwen3.8-27B
+#   custom:9Router-7 -> Qwen3.6-35B-A3B
+# The earlier "9Router-0/1 are DEAD" reading was a probe bug: it POSTed the
+# displayName, which resolved to the single broken minimax-code-global
+# account (401 invalid access token). The combo id (e.g. "minimax-m3") falls
+# back to the working minimax account and answers 200.
+#
+# Worker tiers: light -> Qwen3.6-35B-A3B, medium -> Qwen3.8-27B, heavy ->
+# minimax-m3.1-flash. The worker plan uses those three ids only;
+# custom:9Router-4 (minimax-m3) is reserved for orchestration. The slot plan
+# keeps the operator's 12 seats on minimax-m3.1-flash.
+# MAX_PER_UPSTREAM (default 12) remains the per-upstream ceiling.
+#
+# Measured 2026-10-31 at the target load: 12 concurrent minimax-m3.1-flash plus
+# 4 concurrent minimax-m3 all returned HTTP 200, wall clock 2.2 s. The
+# 2026-10-28 incident that motivated this gate was SEVEN workers on ONE
+# upstream with no spreading; that failure mode is now bounded by
+# MAX_PER_UPSTREAM rather than by a one-seat-per-upstream rule.
+slot_plan() {
+	case "$1" in
+	# Worker tiers (2026-11-09): light -> Qwen3.6-35B-A3B (3B active),
+	# medium -> Qwen3.8-27B (dense), heavy -> minimax-m3.1-flash.
+	# minimax-m3 (custom:9Router-4) is reserved for orchestration and is not
+	# a worker slot.
+	1) echo "light custom:9Router-7" ;;  # Qwen3.6-35B-A3B
+	2) echo "medium custom:9Router-6" ;; # Qwen3.8-27B
+	3) echo "light custom:9Router-7" ;;  # Qwen3.6-35B-A3B
+	4) echo "medium custom:9Router-6" ;; # Qwen3.8-27B
+	5) echo "light custom:9Router-7" ;;  # Qwen3.6-35B-A3B
+	6) echo "medium custom:9Router-6" ;; # Qwen3.8-27B
+	7) echo "light custom:9Router-7" ;;  # Qwen3.6-35B-A3B
+	8) echo "medium custom:9Router-6" ;; # Qwen3.8-27B
+	# minimax-m3.1-flash keeps the 12 seats set by the operator on
+	# 2026-10-31 (12 concurrent returned HTTP 200, wall clock 2.2 s).
+	9) echo "heavy custom:9Router-5" ;; # minimax-m3.1-flash
+	10) echo "heavy custom:9Router-5" ;;
+	11) echo "heavy custom:9Router-5" ;;
+	12) echo "heavy custom:9Router-5" ;;
+	13) echo "heavy custom:9Router-5" ;;
+	14) echo "heavy custom:9Router-5" ;;
+	15) echo "heavy custom:9Router-5" ;;
+	16) echo "heavy custom:9Router-5" ;;
+	17) echo "heavy custom:9Router-5" ;;
+	18) echo "heavy custom:9Router-5" ;;
+	19) echo "heavy custom:9Router-5" ;;
+	20) echo "heavy custom:9Router-5" ;;
+	esac
+}
+
+# How many slots already hold this model id?
+slots_for_model() {
+	local want="$1" n=0 t model
+	for t in "$STATE"/slot.*; do
+		[ -e "$t" ] || continue
+		model="$(awk -F'\t' '{print $4}' "$t" 2>/dev/null | awk '{print $2}')"
+		[ "$model" = "$want" ] && n=$((n + 1))
+	done
+	printf '%s' "$n"
+}
+
+# Is a configured model id currently reachable? Used by `health`.
+model_healthy() {
+	local id="$1" key real code
+	key="$(python3 -c "
+import json,sys
+try:
+    d=json.load(open('$HOME/.factory/settings.json'))
+except Exception:
+    sys.exit(2)
+for m in d.get('customModels',[]):
+    if m.get('id')==sys.argv[1]:
+        print(m.get('apiKey','')); print(m.get('model','')); break
+" "$id" 2>/dev/null)"
+	# The id the router is given is the configured `model` field, NOT displayName.
+	# The MiniMax displayNames resolve to one broken account (401); the combo ids
+	# fall back to a working one. Probing displayName reports a LIVE upstream dead.
+	real="$(printf '%s\n' "$key" | sed -n 2p)"
+	key="$(printf '%s\n' "$key" | sed -n 1p)"
+	[ -n "$real" ] || return 1
+	code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 \
+		-X POST http://127.0.0.1:20128/v1/chat/completions \
+		-H 'Content-Type: application/json' -H "Authorization: Bearer $key" \
+		-d "{\"model\":\"$real\",\"messages\":[{\"role\":\"user\",\"content\":\"OK\"}],\"max_tokens\":1}" 2>/dev/null)"
+	[ "$code" = "200" ]
+}
+
+exec 9>"$STATE/lock"
+flock 9
+
+now() { date +%s; }
+
+# Health is cached briefly so repeated acquires do not each pay a probe.
+HEALTH_TTL="${DISPATCH_GATE_HEALTH_TTL:-120}"
+
+model_healthy_cached() {
+	local id="$1" cache="$STATE/health.$1" now_ts age
+	now_ts="$(now)"
+	if [ -f "$cache" ]; then
+		age=$((now_ts - $(stat -c %Y "$cache" 2>/dev/null || echo 0)))
+		if [ "$age" -lt "$HEALTH_TTL" ]; then
+			[ "$(cat "$cache" 2>/dev/null)" = live ] && return 0 || return 1
+		fi
+	fi
+	if model_healthy "$id"; then
+		printf 'live' >"$cache"
+		return 0
+	fi
+	printf 'dead' >"$cache"
+	return 1
+}
+
+worker_alive() {
+	# Process existence is the authoritative liveness signal. A session file
+	# that stops growing only proves the worker is quiet, not that it is gone:
+	# a worker blocked on a long build writes nothing for minutes. Relying on
+	# file mtime alone held five dead workers' slots for the full 6h window.
+	local sid="$1" pid
+	pid="$(pgrep -f "$sid" 2>/dev/null | head -1)"
+	[ -n "$pid" ] && return 0
+	return 1
+}
+
+reap_stale() {
+	local t age sid sess
+	for t in "$STATE"/slot.*; do
+		[ -e "$t" ] || continue
+		age=$(($(now) - $(stat -c %Y "$t" 2>/dev/null || echo 0)))
+		# Liveness by the worker's own session, when the slot records one.
+		sid="$(awk -F'\t' '{print $5}' "$t" 2>/dev/null)"
+		if [ -n "$sid" ] && [ "$sid" != "-" ]; then
+			# Authoritative: the worker process still exists.
+			if worker_alive "$sid"; then
+				continue
+			fi
+			sess="$(find "$HOME/.factory/sessions" -name "$sid.jsonl" -print -quit 2>/dev/null)"
+			if [ -n "$sess" ]; then
+				# Process is gone but the session file remains: the worker ended.
+				# Its session file survives the exit, so its mtime is NOT evidence of
+				# life. Reap it once the process is gone and the grace has passed.
+				if [ "$age" -gt "$REAP_GRACE" ]; then
+					rm -f "$t"
+					printf 'reaped slot %s: worker session %s has no live process\n' "$(basename "$t")" "$sid" >&2
+				fi
+				continue
+			fi
+			# The slot names a session that no longer exists anywhere. A worker
+			# session that has ended takes its file with it, so the slot would
+			# otherwise be held for the full stale window. Give the file a short
+			# grace period to appear (it exists from the moment a worker starts),
+			# then reclaim it.
+			if [ "$age" -gt "$REAP_GRACE" ]; then
+				rm -f "$t"
+				printf 'reaped slot %s: worker session %s no longer exists\n' "$(basename "$t")" "$sid" >&2
+				continue
+			fi
+		fi
+		if [ "$age" -gt "$STALE_SECONDS" ]; then
+			rm -f "$t"
+			printf 'reaped stale slot %s (age %ss)\n' "$(basename "$t")" "$age" >&2
+		fi
+	done
+}
+
+cmd_acquire() {
+	local label="${1:-unnamed}" session="${2:--}"
+	reap_stale
+	local n
+	n="$(find "$STATE" -maxdepth 1 -name 'slot.*' -type f 2>/dev/null | wc -l)"
+	if [ "$n" -ge "$MAX_SLOTS" ]; then
+		printf 'dispatch-gate: %s/%s worker slots in use; throttle engaged. Wait for a slot (or release one) instead of dispatching.\n' "$n" "$MAX_SLOTS" >&2
+		exit 2
+	fi
+	# A caller may pin the upstream it must use (the mission's worker-model pin
+	# is the authority for WHICH upstream, the gate is the authority for HOW
+	# MANY). The pinned slot is preferred; the scan below is the fallback.
+	local want_slot="${DISPATCH_GATE_PREFER_SLOT:-}"
+	local s plan complexity model used
+	local -a order=()
+	if [ -n "$want_slot" ] && [ "$want_slot" -ge 1 ] 2>/dev/null && [ "$want_slot" -le "$MAX_SLOTS" ] && [ ! -e "$STATE/slot.$want_slot" ]; then
+		order=("$want_slot")
+	fi
+	for s in $(seq 1 "$MAX_SLOTS"); do
+		[ ! -e "$STATE/slot.$s" ] || continue
+		local dup=0 o
+		for o in ${order[@]+"${order[@]}"}; do [ "$o" = "$s" ] && dup=1; done
+		[ "$dup" = 1 ] || order+=("$s")
+	done
+	for s in ${order[@]+"${order[@]}"}; do
+		if [ ! -e "$STATE/slot.$s" ]; then
+			plan="$(slot_plan "$s")"
+			complexity="$(printf '%s' "$plan" | awk '{print $1}')"
+			model="$(printf '%s' "$plan" | awk '{print $2}')"
+			used="$(slots_for_model "$model")"
+			if [ "${used:-0}" -ge "$MAX_PER_UPSTREAM" ]; then
+				continue
+			fi
+			# Never hand out a slot on a dead upstream: a worker dispatched there
+			# dies with model_provider_unreachable and loses its work.
+			if ! model_healthy_cached "$model"; then
+				printf 'dispatch-gate: upstream %s is DEAD; skipping slot %s\n' "$model" "$s" >&2
+				continue
+			fi
+			printf '%s\t%s\t%s\t%s\t%s\n' "$s" "$label" "$(now)" "$plan" "$session" >"$STATE/slot.$s"
+			printf 'slot=%s complexity=%s model=%s label=%s (upstream now has %s worker(s))\n' "$s" "$complexity" "$model" "$label" "$((used + 1))"
+			return 0
+		fi
+	done
+	printf 'dispatch-gate: no free slot among 1..%s (or every candidate upstream is dead or already has %s worker(s))\n' "$MAX_SLOTS" "$MAX_PER_UPSTREAM" >&2
+	exit 2
+}
+
+cmd_release() {
+	local s="${1:-}"
+	if [ -z "$s" ]; then
+		echo "dispatch-gate: release needs a slot number" >&2
+		exit 2
+	fi
+	rm -f "$STATE/slot.$s"
+	printf 'released slot %s\n' "$s"
+}
+
+cmd_status() {
+	reap_stale
+	printf 'max_slots=%s max_per_upstream=%s\n' "$MAX_SLOTS" "$MAX_PER_UPSTREAM"
+	local t found=0
+	for t in "$STATE"/slot.*; do
+		[ -e "$t" ] || continue
+		found=1
+		printf '  %s\n' "$(tr '\t' ' ' <"$t")"
+	done
+	[ "$found" -eq 0 ] && printf '  (no slots in use)\n'
+	# Always succeed: the ledger printed fine either way. The trailing
+	# "[ ... ] && printf" above returns the failed test's status when slots
+	# ARE in use, which made `status` exit 1 and broke callers that chain on
+	# it. The exit code of `status` carries no information.
+	return 0
+}
+
+cmd_health() {
+	# Probes run in parallel: a dead upstream can take the router ~60s to answer
+	# 503, so a serial loop over six models would take minutes.
+	local ids="custom:9Router-0 custom:9Router-1 custom:9Router-2 custom:9Router-3 custom:9Router-4 custom:9Router-5 custom:9Router-6 custom:9Router-7"
+	local id tmp
+	tmp="$(mktemp -d)"
+	for id in $ids; do
+		(model_healthy "$id" >/dev/null 2>&1 && echo live >"$tmp/$id" || echo dead >"$tmp/$id") &
+	done
+	wait
+	local ok=0
+	for id in $ids; do
+		if [ "$(cat "$tmp/$id" 2>/dev/null)" = live ]; then
+			printf '  %-18s LIVE\n' "$id"
+			ok=1
+		else
+			printf '  %-18s DEAD\n' "$id"
+		fi
+	done
+	rm -rf "$tmp"
+	[ "$ok" -eq 1 ] || {
+		echo "dispatch-gate: no configured upstream is reachable" >&2
+		return 1
+	}
+	return 0
+}
+
+case "${1:-status}" in
+acquire)
+	shift
+	cmd_acquire "$@"
+	;;
+release)
+	shift
+	cmd_release "$@"
+	;;
+status) cmd_status ;;
+health) cmd_health ;;
+*)
+	echo "usage: dispatch-gate acquire <label> [session-id] | release <slot> | status | health" >&2
+	exit 2
+	;;
+esac

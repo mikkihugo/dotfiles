@@ -220,6 +220,30 @@ in {
       force = true;
     };
 
+    # ~/.factory/AGENTS.md is the Factory-side personal instruction plane:
+    # mission preferences and the dispatch-gate throttle contract. It carries
+    # no managed block (unlike ~/.agents/AGENTS.md) and nothing in the Factory
+    # CLI rewrites it, so it is a plain repo-managed file like
+    # .codex/AGENTS.md above. force=true keeps the repo the source of truth
+    # for the tier plan the gate implements.
+    ".factory/AGENTS.md" = {
+      source = ../../config/factory/AGENTS.md;
+      force = true;
+    };
+
+    # The dispatch gate bounds concurrent workers per upstream. It is a
+    # host-level tool, not a Factory hook: it is invoked by path
+    # (~/.local/bin/dispatch-gate) from the personal instruction planes, so
+    # the symlink keeps that documented path working while the script itself
+    # lives in the repo. The script only reads $HOME/.factory/settings.json
+    # and writes its ledger under $XDG_STATE_HOME, so a read-only store
+    # symlink is fine.
+    ".local/bin/dispatch-gate" = {
+      source = ../../scripts/dispatch-gate;
+      executable = true;
+      force = true;
+    };
+
     ".local/share/applications/mynt-receipts.desktop" = {
       executable = true;
       force = true;

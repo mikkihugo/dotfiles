@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Version: dispatch-gate/v1
 # Purpose: bound how many agent workers may run concurrently on this host, and
-#   spread them across distinct upstream models so they do not stampede one
-#   provider. The host's model router (127.0.0.1:20128) fronts many upstream
-#   models; every 9Router-N id is a DIFFERENT upstream. Dispatching N workers
-#   that all resolve to the SAME id is what produced the provider's rate limit.
+#   cap how many of them share one upstream model, so one provider's rate
+#   limit cannot take down every lane at once. The host's model router
+#   (127.0.0.1:20128) fronts many upstream models; every 9Router-N id is a
+#   DIFFERENT upstream. Dispatching N workers that all resolve to the SAME id
+#   is what produced the provider's rate limit.
 # Consumer: any agent (orchestrator or worker) about to dispatch a subagent or
 #   a background worker.
 # Contract:
@@ -14,19 +15,20 @@
 #   - `release <slot>` frees a slot. Always release, including on failure.
 #   - `status` prints the ledger.
 #   - MAX_SLOTS defaults to 20, overridable with DISPATCH_GATE_MAX.
-#     Capacity (operator-set 2026-10-31): 4 workers on MiniMax M3
-#     (custom:9Router-4, minimax-m3) and 12 workers on MiniMax M3.1 Flash
-#     (custom:9Router-5, minimax-m3.1-flash), plus 4 seats spread across the
-#     other live upstreams.
+#     Seats (worker tiers, 2026-11-09): 4 light on Qwen3.6-35B-A3B
+#     (custom:9Router-7), 4 medium on Qwen3.8-27B (custom:9Router-6), 12 heavy
+#     on MiniMax M3.1 Flash (custom:9Router-5). MiniMax M3 (custom:9Router-4)
+#     is orchestration-only and gets no seat.
 #     Measured 2026-10-31: 12 concurrent minimax-m3.1-flash + 4 concurrent
 #     minimax-m3 all returned HTTP 200 in a 2.2 s wall clock.
 #     MAX_PER_UPSTREAM (default 12) is the per-upstream ceiling.
-#   - The slot->model map spreads across distinct upstreams. Use the printed
-#     complexity with the Task tool so the worker lands on that upstream.
-# Failure modes: a stale slot file (older than DISPATCH_GATE_STALE_SECONDS,
-#   default 6h) is reclaimed automatically, so a crashed worker cannot wedge
-#   the gate forever. The lock is a flock, so two agents racing to acquire
-#   cannot both take the same slot.
+#   - Each seat names the tier's upstream model. Use the printed complexity with
+#     the Task tool so the worker lands on that upstream.
+# Failure modes: a slot whose worker process is gone is reclaimed once
+#   DISPATCH_GATE_REAP_GRACE (default 5 min) has passed, so a crashed worker
+#   cannot hold the gate for hours; a slot acquired without a session id is
+#   reclaimed after DISPATCH_GATE_STALE_SECONDS (default 6h). The lock is a
+#   flock, so two agents racing to acquire cannot both take the same slot.
 # Evidence: the slot ledger under $DISPATCH_GATE_STATE.
 # Falsifier: two agents hold the same slot at once, or `acquire` succeeds when
 #   MAX_SLOTS workers are already registered.
@@ -39,7 +41,7 @@ STALE_SECONDS="${DISPATCH_GATE_STALE_SECONDS:-21600}"
 REAP_GRACE="${DISPATCH_GATE_REAP_GRACE:-300}"
 mkdir -p "$STATE"
 
-# slot -> "<complexity> <model-id>". Distinct upstream per slot.
+# slot -> "<complexity> <model-id>". Each seat names its tier's upstream.
 # Only LIVE upstreams are listed. Point a slot at a dead upstream and every
 # worker on it dies with model_provider_unreachable.
 #
@@ -69,10 +71,11 @@ mkdir -p "$STATE"
 # MAX_PER_UPSTREAM (default 12) remains the per-upstream ceiling.
 #
 # Measured 2026-10-31 at the target load: 12 concurrent minimax-m3.1-flash plus
-# 4 concurrent minimax-m3 all returned HTTP 200, wall clock 2.2 s. The
-# 2026-10-28 incident that motivated this gate was SEVEN workers on ONE
-# upstream with no spreading; that failure mode is now bounded by
-# MAX_PER_UPSTREAM rather than by a one-seat-per-upstream rule.
+# 4 concurrent minimax-m3 all returned HTTP 200, wall clock 2.2 s. That is an
+# upstream capability measurement, not the seat plan: minimax-m3 has no worker
+# seat. The 2026-10-28 incident that motivated this gate was SEVEN workers on
+# ONE upstream; that failure mode is now bounded by MAX_PER_UPSTREAM rather than
+# by a one-seat-per-upstream rule.
 slot_plan() {
 	case "$1" in
 	# Worker tiers (2026-11-09): light -> Qwen3.6-35B-A3B (3B active),

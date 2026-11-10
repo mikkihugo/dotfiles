@@ -15,7 +15,8 @@ set -uo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 gate="$root/scripts/dispatch-gate"
 state="$(mktemp -d)"
-trap 'rm -r -- "$state" 2>/dev/null' EXIT
+reap_state="$(mktemp -d)"
+trap 'rm -r -- "$state" "$reap_state" 2>/dev/null' EXIT
 export DISPATCH_GATE_STATE="$state"
 
 failures=0
@@ -66,6 +67,38 @@ check "the orchestration upstream is never a worker slot" 0 \
 
 "$gate" acquire one-too-many >/dev/null 2>&1
 check "acquire with every seat taken exits 2" 2 "$?"
+
+# Reap contract: a slot whose worker process is gone is reclaimed once the
+# grace has passed, a slot inside the grace is kept, and a slot held without a
+# session id is kept until the stale window. Separate state dir so these
+# hand-written slots do not disturb the seat counts above.
+#
+# The "alive" session id is this script's own name: the gate matches it with
+# `pgrep -f`, so the running test is the live worker. The other two ids are
+# unique enough that nothing matches them.
+dead_token="dispatch-gate-dead-$$-$(date +%s)"
+grace_token="dispatch-gate-grace-$$-$(date +%s)"
+live_token="test-dispatch-gate.sh"
+now_s="$(date +%s)"
+
+write_slot() {
+	printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$2" "$now_s" "light custom:9Router-7" "$3" \
+		>"$reap_state/slot.$1"
+	touch -d "$4" "$reap_state/slot.$1"
+}
+
+write_slot 1 dead "$dead_token" '2 hours ago'
+write_slot 2 grace "$grace_token" '1 minute ago'
+write_slot 3 nosession - '2 hours ago'
+write_slot 4 live "$live_token" '2 hours ago'
+
+DISPATCH_GATE_STATE="$reap_state" DISPATCH_GATE_REAP_GRACE=3600 "$gate" status >/dev/null
+check "a slot whose worker is gone is reaped" 0 "$([ -e "$reap_state/slot.1" ] && echo 1 || echo 0)"
+check "a slot inside the grace is kept" 1 "$([ -e "$reap_state/slot.2" ] && echo 1 || echo 0)"
+check "a slot without a session id is kept until the stale window" 1 \
+	"$([ -e "$reap_state/slot.3" ] && echo 1 || echo 0)"
+check "a slot whose worker is alive is kept" 1 \
+	"$([ -e "$reap_state/slot.4" ] && echo 1 || echo 0)"
 
 if ((failures > 0)); then
 	printf '%s dispatch-gate failure(s)\n' "$failures" >&2

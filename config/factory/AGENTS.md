@@ -21,15 +21,16 @@ dispatch gate. Do not dispatch past the cap.
   upstream already has its maximum workers. That is the throttle working, not an
   error: wait for a slot, or release one, and dispatch then.
 - **Pass the worker session id** when you acquire. The gate then tracks the
-  worker by its own session file and reclaims the slot when that worker ends or
-  goes silent, so a crashed worker cannot hold the gate for hours. Without it the
-  slot falls back to a 6h age limit.
+  worker's own process and reclaims the slot once that process is gone (after a
+  5-minute grace, `DISPATCH_GATE_REAP_GRACE`), so a crashed worker cannot hold
+  the gate for hours. Without a session id the slot falls back to a 6h age
+  limit.
 - Default cap is 20 concurrent worker slots (`DISPATCH_GATE_MAX` to change), and
   **at most 12 workers per upstream** (`DISPATCH_GATE_MAX_PER_UPSTREAM`). The
   per-upstream cap is the real throttle: a worker may run, but it must not create
   a thirteenth worker on one upstream. The 2026-10-28 incident was SEVEN workers on
-  ONE upstream. A slot whose worker process is gone is reclaimed on the next gate
-  call; any slot still held after 6h is reaped.
+  ONE upstream. A slot whose worker process is gone is reclaimed once the grace
+  has passed; a slot held without a session id is reaped after 6h.
 - Use the **complexity** the gate prints when you dispatch. Each slot maps to an
   upstream model through the host router (127.0.0.1:20128): light ->
   `custom:9Router-7` (Qwen3.6-35B-A3B combo, 3B active), medium ->
@@ -62,5 +63,6 @@ dispatch gate. Do not dispatch past the cap.
   had to be rescued manually to `rescue/*` refs because their owning sessions
   were already gone. The work was recoverable only because jj keeps every
   commit in the shared store; nothing published it.
-- A worker that dies does not release its slot. The gate reaps it after 6h, and
+- A worker that dies does not release its slot. The gate reaps it on a later
+  call once the worker process is gone and the grace has passed, and
   `dispatch-gate status` shows the ledger.

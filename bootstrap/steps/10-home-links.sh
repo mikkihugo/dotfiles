@@ -6,8 +6,8 @@ PROFILE=${1:?profile required}
 MANIFEST="$ROOT_DIR/profiles/$PROFILE/links.json"
 
 if [[ ! -f "$MANIFEST" ]]; then
-  echo "Missing manifest: $MANIFEST" >&2
-  exit 1
+	echo "Missing manifest: $MANIFEST" >&2
+	exit 1
 fi
 
 BACKUP_DIR="${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)}"

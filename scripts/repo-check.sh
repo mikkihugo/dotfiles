@@ -197,7 +197,17 @@ main() {
 		nix_relevant=1
 	fi
 	check_stage preamble bash "$root/scripts/test-repo-vcs.sh"
-	check_stage ast-grep-shim env "HOME_MANAGER_PROFILE=$profile" bash "$root/scripts/test-ast-grep-shim.sh"
+	# The ast-grep shim stage builds activationPackage and takes a per-profile
+	# flock, serializing concurrent checks. It tests the built activation's
+	# shell integration — which the hoisted gate decision already covers: when
+	# nothing nix-relevant changed, the activation is bit-identical to the one
+	# this test validated when that content last landed, so the assertions
+	# cannot newly fail. Skip with the same decision as the eval below.
+	if [[ $nix_relevant -eq 1 ]]; then
+		check_stage ast-grep-shim env "HOME_MANAGER_PROFILE=$profile" bash "$root/scripts/test-ast-grep-shim.sh"
+	else
+		printf 'skipped ast-grep shim stage (no nix-relevant changes vs origin/main)\n'
+	fi
 	check_stage python-unit-tests stage_python_unit_tests
 	check_stage bash-unit-tests stage_bash_unit_tests
 	check_stage node-unit-tests stage_node_unit_tests

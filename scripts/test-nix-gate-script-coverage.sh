@@ -57,9 +57,9 @@ while IFS= read -r script; do
 		failures=$((failures + 1))
 		continue
 	fi
-	# The derived list is the only thing that can cover a scripts/ path: the
-	# broad nix_gate_path_re matches ^home/, ^config/, ^secrets/ and *.nix, never
-	# ^scripts/. So there is no second way for one of these to be covered.
+	# The derived list is the primary way a scripts/ path is covered: the
+	# structural regex matches *.nix, flake.lock and ^secrets/, never
+	# ^scripts/.
 	if printf '%s\n' "$referenced" | grep -Fxq "$script"; then
 		echo "ok   $script (derived)"
 	else
@@ -75,12 +75,68 @@ if printf '%s\n' "$referenced" | grep -Fxq "scripts/repo-check.sh"; then
 	failures=$((failures + 1))
 fi
 
-# Regression: a dirty activation-tree path must still request the build even
-# when the committed diff alone contains no relevant path.
+# The full reference derivation must exist, be non-empty, and distinguish
+# referenced from unreferenced config files — that distinction IS the
+# optimization (docs that no module references must not run the build).
+all_referenced="$(nix_gate_referenced_files)"
+if [[ -z "$all_referenced" ]]; then
+	echo "FAIL: nix_gate_referenced_files produced an empty set — the gate would fail open on every check" >&2
+	failures=$((failures + 1))
+elif ! printf '%s\n' "$all_referenced" | grep -Fxq "config/agents/purpose-backbone.md"; then
+	# readFile'd by jcode-providers.nix; markdown, but referenced — must be covered
+	echo "FAIL: derivation missed config/agents/purpose-backbone.md (builtins.readFile reference)" >&2
+	failures=$((failures + 1))
+elif printf '%s\n' "$all_referenced" | grep -Fxq "config/code/AGENTS.md"; then
+	# The 2026-11-10 case: a doc no module references must NOT be covered
+	echo "FAIL: derivation over-matched config/code/AGENTS.md — unreferenced docs would run the build gate" >&2
+	failures=$((failures + 1))
+else
+	echo "ok   reference derivation distinguishes referenced from unreferenced config files"
+fi
+# Directory interpolation: home/modules references ./borg/ as a directory;
+# the gate must cover changes under it.
+if ! printf '%s\n' "$all_referenced" | grep -qx "home/modules/borg"; then
+	if [[ ! -d "$root/home/modules/borg" ]]; then
+		echo "ok   no directory interpolation present (borg reference gone)"
+	else
+		echo "FAIL: directory interpolation home/modules/borg not derived" >&2
+		failures=$((failures + 1))
+	fi
+fi
+
+# Skip case: an untracked doc that no module references must NOT request the
+# build. This is the regression guard for the optimization itself.
 touch "$dirty_fixture"
-if ! nix_gate_needs_build; then
-	echo "FAIL: dirty activation-tree change skipped the nix build gate" >&2
-	exit 1
+if nix_gate_needs_build; then
+	echo "FAIL: unreferenced config doc triggered the nix build gate" >&2
+	failures=$((failures + 1))
+else
+	echo "ok   unreferenced config doc skips the gate"
+fi
+rm -f -- "$dirty_fixture"
+
+# Regression: a dirty REFERENCED file must still request the build even when
+# the committed diff alone contains no relevant path. Uses config/ripgreprc
+# (interpolated by home/modules/files.nix); content is backed up and restored.
+if ! printf '%s\n' "$all_referenced" | grep -Fxq "config/ripgreprc"; then
+	echo "FAIL: config/ripgreprc is no longer derived as referenced — this regression cannot run" >&2
+	failures=$((failures + 1))
+else
+	ripgreprc_backup="$(mktemp)"
+	cp "$root/config/ripgreprc" "$ripgreprc_backup"
+	trap 'rm -f -- "$dirty_fixture" "$ripgreprc_backup"; cp "$ripgreprc_backup" "$root/config/ripgreprc" 2>/dev/null || true' EXIT
+	printf '# nix-gate dirty regression (restored by test)\n' >>"$root/config/ripgreprc"
+	if ! nix_gate_needs_build; then
+		echo "FAIL: dirty referenced file skipped the nix build gate" >&2
+		failures=$((failures + 1))
+	else
+		echo "ok   dirty referenced file requests the build"
+	fi
+	cp "$ripgreprc_backup" "$root/config/ripgreprc"
+	if ! git -C "$root" diff --quiet -- config/ripgreprc; then
+		echo "FAIL: ripgreprc restore failed — tree left dirty" >&2
+		failures=$((failures + 1))
+	fi
 fi
 
 if ((failures > 0)); then

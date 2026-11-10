@@ -25,6 +25,18 @@ const packageEntry = (name) => new RegExp(
   "m",
 );
 
+// Every file that makes up the flake surface. The 2026-11-10 flake-parts
+// migration moved the outputs out of flake.nix into the module files under
+// flake/, so a whole-tree assertion has to read all of them: reading only
+// flake.nix would pass vacuously for anything the modules now own.
+const flakeSources = async () => {
+  const modules = (await readdir(join(contractRoot, "flake")))
+    .filter((name) => name.endsWith(".nix"))
+    .sort();
+  const files = ["flake.nix", ...modules.map((name) => `flake/${name}`)];
+  return (await Promise.all(files.map(source))).join("\n");
+};
+
 test("Home Manager preserves the requested Forgejo and fast-Nix toolchain without tea", async () => {
   const packages = await source("home/modules/packages.nix");
   const entries = listBody(
@@ -481,10 +493,10 @@ test("the Home Manager wrapper preserves an explicitly requested flake", async (
 });
 
 test("the maintenance shell supplies every executable used by the canonical check", async () => {
-  const flake = await source("flake.nix");
+  const flake = await flakeSources();
   const entries = listBody(
     flake,
-    /devShells\.default\s*=\s*maintenance-pkgs\.mkShell\s*\{[\s\S]*?packages\s*=\s*with maintenance-pkgs;\s*\[([\s\S]*?)\n\s*\];/,
+    /devShells\.default\s*=\s*pkgs\.mkShell\s*\{[\s\S]*?packages\s*=\s*with pkgs;\s*\[([\s\S]*?)\n\s*\];/,
     "maintenance devShell packages",
   );
 
@@ -500,7 +512,7 @@ test("the maintenance shell supplies every executable used by the canonical chec
 });
 
 test("Home Manager does not include the retired Hermes agent", async () => {
-  const flake = await source("flake.nix");
+  const flake = await flakeSources();
   const home = await source("home/home.nix");
 
   assert.doesNotMatch(flake, /\bhermes-agent\b/);
@@ -508,7 +520,7 @@ test("Home Manager does not include the retired Hermes agent", async () => {
 });
 
 test("Home Manager uses the nixpkgs mise package without a private overlay", async () => {
-  const flake = await source("flake.nix");
+  const flake = await flakeSources();
   const home = await source("home/home.nix");
   const packages = await source("home/modules/packages.nix");
   const bootstrap = await source("bootstrap/steps/20-home-manager.sh");
@@ -518,7 +530,10 @@ test("Home Manager uses the nixpkgs mise package without a private overlay", asy
   assert.match(home, /programs\.mise\s*=\s*\{/);
   assert.match(home, /package\s*=\s*pkgs\.mise;/);
   assert.doesNotMatch(packages, /^\s*mise(?:\s|#|$)/m);
-  assert.match(flake, /packages\.home-manager\s*=\s*home-manager\.packages\.\$\{sys\}\.home-manager;/);
+  assert.match(
+    flake,
+    /packages\.home-manager\s*=\s*inputs'\.home-manager\.packages\.home-manager;/,
+  );
   assert.match(bootstrap, /"path:\$ROOT_DIR#home-manager" -- switch/);
   assert.doesNotMatch(bootstrap, /home-manager\/master|nix profile install/);
   assert.match(packages, /^\s*gnumake\b/m);
@@ -626,7 +641,7 @@ test("daily python314 is nixpkgs, not mise", async () => {
   const mise = await source("config/mise/config.toml");
   const env = await source("config/common/env.sh");
   const packages = await source("home/modules/packages.nix");
-  const flake = await source("flake.nix");
+  const flake = await flakeSources();
   const activation = await source("home/modules/activation.nix");
 
   assert.doesNotMatch(mise, /^\s*python\s*=/m);
@@ -682,7 +697,7 @@ test("dotfiles direnv exports Engine org NIX_CONFIG before the flake", async () 
 });
 
 test("Home Manager activation uses the non-deprecated nix profile command", async () => {
-  const flake = await source("flake.nix");
+  const flake = await flakeSources();
   assert.match(flake, /activationPackage = home\.activationPackage\.overrideAttrs/);
   assert.match(flake, /substituteInPlace \$out\/activate/);
   assert.match(flake, /--replace-fail "profile install" "profile add"/);
@@ -691,7 +706,7 @@ test("Home Manager activation uses the non-deprecated nix profile command", asyn
 });
 
 test("dotfiles flake does not import ace-coder or the GPU worker", async () => {
-  const flake = await source("flake.nix");
+  const flake = await flakeSources();
   const home = await source("home/home.nix");
   const shell = await source("home/modules/shell.nix");
   assert.doesNotMatch(flake, /ace-coder/);
@@ -782,7 +797,7 @@ test("cursor-agent and agent share one OTEL wrapper with unified binary resoluti
 
 test("Claude Code remains native-installer-owned outside Home Manager", async () => {
   const aiTools = await source("home/modules/ai-tools.nix");
-  const flake = await source("flake.nix");
+  const flake = await flakeSources();
   assert.doesNotMatch(aiTools, /"\.local\/bin\/claude"/);
   assert.doesNotMatch(aiTools, /pkgs\.claude-code/);
   assert.doesNotMatch(flake, /claude-code/);

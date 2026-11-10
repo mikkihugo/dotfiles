@@ -69,6 +69,8 @@ memories = false
 context_management = true
 step_model_switching = true
 mcp_2026_07_28 = true
+# Moved from the NixOS /etc/codex/requirements.toml render (2026-11-10); hook registrations live in ~/.codex/hooks.json via repo-memory install_hooks.
+hooks = true
 
 [memories]
 use_memories = false

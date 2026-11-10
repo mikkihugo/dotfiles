@@ -26,7 +26,10 @@ SAVE_SECTION_KEYS = {
     "tui": ["status_line"],
     # Codex's own on-disk memory store stays off: durable agent memory belongs
     # in the repo_memory bank, not a per-client store no other tool can read.
-    "features": ["memories", "context_management", "step_model_switching", "mcp_2026_07_28"],
+    # Hooks are a Codex client feature toggle. The NixOS
+    # /etc/codex/requirements.toml render was removed on 2026-11-10, so the
+    # toggle is managed here and re-applied on every activation.
+    "features": ["memories", "context_management", "step_model_switching", "mcp_2026_07_28", "hooks"],
     "memories": ["use_memories", "generate_memories"],
 }
 # These role registrations are declarative shared source, unlike the mutable

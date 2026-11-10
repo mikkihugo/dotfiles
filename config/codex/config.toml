@@ -98,6 +98,8 @@ remote_models = true
 collaboration_modes = true
 js_repl = true
 prevent_idle_sleep = true
+# Moved from the NixOS /etc/codex/requirements.toml render (2026-11-10); hook registrations live in ~/.codex/hooks.json via repo-memory install_hooks.
+hooks = true
 
 [features.multi_agent_v2]
 enabled = false

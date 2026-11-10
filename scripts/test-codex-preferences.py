@@ -109,7 +109,7 @@ class CodexPreferencesTest(unittest.TestCase):
             self.assertEqual(data["model"], "gpt-reserve")
             self.assertEqual(data["model_provider"], "openai")
             self.assertEqual(data["model_reasoning_effort"], "medium")
-            for feature in ("context_management", "step_model_switching", "mcp_2026_07_28"):
+            for feature in ("context_management", "step_model_switching", "mcp_2026_07_28", "hooks"):
                 self.assertIs(data["features"][feature], True)
             self.assertIs(data["features"]["memories"], False)
 
@@ -333,6 +333,26 @@ class CodexPreferencesTest(unittest.TestCase):
                 self.assertEqual(data["profiles"]["external"]["model"], "keep-external")
                 self.assertEqual(data["agents"]["reviewer"]["config_file"], "keep-reviewer.toml")
                 self.assertEqual(data["personality"], "pragmatic")
+
+    def test_apply_enforces_the_managed_hooks_feature_toggle(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source, target = (root / name for name in ("source.toml", "target.toml"))
+            source.write_text('[features]\nhooks = true\n')
+            target.write_text('[features]\nhooks = false\ncontext_management = true\n')
+            subprocess.run([str(SCRIPT), "apply", "--source", str(source), "--target", str(target)], check=True)
+            data = tomllib.loads(target.read_text())
+            self.assertIs(data["features"]["hooks"], True)
+            self.assertIs(data["features"]["context_management"], True)
+
+    def test_apply_restores_a_dropped_hooks_toggle(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source, target = (root / name for name in ("source.toml", "target.toml"))
+            source.write_text('[features]\nhooks = true\n')
+            target.write_text('[features]\ncontext_management = true\n')
+            subprocess.run([str(SCRIPT), "apply", "--source", str(source), "--target", str(target)], check=True)
+            self.assertIs(tomllib.loads(target.read_text())["features"]["hooks"], True)
 
     def test_save_preserves_canonical_agent_roles_without_importing_live_drift(self):
         with tempfile.TemporaryDirectory() as tmp:

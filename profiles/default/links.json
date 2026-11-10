@@ -5,6 +5,7 @@
     "~/.config/opencode/opencode.json": "config/opencode/opencode.json",
     "~/.config/opencode/oh-my-opencode.json": "config/opencode/oh-my-opencode.json",
     "~/.config/opencode/opencode-mem.jsonc": "config/opencode/opencode-mem.jsonc",
-    "~/.config/kimi-code/init-otel.sh": "config/kimi-code/init-otel.sh"
+    "~/.config/kimi-code/init-otel.sh": "config/kimi-code/init-otel.sh",
+    "~/code/AGENTS.md": "config/code/AGENTS.md"
   }
 }

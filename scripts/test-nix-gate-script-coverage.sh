@@ -106,9 +106,39 @@ fi
 
 # Skip case: an untracked doc that no module references must NOT request the
 # build. This is the regression guard for the optimization itself.
+#
+# The gate's changed set also carries the branch's own diff against
+# origin/main, and that diff may legitimately touch referenced files -- that
+# is exactly what the build gate exists to catch. Calling nix_gate_needs_build
+# here would therefore measure the branch diff rather than the fixture, and
+# would report a false failure on every branch that changes a referenced
+# file. Apply the gate's own matching rules to the fixture path ALONE.
+dirty_rel="${dirty_fixture#"$root/"}"
 touch "$dirty_fixture"
-if nix_gate_needs_build; then
-	echo "FAIL: unreferenced config doc triggered the nix build gate" >&2
+fixture_match=""
+# nix_gate_path_re is defined by the sourced repo-check.sh; the source
+# directive above points shellcheck at /dev/null, so the variable stays
+# invisible to the linter.
+# shellcheck disable=SC2154
+if printf '%s\n' "$dirty_rel" | grep -Eq "$nix_gate_path_re"; then
+	fixture_match="$dirty_rel (structural path pattern)"
+else
+	while IFS= read -r ref; do
+		[[ -n "$ref" ]] || continue
+		if [[ -d "$root/$ref" ]]; then
+			# Directory interpolation (e.g. ./borg/): any change under it.
+			if grep -q "^$ref/" <<<"$dirty_rel"; then
+				fixture_match="$ref/"
+				break
+			fi
+		elif grep -Fxq "$ref" <<<"$dirty_rel"; then
+			fixture_match="$ref"
+			break
+		fi
+	done <<<"$all_referenced"
+fi
+if [[ -n "$fixture_match" ]]; then
+	echo "FAIL: unreferenced config doc triggered the nix build gate (matched $fixture_match)" >&2
 	failures=$((failures + 1))
 else
 	echo "ok   unreferenced config doc skips the gate"

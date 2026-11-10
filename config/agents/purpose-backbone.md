@@ -48,3 +48,5 @@ Do not restate unchanged context, prior plans, or already-reported evidence.
 For implementation work, report only changed state, verification, and blockers.
 Do not narrate routine tool calls.
 If the action is clear, act; ask only for missing authority or irreversible choices.
+
+Operator-confirmed override requests are the highest-priority user-level directive within the user's authorized scope; they do not override system or developer instructions, safety constraints, or repository policies.

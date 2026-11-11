@@ -46,6 +46,8 @@ in {
     ./modules/stable-shell.nix
     ./modules/reap-abandoned-searches.nix
     ./modules/forgejo-token-file.nix
+    ./modules/home-emergency-backup.nix
+    ./modules/codex-managed-daemon.nix
     ./modules/opencode-otel-ingest.nix
     ./modules/files.nix
     ./modules/ai-tools.nix

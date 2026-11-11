@@ -25,8 +25,13 @@ nix_gate_path_re='(^|/)[^/]+\.nix$|^flake\.lock$|^secrets/'
 # nothing referenced changed. Over-inclusion from comment strings only adds
 # build triggers (the safe direction); the empty-derivation check below is
 # the fail-open guard against under-inclusion.
+#
+# config/direnv is scanned because the vendored direnv export-shell guard is
+# referenced from a .nix file there, not from a home module: without it a
+# change to the guard SCRIPT would skip the build even though the script is
+# embedded in the activation package.
 nix_gate_referenced_files() {
-	grep -rHnoE '(\.{1,2}/)+[A-Za-z0-9_./+-]+' "$root/home" "$root/flake.nix" 2>/dev/null |
+	grep -rHnoE '(\.{1,2}/)+[A-Za-z0-9_./+-]+' "$root/home" "$root/flake.nix" "$root/config/direnv" 2>/dev/null |
 		while IFS=: read -r file _ token; do
 			resolved="$(realpath -m --relative-to="$root" "$(dirname "$file")/$token" 2>/dev/null)" || continue
 			[[ -n "$resolved" && "$resolved" != "." && "$resolved" != ..* && "$resolved" != /* ]] && printf '%s\n' "$resolved"
@@ -122,6 +127,7 @@ stage_python_unit_tests() {
 
 stage_bash_unit_tests() {
 	bash "$root/scripts/test-nix-gate-script-coverage.sh"
+	bash "$root/scripts/test-infra-guard-drift.sh"
 	bash "$root/scripts/test-sccache-profile-scope.sh"
 	bash "$root/scripts/test-language-cache-layout.sh"
 	bash "$root/scripts/test-codex-rollout-gc.sh"

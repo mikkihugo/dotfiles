@@ -90,9 +90,6 @@
       url = "github:Mic92/direnv-instant/1.3.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # centralcloud/infra: direnv export-shell guard (single-sourced wrapper).
-    infra.url = "path:/srv/infra";
   };
 
   outputs = {
@@ -106,9 +103,17 @@
     flake-utils,
     llm-agents,
     direnv-instant,
-    infra,
     ...
   }: let
+    # direnv export-shell guard, vendored from centralcloud/infra
+    # (hosts/_shared/direnv-export-shell-guard.nix). Vendored rather than
+    # taken as a flake input on purpose: a `path:/srv/infra` input makes every
+    # dotfiles build evaluate infra's whole flake and copy its 253k-file tree
+    # into the store, so an in-flight edit in another repo blocked
+    # publication here. scripts/test-infra-guard-drift.sh keeps the copy
+    # honest; re-vendor from infra when that check fails.
+    direnvExportShellGuard = ./config/direnv/direnv-export-shell-guard.nix;
+
     specialArgs = {
       inherit sops-nix llm-agents direnv-instant engine-nixpkgs-pin;
     };
@@ -145,7 +150,7 @@
           #
           # direnv 2.38.2 + export-shell guard (AIP-193-style CLI errors).
           (import ./flake/overlay.nix {
-            inherit infra nixpkgs-direnv;
+            inherit direnvExportShellGuard nixpkgs-direnv;
             system = sys;
           })
           (_final: prev: {

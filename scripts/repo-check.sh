@@ -92,7 +92,7 @@ check_stage() {
 
 # repo-vcs push/check shells do not load direnv, so they would run `nix build` with
 # daemon defaults and pin the devbox. Admission matches .nix/direnv.sh (Engine
-# org cache + remote builders) and config/nix/local-build.nix.conf (max-jobs = 0).
+# org cache + remote builders + Hydra/cache substituters) and max-jobs = 0.
 activate_org_nix_config_for_build() {
 	local engine_root=""
 	for engine_root in "${SE_ORG_NIX_CONFIG_ROOT:-}" "${HOME}/code/singularity-engine" "/home/mhugo/code/singularity-engine"; do
@@ -253,7 +253,8 @@ main() {
 	# settings and contend on the shared evaluation cache. Keep nix-fast-build
 	# installed for multi-attribute builds; use Nix directly for this single target.
 	activate_org_nix_config_for_build
-	check_stage home-manager-build nix build --no-link "path:$root#homeConfigurations.${profile}.activationPackage"
+	check_stage home-manager-build nix build --option max-jobs 0 --no-link \
+		"path:$root#homeConfigurations.${profile}.activationPackage"
 }
 
 # Function-only when sourced, so the gate decision can be tested in isolation.

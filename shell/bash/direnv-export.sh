@@ -328,8 +328,13 @@ _direnv_prune_root_generations() {
 _direnv_try_host_prebuilt() {
 	[ -n "${_direnv_root:-}" ] || return 1
 	[ -n "${BASH_VERSION:-}" ] || return 1
-	_direnv_prebuilt_helper="/srv/infra/scripts/agent-direnv-prebuilt-apply.sh"
-	[ -f "$_direnv_prebuilt_helper" ] || return 1
+	_direnv_prebuilt_helper=""
+	for _direnv_prebuilt_helper in \
+		"$HOME/.dotfiles/shell/bash/agent-direnv-prebuilt-apply.sh" \
+		"/srv/infra/scripts/agent-direnv-prebuilt-apply.sh"; do
+		[ -f "$_direnv_prebuilt_helper" ] && break
+	done
+	[ -n "$_direnv_prebuilt_helper" ] && [ -f "$_direnv_prebuilt_helper" ] || return 1
 	# shellcheck disable=SC1090
 	. "$_direnv_prebuilt_helper" || return 1
 	if agent_direnv_prebuilt_try_apply "$_direnv_root"; then

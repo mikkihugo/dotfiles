@@ -206,7 +206,7 @@
         });
       };
   in
-    {
+    rec {
       homeConfigurations = {
         # mikki-bunker: x86_64 WSL2 desktop.
         "mikki-bunker" = mkHome "x86_64-linux" "mikki-bunker";
@@ -219,6 +219,13 @@
         # host cannot accidentally enable the bunker GPU role.
         "mhugo" = mkHome "x86_64-linux" "";
       };
+
+      # Hydra flake project (fleet build fabric): main-push eval builds the devbox
+      # activation closure into the binary cache so repo-check can substitute.
+      hydraJobs = nixpkgs.lib.genAttrs ["x86_64-linux"] (_system: {
+        homeConfigurations-cc-se-sto-devbox-01-activationPackage =
+          homeConfigurations."cc-se-sto-devbox-01".activationPackage;
+      });
 
       # `nix fmt` runs alejandra on every .nix file in the repo.
       formatter =

@@ -86,30 +86,30 @@ check_stage() {
 	local label="$1" start
 	start="$(date +%s%3N)"
 	shift
+	printf 'stage %s: start\n' "$label"
 	"$@"
 	printf 'stage %s: ok (%dms)\n' "$label" "$(($(date +%s%3N) - start))"
 }
 
-# repo-vcs push/check shells do not load direnv, so they would run `nix build` with
-# daemon defaults and pin the devbox. Admission matches .nix/direnv.sh (Engine
-# org cache + remote builders + Hydra/cache substituters) and max-jobs = 0.
-activate_org_nix_config_for_build() {
-	local engine_root=""
-	for engine_root in "${SE_ORG_NIX_CONFIG_ROOT:-}" "${HOME}/code/singularity-engine" "/home/mhugo/code/singularity-engine"; do
-		[[ -n "$engine_root" ]] || continue
-		[[ -f "$engine_root/nix/cache/org-nix-config.sh" ]] && break
-		engine_root=""
-	done
-	[[ -n "$engine_root" ]] || {
-		printf 'repo-check: missing Engine nix/cache/org-nix-config.sh (set SE_ORG_NIX_CONFIG_ROOT)\n' >&2
+# shellcheck source=scripts/org2nix.sh
+source "$root/scripts/org2nix.sh"
+
+DOTFILES_ACTIVATION_PACKAGE=""
+
+build_activation_package() {
+	local profile="$1"
+	DOTFILES_ACTIVATION_PACKAGE="$(
+		org2nix build --no-link --print-out-paths \
+			"path:$root#homeConfigurations.${profile}.activationPackage"
+	)"
+	export DOTFILES_ACTIVATION_PACKAGE
+}
+
+verify_activation_package() {
+	[[ -n "$DOTFILES_ACTIVATION_PACKAGE" && -d "$DOTFILES_ACTIVATION_PACKAGE" ]] || {
+		printf 'repo-check: activation package path missing after build\n' >&2
 		return 1
 	}
-	# shellcheck source=/dev/null
-	source "$engine_root/nix/cache/org-nix-config.sh"
-	SE_ORG_NIX_CONFIG_ROOT="$engine_root" se_org_nix_config_activate || return 1
-	export NIX_CONFIG="${NIX_CONFIG}
-max-jobs = 0
-"
 }
 
 stage_python_unit_tests() {
@@ -219,14 +219,14 @@ main() {
 		nix_relevant=1
 	fi
 	check_stage preamble bash "$root/scripts/test-repo-vcs.sh"
-	# The ast-grep shim stage builds activationPackage and takes a per-profile
-	# flock, serializing concurrent checks. It tests the built activation's
-	# shell integration — which the hoisted gate decision already covers: when
-	# nothing nix-relevant changed, the activation is bit-identical to the one
-	# this test validated when that content last landed, so the assertions
-	# cannot newly fail. Skip with the same decision as the eval below.
+	# One remote activation build per check (ast-grep shim + build gate share it).
+	# The shim stage still takes a per-profile flock so concurrent checks serialize.
 	if [[ $nix_relevant -eq 1 ]]; then
-		check_stage ast-grep-shim env "HOME_MANAGER_PROFILE=$profile" bash "$root/scripts/test-ast-grep-shim.sh"
+		check_stage activation-package-build build_activation_package "$profile"
+		check_stage ast-grep-shim env \
+			"HOME_MANAGER_PROFILE=$profile" \
+			"DOTFILES_ACTIVATION_PACKAGE=$DOTFILES_ACTIVATION_PACKAGE" \
+			bash "$root/scripts/test-ast-grep-shim.sh"
 	else
 		printf 'skipped ast-grep shim stage (no nix-relevant changes vs origin/main)\n'
 	fi
@@ -248,13 +248,7 @@ main() {
 		printf 'skipped home-manager build gate (no nix-relevant changes vs origin/main)\n'
 		return 0
 	fi
-	# This gate evaluates exactly one activation package. Using nix-fast-build here
-	# adds no parallelism, while its nix-eval-jobs workers reread daemon-only Nix
-	# settings and contend on the shared evaluation cache. Keep nix-fast-build
-	# installed for multi-attribute builds; use Nix directly for this single target.
-	activate_org_nix_config_for_build
-	check_stage home-manager-build nix build --option max-jobs 0 --no-link \
-		"path:$root#homeConfigurations.${profile}.activationPackage"
+	check_stage home-manager-build verify_activation_package
 }
 
 # Function-only when sourced, so the gate decision can be tested in isolation.

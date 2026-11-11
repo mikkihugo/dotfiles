@@ -118,6 +118,13 @@ _layout_hash() {
 }
 
 direnv_layout_dir() {
+	# Engine checkouts rebind layout in .envrc (SE_BUILD_STATE_DIR/direnv). Until
+	# that runs, never put nix-direnv profiles inside a writable lane tree.
+	if [[ -f "$PWD/flake.nix" && -f "$PWD/scripts/se_workspace_tool_cache.sh" ]]; then
+		echo "$XDG_CACHE_HOME/direnv/layouts/$(_layout_hash "$PWD")"
+		return
+	fi
+
 	if [[ -w "$PWD" ]] && mkdir -p "$PWD/.direnv" 2>/dev/null; then
 		echo "$PWD/.direnv"
 		return

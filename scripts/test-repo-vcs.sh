@@ -185,6 +185,10 @@ _run_repo_vcs "$root/scripts/repo-vcs.sh" contract-test
 repo_help="$(_run_repo_vcs "$root/bin/repo" help)"
 grep -q 'repo vcs land' <<<"$repo_help"
 grep -q 'repo vcs rebase' <<<"$repo_help"
+grep -q 'repo vcs git push' <<<"$repo_help"
+grep -q 'repo lane commit' <<<"$repo_help"
+grep -q 'repo lane push' <<<"$repo_help"
+grep -q 'repo lane publish' <<<"$repo_help"
 grep -q 'rebase --continue requires at least one resolved path' "$root/scripts/repo-vcs.sh" || {
 	printf 'rebase continuation must require explicit resolved paths\n' >&2
 	exit 1
@@ -533,5 +537,156 @@ grep -Fq 'previous_branch=detached@' "$tmp/p2m-det-ok.out"
 [[ ! -e "$p2m_det/primary/g" ]]
 p2m_git -C "$p2m_det/primary" show-ref --verify --quiet "refs/dotfiles-primary-backup/$p2m_det_base" || {
 	printf 'primary-to-main must keep the old detached HEAD under refs/dotfiles-primary-backup/\n' >&2
+	exit 1
+}
+
+# repo vcs git push mirrors jj git push: the jj-tracked main bookmark is the
+# publication unit. A dirty working copy is refused before anything is
+# published; a described commit ahead of main must move the main bookmark (jj
+# exports it to refs/heads/main) before the facade pushes that ref.
+mkdir -p "$tmp/jjstub" "$tmp/gitstub"
+cat >"$tmp/jjstub/jj" <<'JJ_STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$JJ_LOG"
+case "$*" in
+*' status'*) cat "$JJ_STATUS" ;;
+*' log '*) cat "$JJ_REVSET" ;;
+esac
+exit 0
+JJ_STUB
+cat >"$tmp/gitstub/git" <<'GIT_STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$GIT_LOG"
+case "$*" in
+# jj leaves git HEAD detached after `jj commit`: the published unit is the
+# branch ref jj moved, not HEAD.
+*'symbolic-ref --quiet --short HEAD'*) exit 1 ;;
+*'show-ref --verify --quiet refs/heads/main'*) exit 0 ;;
+*'status --porcelain'*) exit 0 ;;
+*' fetch '*) exit 1 ;;
+esac
+exit 0
+GIT_STUB
+chmod 0755 "$tmp/jjstub/jj" "$tmp/gitstub/git"
+printf 'Working copy changes:\nM file\n' >"$tmp/jj-dirty.status"
+printf 'The working copy has no changes.\n' >"$tmp/jj-clean.status"
+printf 'aaaabbbbccccddddeeeeffff00001111222233334444555566667777888899990\n' >"$tmp/jj-target.revset"
+
+# A dirty working copy is refused: jj publishes commits, not working-tree bytes.
+if JJ_LOG="$tmp/jj-dirty.log" JJ_STATUS="$tmp/jj-dirty.status" JJ_REVSET="$tmp/jj-target.revset" \
+	GIT_LOG="$tmp/git-dirty.log" PATH="$tmp/jjstub:$PATH" SE_GIT_BIN="$tmp/gitstub/git" \
+	_run_repo_vcs "$root/scripts/repo-vcs.sh" git-push >"$tmp/jj-dirty.out" 2>"$tmp/jj-dirty.err"; then
+	printf 'git push must refuse a dirty working copy\n' >&2
+	exit 1
+fi
+grep -Fq 'uncommitted changes' "$tmp/jj-dirty.err" || {
+	printf 'git push must name the missing commit step\n' >&2
+	cat "$tmp/jj-dirty.err" >&2
+	exit 1
+}
+if grep -Fq 'bookmark set' "$tmp/jj-dirty.log"; then
+	printf 'git push moved the main bookmark despite a dirty working copy\n' >&2
+	exit 1
+fi
+
+# A described commit ahead of main becomes the main bookmark, and jj exports
+# it before the facade pushes. The remote fetch fails in the stub, so the run
+# stops before the gate and both remotes stay untouched.
+if JJ_LOG="$tmp/jj-clean.log" JJ_STATUS="$tmp/jj-clean.status" JJ_REVSET="$tmp/jj-target.revset" \
+	GIT_LOG="$tmp/git-clean.log" PATH="$tmp/jjstub:$PATH" SE_GIT_BIN="$tmp/gitstub/git" \
+	_run_repo_vcs "$root/scripts/repo-vcs.sh" git-push >"$tmp/jj-clean.out" 2>"$tmp/jj-clean.err"; then
+	printf 'git push must not publish when the remote fetch fails\n' >&2
+	exit 1
+fi
+grep -Fq 'bookmark set main -r aaaabbbbccccddddeeeeffff00001111222233334444555566667777888899990' "$tmp/jj-clean.log" || {
+	printf 'git push must move the main bookmark to the described commit\n' >&2
+	cat "$tmp/jj-clean.log" >&2
+	exit 1
+}
+grep -Fq 'git export' "$tmp/jj-clean.log" || {
+	printf 'git push must export the jj bookmark to git\n' >&2
+	cat "$tmp/jj-clean.log" >&2
+	exit 1
+}
+grep -Fq ' fetch ' "$tmp/git-clean.log" || {
+	printf 'git push must publish the prepared main ref\n' >&2
+	cat "$tmp/git-clean.log" >&2
+	exit 1
+}
+# jj leaves git HEAD detached, so the published unit is the branch ref jj
+# moved — the facade must key off refs/heads/main, not off an attached HEAD.
+grep -Fq 'show-ref --verify --quiet refs/heads/main' "$tmp/git-clean.log" || {
+	printf 'git push must publish the jj-managed main branch ref\n' >&2
+	cat "$tmp/git-clean.log" >&2
+	exit 1
+}
+if grep -Fq 'detached HEAD cannot publish main' "$tmp/jj-clean.err"; then
+	printf 'git push must accept the detached HEAD that jj leaves behind\n' >&2
+	cat "$tmp/jj-clean.err" >&2
+	exit 1
+fi
+
+# repo lane commit is lane-local: it commits inside the lane worktree on the
+# lane's own branch and publishes nothing.
+lane_home="$tmp/lane-home"
+mkdir -p "$lane_home/.dotfiles-worktrees/demo" "$tmp/lane"
+cat >"$tmp/lane/git" <<'LANE_GIT'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$LANE_LOG"
+case "$*" in
+*'show-ref --verify --quiet refs/heads/worktree/demo'*) exit 0 ;;
+*'symbolic-ref --quiet --short HEAD'*) printf '%s\n' worktree/demo; exit 0 ;;
+*'diff --cached --quiet'*) exit 1 ;;
+*'rev-parse HEAD'*) printf '%s\n' 1111111111111111111111111111111111111111; exit 0 ;;
+esac
+exit 0
+LANE_GIT
+chmod 0755 "$tmp/lane/git"
+if ! HOME="$lane_home" LANE_LOG="$tmp/lane.log" SE_GIT_BIN="$tmp/lane/git" \
+	_run_repo_vcs "$root/scripts/repo-vcs.sh" lane-commit demo 'feat(lane): local change' >"$tmp/lane.out" 2>"$tmp/lane.err"; then
+	printf 'lane commit must commit inside the lane worktree\n' >&2
+	cat "$tmp/lane.err" >&2
+	exit 1
+fi
+grep -Fq 'committed=demo' "$tmp/lane.out" || {
+	printf 'lane commit must report the committed revision\n' >&2
+	cat "$tmp/lane.out" >&2
+	exit 1
+}
+grep -Fq -- "-C $lane_home/.dotfiles-worktrees/demo add --all" "$tmp/lane.log" || {
+	printf 'lane commit must stage inside the lane worktree\n' >&2
+	cat "$tmp/lane.log" >&2
+	exit 1
+}
+grep -Fq -- "-C $lane_home/.dotfiles-worktrees/demo commit -m feat(lane): local change" "$tmp/lane.log" || {
+	printf 'lane commit must commit inside the lane worktree\n' >&2
+	cat "$tmp/lane.log" >&2
+	exit 1
+}
+if grep -Fq ' push ' "$tmp/lane.log"; then
+	printf 'lane commit must not publish anything\n' >&2
+	cat "$tmp/lane.log" >&2
+	exit 1
+fi
+# A lane checked out on another branch must not commit under the lane name.
+mkdir -p "$tmp/lane-other"
+cat >"$tmp/lane-other/git" <<'LANE_OTHER_GIT'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$LANE_LOG"
+case "$*" in
+*'show-ref --verify --quiet refs/heads/worktree/demo'*) exit 0 ;;
+*'symbolic-ref --quiet --short HEAD'*) printf '%s\n' worktree/other; exit 0 ;;
+esac
+exit 0
+LANE_OTHER_GIT
+chmod 0755 "$tmp/lane-other/git"
+if HOME="$lane_home" LANE_LOG="$tmp/lane-other.log" SE_GIT_BIN="$tmp/lane-other/git" \
+	_run_repo_vcs "$root/scripts/repo-vcs.sh" lane-commit demo 'feat(lane): wrong branch' >"$tmp/lane-other.out" 2>"$tmp/lane-other.err"; then
+	printf 'lane commit must refuse a lane checked out on another branch\n' >&2
+	exit 1
+fi
+grep -Fq 'is on worktree/other' "$tmp/lane-other.err" || {
+	printf 'lane commit must name the branch mismatch\n' >&2
+	cat "$tmp/lane-other.err" >&2
 	exit 1
 }

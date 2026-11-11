@@ -7,10 +7,16 @@ lock_root="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 mkdir -p "$lock_root"
 exec 9>"${lock_root}/dotfiles-ast-grep-shim-${profile}.lock"
 flock 9
-activation_path="$(
-	nix build --no-link --print-out-paths \
-		"path:${repo_root}#homeConfigurations.${profile}.activationPackage"
-)"
+if [[ -n "${DOTFILES_ACTIVATION_PACKAGE:-}" ]]; then
+	activation_path="$DOTFILES_ACTIVATION_PACKAGE"
+else
+	# shellcheck source=scripts/org2nix.sh
+	source "${repo_root}/scripts/org2nix.sh"
+	activation_path="$(
+		org2nix build --no-link --print-out-paths \
+			"path:${repo_root}#homeConfigurations.${profile}.activationPackage"
+	)"
+fi
 shim="${activation_path}/home-files/.local/bin/sg"
 session_vars="${activation_path}/home-path/etc/profile.d/hm-session-vars.sh"
 

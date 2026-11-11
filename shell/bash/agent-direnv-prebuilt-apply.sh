@@ -25,6 +25,16 @@ _agent_direnv_prebuilt_schema_ok() {
 	esac
 }
 
+# Lane-keyed CARGO_TARGET_DIR and direnv_layout_dir after a canonical dump applies
+# to a different checkout path (bind-in-publisher; see Engine ADR se-direnv-workspace-bind).
+_agent_direnv_bind_engine_workspace() {
+	local root="$1"
+	local bind_script="$root/.nix/se-direnv-bind-workspace.sh"
+	[ -f "$bind_script" ] || return 0
+	# shellcheck disable=SC1090
+	. "$bind_script" "$root"
+}
+
 _agent_direnv_prebuilt_header_matches() {
 	local header="$1" repo="$2" key="$3" system="$4" devshell="$5"
 	case "$header" in
@@ -223,6 +233,9 @@ agent_direnv_prebuilt_try_apply() {
 	}
 	[ "$apply_dump" != "$dump" ] && rm -f "$apply_dump"
 	unset DIRENV_DIFF DIRENV_WATCHES
+	if [ "$repo" = "singularity-engine" ]; then
+		_agent_direnv_bind_engine_workspace "$root" || return 1
+	fi
 	return 0
 }
 

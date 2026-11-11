@@ -177,13 +177,36 @@
         "vcs",
         "push"
       ],
-      "description": "Verify and publish local main to both remotes",
+      "description": "Deprecated alias for repo vcs git push",
+      "class": "vcs",
+      "deprecated": true,
+      "alias_for": [
+        "vcs",
+        "git",
+        "push"
+      ],
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": [
+          "git-push"
+        ],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": [
+        "vcs",
+        "git",
+        "push"
+      ],
+      "description": "Publish the jj-tracked main bookmark to Forgejo and GitHub, mirroring jj git push",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
         "args": [
-          "push"
+          "git-push"
         ],
         "authority": "repository-vcs-facade"
       }
@@ -209,13 +232,61 @@
         "vcs",
         "land"
       ],
-      "description": "Deprecated compatibility alias; use repo lane publish <name> [main]",
+      "description": "Deprecated compatibility alias; use repo lane publish <name> or repo lane publish main",
       "class": "vcs",
       "backend": {
         "kind": "executable",
         "executable": "scripts/repo-vcs.sh",
         "args": [
           "land"
+        ],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": [
+        "lane",
+        "commit"
+      ],
+      "description": "Commit the lane's pending changes on its own branch, without publishing anything",
+      "class": "lane",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": [
+          "lane-commit"
+        ],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": [
+        "lane",
+        "push"
+      ],
+      "description": "Push the lane branch to Forgejo and GitHub without integrating main",
+      "class": "lane",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": [
+          "lane-push"
+        ],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": [
+        "lane",
+        "publish"
+      ],
+      "description": "Verify and integrate the lane branch into main and publish main; lane publish main is the gated canonical-main publication (distinct from lane push)",
+      "class": "lane",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": [
+          "lane-publish"
         ],
         "authority": "repository-vcs-facade"
       }

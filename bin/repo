@@ -184,6 +184,31 @@ Environment:
     3. Use `direnv exec . repo <command>` only for a one-shot command when the shell cannot persist.
   Falsifier: If `repo` is unavailable or resolves outside this repository, stop and load direnv.
 
+Lanes:
+  Open, inspect, finish, and clean up owned task workspaces.
+
+  repo lane commit
+    What: Commit the lane's pending changes on its own branch, without publishing anything
+    When: Before choosing a workspace lifecycle transition.
+    Steps:
+      1. Run `repo lane commit`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo lane publish
+    What: Verify and integrate the lane branch into main and publish main; lane publish main is the gated canonical-main publication (distinct from lane push)
+    When: Before choosing a workspace lifecycle transition.
+    Steps:
+      1. Run `repo lane publish`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo lane push
+    What: Push the lane branch to Forgejo and GitHub without integrating main
+    When: Before choosing a workspace lifecycle transition.
+    Steps:
+      1. Run `repo lane push`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+
 Version control:
   Read state, isolate work, mutate, then land/publish.
 
@@ -192,133 +217,134 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs status`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs diff
     What: Show repository changes
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs diff`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs log
     What: Show revision history
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs log`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs show
     What: Show one revision
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs show`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs describe
     What: Commit the current workspace changes
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs describe`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs rebase
     What: Rebase the owned task branch onto one revision
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs rebase`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs fetch
     What: Fetch the Forgejo integration remote
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs fetch`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs land
-    What: Deprecated compatibility alias; use repo lane publish <name> [main]
+    What: Deprecated compatibility alias; use repo lane publish <name> or repo lane publish main
     When: Before choosing a repository lifecycle transition.
     Steps:
-      1. Run `repo lane publish <name> [main]`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
-    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
-  repo vcs push
-    What: Verify and publish local main to both remotes
-    When: Before choosing a repository lifecycle transition.
-    Steps:
-      1. Run `repo vcs push`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      1. Run `repo vcs land`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs amend
     What: Correct the message of an unpushed task-head commit without changing its contents
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs amend`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs branch-retire
     What: Retire an unused leftover namespaced ref; dry-run unless --apply
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs branch-retire`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs git push
+    What: Publish the jj-tracked main bookmark to Forgejo and GitHub, mirroring jj git push
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs git push`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+    Aliases: repo vcs push (deprecated: use repo vcs git push)
   repo vcs primary-to-main
     What: Move the primary checkout off a stale branch onto origin/main when all its uncommitted changes are already in main's history
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs primary-to-main`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs push-github
     What: Verify and publish local main to GitHub only
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs push-github`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs sync-main
     What: Converge a clean patch-equivalent canonical main to origin/main
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs sync-main`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs test
     What: Verify the repository VCS facade contract
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs test`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs worktree-abandon
     What: Discard an explicitly abandoned clean inactive task worktree
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-abandon`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs worktree-create
     What: Create an isolated task worktree
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-create`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs worktree-drop
     What: Remove an integrated clean task worktree
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-drop`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs worktree-list
     What: List registered worktrees
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-list`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Changelog & sync:
@@ -367,14 +393,14 @@ Other (check):
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 More:
-  repo help check | repo help sync | repo help test | repo help vcs | repo help schema
+  repo help check | repo help lane | repo help sync | repo help test | repo help vcs | repo help schema
 PURPOSE_REPO_HELP
     return
   fi
   local topic="${filter[*]}"
   case "$topic" in
     --all|--show-all|all)
-      echo 'help has no dump-all page; open a group: repo help check | repo help sync | repo help test | repo help vcs' >&2
+      echo 'help has no dump-all page; open a group: repo help check | repo help lane | repo help sync | repo help test | repo help vcs' >&2
       exit 2
       ;;
     'check')
@@ -419,6 +445,100 @@ Other (check):
 
 Index: repo help
 PURPOSE_REPO_HELP_FILTER_check_nix
+      ;;
+    'lane')
+      cat <<'PURPOSE_REPO_HELP_FILTER_lane'
+Usage: repo <command> [args...]
+
+Commands are listed like MCP tools: what, when, steps, falsifier, and access mode.
+
+Lanes:
+  Open, inspect, finish, and clean up owned task workspaces.
+
+  repo lane commit
+    What: Commit the lane's pending changes on its own branch, without publishing anything
+    When: Before choosing a workspace lifecycle transition.
+    Steps:
+      1. Run `repo lane commit`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo lane publish
+    What: Verify and integrate the lane branch into main and publish main; lane publish main is the gated canonical-main publication (distinct from lane push)
+    When: Before choosing a workspace lifecycle transition.
+    Steps:
+      1. Run `repo lane publish`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo lane push
+    What: Push the lane branch to Forgejo and GitHub without integrating main
+    When: Before choosing a workspace lifecycle transition.
+    Steps:
+      1. Run `repo lane push`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+
+Index: repo help
+PURPOSE_REPO_HELP_FILTER_lane
+      ;;
+    'lane commit')
+      cat <<'PURPOSE_REPO_HELP_FILTER_lane_commit'
+Usage: repo <command> [args...]
+
+Commands are listed like MCP tools: what, when, steps, falsifier, and access mode.
+
+Lanes:
+  Open, inspect, finish, and clean up owned task workspaces.
+
+  repo lane commit
+    What: Commit the lane's pending changes on its own branch, without publishing anything
+    When: Before choosing a workspace lifecycle transition.
+    Steps:
+      1. Run `repo lane commit`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+
+Index: repo help
+PURPOSE_REPO_HELP_FILTER_lane_commit
+      ;;
+    'lane publish')
+      cat <<'PURPOSE_REPO_HELP_FILTER_lane_publish'
+Usage: repo <command> [args...]
+
+Commands are listed like MCP tools: what, when, steps, falsifier, and access mode.
+
+Lanes:
+  Open, inspect, finish, and clean up owned task workspaces.
+
+  repo lane publish
+    What: Verify and integrate the lane branch into main and publish main; lane publish main is the gated canonical-main publication (distinct from lane push)
+    When: Before choosing a workspace lifecycle transition.
+    Steps:
+      1. Run `repo lane publish`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+
+Index: repo help
+PURPOSE_REPO_HELP_FILTER_lane_publish
+      ;;
+    'lane push')
+      cat <<'PURPOSE_REPO_HELP_FILTER_lane_push'
+Usage: repo <command> [args...]
+
+Commands are listed like MCP tools: what, when, steps, falsifier, and access mode.
+
+Lanes:
+  Open, inspect, finish, and clean up owned task workspaces.
+
+  repo lane push
+    What: Push the lane branch to Forgejo and GitHub without integrating main
+    When: Before choosing a workspace lifecycle transition.
+    Steps:
+      1. Run `repo lane push`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+
+Index: repo help
+PURPOSE_REPO_HELP_FILTER_lane_push
       ;;
     'sync')
       cat <<'PURPOSE_REPO_HELP_FILTER_sync'
@@ -541,133 +661,134 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs status`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs diff
     What: Show repository changes
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs diff`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs log
     What: Show revision history
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs log`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs show
     What: Show one revision
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs show`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs describe
     What: Commit the current workspace changes
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs describe`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs rebase
     What: Rebase the owned task branch onto one revision
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs rebase`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs fetch
     What: Fetch the Forgejo integration remote
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs fetch`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs land
-    What: Deprecated compatibility alias; use repo lane publish <name> [main]
+    What: Deprecated compatibility alias; use repo lane publish <name> or repo lane publish main
     When: Before choosing a repository lifecycle transition.
     Steps:
-      1. Run `repo lane publish <name> [main]`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
-    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
-  repo vcs push
-    What: Verify and publish local main to both remotes
-    When: Before choosing a repository lifecycle transition.
-    Steps:
-      1. Run `repo vcs push`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      1. Run `repo vcs land`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs amend
     What: Correct the message of an unpushed task-head commit without changing its contents
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs amend`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs branch-retire
     What: Retire an unused leftover namespaced ref; dry-run unless --apply
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs branch-retire`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs git push
+    What: Publish the jj-tracked main bookmark to Forgejo and GitHub, mirroring jj git push
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs git push`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+    Aliases: repo vcs push (deprecated: use repo vcs git push)
   repo vcs primary-to-main
     What: Move the primary checkout off a stale branch onto origin/main when all its uncommitted changes are already in main's history
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs primary-to-main`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs push-github
     What: Verify and publish local main to GitHub only
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs push-github`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs sync-main
     What: Converge a clean patch-equivalent canonical main to origin/main
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs sync-main`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs test
     What: Verify the repository VCS facade contract
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs test`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs worktree-abandon
     What: Discard an explicitly abandoned clean inactive task worktree
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-abandon`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs worktree-create
     What: Create an isolated task worktree
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-create`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs worktree-drop
     What: Remove an integrated clean task worktree
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-drop`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs worktree-list
     What: List registered worktrees
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-list`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -687,7 +808,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs amend`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -707,7 +828,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs branch-retire`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -727,7 +848,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs describe`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -747,7 +868,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs diff`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -767,11 +888,53 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs fetch`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
 PURPOSE_REPO_HELP_FILTER_vcs_fetch
+      ;;
+    'vcs git')
+      cat <<'PURPOSE_REPO_HELP_FILTER_vcs_git'
+Usage: repo <command> [args...]
+
+Commands are listed like MCP tools: what, when, steps, falsifier, and access mode.
+
+Version control:
+  Read state, isolate work, mutate, then land/publish.
+
+  repo vcs git push
+    What: Publish the jj-tracked main bookmark to Forgejo and GitHub, mirroring jj git push
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs git push`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+    Aliases: repo vcs push (deprecated: use repo vcs git push)
+
+Index: repo help
+PURPOSE_REPO_HELP_FILTER_vcs_git
+      ;;
+    'vcs git push')
+      cat <<'PURPOSE_REPO_HELP_FILTER_vcs_git_push'
+Usage: repo <command> [args...]
+
+Commands are listed like MCP tools: what, when, steps, falsifier, and access mode.
+
+Version control:
+  Read state, isolate work, mutate, then land/publish.
+
+  repo vcs git push
+    What: Publish the jj-tracked main bookmark to Forgejo and GitHub, mirroring jj git push
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs git push`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+    Aliases: repo vcs push (deprecated: use repo vcs git push)
+
+Index: repo help
+PURPOSE_REPO_HELP_FILTER_vcs_git_push
       ;;
     'vcs land')
       cat <<'PURPOSE_REPO_HELP_FILTER_vcs_land'
@@ -783,11 +946,11 @@ Version control:
   Read state, isolate work, mutate, then land/publish.
 
   repo vcs land
-    What: Deprecated compatibility alias; use repo lane publish <name> [main]
+    What: Deprecated compatibility alias; use repo lane publish <name> or repo lane publish main
     When: Before choosing a repository lifecycle transition.
     Steps:
-      1. Run `repo lane publish <name> [main]`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      1. Run `repo vcs land`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -807,7 +970,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs log`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -827,7 +990,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs primary-to-main`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -843,11 +1006,12 @@ Version control:
   Read state, isolate work, mutate, then land/publish.
 
   repo vcs push
-    What: Verify and publish local main to both remotes
+    What: Deprecated alias for repo vcs git push
+    alias of repo vcs git push
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs push`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -867,7 +1031,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs push-github`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -887,7 +1051,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs rebase`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -907,7 +1071,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs show`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -927,7 +1091,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs status`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -947,7 +1111,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs sync-main`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -967,7 +1131,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs test`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -987,7 +1151,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-abandon`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -1007,7 +1171,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-create`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -1027,7 +1191,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-drop`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -1047,7 +1211,7 @@ Version control:
     When: Before choosing a repository lifecycle transition.
     Steps:
       1. Run `repo vcs worktree-list`.
-      2. Read back repository state through `repo workspace` or `repo vcs` before another transition.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
 
 Index: repo help
@@ -1068,7 +1232,11 @@ if [[ "${1:-}" == "help" ]]; then
   show_help "$@"
   exit 0
 fi
-if [[ "${1:-}" == 'check' ]] && [[ "${2:-}" == 'nix' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo check nix" PURPOSE_COMMAND_CLASS="check" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-check-nix.sh" "$@"
+if [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'git' ]] && [[ "${3:-}" == 'push' ]]; then shift 3; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs git push" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'git-push' "$@"
+elif [[ "${1:-}" == 'check' ]] && [[ "${2:-}" == 'nix' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo check nix" PURPOSE_COMMAND_CLASS="check" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-check-nix.sh" "$@"
+elif [[ "${1:-}" == 'lane' ]] && [[ "${2:-}" == 'commit' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo lane commit" PURPOSE_COMMAND_CLASS="lane" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'lane-commit' "$@"
+elif [[ "${1:-}" == 'lane' ]] && [[ "${2:-}" == 'publish' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo lane publish" PURPOSE_COMMAND_CLASS="lane" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'lane-publish' "$@"
+elif [[ "${1:-}" == 'lane' ]] && [[ "${2:-}" == 'push' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo lane push" PURPOSE_COMMAND_CLASS="lane" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'lane-push' "$@"
 elif [[ "${1:-}" == 'sync' ]] && [[ "${2:-}" == 'mise-upgrade' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo sync mise-upgrade" PURPOSE_COMMAND_CLASS="sync" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-maintenance.sh" 'mise-upgrade' "$@"
 elif [[ "${1:-}" == 'test' ]] && [[ "${2:-}" == 'check-entry' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo test check-entry" PURPOSE_COMMAND_CLASS="test" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-check.sh" 'check-entry' "$@"
 elif [[ "${1:-}" == 'test' ]] && [[ "${2:-}" == 'codex-preferences' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo test codex-preferences" PURPOSE_COMMAND_CLASS="test" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-check.sh" 'codex-preferences' "$@"
@@ -1080,7 +1248,7 @@ elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'fetch' ]]; then shift 2; if [[ "
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'land' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs land" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'land' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'log' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs log" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'log' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'primary-to-main' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs primary-to-main" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'primary-to-main' "$@"
-elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs push" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'push' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; echo 'deprecated: use repo vcs git push' >&2; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs push" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'git-push' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'push-github' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs push-github" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'push-github' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'rebase' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs rebase" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'rebase' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'show' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs show" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'show' "$@"

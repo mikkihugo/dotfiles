@@ -6,7 +6,9 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 # The Nix expression is intentionally literal; it reads the root from the
 # narrowly scoped child-process environment instead of interpolating Nix code.
 # shellcheck disable=SC2016
-matrix="$(DOTFILES_TEST_ROOT="$root" nix eval --json --impure --expr '
+# shellcheck source=scripts/org2nix.sh
+source "$root/scripts/org2nix.sh"
+matrix="$(DOTFILES_TEST_ROOT="$root" org2nix eval --json --impure --expr '
   let
     flake = builtins.getFlake ("path:" + builtins.getEnv "DOTFILES_TEST_ROOT");
     inspect = name:

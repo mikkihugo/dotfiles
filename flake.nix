@@ -15,7 +15,7 @@
 
   nixConfig = {
     extra-substituters = [
-      "https://cache.flakecache.com/default"
+      "https://cache.centralcloud.com/default"
       "https://nix-community.cachix.org"
       "https://cache.numtide.com"
     ];

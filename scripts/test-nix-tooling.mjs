@@ -723,10 +723,9 @@ test("repo check delegates to the single repository check implementation", async
   }
   assert.match(check, /profile="\$\("\$root\/scripts\/current-home-profile"\)"/);
   assert.doesNotMatch(check, /homeConfigurations\.cc-se-sto-devbox-01/);
-  assert.match(
-    check,
-    /nix\s+build\s+--no-link\s+"path:\$root#homeConfigurations\.\$\{profile\}\.activationPackage"/,
-  );
+  assert.match(check, /check_stage activation-package-build build_activation_package/);
+  assert.match(check, /org2nix build --no-link --print-out-paths/);
+  assert.match(check, /source \"\$root\/scripts\/org2nix.sh\"/);
   assert.doesNotMatch(check, /nix-fast-build\s+--flake/);
 });
 

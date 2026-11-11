@@ -18,11 +18,78 @@
   },
   "groups": [
     "check",
+    "lane",
     "sync",
     "test",
     "vcs"
   ],
   "commands": [
+    {
+      "path": [
+        "lane",
+        "commit"
+      ],
+      "command": "repo lane commit",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "lane",
+      "what": "Commit the lane's pending changes on its own branch, without publishing anything",
+      "when": "Before choosing a workspace lifecycle transition.",
+      "steps": [
+        "Run `repo lane commit`.",
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "lane",
+        "publish"
+      ],
+      "command": "repo lane publish",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "lane",
+      "what": "Verify and integrate the lane branch into main and publish main; lane publish main is the gated canonical-main publication (distinct from lane push)",
+      "when": "Before choosing a workspace lifecycle transition.",
+      "steps": [
+        "Run `repo lane publish`.",
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "lane",
+        "push"
+      ],
+      "command": "repo lane push",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "lane",
+      "what": "Push the lane branch to Forgejo and GitHub without integrating main",
+      "when": "Before choosing a workspace lifecycle transition.",
+      "steps": [
+        "Run `repo lane push`.",
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
     {
       "path": [
         "vcs",
@@ -38,7 +105,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs status`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -60,7 +127,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs diff`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -82,7 +149,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs log`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -104,7 +171,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs show`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -126,7 +193,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs describe`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -148,7 +215,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs rebase`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -170,7 +237,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs fetch`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -188,11 +255,11 @@
       "alias_of": null,
       "deprecated": false,
       "class": "vcs",
-      "what": "Deprecated compatibility alias; use repo lane publish <name> [main]",
+      "what": "Deprecated compatibility alias; use repo lane publish <name> or repo lane publish main",
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
-        "Run `repo lane publish <name> [main]`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Run `repo vcs land`.",
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -205,16 +272,20 @@
         "push"
       ],
       "command": "repo vcs push",
-      "listed": true,
+      "listed": false,
       "hidden": false,
-      "alias_of": null,
-      "deprecated": false,
+      "alias_of": [
+        "vcs",
+        "git",
+        "push"
+      ],
+      "deprecated": true,
       "class": "vcs",
-      "what": "Verify and publish local main to both remotes",
+      "what": "Deprecated alias for repo vcs git push",
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs push`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -236,7 +307,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs amend`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -258,7 +329,30 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs branch-retire`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
+      ],
+      "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
+      "access": null,
+      "usage": null,
+      "example": null
+    },
+    {
+      "path": [
+        "vcs",
+        "git",
+        "push"
+      ],
+      "command": "repo vcs git push",
+      "listed": true,
+      "hidden": false,
+      "alias_of": null,
+      "deprecated": false,
+      "class": "vcs",
+      "what": "Publish the jj-tracked main bookmark to Forgejo and GitHub, mirroring jj git push",
+      "when": "Before choosing a repository lifecycle transition.",
+      "steps": [
+        "Run `repo vcs git push`.",
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -280,7 +374,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs primary-to-main`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -302,7 +396,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs push-github`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -324,7 +418,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs sync-main`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -346,7 +440,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs test`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -368,7 +462,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs worktree-abandon`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -390,7 +484,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs worktree-create`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -412,7 +506,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs worktree-drop`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,
@@ -434,7 +528,7 @@
       "when": "Before choosing a repository lifecycle transition.",
       "steps": [
         "Run `repo vcs worktree-list`.",
-        "Read back repository state through `repo workspace` or `repo vcs` before another transition."
+        "Read back repository state through `repo lane` or `repo vcs` before another transition."
       ],
       "falsifier": "A non-zero exit or failed verification means this lifecycle step is incomplete.",
       "access": null,

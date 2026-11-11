@@ -217,6 +217,85 @@ task_branch_for() {
 	printf '%s' "$live_branch"
 }
 
+lane_root_for() {
+	local name="$1"
+	valid_name "$name"
+	local path="$HOME/.dotfiles-worktrees/$name"
+	[[ -d "$path" ]] || die "unknown lane: $name (create with repo vcs worktree-create)"
+	printf '%s' "$path"
+}
+
+# jj owns the working copy in the primary checkout, so the publishable unit is
+# a jj commit, not a working-tree snapshot. `jj commit` creates a new EMPTY
+# working-copy commit on top of the described one, so the commit main must
+# carry is the newest DESCRIBED commit ahead of main — not @ itself. Moving the
+# bookmark is what jj exports to refs/heads/main; the facade then pushes that
+# ref to both remotes, which is the two-remote form of `jj git push` (jj
+# itself can only push one remote per invocation).
+jj_publish_main_bookmark() {
+	local target
+	jj --repository "$root" status --no-pager | grep -Eq '^Working copy changes:' &&
+		die 'working copy has uncommitted changes; commit them first: repo vcs describe "<message>"'
+	target="$(jj --repository "$root" log --no-pager -r 'latest(main..@ & description("?*"))' -T 'commit_id' 2>/dev/null | head -1 || true)"
+	if [[ -n "$target" ]]; then
+		jj --repository "$root" bookmark set main -r "$target"
+	fi
+	jj --repository "$root" git export
+}
+
+publish_main_at() {
+	local git_root="$1"
+	local branch
+	if [[ -d "$git_root/.jj" ]]; then
+		# jj owns the working copy here: `jj commit` leaves git HEAD detached at
+		# the described commit, and `jj bookmark set main` is what moves
+		# refs/heads/main. The published unit is that branch ref, not HEAD, so
+		# a detached HEAD is the normal jj state and not an error.
+		git -C "$git_root" show-ref --verify --quiet refs/heads/main ||
+			die 'main branch is missing'
+		branch=main
+	else
+		branch="$(git -C "$git_root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot publish main'
+		[[ "$branch" == main ]] || die 'publication owns only main'
+	fi
+	[[ -z "$(git -C "$git_root" status --porcelain)" ]] || die 'working tree is not clean'
+	fetch_forgejo_main "$root"
+	git -C "$git_root" merge-base --is-ancestor origin/main main || die 'main does not contain origin/main'
+	"$root/scripts/repo-check.sh"
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$git_root" push "$github_url" main
+	run_forgejo timeout "$push_timeout" "$git_bin" -C "$git_root" push "$forgejo_url" main
+	local local_revision forgejo_revision github_revision
+	local_revision="$(git -C "$git_root" rev-parse main)"
+	forgejo_revision="$(run_forgejo timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
+	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
+	[[ "$local_revision" == "$forgejo_revision" ]] || die "Forgejo remote readback mismatch"
+	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"
+	printf 'published=main revision=%s forgejo_readback=true github_readback=true\n' "$local_revision"
+}
+
+land_lane_at() {
+	local git_root="$1"
+	local branch local_revision forgejo_revision github_revision
+	[[ -z "$(git -C "$git_root" status --porcelain)" ]] || die 'working tree is not clean'
+	branch="$(git -C "$git_root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be landed'
+	case "$branch" in
+	worktree/* | codex/*) ;;
+	*) die 'lane publish requires a worktree/* branch (codex/* still accepted for branches created before the rename)' ;;
+	esac
+	fetch_forgejo_main "$root"
+	git -C "$git_root" merge-base --is-ancestor origin/main HEAD || die 'task branch does not contain origin/main'
+	"$root/scripts/repo-check.sh"
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$git_root" push "$github_url" HEAD:main
+	run_forgejo timeout "$push_timeout" "$git_bin" -C "$git_root" push "$forgejo_url" HEAD:main
+	local_revision="$(git -C "$git_root" rev-parse HEAD)"
+	forgejo_revision="$(run_forgejo timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
+	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
+	[[ "$local_revision" == "$forgejo_revision" ]] || die 'Forgejo remote readback mismatch'
+	[[ "$local_revision" == "$github_revision" ]] || die 'GitHub remote readback mismatch'
+	fetch_forgejo_main "$root"
+	printf 'landed=main revision=%s forgejo_readback=true github_readback=true source=%s\n' "$local_revision" "$branch"
+}
+
 # Revision reads use the pinned git, like status and diff. The Engine launcher
 # reads jj repositories only, and task lanes are plain git worktrees (no .jj),
 # so routing log/show there fails with "There is no jj repo". Git names (main,
@@ -438,9 +517,18 @@ describe)
 		exit 0
 	fi
 	[[ $# -eq 1 ]] || die 'describe requires one message'
-	git -C "$root" add --all
-	git -C "$root" diff --cached --quiet && die 'no changes to describe'
-	git -C "$root" commit -m "$1"
+	if [[ -d "$root/.jj" ]]; then
+		# jj 0.47 prints "Working copy changes:" when edits are pending; the
+		# older "nothing: ..." wording no longer appears, so the previous
+		# guard never fired and a clean tree produced an empty commit.
+		jj --repository "$root" status --no-pager | grep -Eq '^Working copy changes:' &&
+			die 'no changes to describe'
+		jj --repository "$root" commit -m "$1"
+	else
+		git -C "$root" add --all
+		git -C "$root" diff --cached --quiet && die 'no changes to describe'
+		git -C "$root" commit -m "$1"
+	fi
 	;;
 amend)
 	[[ $# -eq 1 ]] || die 'amend requires one message'
@@ -456,24 +544,18 @@ amend)
 	# unpushed HEAD message; it is intentionally not a content rewrite surface.
 	git -C "$root" commit --amend --only -m "$1"
 	;;
-push)
+push | git-push)
+	# `repo vcs git push` mirrors `jj git push`: it publishes the jj-tracked
+	# main bookmark. `repo vcs push` is the deprecated spelling of the same
+	# transition. Publication owns main only — a lane branch is published by
+	# `repo lane publish`.
+	[[ $# -le 1 ]] || die 'push takes no arguments'
 	branch="${1:-main}"
 	[[ "$branch" == main ]] || die 'publication owns only main'
-	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
-	fetch_forgejo_main "$root"
-	git -C "$root" merge-base --is-ancestor origin/main main || die 'main does not contain origin/main'
-	"$root/scripts/repo-check.sh"
-	# Forgejo synchronously mirrors this repository to GitHub. Publish GitHub
-	# first so Forgejo's post-receive mirror is already converged and cannot
-	# hold the client until the publication timeout.
-	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" main
-	run_forgejo timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_url" main
-	local_revision="$(git -C "$root" rev-parse main)"
-	forgejo_revision="$(run_forgejo timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
-	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
-	[[ "$local_revision" == "$forgejo_revision" ]] || die "Forgejo remote readback mismatch"
-	[[ "$local_revision" == "$github_revision" ]] || die "GitHub remote readback mismatch"
-	printf 'published=main revision=%s forgejo_readback=true github_readback=true\n' "$local_revision"
+	if [[ -d "$root/.jj" ]]; then
+		jj_publish_main_bookmark
+	fi
+	publish_main_at "$root"
 	;;
 push-github)
 	branch="${1:-main}"
@@ -487,26 +569,57 @@ push-github)
 	printf 'published=main revision=%s github_readback=true forgejo_pending=true\n' "$local_revision"
 	;;
 land)
-	[[ $# -eq 0 ]] || die 'land takes no arguments'
-	[[ -z "$(git -C "$root" status --porcelain)" ]] || die 'working tree is not clean'
-	branch="$(git -C "$root" symbolic-ref --quiet --short HEAD)" || die 'detached HEAD cannot be landed'
+	[[ $# -eq 0 ]] || die 'land takes no arguments; use repo lane publish <name>'
+	land_lane_at "$root"
+	;;
+lane-commit)
+	[[ $# -eq 2 ]] || die 'lane commit requires a lane name and a message'
+	name="$1"
+	message="$2"
+	[[ "$name" != main ]] || die 'lane commit refuses main; use repo vcs describe'
+	valid_name "$name"
+	lane_path="$(lane_root_for "$name")"
+	branch="$(task_branch_for "$name")"
 	case "$branch" in
 	worktree/* | codex/*) ;;
-	*) die 'land requires a worktree/* branch (codex/* still accepted for branches created before the rename)' ;;
+	*) die 'lane commit requires a worktree/* branch (codex/* still accepted for branches created before the rename)' ;;
 	esac
+	head_branch="$(git -C "$lane_path" symbolic-ref --quiet --short HEAD)" || die 'lane HEAD is detached'
+	[[ "$head_branch" == "$branch" ]] || die "lane $name is on $head_branch, not $branch"
+	git -C "$lane_path" add --all
+	git -C "$lane_path" diff --cached --quiet && die 'lane has no changes to commit'
+	git -C "$lane_path" commit -m "$message"
+	printf 'committed=%s revision=%s branch=%s\n' "$name" "$(git -C "$lane_path" rev-parse HEAD)" "$branch"
+	;;
+lane-push)
+	[[ $# -eq 1 ]] || die 'lane push requires a lane name'
+	name="$1"
+	[[ "$name" != main ]] || die "lane push refuses main; use repo lane publish main"
+	valid_name "$name"
+	lane_path="$(lane_root_for "$name")"
+	branch="$(task_branch_for "$name")"
+	head_branch="$(git -C "$lane_path" symbolic-ref --quiet --short HEAD)" || die 'lane HEAD is detached'
+	[[ "$head_branch" == "$branch" ]] || die "lane $name is on $head_branch, not $branch"
+	[[ -z "$(git -C "$lane_path" status --porcelain)" ]] || die 'lane is dirty'
 	fetch_forgejo_main "$root"
-	git -C "$root" merge-base --is-ancestor origin/main HEAD || die 'task branch does not contain origin/main'
-	"$root/scripts/repo-check.sh"
-	# Keep the server-side Forgejo mirror a no-op during its post-receive hook.
-	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$root" push "$github_url" HEAD:main
-	run_forgejo timeout "$push_timeout" "$git_bin" -C "$root" push "$forgejo_url" HEAD:main
-	local_revision="$(git -C "$root" rev-parse HEAD)"
-	forgejo_revision="$(run_forgejo timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_url" refs/heads/main | cut -f1)"
-	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" refs/heads/main | cut -f1)"
-	[[ "$local_revision" == "$forgejo_revision" ]] || die 'Forgejo remote readback mismatch'
-	[[ "$local_revision" == "$github_revision" ]] || die 'GitHub remote readback mismatch'
-	fetch_forgejo_main "$root"
-	printf 'landed=main revision=%s forgejo_readback=true github_readback=true source=%s\n' "$local_revision" "$branch"
+	run_forgejo timeout "$push_timeout" "$git_bin" -C "$lane_path" push "$forgejo_url" "HEAD:refs/heads/$branch"
+	GIT_SSH_COMMAND="$remote_ssh" timeout "$push_timeout" "$git_bin" -C "$lane_path" push "$github_url" "HEAD:refs/heads/$branch"
+	local_revision="$(git -C "$lane_path" rev-parse HEAD)"
+	forgejo_revision="$(run_forgejo timeout 30 "$git_bin" -C "$root" ls-remote "$forgejo_url" "refs/heads/$branch" | cut -f1)"
+	github_revision="$(GIT_SSH_COMMAND="$remote_ssh" timeout 30 "$git_bin" -C "$root" ls-remote "$github_url" "refs/heads/$branch" | cut -f1)"
+	[[ "$local_revision" == "$forgejo_revision" ]] || die 'Forgejo lane readback mismatch'
+	[[ "$local_revision" == "$github_revision" ]] || die 'GitHub lane readback mismatch'
+	printf 'pushed=%s revision=%s branch=%s forgejo_readback=true github_readback=true\n' "$name" "$local_revision" "$branch"
+	;;
+lane-publish)
+	[[ $# -eq 1 ]] || die 'lane publish requires a lane name (main for canonical main)'
+	name="$1"
+	if [[ "$name" == main ]]; then
+		[[ "$(realpath "$PWD")" == "$(realpath "$root")" ]] || die 'lane publish main requires the primary checkout'
+		publish_main_at "$root"
+		exit 0
+	fi
+	land_lane_at "$(lane_root_for "$name")"
 	;;
 worktree-create)
 	[[ $# -eq 2 ]] || die 'worktree-create requires name and revision'
@@ -632,6 +745,18 @@ contract-test)
 			die "missing commands.json entry: vcs::$required_vcs"
 		fi
 	done
+	# The jj-mirroring publication verb is nested: vcs::git::push.
+	if ! jq -e '.commands[] | select(.path == ["vcs", "git", "push"])' \
+		"$root/.purpose/commands.json" >/dev/null; then
+		die 'missing commands.json entry: vcs::git::push'
+	fi
+	for required_lane in commit push publish; do
+		if ! jq -e --arg p "$required_lane" \
+			'.commands[] | select(.path == ["lane", $p])' \
+			"$root/.purpose/commands.json" >/dev/null; then
+			die "missing commands.json entry: lane::$required_lane"
+		fi
+	done
 	grep -q 'ControlMaster=no.*ControlPath=none.*ControlPersist=no' "$root/scripts/repo-vcs.sh"
 	cfg="$root/config/ssh_config"
 	git_host_line="$(awk '/^Host / && /git\.centralcloud\.net/ { print NR; exit }' "$cfg")"
@@ -686,5 +811,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main [--divergence-only]|converge-main|primary-to-main|describe|amend|push|push-github|land|worktree-create|worktree-delete|worktree-abandon|branch-delete|contract-test|config}' ;;
+*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main [--divergence-only]|converge-main|primary-to-main|describe|amend|push|git-push|push-github|land|lane-commit|lane-push|lane-publish|worktree-create|worktree-delete|worktree-abandon|branch-delete|contract-test|config}' ;;
 esac

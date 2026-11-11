@@ -252,6 +252,7 @@ main() {
 	# adds no parallelism, while its nix-eval-jobs workers reread daemon-only Nix
 	# settings and contend on the shared evaluation cache. Keep nix-fast-build
 	# installed for multi-attribute builds; use Nix directly for this single target.
+	activate_org_nix_config_for_build
 	check_stage home-manager-build nix build --no-link "path:$root#homeConfigurations.${profile}.activationPackage"
 }
 

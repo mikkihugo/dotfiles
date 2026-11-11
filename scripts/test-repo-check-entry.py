@@ -45,6 +45,7 @@ class CheckEntryTest(unittest.TestCase):
             (root / "scripts").mkdir()
             shutil.copy2(ROOT / "bin/repo", root / "bin/repo")
             shutil.copy2(ROOT / "scripts/repo-check.sh", root / "scripts/repo-check.sh")
+            shutil.copy2(ROOT / "scripts/org2nix.sh", root / "scripts/org2nix.sh")
             probe = root / "scripts/current-home-profile"
             probe.write_text("#!/usr/bin/env bash\nprintf invoked > \"$FULL_MARKER\"\nprintf profile\n")
             probe.chmod(0o755)

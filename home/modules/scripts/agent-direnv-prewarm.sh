@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # agent-direnv-prewarm.sh — keep whitelisted agent roots' direnv envs prewarmed
 #
 # Purpose: agent shells (Kimi/Claude/Codex Bash tool) cannot run the
@@ -25,6 +26,13 @@
 
 set -u
 
+# Remote-builder NIX_CONFIG is owned by the host (devshell-prewarm.nix /
+# devshell-prewarm-nix-config on PATH). This user script only applies it when
+# that binary is already installed — never sources scripts from the /srv/infra
+# checkout.
+ENTER_BYTES=68719476736
+EXIT_BYTES=85899345920
+
 STATE_DIR="${AGENT_DIRENV_STATE:-$HOME/.cache/agent-direnv}"
 SNAPSHOT_MAX_AGE_S=86400
 EXPORT_TIMEOUT_S="${AGENT_DIRENV_EXPORT_TIMEOUT_S:-600}"
@@ -32,100 +40,124 @@ EXPORT_BUDGET_S="${AGENT_DIRENV_EXPORT_BUDGET_S:-1200}"
 # Same lock the devbox swarm runtime creates for direnv Nix evals.
 EVAL_LOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/jcode-nix-direnv-eval.lock"
 ROOTS=(
-  "/home/mhugo/code/jcode"
-  "/home/mhugo/code/singularity-engine"
-  "/srv/infra"
+	"/home/mhugo/code/jcode"
+	"/home/mhugo/code/singularity-engine"
+	"/srv/infra"
 )
 
 # Single-line fingerprint: entries space-joined, no trailing newline. Both
 # producer and consumer must build the string identically (or via $( ) so
 # trailing-newline stripping cannot diverge them).
 fingerprint() {
-  local root="$1"
-  local out=""
-  for f in .envrc flake.nix flake.lock; do
-    [ -e "$root/$f" ] && out="$out$(printf '%s %s ' "$f" "$(stat -c '%Y %s' "$root/$f")")"
-  done
-  printf '%s' "$out"
+	local root="$1"
+	local out=""
+	for f in .envrc flake.nix flake.lock; do
+		[ -e "$root/$f" ] && out="$out$(printf '%s %s ' "$f" "$(stat -c '%Y %s' "$root/$f")")"
+	done
+	printf '%s' "$out"
 }
 
 for root in "${ROOTS[@]}"; do
-  [ -d "$root" ] || { echo "prewarm: skip missing root $root" >&2; continue; }
-  hash=$(printf '%s' "$root" | sha256sum | cut -d' ' -f1)
-  dir="$STATE_DIR/$hash"
-  new_dir="$dir.new.$$"
+	[ -d "$root" ] || {
+		echo "prewarm: skip missing root $root" >&2
+		continue
+	}
+	hash=$(printf '%s' "$root" | sha256sum | cut -d' ' -f1)
+	dir="$STATE_DIR/$hash"
+	new_dir="$dir.new.$$"
 
-  # Skip-if-fresh: fingerprint match + non-empty env + younger than the cap.
-  # fingerprint line 3 is ISO-8601 (date -u +%FT%TZ), not epoch — parse it the
-  # same way direnv-agent does. Integer-comparing the ISO string fails with
-  # "integer expected" and the `|| fingerprint-match` branch always wins
-  # (2026-10-30).
-  #
-  # The fingerprint proves only that the CHECKOUT is unchanged since the last
-  # snapshot; it says nothing about whether the captured env is usable. An
-  # eval that lost the cold-eval lock race stamps the export with
-  # NIX_DIRENV_DID_FALLBACK=1, and that fallback dump must never be served
-  # as fresh (the header falsifier above). 2026-11-04: the 23:04 snapshot
-  # carried the fallback marker while every run to 09:57 said "fresh; skip".
-  current_fp=$(fingerprint "$root" || true)
-  if [ -s "$dir/env" ] && [ "$current_fp" = "$(sed '1d;$d' "$dir/fingerprint" 2>/dev/null || true)" ]; then
-    if grep -q "NIX_DIRENV_DID_FALLBACK" "$dir/env" 2>/dev/null; then
-      echo "prewarm: $root fingerprint-match but env is a fallback dump; re-hydrating" >&2
-    elif [ ! -e "$root/.direnv/flake-profile" ] && ! compgen -G "$root/.direnv/flake-profile-*" >/dev/null; then
-      echo "prewarm: $root fingerprint-match but nix-direnv profile missing; re-hydrating" >&2
-    else
-      gen_at=$(tail -n 1 "$dir/fingerprint" 2>/dev/null || echo 0)
-      gen_epoch=$(date -u -d "$gen_at" +%s 2>/dev/null || echo 0)
-      [ "$gen_epoch" -lt $(( $(date -u +%s) - SNAPSHOT_MAX_AGE_S )) ] || { echo "prewarm: $root fingerprint-match, env clean, within age; skip"; continue; }
-    fi
-  fi
+	# Skip-if-fresh: fingerprint match + non-empty env + younger than the cap.
+	# fingerprint line 3 is ISO-8601 (date -u +%FT%TZ), not epoch — parse it the
+	# same way direnv-agent does. Integer-comparing the ISO string fails with
+	# "integer expected" and the `|| fingerprint-match` branch always wins
+	# (2026-10-30).
+	#
+	# The fingerprint proves only that the CHECKOUT is unchanged since the last
+	# snapshot; it says nothing about whether the captured env is usable. An
+	# eval that lost the cold-eval lock race stamps the export with
+	# NIX_DIRENV_DID_FALLBACK=1, and that fallback dump must never be served
+	# as fresh (the header falsifier above). 2026-11-04: the 23:04 snapshot
+	# carried the fallback marker while every run to 09:57 said "fresh; skip".
+	current_fp=$(fingerprint "$root" || true)
+	if [ -s "$dir/env" ] && [ "$current_fp" = "$(sed '1d;$d' "$dir/fingerprint" 2>/dev/null || true)" ]; then
+		if grep -q "NIX_DIRENV_DID_FALLBACK" "$dir/env" 2>/dev/null; then
+			echo "prewarm: $root fingerprint-match but env is a fallback dump; re-hydrating" >&2
+		elif [ ! -e "$root/.direnv/flake-profile" ] && ! compgen -G "$root/.direnv/flake-profile-*" >/dev/null; then
+			echo "prewarm: $root fingerprint-match but nix-direnv profile missing; re-hydrating" >&2
+		else
+			gen_at=$(tail -n 1 "$dir/fingerprint" 2>/dev/null || echo 0)
+			gen_epoch=$(date -u -d "$gen_at" +%s 2>/dev/null || echo 0)
+			[ "$gen_epoch" -lt $(($(date -u +%s) - SNAPSHOT_MAX_AGE_S)) ] || {
+				echo "prewarm: $root fingerprint-match, env clean, within age; skip"
+				continue
+			}
+		fi
+	fi
 
-  prebuilt_helper="${HOME}/.dotfiles/shell/bash/agent-direnv-prebuilt-apply.sh"
-  if [ -f "$prebuilt_helper" ]; then
-    # shellcheck source=/dev/null
-    . "$prebuilt_helper"
-    if agent_direnv_prebuilt_write_snapshot "$root" "$new_dir"; then
-      rm -rf "$dir"
-      mv "$new_dir" "$dir"
-      echo "prewarm: hydrated $root from prebuilt direnv export -> $dir/env ($(wc -c <"$dir/env") bytes)"
-      continue
-    fi
-    rm -rf "$new_dir"
-    new_dir="$dir.new.$$"
-  fi
+	prebuilt_helper="${HOME}/.dotfiles/shell/bash/agent-direnv-prebuilt-apply.sh"
+	if [ -f "$prebuilt_helper" ]; then
+		# shellcheck source=/dev/null
+		. "$prebuilt_helper"
+		if agent_direnv_prebuilt_write_snapshot "$root" "$new_dir"; then
+			rm -rf "$dir"
+			mv "$new_dir" "$dir"
+			echo "prewarm: hydrated $root from prebuilt direnv export -> $dir/env ($(wc -c <"$dir/env") bytes)"
+			continue
+		fi
+		rm -rf "$new_dir"
+		new_dir="$dir.new.$$"
+	fi
 
-  # Export capture: retry under singleflight contention within the budget.
-  # Capture the export SCRIPT on stdout — never eval-inside-capture (env
-  # becomes shell state; stdout stays empty; the 2026-10-27 11:33 cycle
-  # swallowed every success exactly that way).
-  out=""
-  cycle_start=$(date +%s)
-  attempt=0
-  while :; do
-    attempt=$((attempt + 1))
-    elapsed=$(( $(date +%s) - cycle_start ))
-    echo "prewarm: export attempt $attempt for $root (${elapsed}s / ${EXPORT_BUDGET_S}s budget); waiting for eval lock (up to ${EXPORT_TIMEOUT_S}s)..." >&2
-    stderr_file="$(mktemp "${TMPDIR:-/tmp}/agent-direnv-prewarm.XXXXXX")"
-    out=$(
-      flock -w "$EXPORT_TIMEOUT_S" "$EVAL_LOCK" \
-        timeout "$EXPORT_TIMEOUT_S" bash -c "cd -- '$root' && DIRENV_LOG_FORMAT= direnv export bash" 2>"$stderr_file"
-    ) || out=""
-    if [ -s "$stderr_file" ]; then
-      sed 's/^/prewarm: direnv: /' "$stderr_file" >&2
-    fi
-    rm -f "$stderr_file"
-    [ -n "$out" ] && break
-    [ "$elapsed" -ge "$EXPORT_BUDGET_S" ] && break
-    echo "prewarm: export produced no script for $root; retry in 30s (lock contention or nix still evaluating)" >&2
-    sleep 30
-  done
-  [ -n "$out" ] || { echo "prewarm: export failed for $root after retries; keeping existing snapshot" >&2; continue; }
-  after=$(fingerprint "$root" || true)
+	# Export capture: retry under singleflight contention within the budget.
+	# Capture the export SCRIPT on stdout — never eval-inside-capture (env
+	# becomes shell state; stdout stays empty; the 2026-10-27 11:33 cycle
+	# swallowed every success exactly that way).
+	out=""
+	cycle_start=$(date +%s)
+	attempt=0
+	while :; do
+		attempt=$((attempt + 1))
+		elapsed=$(($(date +%s) - cycle_start))
+		echo "prewarm: export attempt $attempt for $root (${elapsed}s / ${EXPORT_BUDGET_S}s budget); waiting for eval lock (up to ${EXPORT_TIMEOUT_S}s)..." >&2
+		stderr_file="$(mktemp "${TMPDIR:-/tmp}/agent-direnv-prewarm.XXXXXX")"
+		out=$(
+			flock -w "$EXPORT_TIMEOUT_S" "$EVAL_LOCK" \
+				timeout "$EXPORT_TIMEOUT_S" bash -c "
+          set -euo pipefail
+          if command -v devshell-prewarm-nix-config >/dev/null 2>&1; then
+            # shellcheck disable=SC2091
+            eval \"\$(devshell-prewarm-nix-config export \
+              --repository='${root}' \
+              --min-free-bytes='${ENTER_BYTES}' \
+              --max-free-bytes='${EXIT_BYTES}')\"
+          fi
+          cd -- '${root}'
+          DIRENV_LOG_FORMAT= direnv export bash
+        " 2>"$stderr_file"
+		) || out=""
+		if [ -s "$stderr_file" ]; then
+			sed 's/^/prewarm: direnv: /' "$stderr_file" >&2
+		fi
+		rm -f "$stderr_file"
+		[ -n "$out" ] && break
+		[ "$elapsed" -ge "$EXPORT_BUDGET_S" ] && break
+		echo "prewarm: export produced no script for $root; retry in 30s (lock contention or nix still evaluating)" >&2
+		sleep 30
+	done
+	[ -n "$out" ] || {
+		echo "prewarm: export failed for $root after retries; keeping existing snapshot" >&2
+		continue
+	}
+	after=$(fingerprint "$root" || true)
 
-  mkdir -p "$new_dir"
-  printf '%s\n' "$out" > "$new_dir/env"
-  { printf '%s\n' "$root"; printf '%s\n' "$after"; date -u +%FT%TZ; } > "$new_dir/fingerprint"
-  rm -rf "$dir"
-  mv "$new_dir" "$dir"
-  echo "prewarm: refreshed $root -> $dir/env ($(printf '%s' "$out" | wc -c) bytes)"
+	mkdir -p "$new_dir"
+	printf '%s\n' "$out" >"$new_dir/env"
+	{
+		printf '%s\n' "$root"
+		printf '%s\n' "$after"
+		date -u +%FT%TZ
+	} >"$new_dir/fingerprint"
+	rm -rf "$dir"
+	mv "$new_dir" "$dir"
+	echo "prewarm: refreshed $root -> $dir/env ($(printf '%s' "$out" | wc -c) bytes)"
 done

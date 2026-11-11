@@ -22,10 +22,8 @@ mise = "latest"
 # package @openai/codex-linux-x64 vendors codex + codex-code-mode-host.
 "npm:@moonshot-ai/kimi-code" = "latest"
 "github:aaif-goose/goose" = "latest"
-# ACP adapter so goose can use Claude Code as provider `claude-acp`.
-"npm:@agentclientprotocol/claude-agent-acp" = "latest"
-# Qoder CLI is not in the mise registry; pin the OSS release tarball (http backend).
-"http:qodercli" = { version = "1.1.1", url = "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/1.1.1/qodercli-linux-x64.tar.gz", checksum = "sha256:21b60e3d0d9db9c35e5385c6d9523628e18735b7be5bbbc1a91996e4ed6a2b2a" }
+# Qoder CLI is not in the mise registry; follow the latest OSS release tarball.
+"http:qodercli" = "latest"
 "github:vinhnx/vtcode" = "latest"
 # Copilot CLI: unpinned (2026-10-24). The old "1.0.83 hook regression" pin was
 # a false premise — the installed binary was already 1.0.103, because copilot's
@@ -65,8 +63,8 @@ azure-cli = { version = "latest", uvx_args = "--prerelease=allow" }
 "pipx:b2" = "latest"
 # gogcli: renamed upstream from steipete/gogcli to openclaw/gogcli
 "go:github.com/openclaw/gogcli/cmd/gog" = "latest"
-ollama = "0.32.14"
-"github:tbillington/kondo" = "0.9"
+ollama = "latest"
+"github:tbillington/kondo" = "latest"
 # jcode: managed by CI deploy + auto-deploy timer (~/.jcode/server/jcode), not mise.
 
 [env]

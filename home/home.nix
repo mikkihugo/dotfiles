@@ -45,7 +45,6 @@ in {
     ./modules/git.nix
     ./modules/stable-shell.nix
     ./modules/reap-abandoned-searches.nix
-    ./modules/home-emergency-backup.nix
     ./modules/forgejo-token-file.nix
     ./modules/opencode-otel-ingest.nix
     ./modules/files.nix
@@ -57,7 +56,6 @@ in {
     ./modules/nix-index.nix
     ./modules/dotfiles-auto-update.nix
     ./modules/checkout-sync.nix
-    ./modules/codex-managed-daemon.nix
     ./modules/codex-thread-gc.nix
     ./modules/droid-remote-control.nix
     ./modules/sshid-key-sync.nix

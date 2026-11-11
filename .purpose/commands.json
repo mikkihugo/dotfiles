@@ -209,7 +209,7 @@
         "vcs",
         "land"
       ],
-      "description": "Verify and publish a clean task workspace as main",
+      "description": "Deprecated compatibility alias; use repo lane publish <name> [main]",
       "class": "vcs",
       "backend": {
         "kind": "executable",

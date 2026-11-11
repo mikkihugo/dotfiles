@@ -550,7 +550,15 @@ cat >"$tmp/jjstub/jj" <<'JJ_STUB'
 printf '%s\n' "$*" >>"$JJ_LOG"
 case "$*" in
 *' status'*) cat "$JJ_STATUS" ;;
-*' log '*) cat "$JJ_REVSET" ;;
+*' log '*)
+	# jj renders a commit id as a graph label ("○  <id>") unless --no-graph
+	# is given, and only the bare id is a revset `jj bookmark set -r` can
+	# parse. The stub reproduces that so dropping --no-graph fails here.
+	case "$*" in
+	*'--no-graph'*) cat "$JJ_REVSET" ;;
+	*) sed 's/^/○  /' "$JJ_REVSET" ;;
+	esac
+	;;
 esac
 exit 0
 JJ_STUB

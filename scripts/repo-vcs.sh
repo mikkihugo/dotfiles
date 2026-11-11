@@ -236,7 +236,10 @@ jj_publish_main_bookmark() {
 	local target
 	jj --repository "$root" status --no-pager | grep -Eq '^Working copy changes:' &&
 		die 'working copy has uncommitted changes; commit them first: repo vcs describe "<message>"'
-	target="$(jj --repository "$root" log --no-pager -r 'latest(main..@ & description("?*"))' -T 'commit_id' 2>/dev/null | head -1 || true)"
+	# --no-graph matters: with the graph, jj renders the id as a label
+	# ("○  245e945a…"), which `jj bookmark set -r` cannot parse as a revset.
+	# The template emits one newline-terminated bare id per commit.
+	target="$(jj --repository "$root" log --no-graph --no-pager -r 'latest(main..@ & description("?*"))' -T 'commit_id ++ "\n"' 2>/dev/null | head -1 || true)"
 	if [[ -n "$target" ]]; then
 		jj --repository "$root" bookmark set main -r "$target"
 	fi

@@ -90,6 +90,9 @@
       url = "github:Mic92/direnv-instant/1.3.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # centralcloud/infra: direnv export-shell guard (single-sourced wrapper).
+    infra.url = "path:/srv/infra";
   };
 
   outputs = {
@@ -103,9 +106,9 @@
     flake-utils,
     llm-agents,
     direnv-instant,
+    infra,
     ...
   }: let
-    direnvExportShellGuard = ./config/direnv/direnv-export-shell-guard.nix;
     specialArgs = {
       inherit sops-nix llm-agents direnv-instant engine-nixpkgs-pin;
     };
@@ -141,14 +144,13 @@
           # cc-se-sto-devbox-01 2026-10-27, reproducible 10/10).
           #
           # direnv 2.38.2 + export-shell guard (AIP-193-style CLI errors).
-          (_final: prev: let
-            direnvBase = (import nixpkgs-direnv {system = sys;}).direnv;
-          in {
+          (import ./flake/overlay.nix {
+            inherit infra nixpkgs-direnv;
+            system = sys;
+          })
+          (_final: prev: {
             ast-grep = nixpkgs-unstable.legacyPackages.${sys}.ast-grep;
             inherit (nixpkgs-unstable.legacyPackages.${sys}) ripgrep;
-            direnv = prev.callPackage direnvExportShellGuard {
-              direnv = direnvBase;
-            };
             inherit (import nixpkgs-jujutsu {system = sys;}) jujutsu;
             inherit (nixpkgs-unstable.legacyPackages.${sys}) mise;
             # vultr-cli 3.11.0: from nixpkgs-unstable so the Nix build serves

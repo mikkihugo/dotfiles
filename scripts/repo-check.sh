@@ -90,6 +90,28 @@ check_stage() {
 	printf 'stage %s: ok (%dms)\n' "$label" "$(($(date +%s%3N) - start))"
 }
 
+# repo-vcs push/check shells do not load direnv, so they would run `nix build` with
+# daemon defaults and pin the devbox. Admission matches .nix/direnv.sh (Engine
+# org cache + remote builders) and config/nix/local-build.nix.conf (max-jobs = 0).
+activate_org_nix_config_for_build() {
+	local engine_root=""
+	for engine_root in "${SE_ORG_NIX_CONFIG_ROOT:-}" "${HOME}/code/singularity-engine" "/home/mhugo/code/singularity-engine"; do
+		[[ -n "$engine_root" ]] || continue
+		[[ -f "$engine_root/nix/cache/org-nix-config.sh" ]] && break
+		engine_root=""
+	done
+	[[ -n "$engine_root" ]] || {
+		printf 'repo-check: missing Engine nix/cache/org-nix-config.sh (set SE_ORG_NIX_CONFIG_ROOT)\n' >&2
+		return 1
+	}
+	# shellcheck source=/dev/null
+	source "$engine_root/nix/cache/org-nix-config.sh"
+	SE_ORG_NIX_CONFIG_ROOT="$engine_root" se_org_nix_config_activate || return 1
+	export NIX_CONFIG="${NIX_CONFIG}
+max-jobs = 0
+"
+}
+
 stage_python_unit_tests() {
 	python3 "$root/scripts/test-repo-check-entry.py"
 	python3 "$root/scripts/test-codex-preferences.py"

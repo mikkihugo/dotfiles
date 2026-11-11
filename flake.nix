@@ -30,12 +30,14 @@
   };
 
   inputs = {
-    # NixOS 26.05 release branch: stable base for the user environment.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
-
-    # Fleet-canonical nixpkgs rev (Rust toolchain packages, Engine/jcode alignment).
-    # Bump only in Engine nix/toolchains/nixpkgs-pin; consumers follow nixpkgs.
-    engine-nixpkgs-pin.url = "git+ssh://git@git.centralcloud.net:2222/singularity/singularity-engine?dir=nix/toolchains/nixpkgs-pin";
+    # Fleet-canonical nixpkgs rev (Rust toolchain packages, Engine/jcode
+    # alignment). Engine's pin flake (nix/toolchains/nixpkgs-pin) was removed
+    # on 2026-11-11, so the rev it published now lives in Engine's own
+    # flake.nix nixpkgs input and in nix/toolchains/versions.json
+    # (`nixpkgs_rev`). This is that rev, pinned explicitly: no cross-repo
+    # flake input to go stale, no branch float, and the lock is
+    # reproducible. Bump it together with Engine's, then re-lock nixpkgs.
+    nixpkgs.url = "github:NixOS/nixpkgs/6fcc160353f63555b560f25588925133c8f61f2a";
 
     # Unstable provides selected tools that lag in nixos-26.05: mise and
     # ast-grep. Drop each override when the stable input meets its contract.
@@ -97,7 +99,6 @@
     nixpkgs-unstable,
     nixpkgs-jujutsu,
     nixpkgs-direnv,
-    engine-nixpkgs-pin,
     home-manager,
     sops-nix,
     flake-utils,
@@ -115,7 +116,7 @@
     direnvExportShellGuard = ./config/direnv/direnv-export-shell-guard.nix;
 
     specialArgs = {
-      inherit sops-nix llm-agents direnv-instant engine-nixpkgs-pin;
+      inherit sops-nix llm-agents direnv-instant;
     };
 
     # Single nixpkgs per system, shared across the outputs below. Re-using

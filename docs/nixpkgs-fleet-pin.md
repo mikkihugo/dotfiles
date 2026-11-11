@@ -5,40 +5,49 @@ used by Rust toolchain packages on devbox hosts (`cargo-subcommand-proxies`).
 
 ## Flake input
 
+The rev is pinned directly in this repo's own flake input:
+
 ```nix
-engine-nixpkgs-pin.url =
-  "git+ssh://git@git.centralcloud.net:2222/singularity/singularity-engine?dir=nix/toolchains/nixpkgs-pin";
+nixpkgs.url = "github:NixOS/nixpkgs/6fcc160353f63555b560f25588925133c8f61f2a";
 ```
 
-Home modules receive `engine-nixpkgs-pin` via `extraSpecialArgs` and import
-`legacyPackages.<system>.rustPackages_*` from that input—not a separate
-`nixpkgs-rust` URL.
+That rev is the one Engine publishes: it lives in Engine's `flake.nix` nixpkgs
+input and in Engine's `nix/toolchains/versions.json` (`nixpkgs_rev`). Dotfiles
+pins it by value instead of consuming a cross-repo flake, because Engine's
+separate pin flake (`nix/toolchains/nixpkgs-pin`) was removed on 2026-11-11.
+A cross-repo input meant another repo's release cycle decided when this repo
+could build — and, once that flake's lock entry had been written from a local
+worktree override, the lock pointed at a deleted path and every dotfiles
+activation build failed.
+
+Home modules use the dotfiles' own `pkgs` (no separate `nixpkgs-rust` URL):
+`cargo-subcommand-proxies` reads `pkgs.rustPackages_1_98`.
 
 ## Bump workflow
 
-1. Bump the pin in Engine only: see
-   [nix/toolchains/nixpkgs-pin/README.md](https://git.centralcloud.net/singularity/singularity-engine/src/branch/main/nix/toolchains/nixpkgs-pin/README.md)
-   (set `flake.nix` + `versions.json` `nixpkgs_rev`, lock the pin flake, then
-   lock Engine root).
+1. Bump the rev in Engine only: see
+   [nix/toolchains/versions.json](https://git.centralcloud.net/singularity/singularity-engine/src/branch/main/nix/toolchains/versions.json)
+   (`nixpkgs_rev`, plus Engine's own `flake.nix` nixpkgs input and lock).
 2. Refresh dotfiles lock:
-   `nix flake lock --update-input engine-nixpkgs-pin`
+   `nix flake lock --update-input nixpkgs`
 3. Apply on the host:
    `home-manager switch --flake .#cc-se-sto-devbox-01` (or your profile name).
 4. Optional fleet health (Engine): `repo prove nixpkgs-pin` / `bash scripts/se_nixpkgs_fleet_health.sh`.
 
-## Lock failure: pin not on Forgejo yet
+Keep the dotfiles `flake.nix` rev and Engine's `nixpkgs_rev` in step; they are
+the same revision by contract.
 
-If `git+ssh://…?dir=nix/toolchains/nixpkgs-pin` cannot lock (directory not on
-`main` yet), use a local Engine worktree override for evaluation only:
+## Locking from a working copy
+
+The lock must be written from the working copy, not from a bare `.` reference:
 
 ```bash
-nix flake lock \
-  --override-input engine-nixpkgs-pin \
-  /home/mhugo/code/worktrees/jj/singularity-engine/engine-nixpkgs-lock-20261012/nix/toolchains/nixpkgs-pin
+nix flake lock "path:$HOME/.dotfiles" --update-input nixpkgs
 ```
 
-Commit the resulting `flake.lock` only after the same pin path exists on Forgejo
-so other hosts can lock without overrides.
+A bare `.` resolves through the git fetcher, which only sees tracked files and
+fails while a new file (such as the vendored direnv guard) is still untracked.
+`path:` covers the whole tree.
 
 ## Scheduled apply (optional)
 
@@ -55,4 +64,4 @@ services.home-manager.autoUpgrade = {
 ```
 
 Use `--no-update-lock-file` so auto-upgrade applies the **committed** pin; pin
-bumps remain an explicit `nix flake lock --update-input engine-nixpkgs-pin` step.
+bumps remain an explicit `nix flake lock --update-input nixpkgs` step.

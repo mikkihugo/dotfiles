@@ -28,12 +28,18 @@
 {
   pkgs,
   lib,
-  engine-nixpkgs-pin,
   hostname ? "",
   ...
 }: let
-  rustPackages =
-    engine-nixpkgs-pin.inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.rustPackages_1_98;
+  # The Rust toolchain packages come from the dotfiles' own nixpkgs input,
+  # which is pinned to the fleet rev Engine publishes
+  # (Engine flake.nix nixpkgs input / nix/toolchains/versions.json
+  # `nixpkgs_rev`). They used to come from Engine's separate pin flake
+  # (`engine-nixpkgs-pin`), but that flake was removed on 2026-11-11 and its
+  # lock entry pointed at a deleted local worktree, which broke the whole
+  # dotfiles activation build. The rev is unchanged, so the packages are
+  # the same ones the pin flake exposed.
+  rustPackages = pkgs.rustPackages_1_98;
 in
   lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
     home.file = {

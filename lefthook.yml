@@ -27,5 +27,5 @@ pre-commit:
       run: typos --force-exclude {staged_files}
 
     detect-secrets:
-      exclude: \.secrets\.baseline$
+      exclude: '\.secrets\.baseline$|gomod2nix\.toml$'
       run: PYTHONDONTWRITEBYTECODE=1 detect-secrets-hook --baseline .secrets.baseline -f file://scripts/detect-secrets-work-packet-filter.py::is_purpose_work_packet_digest {staged_files}

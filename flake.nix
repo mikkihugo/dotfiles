@@ -39,6 +39,14 @@
     # reproducible. Bump it together with Engine's, then re-lock nixpkgs.
     nixpkgs.url = "github:NixOS/nixpkgs/6fcc160353f63555b560f25588925133c8f61f2a";
 
+    # gomod2nix: per-dependency Go builds (ADR-0097 *2nix doctrine). Used by
+    # home/modules/evalgate.nix; bump with nix flake update gomod2nix.
+    # follows the fleet nixpkgs so the builder cannot skew from the toolchain.
+    gomod2nix = {
+      url = "github:nix-community/gomod2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Unstable provides selected tools that lag in nixos-26.05: mise and
     # ast-grep. Drop each override when the stable input meets its contract.
     # jujutsu is not on this input. A channel update must not move it.
@@ -99,6 +107,7 @@
     nixpkgs-unstable,
     nixpkgs-jujutsu,
     nixpkgs-direnv,
+    gomod2nix,
     home-manager,
     sops-nix,
     flake-utils,
@@ -154,6 +163,8 @@
             inherit direnvExportShellGuard nixpkgs-direnv;
             system = sys;
           })
+          # gomod2nix builder for Go tooling (evalgate).
+          gomod2nix.overlays.default
           (_final: prev: {
             ast-grep = nixpkgs-unstable.legacyPackages.${sys}.ast-grep;
             inherit (nixpkgs-unstable.legacyPackages.${sys}) ripgrep;

@@ -54,6 +54,39 @@ if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
 			_direnv_unguarded_nix "$@"
 		fi
 	}
+	# death row — remove fallback once evalgate is on PATH fleet-wide (target 2026-11-20)
+	_direnv_lock_run() {
+		local lock=$1
+		shift
+		if [[ -n ${EVALGATE_BIN:-} && -x ${EVALGATE_BIN} ]]; then
+			"$EVALGATE_BIN" -lock "$lock" -wait 15m -hold 15m run -- "$@"
+		elif command -v evalgate >/dev/null 2>&1; then
+			evalgate -lock "$lock" -wait 15m -hold 15m run -- "$@"
+		else
+			flock -w 15m "$lock" -- "$@"
+		fi
+	}
+	_direnv_eval_slots() {
+		local lock_dir=$1 slots=$2 wait_s=$3 notice_s=$4
+		shift 4
+		local slot rc told="" deadline=$((SECONDS + wait_s)) notice=$((SECONDS + notice_s))
+		while :; do
+			for ((slot = 0; slot < slots; slot++)); do
+				_direnv_lock_run "$lock_dir/slot-$slot.lock" _direnv_bounded_nix "${DIRENV_NIX_EVAL_TIMEOUT:-900}" "$@"
+				rc=$?
+				[[ $rc -ne 75 ]] && return "$rc"
+			done
+			if [[ -z $told ]] && ((SECONDS >= notice)); then
+				log_status "queued: all $slots nix eval slots are busy. Please be patient; waiting up to ${wait_s}s, then using the cached environment"
+				told=1
+			fi
+			if ((SECONDS >= deadline)); then
+				log_status "all $slots nix eval slots busy for ${wait_s}s; using the cached environment"
+				return 1
+			fi
+			sleep 1
+		done
+	}
 	_nix() {
 		if [[ " $* " != *" print-dev-env "* ]]; then
 			_direnv_bounded_nix "${DIRENV_NIX_CALL_TIMEOUT:-120}" "$@"
@@ -61,42 +94,17 @@ if declare -F _nix >/dev/null && command -v flock >/dev/null 2>&1; then
 		fi
 		local lock_dir="${XDG_RUNTIME_DIR:-/tmp}/direnv-nix-eval"
 		local slots="${DIRENV_NIX_EVAL_SLOTS:-4}" wait_s="${DIRENV_NIX_EVAL_WAIT:-300}"
-		local notice_s="${DIRENV_NIX_EVAL_NOTICE:-10}" told=""
-		local root_key slot rc root_fd slot_fd
+		local notice_s="${DIRENV_NIX_EVAL_NOTICE:-10}" root_key rc
 		mkdir -p "$lock_dir" 2>/dev/null || {
 			_direnv_bounded_nix "${DIRENV_NIX_EVAL_TIMEOUT:-900}" "$@"
 			return
 		}
 		root_key=$(printf '%s' "$PWD" | cksum | cut -d' ' -f1)
-		exec {root_fd}>"$lock_dir/root-$root_key.lock"
-		if ! flock -n "$root_fd"; then
-			exec {root_fd}>&-
-			log_status "nix eval for $PWD already running; using the cached environment"
-			return 1
-		fi
-		local deadline=$((SECONDS + wait_s)) notice=$((SECONDS + notice_s))
-		while :; do
-			for ((slot = 0; slot < slots; slot++)); do
-				exec {slot_fd}>"$lock_dir/slot-$slot.lock"
-				if flock -n "$slot_fd"; then
-					_direnv_bounded_nix "${DIRENV_NIX_EVAL_TIMEOUT:-900}" "$@"
-					rc=$?
-					exec {slot_fd}>&- {root_fd}>&-
-					return "$rc"
-				fi
-				exec {slot_fd}>&-
-			done
-			if [[ -z $told ]] && ((SECONDS >= notice)); then
-				log_status "queued: all $slots nix eval slots are busy. Please be patient; waiting up to ${wait_s}s, then using the cached environment"
-				told=1
-			fi
-			if ((SECONDS >= deadline)); then
-				exec {root_fd}>&-
-				log_status "all $slots nix eval slots busy for ${wait_s}s; using the cached environment"
-				return 1
-			fi
-			sleep 1
-		done
+		export -f _direnv_bounded_nix _direnv_lock_run _direnv_eval_slots log_status
+		_direnv_lock_run "$lock_dir/root-$root_key.lock" bash -c '_direnv_eval_slots "$1" "$2" "$3" "$4" "${@:5}"' bash "$lock_dir" "$slots" "$wait_s" "$notice_s" "$@"
+		rc=$?
+		[[ $rc -eq 75 ]] && log_status "nix eval for $PWD already running; using the cached environment"
+		return "$rc"
 	}
 fi
 

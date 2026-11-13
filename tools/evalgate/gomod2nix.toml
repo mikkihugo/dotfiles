@@ -1,0 +1,10 @@
+schema = 3
+
+[mod]
+  [mod.'github.com/gofrs/flock']
+    version = 'v0.13.2'
+    hash = 'sha256-g+hsU7IRIavPUXe7EdoATSCIUZTGg1ZJRo/Wamzc2rk='
+
+  [mod.'golang.org/x/sys']
+    version = 'v0.49.0'
+    hash = 'sha256-/1S3yy3in72ygZT1CKymvOzJZqCMYiGSqZDfvSyB3LI='

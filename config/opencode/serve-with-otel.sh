@@ -34,15 +34,23 @@ fi
 LOCK_DIR="${XDG_RUNTIME_DIR:-/tmp}"
 LOCK_FILE="${LOCK_DIR}/opencode-serve.lock"
 mkdir -p "$LOCK_DIR"
-exec 9>"$LOCK_FILE"
-if ! flock -n 9; then
-	echo "serve-with-otel: another opencode serve --service holds ${LOCK_FILE}; not starting a duplicate" >&2
-	exit 0
-fi
 
 pnpm_opencode="${HOME}/.local/share/pnpm/bin/opencode"
 if [ ! -x "$pnpm_opencode" ]; then
 	echo "serve-with-otel: pnpm-managed opencode not found at ${pnpm_opencode}" >&2
 	exit 127
 fi
-exec "$pnpm_opencode" "$@"
+
+EVALGATE_ERR=$(mktemp)
+trap 'rm -f "$EVALGATE_ERR"' EXIT
+set +e
+evalgate -lock "$LOCK_FILE" -wait 1s -hold 15m run -- "$pnpm_opencode" "$@" 2>"$EVALGATE_ERR"
+status=$?
+set -e
+if [ "$status" -eq 75 ]; then
+	echo "serve-with-otel: another opencode serve --service holds ${LOCK_FILE}; not starting a duplicate" >&2
+	cat "$EVALGATE_ERR" >&2
+else
+	cat "$EVALGATE_ERR" >&2
+fi
+exit "$status"

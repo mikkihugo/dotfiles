@@ -95,11 +95,15 @@ test("Home Manager activation does not launch emergency backup jobs", async () =
 test("mutable home sweeps serialize and report bounded lock failures", async () => {
   const emergencyBackup = await source("home/modules/home-emergency-backup.nix");
   assert.match(emergencyBackup, /home-mutable-workspace-sweep\.lock/);
-  assert.match(emergencyBackup, /flock --exclusive --wait/);
+  assert.match(
+    emergencyBackup,
+    /evalgate -lock "\$lock" -wait 43200 -hold 21600 run --/,
+    "sweep must run under evalgate with bounded wait and bounded hold (flock holders were unbounded — 2026-11-13 outage)",
+  );
   assert.doesNotMatch(
     emergencyBackup,
-    /--wait\s+\d+[hms]/,
-    "flock --wait only accepts integer seconds; time suffixes like 12h are invalid and silently break service startup",
+    /flock\s+(--|-)/,
+    "flock command usage was replaced by evalgate; no flock invocation may remain in the sweep",
   );
   assert.match(emergencyBackup, /mutable sweep lock unavailable/);
 });

@@ -25,8 +25,12 @@
       "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
     ];
     accept-flake-config = true;
-    fallback = true;
-    connect-timeout = 5;
+    # The host's Nix settings are owned by /srv/infra (GitOps owns the host),
+    # not by dotfiles: hosts/cc-se-sto-devbox-01/etc/nixos/configuration.nix
+    # sets fallback=false, the remote builder set, and the bounded timeouts.
+    # `fallback = true` here re-enabled LOCAL builds whenever a builder was
+    # unreachable, which is what wedged this host on 2026-11-16.
+    connect-timeout = 30;
   };
 
   inputs = {

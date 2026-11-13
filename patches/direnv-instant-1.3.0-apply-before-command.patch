@@ -1,0 +1,155 @@
+diff --git a/hooks/bash.sh b/hooks/bash.sh
+index 768b595..2b70d15 100644
+--- a/hooks/bash.sh
++++ b/hooks/bash.sh
+@@ -6,6 +6,64 @@
+ __DIRENV_INSTANT_ENV_FILE=""
+ __DIRENV_INSTANT_STDERR_FILE=""
+ 
++# Apply the cached environment file synchronously, if there is one.
++#
++# The daemon applies the environment asynchronously: it evaluates `direnv
++# export` in the background and signals the shell (SIGUSR1) once the result is
++# ready. Between `direnv-instant start` and that signal the shell still holds
++# the OLD environment, so the first command typed after a directory change
++# runs against a stale environment -- the command that matters most is the one
++# the user typed to leave the directory in the first place.
++#
++# The barrier closes that window: `direnv-instant start` exports
++# DIRENV_INSTANT_PENDING=1, and the DEBUG trap below applies the cached
++# environment file (if the daemon has already published one) and clears the
++# flag before the command runs. Prompt latency is unchanged -- the trap only
++# reads a file that already exists; it never evaluates anything itself.
++_direnv_instant_apply_cached() {
++  if [[ -n $__DIRENV_INSTANT_ENV_FILE ]] && [[ -f $__DIRENV_INSTANT_ENV_FILE ]]; then
++    eval "$(<"$__DIRENV_INSTANT_ENV_FILE")"
++  fi
++}
++
++# Apply-before-command barrier.
++#
++# bash's DEBUG trap fires before every simple command, which is the only hook
++# point that runs AFTER the user pressed Enter but BEFORE the command
++# executes. PROMPT_COMMAND is too early (it runs before the prompt is drawn,
++# i.e. before the user has typed anything), so it cannot serve as the barrier.
++#
++# `set -o functrace` is required for the DEBUG trap to be inherited by shell
++# functions; without it the trap only fires for simple commands, which is
++# enough for the barrier but not for commands wrapped in a function.
++_direnv_instant_barrier() {
++  # Only the top-level command of a submission needs the barrier; a nested
++  # command already ran inside an applied environment.
++  [[ -n ${DIRENV_INSTANT_PENDING:-} ]] || return 0
++
++  # The DEBUG trap fires between EVERY command, including the commands inside
++  # `eval "$(direnv-instant start)"`. The flag and the env-file path arrive as
++  # separate export statements, so the barrier can fire after the flag but
++  # before the path -- it would then clear the flag without applying
++  # anything, and the environment would stay stale forever.
++  #
++  # The guard makes the barrier a no-op while the hook's own eval is in
++  # flight: _direnv_hook sets it around the eval, so the barrier first runs
++  # on the user's command, with the flag and the path both in place.
++  [[ -z ${_DIRENV_INSTANT_BARRIER_BUSY:-} ]] || return 0
++
++  # Do not re-enter while applying: `eval` inside the trap would otherwise
++  # trigger the trap again.
++  _DIRENV_INSTANT_BARRIER_BUSY=1
++  unset DIRENV_INSTANT_PENDING
++
++  # The daemon may not have published the environment yet. If the cached file
++  # is missing there is nothing to apply; the pending flag is cleared anyway
++  # so a later SIGUSR1 is the only thing that changes the environment.
++  _direnv_instant_apply_cached
++  unset _DIRENV_INSTANT_BARRIER_BUSY
++}
++
+ # SIGUSR1 handler - loads environment when signaled by Rust daemon
+ _direnv_handler() {
+   # Display stderr output if available
+@@ -27,6 +85,22 @@ _direnv_handler() {
+ _direnv_hook() {
+   export DIRENV_INSTANT_SHELL_PID=$$
+ 
++  # Capture the caller's PATH before anything can replace it.
++  #
++  # The daemon evaluates `direnv export` in a background child. That child
++  # inherits the daemon's environment, which is the PATH the shell had when
++  # the daemon was FIRST started -- potentially minutes and many directory
++  # changes ago, and possibly containing repository-local stubs (an
++  # `agent-vcs-refuse` shim, a worktree bin/ directory, a lane's tool
++  # directory). `direnv export` emits an absolute PATH snapshot, so whatever
++  # the child saw is what every later shell gets applied.
++  #
++  # Publishing the caller's PATH here and handing it to the daemon lets the
++  # `direnv export` child run on a stub-free PATH. The stubs must not leak
++  # into the repository environment: they are per-checkout tools that are
++  # meaningful only inside their own checkout.
++  export DIRENV_INSTANT_CALLER_PATH="$PATH"
++
+   # Load cached environment immediately if available and caching is enabled
+   if [[ ${DIRENV_INSTANT_USE_CACHE:-1} == 1 ]] && [[ -n $__DIRENV_INSTANT_ENV_FILE ]] && [[ -f $__DIRENV_INSTANT_ENV_FILE ]]; then
+     eval "$(<"$__DIRENV_INSTANT_ENV_FILE")"
+@@ -34,7 +108,11 @@ _direnv_hook() {
+ 
+   local previous_exit_status=$?;
+   trap -- '' SIGINT;
++  # The barrier must not fire between the export statements of `start`'s
++  # output; see _direnv_instant_barrier.
++  _DIRENV_INSTANT_BARRIER_BUSY=1
+   eval "$(direnv-instant start)"
++  unset _DIRENV_INSTANT_BARRIER_BUSY
+   trap - SIGINT;
+   return $previous_exit_status;
+ }
+@@ -54,6 +132,13 @@ if [[ -z ${__DIRENV_INSTANT_HOOKED} ]]; then
+   # Set up exit handler
+   trap '_direnv_exit_cleanup' EXIT
+ 
++  # Set up the apply-before-command barrier. The DEBUG trap is armed
++  # unconditionally: the barrier itself is a no-op unless
++  # DIRENV_INSTANT_PENDING is set, which only happens while an asynchronous
++  # apply is in flight.
++  set -o functrace 2>/dev/null || true
++  trap '_direnv_instant_barrier' DEBUG
++
+   # Register bash PROMPT_COMMAND hook
+   if [[ ";${PROMPT_COMMAND[*]:-};" != *";_direnv_hook;"* ]]; then
+     if [[ "$(declare -p PROMPT_COMMAND 2>&1)" == "declare -a"* ]]; then
+diff --git a/src/commands/start.rs b/src/commands/start.rs
+index 8f5bd0e..fb1ac4f 100644
+--- a/src/commands/start.rs
++++ b/src/commands/start.rs
+@@ -73,11 +73,32 @@ pub fn run() {
+         &ctx.stderr_file.display().to_string(),
+     );
+ 
++
+     // Check if daemon is already running
+     if ctx.socket_path.exists() && notify_daemon(&ctx.socket_path, parent_pid) {
+         return;
+     }
+ 
++    // Mark the environment as pending.
++    //
++    // The daemon applies the new environment asynchronously: it evaluates
++    // `direnv export` in the background and signals this shell (SIGUSR1) once
++    // the result is ready. Until that signal arrives the shell still holds the
++    // previous environment, so the first command typed after the directory
++    // change would run against a stale environment.
++    //
++    // DIRENV_INSTANT_PENDING tells the shell hook's apply-before-command
++    // barrier to apply the cached environment file (when the daemon has
++    // already published one) before that command runs. The barrier clears the
++    // flag, so it only ever fires once per pending apply.
++    //
++    // This export comes LAST on purpose. The hook evaluates this output as a
++    // sequence of shell statements, and the barrier fires between them: a
++    // pending flag emitted before the env-file path would let the barrier
++    // clear the flag before it knew which file to apply, and the environment
++    // would stay stale for the rest of the session.
++    shell.export_var("DIRENV_INSTANT_PENDING", "1");
++
+     start_daemon(direnv, ctx);
+ }
+ 

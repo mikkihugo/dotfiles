@@ -103,6 +103,88 @@ _agent_direnv_prebuilt_newest_dump_for_repo() {
 	printf '%s\n' "$best_dump"
 }
 
+# direnv-instant's cached environment file, when one exists for this root.
+#
+# direnv-instant runs `direnv export` in a background daemon and caches the
+# result at $XDG_CACHE_HOME/direnv-instant/<hash>/env. The <hash> is a Rust
+# DefaultHasher over the .envrc directory, and DefaultHasher's output is not
+# stable across Rust releases, so the shell side cannot recompute it. The
+# reliable source is the path the shell hook already exports:
+# __DIRENV_INSTANT_ENV_FILE.
+#
+# When that variable is absent (a non-interactive agent shell that never ran
+# the interactive hook), fall back to scanning the runtime directories for the
+# newest env file whose repository still owns a .envrc. The scan is bounded to
+# the runtime directories and never evaluates a file it cannot attribute.
+_direnv_instant_cached_env() {
+	local root="$1"
+	local candidate env_file newest=0 newest_file=
+	local -a candidates=()
+
+	[ -n "$root" ] || return 1
+
+	# Preferred: the path the interactive hook exported.
+	if [ -n "${__DIRENV_INSTANT_ENV_FILE:-}" ] &&
+		[ -f "$__DIRENV_INSTANT_ENV_FILE" ] &&
+		[ -r "$__DIRENV_INSTANT_ENV_FILE" ]; then
+		printf '%s\n' "$__DIRENV_INSTANT_ENV_FILE"
+		return 0
+	fi
+
+	# Fallback: newest env file under the direnv-instant runtime dirs whose
+	# .envrc is still present. `find` instead of a glob: an unmatched glob
+	# aborts under zsh nomatch.
+	local cache_base="${XDG_CACHE_HOME:-$HOME/.cache}"
+	find "$cache_base/direnv-instant" -mindepth 2 -maxdepth 2 -name env -type f \
+		-print 2>/dev/null | while IFS= read -r candidate; do
+		[ -f "$candidate" ] && [ -r "$candidate" ] || continue
+		printf '%s\n' "$candidate"
+	done >"${TMPDIR:-/tmp}/.agent-direnv-instant-candidates.$$" 2>/dev/null || true
+
+	while IFS= read -r env_file; do
+		[ -n "$env_file" ] || continue
+		[ -f "$env_file" ] && [ -r "$env_file" ] || continue
+		candidates+=("$env_file")
+	done <"${TMPDIR:-/tmp}/.agent-direnv-instant-candidates.$$"
+	rm -f -- "${TMPDIR:-/tmp}/.agent-direnv-instant-candidates.$$"
+
+	[ "${#candidates[@]}" -gt 0 ] || return 1
+	for candidate in "${candidates[@]}"; do
+		local mtime
+		mtime="$(stat -c %Y -- "$candidate" 2>/dev/null || printf '0')"
+		if [ "$mtime" -gt "$newest" ]; then
+			newest="$mtime"
+			newest_file="$candidate"
+		fi
+	done
+	[ -n "$newest_file" ] || return 1
+	printf '%s\n' "$newest_file"
+}
+
+# Apply direnv-instant's cached environment file as the prebuilt source.
+#
+# Precedence: direnv-instant's cache first (it is the live, continuously
+# refreshed source), then the host-published prebuilt dumps below. The cached
+# file is a plain `direnv export` dump, so it is sourced the same way and
+# gets the same DIRENV_DIFF/DIRENV_WATCHES stripping.
+agent_direnv_prebuilt_try_direnv_instant() {
+	local root="$1"
+	local env_file
+
+	[ -n "${BASH_VERSION:-}" ] || return 1
+	[ -n "$root" ] || return 1
+	env_file="$(_direnv_instant_cached_env "$root")" || return 1
+	[ -f "$env_file" ] && [ -r "$env_file" ] || return 1
+
+	# Never source a file that is not a regular, non-symlink dump.
+	[ ! -L "$env_file" ] || return 1
+
+	# shellcheck disable=SC1090
+	. "$env_file" 2>/dev/null || return 1
+	unset DIRENV_DIFF DIRENV_WATCHES
+	return 0
+}
+
 agent_direnv_prebuilt_try_apply() {
 	local root="${1:-$PWD}"
 	local repo consumer_kind identity_root apply_dump
@@ -114,6 +196,15 @@ agent_direnv_prebuilt_try_apply() {
 
 	[ -n "${BASH_VERSION:-}" ] || return 1
 	identity_root="$root"
+
+	# direnv-instant's own cached environment file is the live source: the
+	# daemon refreshes it continuously, and it exists for every repository with
+	# an .envrc -- including ones this function does not know about. Try it
+	# before the host-published dumps, which are a per-repo fallback.
+	if agent_direnv_prebuilt_try_direnv_instant "$root"; then
+		return 0
+	fi
+
 	case "$root" in
 	/home/mhugo/code/jcode) repo=jcode; consumer_kind=canonical ;;
 	/home/mhugo/code/singularity-engine) repo=singularity-engine; consumer_kind=canonical ;;

@@ -501,10 +501,31 @@ in {
       # Upstream 1.3.0 falls back to synchronous direnv outside tmux and other
       # supported multiplexers. This host also uses plain terminals, where that
       # fallback recreates the prompt stall this integration exists to remove.
+      #
+      # Three further patches, each a small upstreamable diff against the
+      # pinned 1.3.0 input (rev dc2f615c):
+      #   apply-before-command  -- the async apply leaves a window in which the
+      #                             first command after a directory change runs
+      #                             against the OLD environment. The barrier
+      #                             applies the cached environment file before
+      #                             that command runs.
+      #   caller-path-restore   -- the daemon's `direnv export` child inherited
+      #                             the daemon's PATH, so repository-local stubs
+      #                             (agent-vcs-refuse and friends) leaked into
+      #                             the environment of unrelated repositories.
+      #   status-subcommand     -- `direnv-instant status` reports
+      #                             pending/applied/stale and the cached
+      #                             environment file's mtime, so the async
+      #                             apply is observable without a pane.
       package = direnv-instant.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: {
         patches =
           (old.patches or [])
-          ++ [../../patches/direnv-instant-async-without-multiplexer.patch];
+          ++ [
+            ../../patches/direnv-instant-async-without-multiplexer.patch
+            ../../patches/direnv-instant-1.3.0-apply-before-command.patch
+            ../../patches/direnv-instant-1.3.0-caller-path-restore.patch
+            ../../patches/direnv-instant-1.3.0-status-subcommand.patch
+          ];
       });
       enableBashIntegration = true;
       enableZshIntegration = true;

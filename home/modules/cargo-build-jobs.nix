@@ -99,11 +99,17 @@
   ...
 }:
 lib.mkIf (lib.toLower hostname == "cc-se-sto-devbox-01") {
-  # nproc - 8 (= 8 on this 16-core host).
-  home.sessionVariables.CARGO_BUILD_JOBS = "-8";
+  # FIXED low cap, not nproc-relative. The "-8" form was measured against a
+  # 16-core host; this box has 32 cores, so -8 yields 24 parallel rustc jobs
+  # and re-creates the oversubscription the cap exists to prevent (measured
+  # 2026-11-16: load average 63-105 on 32 CPUs, root disk at 98%, nix-daemon
+  # workers wedged in D-state). A local build is a DEBUGGING AID here, not a
+  # build path — the build path is the remote builder pool — so the local
+  # ceiling should be small enough to never be the reason the host stalls.
+  home.sessionVariables.CARGO_BUILD_JOBS = "4";
   # Builds started from user services (jcode-server and friends) do not
   # inherit a login shell, so declare the same bound there.
-  systemd.user.sessionVariables.CARGO_BUILD_JOBS = "-8";
+  systemd.user.sessionVariables.CARGO_BUILD_JOBS = "4";
 
   home.packages = [
     (pkgs.writeShellApplication {

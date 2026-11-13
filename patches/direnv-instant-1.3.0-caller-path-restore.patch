@@ -1,0 +1,129 @@
+diff --git a/hooks/bash.sh b/hooks/bash.sh
+index 2b70d15..8230306 100644
+--- a/hooks/bash.sh
++++ b/hooks/bash.sh
+@@ -81,9 +81,28 @@ _direnv_handler() {
+   fi
+ }
+ 
++# Capture the caller's PATH before anything can replace it.
++#
++# The daemon evaluates `direnv export` in a background child. That child
++# inherits the daemon's environment, which is the PATH the shell had when the
++# daemon was FIRST started -- potentially minutes and many directory changes
++# ago, and possibly containing repository-local stubs (an `agent-vcs-refuse`
++# shim, a worktree bin/ directory, a lane's tool directory). `direnv export`
++# emits an absolute PATH snapshot, so whatever the child saw is what every
++# later shell gets applied.
++#
++# Publishing the caller's PATH here and handing it to the daemon lets the
++# `direnv export` child run on a stub-free PATH. The stubs must not leak into
++# the repository environment: they are per-checkout tools that are meaningful
++# only inside their own checkout.
++_direnv_instant_capture_caller_path() {
++  export DIRENV_INSTANT_CALLER_PATH="$PATH"
++}
++
+ # Main hook called on directory changes and prompts
+ _direnv_hook() {
+   export DIRENV_INSTANT_SHELL_PID=$$
++  _direnv_instant_capture_caller_path
+ 
+   # Capture the caller's PATH before anything can replace it.
+   #
+diff --git a/src/daemon.rs b/src/daemon.rs
+index ebbacea..89624bc 100644
+--- a/src/daemon.rs
++++ b/src/daemon.rs
+@@ -32,6 +32,10 @@ const PTY_WINSIZE: Winsize = Winsize {
+     ws_ypixel: 0,
+ };
+ 
++/// Environment variable carrying the PATH of the shell that started the
++/// daemon. The shell hook sets it before invoking `direnv-instant start`.
++pub const CALLER_PATH_ENV: &str = "DIRENV_INSTANT_CALLER_PATH";
++
+ pub fn get_runtime_dir(envrc_dir: &Path) -> PathBuf {
+     let mut hasher = DefaultHasher::new();
+     envrc_dir.hash(&mut hasher);
+@@ -81,6 +85,17 @@ pub struct DaemonContext {
+     pub temp_stderr: PathBuf,
+     pub multiplexer: Option<Multiplexer>,
+     pub shell: Shell,
++    /// PATH of the shell that started this daemon, captured at hook time.
++    ///
++    /// The `direnv export` child must run on this PATH, not on the daemon's own
++    /// inherited PATH. The daemon outlives the directory it was started in, so
++    /// its PATH may still contain repository-local stubs from that checkout
++    /// (an `agent-vcs-refuse` shim, a lane's `bin/` directory). `direnv
++    /// export` emits an absolute PATH snapshot, so the child's PATH becomes
++    /// the PATH every later shell applies -- the stub leaks into unrelated
++    /// repositories. Restoring the caller's PATH for the child keeps
++    /// per-checkout tools inside their checkout.
++    pub caller_path: Option<String>,
+ }
+ 
+ impl DaemonContext {
+@@ -104,6 +119,7 @@ impl DaemonContext {
+             runtime_dir,
+             multiplexer: Multiplexer::detect(),
+             shell,
++            caller_path: env::var(CALLER_PATH_ENV).ok().filter(|p| !p.is_empty()),
+         })
+     }
+ 
+@@ -200,6 +216,27 @@ pub fn direnv_export_command(direnv_cmd: &str, shell: Shell) -> Command {
+     cmd
+ }
+ 
++/// Build the `direnv export` command for the background child, running it on
++/// the caller's PATH.
++///
++/// `direnv export` emits an absolute PATH snapshot of the environment it ran
++/// in, so the child's PATH is what every later shell receives. Running the
++/// child on the daemon's own inherited PATH would freeze whatever the daemon
++/// saw when it started -- including repository-local stubs that must not leak
++/// into other repositories. When the caller published a PATH, the child runs
++/// on exactly that; otherwise the inherited PATH is kept.
++pub fn direnv_export_command_with_path(
++    direnv_cmd: &str,
++    shell: Shell,
++    caller_path: Option<&str>,
++) -> Command {
++    let mut cmd = direnv_export_command(direnv_cmd, shell);
++    if let Some(path) = caller_path.filter(|p| !p.is_empty()) {
++        cmd.env("PATH", path);
++    }
++    cmd
++}
++
+ fn handle_socket_commands(
+     listener: UnixListener,
+     notify_pids: Arc<Mutex<Vec<i32>>>,
+@@ -292,7 +329,9 @@ fn run_direnv(direnv_cmd: &str, ctx: &mut DaemonContext) {
+         Ok(ForkptyResult::Parent { child, master }) => {
+             parent_process(child, master, notify_pids, ctx, should_stop, pty_master)
+         }
+-        Ok(ForkptyResult::Child) => child_process(direnv_cmd, &ctx.temp_file, ctx.shell),
++        Ok(ForkptyResult::Child) => {
++            child_process(direnv_cmd, &ctx.temp_file, ctx.shell, ctx.caller_path.as_deref())
++        }
+         Err(e) => {
+             eprintln!("direnv-instant: forkpty failed: {}", e);
+             std::process::exit(1);
+@@ -300,8 +339,13 @@ fn run_direnv(direnv_cmd: &str, ctx: &mut DaemonContext) {
+     }
+ }
+ 
+-fn child_process(direnv_cmd: &str, temp_file: &Path, shell: Shell) -> ! {
+-    let mut command = direnv_export_command(direnv_cmd, shell);
++fn child_process(
++    direnv_cmd: &str,
++    temp_file: &Path,
++    shell: Shell,
++    caller_path: Option<&str>,
++) -> ! {
++    let mut command = direnv_export_command_with_path(direnv_cmd, shell, caller_path);
+ 
+     // Set up stdout redirection - if this fails, write error to stderr (PTY)
+     let stdout_file = match File::create(temp_file) {

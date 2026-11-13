@@ -1,0 +1,163 @@
+diff --git a/src/commands/mod.rs b/src/commands/mod.rs
+index 5279b37..ebd64e7 100644
+--- a/src/commands/mod.rs
++++ b/src/commands/mod.rs
+@@ -1,4 +1,5 @@
+ pub mod hook;
+ pub mod start;
++pub mod status;
+ pub mod stop;
+ pub mod watch;
+diff --git a/src/commands/status.rs b/src/commands/status.rs
+new file mode 100644
+index 0000000..5de5825
+--- /dev/null
++++ b/src/commands/status.rs
+@@ -0,0 +1,110 @@
++use crate::daemon::get_runtime_dir;
++use std::env;
++use std::path::PathBuf;
++use std::time::SystemTime;
++
++/// Print the state of the pending environment apply.
++///
++/// The asynchronous apply is invisible from the outside: the daemon evaluates
++/// `direnv export` in the background and signals the shell when the result is
++/// ready. Until then the shell holds the OLD environment, and the only way to
++/// tell "the environment is still being computed" from "the environment is
++/// current" is to look at the daemon's runtime directory.
++///
++/// Output contract (one `key=value` per line, stable keys):
++///
++///   pending=<yes|no>       an asynchronous apply is in flight
++///   applied=<yes|no>       a cached environment file exists
++///   stale=<yes|no>         the cached environment file is older than the
++///                          repository's .envrc
++///   env_file=<path>        path of the cached environment file
++///   env_mtime=<unix|->     mtime of the cached environment file
++///   envrc=<path>           the repository root the environment belongs to
++///
++/// `pending` reflects the shell-side barrier flag: the shell hook sets
++/// DIRENV_INSTANT_PENDING when an apply starts and clears it once the
++/// environment has been applied.
++pub fn run() {
++    let envrc_dir = find_envrc();
++    let runtime_dir = envrc_dir.as_deref().map(get_runtime_dir);
++
++    let env_file = env::var("__DIRENV_INSTANT_ENV_FILE")
++        .ok()
++        .filter(|p| !p.is_empty())
++        .map(PathBuf::from)
++        .or_else(|| {
++            runtime_dir
++                .as_ref()
++                .map(|dir| dir.join("env"))
++                .filter(|p| p.exists())
++        });
++
++    let pending = env::var("DIRENV_INSTANT_PENDING")
++        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
++        .unwrap_or(false);
++
++    let applied = env_file.as_ref().map(|p| p.exists()).unwrap_or(false);
++
++    let env_mtime = env_file
++        .as_ref()
++        .and_then(|p| p.metadata().ok())
++        .and_then(|m| m.modified().ok())
++        .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
++        .map(|d| d.as_secs().to_string())
++        .unwrap_or_else(|| "-".to_string());
++
++    // "Stale" means the cached environment was computed before the current
++    // .envrc. The daemon recomputes on every prompt, so a cached file older
++    // than the .envrc means the last apply predates the current definition.
++    let stale = match (envrc_dir.as_deref(), env_file.as_ref()) {
++        (Some(root), Some(file)) => {
++            let env_modified = file.metadata().ok().and_then(|m| m.modified().ok());
++            let envrc_modified = root.join(".envrc").metadata().ok().and_then(|m| m.modified().ok());
++            match (env_modified, envrc_modified) {
++                (Some(env_time), Some(envrc_time)) => env_time < envrc_time,
++                // No .envrc to compare against: not stale, just unrooted.
++                _ => false,
++            }
++        }
++        _ => false,
++    };
++
++    let envrc = envrc_dir
++        .as_deref()
++        .map(|p| p.display().to_string())
++        .unwrap_or_else(|| "-".to_string());
++    let env_file_display = env_file
++        .as_ref()
++        .map(|p| p.display().to_string())
++        .unwrap_or_else(|| "-".to_string());
++
++    let lines = [
++        format!("pending={}", yes_no(pending)),
++        format!("applied={}", yes_no(applied)),
++        format!("stale={}", yes_no(stale)),
++        format!("env_file={env_file_display}"),
++        format!("env_mtime={env_mtime}"),
++        format!("envrc={envrc}"),
++    ];
++
++    for line in lines {
++        crate::shell::emit_line(&line);
++    }
++}
++
++fn yes_no(value: bool) -> &'static str {
++    if value { "yes" } else { "no" }
++}
++
++/// Find the repository root that owns the current directory.
++fn find_envrc() -> Option<PathBuf> {
++    let mut dir = env::current_dir().ok()?;
++    loop {
++        if dir.join(".envrc").exists() {
++            return Some(dir);
++        }
++        if !dir.pop() {
++            return None;
++        }
++    }
++}
+diff --git a/src/main.rs b/src/main.rs
+index defda11..535f9a6 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -26,8 +26,11 @@ fn main() {
+             }
+             commands::hook::run(&args[2]);
+         }
++        Some("status") => {
++            commands::status::run();
++        }
+         _ => {
+-            eprintln!("Usage: {} <start|stop|watch|hook>", args[0]);
++            eprintln!("Usage: {} <start|stop|watch|hook|status>", args[0]);
+             std::process::exit(1);
+         }
+     }
+diff --git a/src/shell.rs b/src/shell.rs
+index 88d9db8..5872a37 100644
+--- a/src/shell.rs
++++ b/src/shell.rs
+@@ -8,6 +8,15 @@ pub fn emit(args: std::fmt::Arguments) {
+     let _ = writeln!(std::io::stdout(), "{}", args);
+ }
+ 
++/// Print one plain line to stdout.
++///
++/// Used by the `status` subcommand, whose output is a machine-readable
++/// `key=value` report rather than shell code. It goes to stdout unwrapped so
++/// a caller can parse it without evaluating anything.
++pub fn emit_line(line: &str) {
++    let _ = writeln!(std::io::stdout(), "{}", line);
++}
++
+ #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+ pub enum Shell {
+     #[default]

@@ -65,6 +65,7 @@ azure-cli = { version = "latest", uvx_args = "--prerelease=allow" }
 "go:github.com/openclaw/gogcli/cmd/gog" = "latest"
 ollama = "latest"
 "github:tbillington/kondo" = "latest"
+"cargo:kondo" = "latest"
 # jcode: managed by CI deploy + auto-deploy timer (~/.jcode/server/jcode), not mise.
 
 [env]

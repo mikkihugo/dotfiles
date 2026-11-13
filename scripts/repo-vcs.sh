@@ -502,7 +502,7 @@ primary-to-main)
 		else
 			unproven+=("$path")
 		fi
-	done < <(git -C "$primary" status --porcelain=v1 -z)
+	done < <(git -C "$primary" status --porcelain=v1 -z -uall)
 	if ((${#unproven[@]})); then
 		printf 'unproven_dirt=%s\n' "${unproven[@]}" >&2
 		die "primary checkout $primary has changes that are not in origin/main history; land them first: repo vcs worktree-create <name> origin/main, copy the files, then repo vcs land"

@@ -55,8 +55,12 @@ func run(args []string) int {
 		return exitUsage
 	}
 	rest := fs.Args()
+	if len(rest) >= 1 && rest[0] == "sweep" {
+		return sweep(rest[1:])
+	}
 	if len(rest) < 2 || rest[0] != "run" || rest[1] != "--" {
 		fmt.Fprintln(os.Stderr, "usage: evalgate [-lock PATH] [-wait D] [-hold D] run -- CMD [ARGS...]")
+		fmt.Fprintln(os.Stderr, "       evalgate sweep [-max-age D] [-grace D] [-match RE2] [-apply]")
 		return exitUsage
 	}
 	child := rest[2:]

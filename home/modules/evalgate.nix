@@ -14,4 +14,23 @@
       ldflags = ["-s" "-w"];
     })
   ];
+  # Bounded-holder watchdog: no nix process may hold the fleet eval locks past
+  # the budget. A dead remote builder turned a 30s derivation into a 1h52m hang
+  # on 2026-11-13; the SSH ConnectTimeout is the source fix, this is the
+  # backstop for every other stall class.
+  systemd.user.services.evalgate-sweep = {
+    Unit.Description = "Kill nix processes that exceed the wall-clock budget";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "/home/mhugo/.local/bin/evalgate sweep -max-age 45m -apply";
+    };
+  };
+  systemd.user.timers.evalgate-sweep = {
+    Unit.Description = "Run the evalgate sweep every 10 minutes";
+    Timer = {
+      OnCalendar = "*:0/10";
+      Persistent = true;
+    };
+    Install.WantedBy = ["timers.target"];
+  };
 }

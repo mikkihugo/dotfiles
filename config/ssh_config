@@ -218,3 +218,11 @@ Host fr-lau-0001
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
+
+# Nix remote builders — fail in seconds, never hang a derivation.
+# Root cause of the 2026-11-13 outage: dead builder IPs made every build wait
+# through SSH retries before silently falling back to a local build.
+Host 89.117.63.169 89.167.50.230 159.195.138.16
+    ConnectTimeout 5
+    ServerAliveInterval 10
+    ServerAliveCountMax 2

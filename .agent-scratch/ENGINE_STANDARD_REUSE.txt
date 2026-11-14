@@ -1,0 +1,8 @@
+OPERATOR CONSTRAINT (2026-10-31):
+1. Engine has (or should have) all lifecycle/VCS agents need. Consumer "local" lane/workspace/worktree commands are almost certainly WRONG NAMES for Engine surfaces — replace by importing/execing Engine packages.repo, do not reimplement.
+2. Taught: repo lane (CEL). jj layer: repo vcs workspace-*. NO COMPAT aliases for retired names.
+3. If a consumer-only verb exists, map it to the Engine equivalent and delete the local duplicate; only keep truly repo-specific non-lifecycle tools.
+4. Pin singularity-engine to latest main@origin. One lane per repo; abandon wrong/empty siblings.
+5. Raw jj/git allowed this migration when facade blocks.
+
+NATIVE JJ ALLOWED this migration: export SE_TOWER_SESSION=1 and/or PATH=/nix/store/hssxbwgr1bq95rhfqm05sg3wjmxv19gg-jujutsu-0.46.0/bin:$PATH (skip agent-vcs-refuse). Real binary: /nix/store/hssxbwgr1bq95rhfqm05sg3wjmxv19gg-jujutsu-0.46.0/bin/jj

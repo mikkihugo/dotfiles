@@ -93,11 +93,14 @@ in
       # jcodeLauncher is deliberately NOT in home.packages: it is a
       # writeShellApplication named "jcode", so it collides in buildEnv with
       # ai-tools.nix's jcodeGatewayWrapper on non-swarm hosts. Interactive PATH
-      # on this host is jcode's install_release wrapper
+      # on this host prefers jcode's install_release launcher
       # (~/.local/bin/jcode -> ~/.jcode/builds/current). The fleet watchdog
       # must talk to castle via ~/.jcode/server/jcode, reached below by store
       # path, not by overwriting that launcher.
       packages = [jcodeTui];
+      # Keep the installer-owned ~/.local/bin launcher first when present, but
+      # make the current build available in shells if that launcher is absent.
+      sessionPath = lib.mkAfter ["$HOME/.jcode/builds/current"];
 
       file = {
         # The NixOS jcode-server unit does not know about jcode-provider-config,

@@ -44,12 +44,13 @@
     # jujutsu is not on this input. A channel update must not move it.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # Exact jujutsu 0.46.0. nixos-26.05 still ships 0.41.0. This rev is the
+    # Exact jujutsu 0.47.1. nixos-26.05 still ships 0.41.0. This rev is the
     # nixpkgs commit whose pkgs/by-name/ju/jujutsu/package.nix sets
-    # version = "0.46.0" (the first release that colocates a non-default
-    # workspace as a Git worktree). Bump the URL on purpose.
+    # version = "0.47.1". Canonical source of truth for jj fleet-wide is
+    # singularity-engine nix/toolchains/versions.json languages.jujutsu
+    # (version + nixpkgs_rev). Bump the URL on purpose, in lockstep.
     nixpkgs-jujutsu = {
-      url = "github:NixOS/nixpkgs/6510408d147d8c5e6d76043e899e9251756f6a75";
+      url = "github:NixOS/nixpkgs/0af6f16619d7338e7cd7b6ef0e48e3c006d1d0ee";
       flake = false;
     };
 
@@ -137,7 +138,7 @@
         system = sys;
         config.allowUnfree = true;
         overlays = [
-          # jujutsu 0.46.0 comes from the exact nixpkgs-jujutsu input.
+          # jujutsu 0.47.1 comes from the exact nixpkgs-jujutsu input.
           # 26.05 still ships 0.41.0. Do not take it from nixpkgs-unstable.
           #
           # mise 2026.10.3: pull from nixpkgs-unstable for newer version
@@ -283,7 +284,7 @@
             pkgs.runCommand "dotfiles-jujutsu-pin-${sys}" {
               inherit (pinned.jujutsu) version;
             } ''
-              test "$version" = 0.46.0
+              test "$version" = 0.47.1
               printf '%s\n' "$version" > "$out"
             '';
           vultr-cli-pin =

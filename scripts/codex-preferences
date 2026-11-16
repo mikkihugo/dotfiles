@@ -43,6 +43,8 @@ SHARED_AGENT_NAMES = ("scout", "implementer", "reviewer")
 # into the tracked shared-preferences source.
 APPLY_SECTION_KEYS = {
     **SAVE_SECTION_KEYS,
+    "agents": ["max_threads"],
+    "features.multi_agent_v2": ["max_concurrent_threads_per_session"],
     # OTLP routing is host policy. Apply it on every activation because Codex
     # owns and may rewrite its mutable live config; do not import it on `save`.
     "otel": ["environment", "log_user_prompt", "exporter", "trace_exporter"],
@@ -146,6 +148,14 @@ def save(args) -> None:
     for section, picked in section_prefs.items():
         lines.extend(["", f"[{section}]"])
         lines.extend(f"{key} = {toml_value(picked[key])}" for key in SAVE_SECTION_KEYS[section] if key in picked)
+    for section in APPLY_SECTION_KEYS:
+        if section in SAVE_SECTION_KEYS or section.startswith("agents."):
+            continue
+        current = section_data(target_data, section)
+        picked = {key: current[key] for key in APPLY_SECTION_KEYS[section] if key in current}
+        if picked:
+            lines.extend(["", f"[{section}]"])
+            lines.extend(f"{key} = {toml_value(value)}" for key, value in picked.items())
     for name, values in agent_prefs.items():
         lines.extend(["", *render_agent_section(name, values)])
     target.write_text("\n".join(lines).rstrip() + "\n")

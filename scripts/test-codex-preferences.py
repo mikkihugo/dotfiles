@@ -10,6 +10,39 @@ SCRIPT = Path(__file__).with_name("codex-preferences")
 
 
 class CodexPreferencesTest(unittest.TestCase):
+    def test_apply_manages_agent_limits_and_preserves_other_preferences(self) -> None:
+        root = Path(tempfile.mkdtemp(prefix="codex-limits-test-"))
+        live = root / "config.toml"
+        live.write_text(
+            '[agents]\nmax_threads = 2\nmax_depth = 4\n\n'
+            '[features.multi_agent_v2]\nenabled = false\nmax_concurrent_threads_per_session = 3\n'
+        )
+        shared = root / "shared.toml"
+        shared.write_text((SCRIPT.parents[1] / "config/codex/shared-preferences.toml").read_text())
+        original = tomllib.loads(shared.read_text())
+        subprocess.run(
+            ["python3", str(SCRIPT), "apply", "--source", str(shared), "--target", str(live)],
+            check=True,
+        )
+        data = tomllib.loads(live.read_text())
+        self.assertEqual(data["agents"]["max_threads"], 10)
+        self.assertEqual(data["agents"]["max_depth"], 4)
+        self.assertEqual(data["features"]["multi_agent_v2"]["max_concurrent_threads_per_session"], 10)
+        self.assertFalse(data["features"]["multi_agent_v2"]["enabled"])
+        live.write_text(
+            '[agents]\nmax_threads = 2\n\n'
+            '[features.multi_agent_v2]\nmax_concurrent_threads_per_session = 3\n'
+        )
+        subprocess.run(
+            ["python3", str(SCRIPT), "save", "--source", str(live), "--target", str(shared)],
+            check=True,
+        )
+        saved = tomllib.loads(shared.read_text())
+        self.assertEqual(saved["agents"]["max_threads"], 10)
+        self.assertEqual(saved["features"]["multi_agent_v2"]["max_concurrent_threads_per_session"], 10)
+        self.assertEqual(saved["otel"], original["otel"])
+        self.assertEqual(saved["model_providers"]["minimax"], original["model_providers"]["minimax"])
+
     def test_apply_updates_shared_tui_status_line_and_preserves_other_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

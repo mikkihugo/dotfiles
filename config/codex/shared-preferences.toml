@@ -91,6 +91,12 @@ base_url = "https://api.minimax.io/v1"
 env_key = "MINIMAX_API_KEY"
 wire_api = "responses"
 
+[agents]
+max_threads = 10
+
+[features.multi_agent_v2]
+max_concurrent_threads_per_session = 10
+
 [agents.scout]
 description = "Read-only scout (GPT-6 Luna): mechanical inventory, structural audit, and bounded evidence collection."
 config_file = "agents/scout.toml"

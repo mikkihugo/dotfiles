@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# The host entry for the repository command surface.
+#
+# This file lives at ~/.local/bin/repo and shadows every repository's own
+# `bin/repo`, because ~/.local/bin precedes the nix profile on PATH.
+#
+# THE DELEGATE IS RESOLVED FROM THE CALLER'S REPOSITORY, NEVER FROM A CONSTANT.
+# An earlier revision resolved it as:
+#
+#     REPO_BIN="$(command -v repo || true)"
+#     [ "$REPO_BIN" = "$(readlink -f "$0")" ] && REPO_BIN=<engine>/bin/repo
+#
+# `command -v repo` inside this script returns THIS script, so the self-match
+# branch always fired and every caller — dotfiles, jcode, infra — was handed
+# singularity-engine's facade to run against a foreign tree. A session on
+# 2026-09-12 hit exactly that in a .dotfiles worktree, refused with WRONG_REPO
+# and killed the process mid-flight.
+#
+# Resolution walks up from $PWD for the repository that owns the surface and
+# then execs THAT repository's surface:
+#
+#   1. the legacy launcher <root>/bin/<cli_name>, when it is executable;
+#   2. otherwise the Engine repository operator, realized from the
+#      repository's own flake output (ONE derivation, consumed as-is).
+#
+# A repository that ships no launcher keeps no launcher: the operator IS the
+# surface, and the operator resolves the repository and admits the target
+# itself from .purpose/repository-operator-target.v1.json.
+#
+# Found nothing? REFUSE. Running the wrong repository's surface is worse than
+# running none, and a silent fallback is what produced the bug above.
+
+set -euo pipefail
+
+self="$(readlink -f "$0")"
+
+die() {
+  printf 'repo: %s\n' "$1" >&2
+  exit 2
+}
+
+# Walk up for the repository that owns the surface. The operator admission
+# declaration comes first (it is what the native operator reads); the Bash-era
+# command contract stays as the legacy marker.
+repo_root=''
+dir="$PWD"
+while [ -n "$dir" ] && [ "$dir" != "/" ]; do
+  if [ -f "$dir/.purpose/repository-operator-target.v1.json" ] ||
+    [ -f "$dir/.purpose/commands.json" ]; then
+    repo_root="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+[ -f "/.purpose/commands.json" ] && [ -z "$repo_root" ] && repo_root="/"
+
+if [ -z "$repo_root" ]; then
+  die "no repository at or above $PWD; refusing rather than guessing a surface.
+     cd into a repository, or invoke its operator by path."
+fi
+
+# cli_name is declared by the legacy contract; fall back to `repo`.
+cli_name='repo'
+if [ -f "$repo_root/.purpose/commands.json" ] && command -v jq > /dev/null 2>&1; then
+  declared="$(jq -r '.cli_name // "repo"' "$repo_root/.purpose/commands.json" 2> /dev/null || echo repo)"
+  [ -n "$declared" ] && [ "$declared" != "null" ] && cli_name="$declared"
+fi
+
+resolve_operator() {
+  # The operator is one Engine derivation; a repository consumes it from its
+  # own flake output. The attribute is a per-repository projection: a
+  # repository that declares the operator target consumes the Engine input
+  # and exposes it as `engine-repo`; Engine's own tree exposes it as `repo`.
+  # Probing the wrong name costs a full flake evaluation, so the declaration
+  # decides which name is tried first, and the result is cached per root.
+  local root="$1" attr out cache resolved
+  cache="${XDG_CACHE_HOME:-$HOME/.cache}/repo-shim"
+  mkdir -p "$cache"
+  resolved="$( { printf '%s' "$root"; cat "$root/flake.lock" 2>/dev/null; } | sha256sum | cut -c1-16)"
+  if [ -f "$cache/$resolved" ]; then
+    out="$(cat "$cache/$resolved")"
+    if [ -x "$out" ]; then
+      printf '%s' "$out"
+      return 0
+    fi
+  fi
+  local attrs="engine-repo repo"
+  if [ ! -f "$root/.purpose/repository-operator-target.v1.json" ]; then
+    attrs="repo engine-repo"
+  fi
+  for attr in $attrs; do
+    out="$(nix build --no-link --print-out-paths "path:$root#$attr" 2>/dev/null || true)"
+    if [ -z "$out" ]; then
+      out="$(nix build --no-link --print-out-paths --offline "path:$root#$attr" 2>/dev/null || true)"
+    fi
+    if [ -n "$out" ] && [ -x "$out/bin/repo" ]; then
+      printf '%s' "$out/bin/repo" >"$cache/$resolved"
+      printf '%s' "$out/bin/repo"
+      return 0
+    fi
+  done
+  return 1
+}
+
+REPO_BIN="$repo_root/bin/$cli_name"
+if [ -x "$REPO_BIN" ] && [ "$(readlink -f "$REPO_BIN")" != "$self" ]; then
+  delegate="$REPO_BIN"
+else
+  delegate="$(resolve_operator "$repo_root" || true)"
+  [ -n "$delegate" ] ||
+    die "$repo_root ships no executable launcher and no operator output;
+     refusing rather than guessing a surface."
+fi
+
+# Engine-only: refresh the protected default workspace before delegating.
+# Fenced by the resolved repository root, not by a $PWD prefix match, so a lane
+# under a different repository can never trip it.
+case "$repo_root" in
+  /home/mhugo/code/singularity-engine | /home/mhugo/code/singularity-engine/*) ;;
+  *) exec "$delegate" "$@" ;;
+esac
+
+# Skip refresh for cheap, idempotent reads. Keep in sync with
+# /home/mhugo/.dotfiles/home/modules/coord if that surface changes.
+case "${1:-}" in
+  log | status | operation-log | operation-show | bookmarks | remote-list | workspace-list | fetch | remote-add | remote-remove | workspace-inspect | task-status | coord | poll | sweep | ack | resubscribe | subscribe)
+    exec "$delegate" "$@"
+    ;;
+esac
+
+command -v refresh-engine-mount > /dev/null 2>&1 && refresh-engine-mount > /dev/null 2>&1 || true
+
+exec "$delegate" "$@"

@@ -37,6 +37,7 @@ in {
     ./modules/activation.nix
     ./modules/packages.nix
     ./modules/ast-grep.nix
+    ./modules/repository-operator.nix
     ./modules/cargo-pgrx.nix
     ./modules/cargo-build-jobs.nix
     ./modules/cargo-subcommand-proxies.nix

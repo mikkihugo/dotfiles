@@ -103,6 +103,32 @@ _agent_direnv_prebuilt_newest_dump_for_repo() {
 	printf '%s\n' "$best_dump"
 }
 
+# The repository root a direnv-instant dump was produced for.
+#
+# direnv-instant's cache directory name is a Rust DefaultHasher over the
+# .envrc directory, and DefaultHasher's output is not stable across Rust
+# releases, so the shell side cannot recompute it. The only attribution the
+# dump itself carries is direnv's own DIRENV_DIR, which names the directory
+# whose .envrc produced it. A dump without that marker cannot be attributed
+# to any root and must never be applied to one.
+_direnv_instant_recorded_root() {
+	local env_file="$1" raw
+	[ -f "$env_file" ] && [ -r "$env_file" ] || return 1
+	raw="$(grep -o "export DIRENV_DIR=\$'[^']*'" -- "$env_file" 2>/dev/null | head -1)" || true
+	if [ -z "$raw" ]; then
+		raw="$(grep -o 'export DIRENV_DIR="[^"]*"' -- "$env_file" 2>/dev/null | head -1)" || true
+	fi
+	[ -n "$raw" ] || return 1
+	raw="${raw#export DIRENV_DIR=\$'}"
+	raw="${raw%\'}"
+	raw="${raw#export DIRENV_DIR=\"}"
+	raw="${raw%\"}"
+	# direnv marks an evaluated-but-not-loaded directory with a leading '-'.
+	raw="${raw#-}"
+	[ -n "$raw" ] || return 1
+	printf '%s\n' "$raw"
+}
+
 # direnv-instant's cached environment file, when one exists for this root.
 #
 # direnv-instant runs `direnv export` in a background daemon and caches the
@@ -113,27 +139,38 @@ _agent_direnv_prebuilt_newest_dump_for_repo() {
 # __DIRENV_INSTANT_ENV_FILE.
 #
 # When that variable is absent (a non-interactive agent shell that never ran
-# the interactive hook), fall back to scanning the runtime directories for the
-# newest env file whose repository still owns a .envrc. The scan is bounded to
-# the runtime directories and never evaluates a file it cannot attribute.
+# the interactive hook), fall back to scanning the cache for the newest env
+# file that records THIS root.
+#
+# Every candidate must prove its root (DIRENV_DIR == root). The cache is
+# host-wide, so an unattributed or foreign dump applied here hands the shell
+# another repository's environment: the loader reports success, the shell
+# ends up with no IN_NIX_SHELL and no devshell PATH, and the repository
+# operator refuses the root ("invalid Nix environment for repository root").
+# Attribute or reject; never guess.
 _direnv_instant_cached_env() {
 	local root="$1"
-	local candidate env_file newest=0 newest_file=
+	local candidate env_file newest=0 newest_file= recorded
 	local -a candidates=()
 
 	[ -n "$root" ] || return 1
 
-	# Preferred: the path the interactive hook exported.
+	# Preferred: the path the interactive hook exported. It is per-shell and
+	# per-root, but a child shell inherits it across a cd, so it is held to
+	# the same attribution rule as the scanned candidates.
 	if [ -n "${__DIRENV_INSTANT_ENV_FILE:-}" ] &&
 		[ -f "$__DIRENV_INSTANT_ENV_FILE" ] &&
 		[ -r "$__DIRENV_INSTANT_ENV_FILE" ]; then
-		printf '%s\n' "$__DIRENV_INSTANT_ENV_FILE"
-		return 0
+		recorded="$(_direnv_instant_recorded_root "$__DIRENV_INSTANT_ENV_FILE")" || recorded=
+		if [ "$recorded" = "$root" ]; then
+			printf '%s\n' "$__DIRENV_INSTANT_ENV_FILE"
+			return 0
+		fi
 	fi
 
-	# Fallback: newest env file under the direnv-instant runtime dirs whose
-	# .envrc is still present. `find` instead of a glob: an unmatched glob
-	# aborts under zsh nomatch.
+	# Fallback: newest env file under the direnv-instant cache whose recorded
+	# root is this root. `find` instead of a glob: an unmatched glob aborts
+	# under zsh nomatch.
 	local cache_base="${XDG_CACHE_HOME:-$HOME/.cache}"
 	find "$cache_base/direnv-instant" -mindepth 2 -maxdepth 2 -name env -type f \
 		-print 2>/dev/null | while IFS= read -r candidate; do
@@ -144,6 +181,8 @@ _direnv_instant_cached_env() {
 	while IFS= read -r env_file; do
 		[ -n "$env_file" ] || continue
 		[ -f "$env_file" ] && [ -r "$env_file" ] || continue
+		recorded="$(_direnv_instant_recorded_root "$env_file")" || recorded=
+		[ "$recorded" = "$root" ] || continue
 		candidates+=("$env_file")
 	done <"${TMPDIR:-/tmp}/.agent-direnv-instant-candidates.$$"
 	rm -f -- "${TMPDIR:-/tmp}/.agent-direnv-instant-candidates.$$"

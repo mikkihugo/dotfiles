@@ -25,12 +25,19 @@
       "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
     ];
     accept-flake-config = true;
-    # The host's Nix settings are owned by /srv/infra (GitOps owns the host),
-    # not by dotfiles: hosts/cc-se-sto-devbox-01/etc/nixos/configuration.nix
-    # sets fallback=false, the remote builder set, and the bounded timeouts.
-    # `fallback = true` here re-enabled LOCAL builds whenever a builder was
-    # unreachable, which is what wedged this host on 2026-11-16.
-    connect-timeout = 30;
+    # No devbox-specific Nix settings here. The devbox host's daemon config
+    # is owned by /srv/infra (GitOps owns the host):
+    # hosts/cc-se-sto-devbox-01/etc/nixos/configuration.nix sets the remote
+    # builder set, the per-builder pinned host keys, and the bounded
+    # timeouts that govern them.
+    #
+    # An earlier revision of this block carried `connect-timeout = 30` and
+    # blamed `fallback` for the 2026-11-16 build wedge. Both belong
+    # elsewhere: `fallback` is the substitute-failure knob (Nix manual 2.24:
+    # "if set to true, Nix will fall back to building from source if a binary
+    # substitute fails"), and the daemon's `max-jobs = 0` is what disables
+    # local builds. The actual cause was a stale SSH host key on a builder
+    # that had been reinstalled.
   };
 
   inputs = {

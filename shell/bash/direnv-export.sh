@@ -215,6 +215,22 @@ EOF
 	return 0
 }
 
+# Does this dump describe an environment, or only direnv's own bookkeeping?
+#
+# direnv emits DIRENV_FILE and DIRENV_DIR even when the .envrc fails. A dump
+# that carries nothing else describes no shell at all: applying it leaves the
+# caller with no environment, and the repository operator refuses the root
+# ("invalid Nix environment for repository root ..."). It also sticks: the
+# dump looks like a successful hit, so the loader never fills again and the
+# root stays broken until the tree content changes.
+_direnv_dump_has_environment() {
+	local file="$1"
+	[ -s "$file" ] || return 1
+	grep -o "export [^;]*" -- "$file" 2>/dev/null |
+		sed -e "s/^export DIRENV_FILE=.*//" -e "s/^export DIRENV_DIR=.*//" |
+		grep -q .
+}
+
 _direnv_eval_hit() {
 	_direnv_file="${_direnv_cache_dir}/${_direnv_key}.bash"
 	[ -s "$_direnv_file" ] || return 1
@@ -222,6 +238,14 @@ _direnv_eval_hit() {
 		rm -f -- "$_direnv_file"
 		return 1
 	}
+	# A dump that carries only direnv's bookkeeping is a fill that failed and
+	# was published anyway. Applying it leaves the shell with no environment,
+	# and the hit looks successful, so the loader never refills and the root
+	# stays broken. Drop it and let the next shell fill again.
+	if ! _direnv_dump_has_environment "$_direnv_file"; then
+		rm -f -- "$_direnv_file"
+		return 1
+	fi
 	IFS= read -r _direnv_hdr <"$_direnv_file" || true
 	case "$_direnv_hdr" in
 	"# agent-direnv-envrc-root:"*)
@@ -391,6 +415,16 @@ _direnv_fill_cache() {
 			[ ! -f "$_direnv_strip_helper" ] ||
 			! python3 "$_direnv_strip_helper" <"$_direnv_tmp" >"$_direnv_stripped" ||
 			[ ! -s "$_direnv_stripped" ]; then
+			rm -f -- "$_direnv_tmp" "$_direnv_stripped"
+			return 1
+		fi
+		# Only a dump that describes an environment may be published. A fill
+		# that stopped before the shell - the .envrc failed, or it exported
+		# direnv's own bookkeeping and then died - yields a dump with
+		# nothing else in it. Caching that leaves every later shell for this
+		# root with no environment, and the loader never retries because the
+		# hit looks successful. A failed fill is a miss, not an environment.
+		if ! _direnv_dump_has_environment "$_direnv_stripped"; then
 			rm -f -- "$_direnv_tmp" "$_direnv_stripped"
 			return 1
 		fi

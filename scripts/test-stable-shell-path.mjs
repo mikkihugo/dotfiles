@@ -717,6 +717,36 @@ fi
   );
 });
 
+test("a cached dump that carries only direnv bookkeeping is not reused", async () => {
+  // direnv emits DIRENV_FILE and DIRENV_DIR even when the .envrc fails. A dump
+  // that carries nothing else describes no shell: applying it leaves the
+  // caller with no environment, and the hit looks successful, so the loader
+  // never refills and the root stays broken until the tree content changes.
+  // The repository operator then refuses the root with "invalid Nix
+  // environment for repository root ...".
+  const { repo, run, dumps } = await staleFixture("direnv-bookkeeping-dump-");
+
+  const first = await run();
+  assert.equal(first.stdout, "gen1", "the first fill publishes the environment");
+  const names = await dumps();
+  assert.equal(names.length, 1, "the first fill publishes exactly one dump");
+
+  const dumpPath = join(repo, "..", "runtime", "agent-direnv", names[0]);
+  const header = (await readFile(dumpPath, "utf8")).split("\n")[0];
+  await writeFile(
+    dumpPath,
+    `${header}\nexport DIRENV_FILE=$'${repo}/.envrc';export DIRENV_DIR=$'-${repo}';\n`,
+  );
+
+  const second = await run();
+  assert.equal(second.stdout, "gen1", "a bookkeeping-only dump must not be reused");
+  assert.match(
+    await readFile(dumpPath, "utf8"),
+    /DIRENV_TEST_GEN=gen1/,
+    "the root must refill and publish a real environment",
+  );
+});
+
 test("dump miss drops leftover flock locks without a matching dump", async () => {
   const base = await mkdtemp(join(tmpdir(), "direnv-orphan-lock-"));
   const repo = join(base, "repo");

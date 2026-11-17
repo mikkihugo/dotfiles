@@ -65,7 +65,9 @@ forgejo_https_token() {
 	# Token source precedence:
 	#   1. DOTFILES_FORGEJO_TOKEN (hermetic tests / operator override)
 	#   2. OpenBao at kv/forgejo/cli-mhugo:token (canonical; preferred)
-	#   3. ~/.config/tea/config.yml (legacy fallback; matches mhugo/dotfiles#14
+	#   3. the rendered copy of that same token ($FORGEJO_TOKEN_FILE, then
+	#      ~/.config/forgejo/token) — used when OpenBao is unreachable
+	#   4. ~/.config/tea/config.yml (legacy fallback; matches mhugo/dotfiles#14
 	#      pre-fix behavior so older agents keep working without bao access)
 	local token=""
 	if [[ -n "${DOTFILES_FORGEJO_TOKEN:-}" ]]; then
@@ -75,10 +77,31 @@ forgejo_https_token() {
 	if command -v bao >/dev/null 2>&1; then
 		token="$(BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}" bao kv get -field=token kv/forgejo/cli-mhugo 2>/dev/null || true)"
 	fi
+	if [[ -z "$token" ]]; then
+		token="$(forgejo_https_token_copy)"
+	fi
 	if [[ -z "$token" && -f "$HOME/.config/tea/config.yml" ]]; then
 		token="$(awk '/^[[:space:]]+token:/ {print $2; exit}' "$HOME/.config/tea/config.yml" 2>/dev/null || true)"
 	fi
 	printf '%s' "$token"
+}
+
+# The rendered copy of the canonical token. scripts/forgejo-token-sync writes it
+# from OpenBao, so it is the same secret; it is the only source left when
+# OpenBao cannot be reached. Owner-only copies only: the operator's own
+# Forgejo client refuses group- or world-readable token files, and so must
+# this.
+forgejo_https_token_copy() {
+	local file mode
+	for file in "${FORGEJO_TOKEN_FILE:-}" "$HOME/.config/forgejo/token"; do
+		[[ -n "$file" && -f "$file" && -r "$file" ]] || continue
+		mode="$(stat -c '%a' "$file" 2>/dev/null || printf '000')"
+		if (( 0${mode} & 077 )); then
+			continue
+		fi
+		head -c 4096 "$file" 2>/dev/null | tr -d '\n'
+		return 0
+	done
 }
 
 # Fixed credential helper expression. It carries no secret: the token comes from

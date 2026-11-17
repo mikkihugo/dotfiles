@@ -1,9 +1,19 @@
 # home/modules/git.nix — version control configuration
 #
 # Covers: git (identity, delta pager, aliases), jujutsu, GitHub CLI.
+#
+# This module owns the user git config. Git reads ~/.gitconfig INSTEAD of
+# ~/.config/git/config when the former exists, so a hand-written ~/.gitconfig
+# silently disables everything below (identity, aliases, the Forgejo
+# credential helper). That happened on cc-se-sto-devbox-01: the shadow file
+# pointed the Forgejo host at GitHub's credential helper, so every Forgejo
+# HTTPS push failed with "Credentials are incorrect or have expired" while a
+# valid token sat on disk. Keep ~/.gitconfig absent; fix git settings here.
 {pkgs, ...}: let
   # HTTPS credentials for Forgejo come from OpenBao at call time, never from a
   # git config file. Scoped to the one host, so no other remote is offered it.
+  # The helper falls back to the rendered copy of the same token when OpenBao
+  # is unreachable (scripts/git-credential-forgejo-bao).
   forgejoCredentialHelper = pkgs.writeShellScript "git-credential-forgejo-bao" ''
     export BAO_BIN=${pkgs.openbao}/bin/bao
     exec ${pkgs.bash}/bin/bash ${../../scripts/git-credential-forgejo-bao} "$@"
@@ -32,6 +42,8 @@ in {
           "ssh://git@git.centralcloud.net/"
         ];
         credential."https://git.centralcloud.net".helper = "!${forgejoCredentialHelper}";
+        # Cursor's CLI keeps its own credential helper for its own remotes.
+        credential."https://origin.cursor.com".helper = "!~/.local/bin/origin credential-helper";
         core.pager = "delta";
         interactive.diffFilter = "delta --color-only";
         delta = {

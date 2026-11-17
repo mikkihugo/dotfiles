@@ -180,6 +180,37 @@ if grep -Eq 'timeout[^\n]*[[:space:]]git[[:space:]]+-C' "$root/scripts/repo-vcs.
 fi
 
 _run_repo_vcs "$root/scripts/repo-vcs.sh" contract-test
+
+# The canonical token's rendered copy is the fallback when OpenBao is
+# unreachable. Without it every Forgejo HTTPS push failed with "Credentials
+# are incorrect or have expired" while a valid token sat on disk.
+mkdir -p "$tmp/copy-home/.config/forgejo" "$tmp/baodir"
+printf 'copy-token-xyz' >"$tmp/copy-home/.config/forgejo/token"
+chmod 0600 "$tmp/copy-home/.config/forgejo/token"
+printf '#!/usr/bin/env bash\nexit 1\n' >"$tmp/baodir/bao"
+chmod 0755 "$tmp/baodir/bao"
+copy_out="$(_run_repo_vcs env -u DOTFILES_FORGEJO_TOKEN -u FORGEJO_TOKEN_FILE \
+	HOME="$tmp/copy-home" PATH="$tmp/baodir:$PATH" \
+	"$root/scripts/repo-vcs.sh" contract-test 2>&1)" || {
+	printf 'contract-test must pass with the rendered token copy as the only source\n' >&2
+	exit 1
+}
+grep -q 'forgejo-https credential helper: ok' <<<"$copy_out" || {
+	printf 'the rendered token copy must serve the credential when OpenBao is unreachable: %s\n' "$copy_out" >&2
+	exit 1
+}
+# A copy readable by group or other is refused: no live token is resolved.
+chmod 0640 "$tmp/copy-home/.config/forgejo/token"
+copy_out="$(_run_repo_vcs env -u DOTFILES_FORGEJO_TOKEN -u FORGEJO_TOKEN_FILE \
+	HOME="$tmp/copy-home" PATH="$tmp/baodir:$PATH" \
+	"$root/scripts/repo-vcs.sh" contract-test 2>&1)" || {
+	printf 'contract-test must pass with no live token source\n' >&2
+	exit 1
+}
+grep -q 'forgejo-https credential helper: ok' <<<"$copy_out" && {
+	printf 'a group-readable token copy must not serve the credential\n' >&2
+	exit 1
+}
 # Capture help before matching. A pipe into grep -q SIGPIPEs the writer
 # once the first hit lands, and pipefail turns that into exit 141.
 repo_help="$(_run_repo_vcs "$root/bin/repo" help)"

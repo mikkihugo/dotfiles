@@ -142,7 +142,16 @@ class CodexPreferencesTest(unittest.TestCase):
             self.assertEqual(data["model"], "gpt-reserve")
             self.assertEqual(data["model_provider"], "openai")
             self.assertEqual(data["model_reasoning_effort"], "medium")
-            for feature in ("context_management", "step_model_switching", "mcp_2026_07_28", "hooks"):
+            for feature in (
+                "context_management",
+                "step_model_switching",
+                "mcp_2026_07_28",
+                "hooks",
+                "instant_interrupt",
+                "agent_message_board",
+                "async_compaction",
+                "wake_on_agent_messages",
+            ):
                 self.assertIs(data["features"][feature], True)
             self.assertIs(data["features"]["memories"], False)
 

@@ -76,6 +76,10 @@ hide_full_access_warning = true
 context_management = true
 step_model_switching = true
 mcp_2026_07_28 = true
+instant_interrupt = true
+agent_message_board = true
+async_compaction = true
+wake_on_agent_messages = true
 # Short MCP server key + non-prefixed tool names: the gateway tool names
 # (server__tool) must stay within the 64-char Responses API bound even
 # after codex adds its client prefix; the long deployment-name key

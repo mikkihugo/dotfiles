@@ -50,6 +50,12 @@
     # reproducible. Bump it together with Engine's, then re-lock nixpkgs.
     nixpkgs.url = "github:NixOS/nixpkgs/6fcc160353f63555b560f25588925133c8f61f2a";
 
+    # Go from a pinned stable nixos-26.05 package set.
+    nixpkgs-go = {
+      url = "github:NixOS/nixpkgs/f68407657ad294471eb4b2e65d193df26edf729f";
+      flake = false;
+    };
+
     # Unstable provides selected tools that lag in nixos-26.05: mise and
     # ast-grep. Drop each override when the stable input meets its contract.
     # jujutsu is not on this input. A channel update must not move it.
@@ -108,6 +114,7 @@
 
   outputs = {
     nixpkgs,
+    nixpkgs-go,
     nixpkgs-unstable,
     nixpkgs-jujutsu,
     nixpkgs-direnv,
@@ -197,7 +204,11 @@
           })
         ];
       };
-      toolchain = import ./home/lib/toolchain.nix pkgs;
+      toolchain = (import ./home/lib/toolchain.nix pkgs) // (
+        if hostname == "cc-se-sto-devbox-01"
+        then {go = (import nixpkgs-go {system = sys;}).go;}
+        else {}
+      );
       home = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs =

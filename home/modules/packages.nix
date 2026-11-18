@@ -77,7 +77,7 @@
     # withPackages keeps pyyaml on the interpreter search path (`import yaml` works).
     toolchain.pythonWithYaml
     pkg-config # native library discovery for remaining mise source builds
-    toolchain.go # go_1_26 (stable) — operator pin 2026-11-16; Engine contract still says go_1_27, fleet directive is go 1.26.8
+    toolchain.go # stable nixpkgs Go on devbox; other profiles use the fleet pin
     pnpm_12 # fast, disk-efficient Node package manager (12.9.0 — the Engine contract, versions.json `languages.pnpm.attr`; the default `pnpm` attr is 11.27.0)
     sccache # Rust compiler cache; Cargo wrapper is managed in files.nix
     uv # Python package/runner — provides `uvx` required by the Serena MCP plugin

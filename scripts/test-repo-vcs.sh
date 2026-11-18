@@ -740,3 +740,76 @@ grep -Fq 'is on worktree/other' "$tmp/lane-other.err" || {
 	cat "$tmp/lane-other.err" >&2
 	exit 1
 }
+
+# A git-side ref move in the primary must refuse while jj holds uncommitted
+# changes in the primary working copy. jj imports git refs on EVERY
+# invocation, so a moved git head makes the NEXT jj command in this
+# repository abandon the superseded jj commits — content included, with only
+# a jj warning in the output (observed 2026-11-18 after a sync-main
+# fast-forward). The facade owns the move, so the facade owns the refusal.
+mkdir -p "$tmp/jjguard/home/.dotfiles/.jj" "$tmp/jjguard/bin"
+cat >"$tmp/jjguard/bin/git" <<'JJGUARD_GIT'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$JJGUARD_GIT_LOG"
+case "$*" in
+*"symbolic-ref --quiet --short HEAD"*) printf '%s\n' main ;;
+*"status --porcelain"*) : ;;
+*"rev-parse origin/main"*) printf '%s\n' "$JJGUARD_REMOTE_SHA" ;;
+*"rev-parse main"*) printf '%s\n' "$JJGUARD_LOCAL_SHA" ;;
+*"cherry origin/main main"*) : ;;
+esac
+exit 0
+JJGUARD_GIT
+cat >"$tmp/jjguard/bin/jj" <<'JJGUARD_JJ'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$JJGUARD_JJ_LOG"
+if [[ -n "${JJGUARD_JJ_DIRTY:-}" ]]; then
+	printf 'Working copy changes:\n M file\n'
+fi
+exit 0
+JJGUARD_JJ
+chmod 0755 "$tmp/jjguard/bin/git" "$tmp/jjguard/bin/jj"
+JJGUARD_LOCAL_SHA=1111111111111111111111111111111111111111
+JJGUARD_REMOTE_SHA=2222222222222222222222222222222222222222
+: >"$tmp/jjguard/git.log"
+: >"$tmp/jjguard/jj.log"
+if JJGUARD_JJ_DIRTY=1 HOME="$tmp/jjguard/home" JJGUARD_GIT_LOG="$tmp/jjguard/git.log" JJGUARD_JJ_LOG="$tmp/jjguard/jj.log" \
+	JJGUARD_LOCAL_SHA="$JJGUARD_LOCAL_SHA" JJGUARD_REMOTE_SHA="$JJGUARD_REMOTE_SHA" \
+	SE_GIT_BIN="$tmp/jjguard/bin/git" SE_JJ_BIN="$tmp/jjguard/bin/jj" \
+	_run_repo_vcs "$root/scripts/repo-vcs.sh" sync-main >"$tmp/jjguard/dirty.out" 2>"$tmp/jjguard/dirty.err"; then
+	printf 'sync-main must refuse to move git refs while jj holds uncommitted changes\n' >&2
+	exit 1
+fi
+grep -Fq 'jj holds uncommitted changes' "$tmp/jjguard/dirty.err" || {
+	printf 'sync-main refusal must name the jj working copy\n' >&2
+	cat "$tmp/jjguard/dirty.err" >&2
+	exit 1
+}
+if grep -Fq 'reset --hard' "$tmp/jjguard/git.log"; then
+	printf 'sync-main moved git refs despite a dirty jj working copy\n' >&2
+	cat "$tmp/jjguard/git.log" >&2
+	exit 1
+fi
+# A clean jj working copy must not block the fast-forward, and jj's view is
+# refreshed after the move so no later jj command discovers the moved head.
+: >"$tmp/jjguard/git.log"
+: >"$tmp/jjguard/jj.log"
+HOME="$tmp/jjguard/home" JJGUARD_GIT_LOG="$tmp/jjguard/git.log" JJGUARD_JJ_LOG="$tmp/jjguard/jj.log" \
+	JJGUARD_LOCAL_SHA="$JJGUARD_LOCAL_SHA" JJGUARD_REMOTE_SHA="$JJGUARD_REMOTE_SHA" \
+	SE_GIT_BIN="$tmp/jjguard/bin/git" SE_JJ_BIN="$tmp/jjguard/bin/jj" \
+	_run_repo_vcs "$root/scripts/repo-vcs.sh" sync-main >"$tmp/jjguard/clean.out" 2>"$tmp/jjguard/clean.err" || {
+	printf 'sync-main must fast-forward when the jj working copy is clean\n' >&2
+	cat "$tmp/jjguard/clean.err" >&2
+	exit 1
+}
+grep -Fq 'reset --hard' "$tmp/jjguard/git.log" || {
+	printf 'sync-main did not fast-forward main\n' >&2
+	cat "$tmp/jjguard/git.log" >&2
+	exit 1
+}
+jj_calls="$(wc -l <"$tmp/jjguard/jj.log")"
+[[ "$jj_calls" -ge 2 ]] || {
+	printf 'sync-main must refresh the jj view after the ref move (jj calls=%s)\n' "$jj_calls" >&2
+	cat "$tmp/jjguard/jj.log" >&2
+	exit 1
+}

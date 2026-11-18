@@ -96,7 +96,7 @@ forgejo_https_token_copy() {
 	for file in "${FORGEJO_TOKEN_FILE:-}" "$HOME/.config/forgejo/token"; do
 		[[ -n "$file" && -f "$file" && -r "$file" ]] || continue
 		mode="$(stat -c '%a' "$file" 2>/dev/null || printf '000')"
-		if (( 0${mode} & 077 )); then
+		if ((0${mode} & 077)); then
 			continue
 		fi
 		head -c 4096 "$file" 2>/dev/null | tr -d '\n'
@@ -246,6 +246,50 @@ lane_root_for() {
 	local path="$HOME/.dotfiles-worktrees/$name"
 	[[ -d "$path" ]] || die "unknown lane: $name (create with repo vcs worktree-create)"
 	printf '%s' "$path"
+}
+
+# The primary checkout is jj-colocated: jj keeps its own view of the git refs
+# and imports them on EVERY invocation. A git-side ref move in the primary
+# (sync-main's fast-forward, primary-to-main's checkout) therefore leaves
+# jj's view stale, and the NEXT jj command in this repository — possibly
+# another agent's unrelated read — imports the new git head, resets its
+# working-copy parent onto it and abandons the superseded jj commits. When a
+# jj working-copy commit holds real content, that content is destroyed with
+# only a jj warning in the output ("Reset the working copy parent to the new
+# Git HEAD", "Abandoned 2 commits that are no longer reachable"; observed
+# 2026-11-18 in this repository after a sync-main fast-forward).
+#
+# Two rules follow, and both live here so every git-side ref move inherits
+# them:
+#   1. refuse the move while jj holds uncommitted changes in the primary;
+#   2. refresh jj's view right after the move, so jj never discovers a moved
+#      git head on its own later.
+# jj keeps abandoned commits under refs/jj/keep/*, so a refused move loses
+# nothing and a completed move stays recoverable.
+jj_bin="${SE_JJ_BIN:-}"
+if [[ -z "$jj_bin" ]]; then
+	jj_bin="$(command -v jj || true)"
+fi
+
+jj_working_copy_dirty() {
+	local dir="$1" out
+	[[ -d "$dir/.jj" ]] || return 1
+	[[ -n "$jj_bin" && -x "$jj_bin" ]] || return 1
+	out="$("$jj_bin" --repository "$dir" status --no-pager 2>/dev/null || true)"
+	[[ "$out" == *"Working copy changes:"* ]]
+}
+
+jj_refuse_dirty_working_copy() {
+	local dir="$1"
+	jj_working_copy_dirty "$dir" || return 0
+	die "jj holds uncommitted changes in the working copy of $dir; a git-side ref move here abandons them. Commit or abandon them in jj first (jj --repository $dir log -r @, jj --repository $dir abandon @), then retry. Nothing was changed."
+}
+
+jj_refresh_view() {
+	local dir="$1"
+	[[ -d "$dir/.jj" ]] || return 0
+	[[ -n "$jj_bin" && -x "$jj_bin" ]] || return 0
+	"$jj_bin" --repository "$dir" status --no-pager >/dev/null 2>&1 || true
 }
 
 # jj owns the working copy in the primary checkout, so the publishable unit is
@@ -408,7 +452,9 @@ sync-main)
 	files=
 	sha=
 	if [[ -z "$local_only" ]]; then
+		jj_refuse_dirty_working_copy "$primary"
 		git -C "$primary" reset --hard origin/main
+		jj_refresh_view "$primary"
 		printf 'synced=main revision=%s fast_forward=true\n' "$(git -C "$primary" rev-parse main)"
 		exit 0
 	fi
@@ -533,7 +579,9 @@ primary-to-main)
 	if [[ -n "$detached_head" ]]; then
 		git -C "$primary" update-ref "refs/dotfiles-primary-backup/$detached_head" "$detached_head"
 	fi
+	jj_refuse_dirty_working_copy "$primary"
 	git -C "$primary" checkout --quiet --force -B main origin/main
+	jj_refresh_view "$primary"
 	printf 'aligned=main revision=%s previous_branch=%s discarded_paths=%d\n' "$(git -C "$primary" rev-parse HEAD)" "$branch" "$discarded"
 	;;
 describe)

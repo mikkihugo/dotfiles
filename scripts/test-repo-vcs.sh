@@ -576,6 +576,9 @@ p2m_git -C "$p2m_det/primary" show-ref --verify --quiet "refs/dotfiles-primary-b
 # published; a described commit ahead of main must move the main bookmark (jj
 # exports it to refs/heads/main) before the facade pushes that ref.
 mkdir -p "$tmp/jjstub" "$tmp/gitstub"
+# Exercise jj behavior independently of whether the invoking worktree uses jj.
+mkdir -p "$tmp/jj-fixture/scripts" "$tmp/jj-fixture/.jj"
+cp "$root/scripts/repo-vcs.sh" "$tmp/jj-fixture/scripts/repo-vcs.sh"
 cat >"$tmp/jjstub/jj" <<'JJ_STUB'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$JJ_LOG"
@@ -614,7 +617,7 @@ printf 'aaaabbbbccccddddeeeeffff00001111222233334444555566667777888899990\n' >"$
 # A dirty working copy is refused: jj publishes commits, not working-tree bytes.
 if JJ_LOG="$tmp/jj-dirty.log" JJ_STATUS="$tmp/jj-dirty.status" JJ_REVSET="$tmp/jj-target.revset" \
 	GIT_LOG="$tmp/git-dirty.log" PATH="$tmp/jjstub:$PATH" SE_GIT_BIN="$tmp/gitstub/git" \
-	_run_repo_vcs "$root/scripts/repo-vcs.sh" git-push >"$tmp/jj-dirty.out" 2>"$tmp/jj-dirty.err"; then
+	_run_repo_vcs "$tmp/jj-fixture/scripts/repo-vcs.sh" git-push >"$tmp/jj-dirty.out" 2>"$tmp/jj-dirty.err"; then
 	printf 'git push must refuse a dirty working copy\n' >&2
 	exit 1
 fi
@@ -633,7 +636,7 @@ fi
 # stops before the gate and both remotes stay untouched.
 if JJ_LOG="$tmp/jj-clean.log" JJ_STATUS="$tmp/jj-clean.status" JJ_REVSET="$tmp/jj-target.revset" \
 	GIT_LOG="$tmp/git-clean.log" PATH="$tmp/jjstub:$PATH" SE_GIT_BIN="$tmp/gitstub/git" \
-	_run_repo_vcs "$root/scripts/repo-vcs.sh" git-push >"$tmp/jj-clean.out" 2>"$tmp/jj-clean.err"; then
+	_run_repo_vcs "$tmp/jj-fixture/scripts/repo-vcs.sh" git-push >"$tmp/jj-clean.out" 2>"$tmp/jj-clean.err"; then
 	printf 'git push must not publish when the remote fetch fails\n' >&2
 	exit 1
 fi

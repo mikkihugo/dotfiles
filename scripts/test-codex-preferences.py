@@ -10,11 +10,53 @@ SCRIPT = Path(__file__).with_name("codex-preferences")
 
 
 class CodexPreferencesTest(unittest.TestCase):
+    def test_apply_preserves_table_header_comments(self):
+        root = Path(tempfile.mkdtemp(prefix="codex-header-comment-test-"))
+        source = root / "shared.toml"
+        target = root / "config.toml"
+        source.write_text('[features]\nhooks = true\n[agents]\nmax_depth = 4\n')
+        target.write_text(
+            '[features] # operator settings\nhooks = false\ncustom_feature = true\n'
+            '[agents] # keep this comment\nmax_depth = 2\n'
+        )
+        subprocess.run([str(SCRIPT), "apply", "--source", str(source), "--target", str(target)], check=True)
+        rendered = target.read_text()
+        data = tomllib.loads(rendered)
+        self.assertTrue(data["features"]["hooks"])
+        self.assertTrue(data["features"]["custom_feature"])
+        self.assertEqual(data["agents"]["max_depth"], 2)
+        self.assertIn('[features] # operator settings', rendered)
+        self.assertIn('[agents] # keep this comment', rendered)
+
+    def test_apply_upgrades_scalar_or_inline_multi_agent_v2(self):
+        source = SCRIPT.parents[1] / "config/codex/shared-preferences.toml"
+        for indent, original in (("", "true"), ("", '{ enabled = false, local_option = "keep" }'), ("  ", "true"), ("  ", '{ enabled = false, local_option = "keep" }')):
+            with self.subTest(indent=indent, original=original), tempfile.TemporaryDirectory() as tmp:
+                target = Path(tmp) / "config.toml"
+                target.write_text(f'[features]\n{indent}multi_agent_v2 = {original}\n')
+                subprocess.run([str(SCRIPT), "apply", "--source", str(source), "--target", str(target)], check=True)
+                result = tomllib.loads(target.read_text())["features"]["multi_agent_v2"]
+                self.assertTrue(result["enabled"])
+                self.assertEqual(result["max_concurrent_threads_per_session"], 15)
+                if original.startswith("{"):
+                    self.assertEqual(result["local_option"], "keep")
+
+    def test_apply_migrates_legacy_agent_limit(self):
+        source = SCRIPT.parents[1] / "config/codex/shared-preferences.toml"
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "config.toml"
+            target.write_text('[agents]\nmax_threads = 2\nmax_depth = 4\n')
+            subprocess.run([str(SCRIPT), "apply", "--source", str(source), "--target", str(target)], check=True)
+            agents = tomllib.loads(target.read_text())["agents"]
+            self.assertNotIn("max_threads", agents)
+            self.assertEqual(agents["max_concurrent_threads_per_session"], 15)
+            self.assertEqual(agents["max_depth"], 4)
+
     def test_apply_manages_agent_limits_and_preserves_other_preferences(self) -> None:
         root = Path(tempfile.mkdtemp(prefix="codex-limits-test-"))
         live = root / "config.toml"
         live.write_text(
-            '[agents]\nmax_threads = 2\nmax_depth = 4\n\n'
+            '[agents]\nmax_threads = 2\nmax_concurrent_threads_per_session = 3\nmax_depth = 4\n\n'
             '[features.multi_agent_v2]\nenabled = false\nmax_concurrent_threads_per_session = 3\n'
         )
         shared = root / "shared.toml"
@@ -25,12 +67,18 @@ class CodexPreferencesTest(unittest.TestCase):
             check=True,
         )
         data = tomllib.loads(live.read_text())
-        self.assertEqual(data["agents"]["max_threads"], 10)
+        self.assertNotIn("max_threads", data["agents"])
+        self.assertEqual(data["agents"]["max_concurrent_threads_per_session"], 15)
         self.assertEqual(data["agents"]["max_depth"], 4)
-        self.assertEqual(data["features"]["multi_agent_v2"]["max_concurrent_threads_per_session"], 10)
-        self.assertFalse(data["features"]["multi_agent_v2"]["enabled"])
+        self.assertEqual(data["features"]["multi_agent_v2"]["max_concurrent_threads_per_session"], 15)
+        self.assertTrue(data["features"]["multi_agent_v2"]["enabled"])
+        self.assertTrue(data["features"]["agent_message_board_mcp"])
+        self.assertTrue(data["features"]["wake_on_agent_messages"])
+        for key in ("instant_interrupt", "agent_message_board", "async_compaction"):
+            self.assertTrue(data["features"][key])
         live.write_text(
             '[agents]\nmax_threads = 2\n\n'
+            '[features]\nagent_message_board_mcp = false\nwake_on_agent_messages = false\n\n'
             '[features.multi_agent_v2]\nmax_concurrent_threads_per_session = 3\n'
         )
         subprocess.run(
@@ -38,8 +86,11 @@ class CodexPreferencesTest(unittest.TestCase):
             check=True,
         )
         saved = tomllib.loads(shared.read_text())
-        self.assertEqual(saved["agents"]["max_threads"], 10)
-        self.assertEqual(saved["features"]["multi_agent_v2"]["max_concurrent_threads_per_session"], 10)
+        self.assertEqual(saved["agents"]["max_concurrent_threads_per_session"], 15)
+        self.assertTrue(saved["features"]["agent_message_board_mcp"])
+        self.assertTrue(saved["features"]["wake_on_agent_messages"])
+        self.assertTrue(saved["features"]["multi_agent_v2"]["enabled"])
+        self.assertEqual(saved["features"]["multi_agent_v2"]["max_concurrent_threads_per_session"], 15)
         self.assertEqual(saved["otel"], original["otel"])
         self.assertEqual(saved["model_providers"]["minimax"], original["model_providers"]["minimax"])
 

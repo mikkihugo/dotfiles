@@ -65,6 +65,11 @@ tool_output_token_limit = 32000
 status_line = ["model-with-reasoning", "current-dir", "project-name", "git-branch", "run-state", "five-hour-limit", "weekly-limit", "thread-id", "thread-title", "task-progress"]
 
 [features]
+agent_message_board_mcp = true
+wake_on_agent_messages = true
+agent_message_board = true
+async_compaction = true
+instant_interrupt = true
 memories = false
 context_management = true
 step_model_switching = true
@@ -92,10 +97,11 @@ env_key = "MINIMAX_API_KEY"
 wire_api = "responses"
 
 [agents]
-max_threads = 10
+max_concurrent_threads_per_session = 15
 
 [features.multi_agent_v2]
-max_concurrent_threads_per_session = 10
+enabled = true
+max_concurrent_threads_per_session = 15
 
 [agents.scout]
 description = "Read-only scout (GPT-6 Luna): mechanical inventory, structural audit, and bounded evidence collection."

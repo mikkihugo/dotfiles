@@ -285,12 +285,14 @@ jj_refuse_dirty_working_copy() {
 	die "jj holds uncommitted changes in the working copy of $dir; a git-side ref move here abandons them. Commit or abandon them in jj first (jj --repository $dir log -r @, jj --repository $dir abandon @), then retry. Nothing was changed."
 }
 
-jj_refresh_view() {
-	local dir="$1"
-	[[ -d "$dir/.jj" ]] || return 0
-	[[ -n "$jj_bin" && -x "$jj_bin" ]] || return 0
-	"$jj_bin" --repository "$dir" status --no-pager >/dev/null 2>&1 || true
-}
+# NO refresh after a git-side ref move: any jj invocation re-imports the moved
+# git head, snapshots a new working-copy commit and exports it, which leaves
+# the shared primary's git HEAD detached at that commit (observed 2026-11-18:
+# HEAD@{2} "export from jj" right after HEAD@{3} "reset: moving origin/main").
+# A detached primary is refused by sync-main ("primary checkout detached").
+# The pre-move guard above is the whole contract: it refuses the move while jj
+# holds uncommitted changes, so the stale jj view that follows the move
+# carries no content that could be lost.
 
 # jj owns the working copy in the primary checkout, so the publishable unit is
 # a jj commit, not a working-tree snapshot. `jj commit` creates a new EMPTY
@@ -454,7 +456,6 @@ sync-main)
 	if [[ -z "$local_only" ]]; then
 		jj_refuse_dirty_working_copy "$primary"
 		git -C "$primary" reset --hard origin/main
-		jj_refresh_view "$primary"
 		printf 'synced=main revision=%s fast_forward=true\n' "$(git -C "$primary" rev-parse main)"
 		exit 0
 	fi
@@ -581,7 +582,6 @@ primary-to-main)
 	fi
 	jj_refuse_dirty_working_copy "$primary"
 	git -C "$primary" checkout --quiet --force -B main origin/main
-	jj_refresh_view "$primary"
 	printf 'aligned=main revision=%s previous_branch=%s discarded_paths=%d\n' "$(git -C "$primary" rev-parse HEAD)" "$branch" "$discarded"
 	;;
 describe)

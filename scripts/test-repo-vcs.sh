@@ -790,8 +790,11 @@ if grep -Fq 'reset --hard' "$tmp/jjguard/git.log"; then
 	cat "$tmp/jjguard/git.log" >&2
 	exit 1
 fi
-# A clean jj working copy must not block the fast-forward, and jj's view is
-# refreshed after the move so no later jj command discovers the moved head.
+# A clean jj working copy must not block the fast-forward, and jj must NOT be
+# consulted after the ref move: any jj invocation re-imports the moved git
+# head and exports a new working-copy commit, which detaches the shared
+# primary's git HEAD (observed 2026-11-18) and makes the next sync-main
+# refuse with "primary checkout detached".
 : >"$tmp/jjguard/git.log"
 : >"$tmp/jjguard/jj.log"
 HOME="$tmp/jjguard/home" JJGUARD_GIT_LOG="$tmp/jjguard/git.log" JJGUARD_JJ_LOG="$tmp/jjguard/jj.log" \
@@ -808,8 +811,8 @@ grep -Fq 'reset --hard' "$tmp/jjguard/git.log" || {
 	exit 1
 }
 jj_calls="$(wc -l <"$tmp/jjguard/jj.log")"
-[[ "$jj_calls" -ge 2 ]] || {
-	printf 'sync-main must refresh the jj view after the ref move (jj calls=%s)\n' "$jj_calls" >&2
+[[ "$jj_calls" -eq 1 ]] || {
+	printf 'sync-main must consult jj exactly once (pre-move guard) and never after the ref move (jj calls=%s)\n' "$jj_calls" >&2
 	cat "$tmp/jjguard/jj.log" >&2
 	exit 1
 }

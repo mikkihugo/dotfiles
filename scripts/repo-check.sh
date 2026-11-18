@@ -133,6 +133,7 @@ stage_bash_unit_tests() {
 	bash "$root/scripts/test-codex-rollout-gc.sh"
 	bash "$root/scripts/test-git-credential-forgejo-bao.sh"
 	bash "$root/scripts/test-forgejo-token-sync.sh"
+	bash "$root/scripts/test-checkout-sync.sh"
 }
 
 stage_node_unit_tests() {

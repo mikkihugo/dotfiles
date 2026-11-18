@@ -15,9 +15,7 @@
 #   No drift — edits directly in $HOME are overwritten on the next `hms`.
 {
   pkgs,
-  lib,
   sops-nix,
-  hostname ? "",
   ...
 }: let
   localeEnvironment = {
@@ -25,11 +23,6 @@
     LC_ALL = "C.UTF-8";
   };
 in {
-  dotfiles.machine.tailnetHostname =
-    if lib.toLower hostname == "mikki-bunker"
-    then "bunker"
-    else null;
-
   imports = [
     sops-nix.homeManagerModules.sops
     ./modules/systemd-limits.nix
@@ -174,10 +167,13 @@ in {
         # startup file: home.sessionVariables reaches it through
         # ~/.profile -> hm-session-vars.sh.
         CODEX_SSH_SKIP_APP_SERVER_BOOT = "true";
-        # Host-wide direnv print-dev-env concurrency (also defaulted in
-        # config/direnv/direnvrc). Raised from 2 to 4 on 2026-10-29 so
-        # Engine + infra + jcode cold loads can overlap without queue timeout.
-        DIRENV_NIX_EVAL_SLOTS = "4";
+        # The direnv print-dev-env slot-pool limit has exactly ONE reader:
+        # config/direnv/direnvrc, which defaults it to 4 itself. That file is
+        # Home-Manager-installed only where the NixOS host module does not own
+        # interactive direnv (home/modules/shell.nix); on cc-se-sto-devbox-01
+        # direnv comes from the infra host module (/etc/static/direnv/direnvrc),
+        # which bounds evaluation with its own flock. Exporting the value here
+        # only reached shells that no reader consumed it (verified 2026-11-18).
       };
   };
 
@@ -188,7 +184,6 @@ in {
     localeEnvironment
     // {
       BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";
-      DIRENV_NIX_EVAL_SLOTS = "4";
       # Keep user services (including Grok's shared leader) on the same
       # language-cache layout as interactive shells.
       XDG_CACHE_HOME = "$HOME/.cache";

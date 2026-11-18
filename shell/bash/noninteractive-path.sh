@@ -35,5 +35,6 @@ fi
 # A caller-supplied BAO_ADDR still wins.
 export BAO_ADDR="${BAO_ADDR:-http://vault-active.vault.svc.cluster.local:8200}"
 
-# Host-wide direnv print-dev-env concurrency (see config/direnv/direnvrc).
-export DIRENV_NIX_EVAL_SLOTS="${DIRENV_NIX_EVAL_SLOTS:-4}"
+# DIRENV_NIX_EVAL_SLOTS is not exported here on purpose. Its only reader is
+# config/direnv/direnvrc, which defaults it to 4 itself, so the default lives
+# in exactly one place and a caller-supplied value still wins there.

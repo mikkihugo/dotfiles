@@ -49,17 +49,24 @@ This repo uses Headscale as the central coordination server and Tailscale as the
 
 Primary configuration lives in:
 
-- `home/modules/tailscale.nix`
-- `secrets/api-keys.yaml` under the `tailscale:` key
+- `home/modules/tailscale.nix` — Home Manager owns the Tailscale CLIENT package only.
 
-The activation flow in `home/modules/tailscale.nix`:
+What `home/modules/tailscale.nix` actually does (verified 2026-11-18):
 
-1. Installs `tailscale` if missing.
-2. Enables and starts `tailscaled`.
-3. Reads `tailscale/login_server` and `tailscale/authkey` from decrypted SOPS secrets.
-4. Runs `tailscale up --login-server="..." --authkey="..." --operator="$(whoami)" --accept-routes`.
+1. Reads the machine role gate `config.dotfiles.machine.enableTailscale`, which
+   defaults from `~/.config/dotfiles/machine-role.json` (written by
+   `bootstrap/steps/05-machine-setup.sh`).
+2. When that gate is true, adds `pkgs.tailscale` to `home.packages`.
 
-The `login_server` is the central Headscale control plane URL; documentation and repo comments refer to `https://vpn.hugo.dk`.
+What it does NOT do: it never installs or starts `tailscaled`, never reads
+`tailscale/login_server` or `tailscale/authkey` from SOPS, and never runs
+`tailscale up`. The host daemon, its persistent state, and tailnet enrolment
+are system-owned (host OS layer) and are deliberately not user activation
+hooks — see the module header. The `tailscale:` key in
+`secrets/api-keys.yaml` is not read by any module in this repository.
+
+The Headscale control plane URL (`vpn.hugo.dk`) is configured in the host
+layer, not here.
 
 ### Known Tailnet pattern
 
@@ -114,7 +121,7 @@ Bootstrap responsibilities include:
 
 - granting passwordless sudo via `02-sudoers.sh`
 - machine role setup via `05-machine-setup.sh`
-- home-manager activation and Tailscale join through `home/modules/tailscale.nix`
+- home-manager activation; the Tailscale client package via `home/modules/tailscale.nix` (daemon and tailnet join are system-owned)
 
 ## Current System State
 

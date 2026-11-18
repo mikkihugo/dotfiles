@@ -3,7 +3,38 @@
 // The app-server exposes unloading as thread/unsubscribe; it is idempotent
 // for threads that are already notLoaded.
 import fs from "node:fs";
-import { CodexAppServerClient } from "/home/mhugo/.claude/plugins/cache/openai-codex/codex/1.0.6/scripts/lib/app-server.mjs";
+import os from "node:os";
+import path from "node:path";
+
+// The Codex plugin lives in a version-keyed cache directory
+// (~/.claude/plugins/cache/openai-codex/codex/<version>) that disappears when
+// the plugin is updated, so the module path is resolved from the installed
+// plugin manifest instead of being pinned to one version.
+function resolveAppServerModule() {
+  const manifestPath = path.join(os.homedir(), ".claude", "plugins", "installed_plugins.json");
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  } catch (error) {
+    console.error(`codex-thread-gc: cannot read plugin manifest ${manifestPath}: ${error.message}`);
+    process.exit(2);
+  }
+  const installs = manifest?.plugins?.["codex@openai-codex"];
+  const entries = Array.isArray(installs) ? installs : installs ? [installs] : [];
+  const install = entries.find((entry) => entry?.scope === "user") ?? entries[0];
+  if (!install?.installPath) {
+    console.error(`codex-thread-gc: codex@openai-codex is not installed for this user (manifest ${manifestPath})`);
+    process.exit(2);
+  }
+  const modulePath = path.join(install.installPath, "scripts", "lib", "app-server.mjs");
+  if (!fs.existsSync(modulePath)) {
+    console.error(`codex-thread-gc: app-server module missing: ${modulePath}`);
+    process.exit(2);
+  }
+  return modulePath;
+}
+
+const { CodexAppServerClient } = await import(resolveAppServerModule());
 
 const args = new Set(process.argv.slice(2));
 const ageArg = process.argv.find((arg) => arg.startsWith("--age-hours="));

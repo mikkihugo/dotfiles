@@ -625,23 +625,8 @@
   '';
 in {
   sops.secrets = {
-    openrouter_api_key = {
-      key = "openrouter/api_key";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
-    opencode_api_key = {
-      key = "opencode/api_key";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
     exa_api_key = {
       key = "exa/api_key";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
-    opencode_go_api_key = {
-      key = "sf/env/OPENCODE_GO_API_KEY";
       mode = "0600";
       sopsFile = ../../secrets/api-keys.yaml;
     };
@@ -652,11 +637,6 @@ in {
     };
     minimax_api_key = {
       key = "sf/env/MINIMAX_API_KEY";
-      mode = "0600";
-      sopsFile = ../../secrets/api-keys.yaml;
-    };
-    zai_api_key = {
-      key = "sf/env/ZAI_API_KEY";
       mode = "0600";
       sopsFile = ../../secrets/api-keys.yaml;
     };
@@ -731,38 +711,15 @@ in {
         source = "${jcodeGatewayWrapper}/bin/jcode";
       };
 
-      # Managed OpenAI-compatible profile for the same fabric exposed internally
-      # as http://llm-gateway.svc/v1. jcode rejects plain HTTP hostnames other
-      # than localhost/private IPs, so the profile uses the public HTTPS edge.
-      ".jcode/config.toml" = lib.mkIf (!isSwarmDevbox) {
-        force = true;
-        text = ''
-          # Managed by Home Manager (ai-tools.nix). Default traffic → llm-gateway.
-          # Only Claude/ChatGPT subscription OAuth + this fabric profile are intended.
-          [provider]
-          default_provider = "llm-gateway"
-          default_model = "auto-glm"
-          model_picker_providers = ["llm-gateway", "claude", "openai"]
-          cross_provider_failover = "manual"
-
-          # Refuse external auth imports (Cursor IDE, Gemini CLI, etc.).
-          [auth]
-          trusted_external_sources = []
-          trusted_external_source_paths = []
-
-          [providers.llm-gateway]
-          type = "openai-compatible"
-          base_url = "https://llm-gateway.centralcloud.com/v1"
-          auth = "bearer"
-          api_key_env = "LLM_GATEWAY_API_KEY"
-          default_model = "auto-glm"
-          model_catalog = true
-          requires_api_key = true
-
-          [[providers.llm-gateway.models]]
-          id = "auto-glm"
-        '';
-      };
+      # ~/.jcode/config.toml is owned by the jcode-provider-config oneshot
+      # (jcode-providers.nix), which applies config/jcode/shared-preferences.toml
+      # on every activation and leaves the file a writable regular file. A
+      # Home-Manager home.file entry for it was a second, contradictory writer:
+      # it installed different [provider] defaults than the shared preferences
+      # and shipped the file as a read-only store symlink, which breaks J-Code's
+      # own persistence of UI and keybinding state
+      # (crates/jcode-base/src/config/config_file.rs: Config::save writes
+      # ~/.jcode/config.toml directly).
 
       # Shadow the mise `kimi` shim so `kimi` routes through the CentralCloud
       # llm-gateway by default. ~/.local/bin is before ~/.local/share/mise/shims in
@@ -936,13 +893,27 @@ in {
           if [ "''${1:-}" = "serve" ]; then
             exec "$HOME/.config/opencode/serve-with-otel.sh" "$@"
           fi
-          pnpm_shim="$HOME/.local/share/pnpm/bin/opencode"
+          # The pnpm-managed binary is resolved at runtime, not read out of
+          # ~/.local/share/pnpm/bin/opencode: that path is Home-Manager-owned
+          # and holds the OTLP delegate (opencode-otel-ingest.nix), so it
+          # carries no cmd-shim-target marker and the lookup always missed.
           pnpm_opencode=""
-          if [ -f "$pnpm_shim" ]; then
-            pnpm_opencode="$(grep '^# cmd-shim-target=' "$pnpm_shim" 2>/dev/null | head -1 | cut -d= -f2- || true)"
+          pnpm_root="$(pnpm root -g 2>/dev/null || true)"
+          if [ -n "$pnpm_root" ]; then
+            for cand in "$pnpm_root"/*/node_modules/@opencode/cli/bin/opencode.exe; do
+              if [ -x "$cand" ]; then
+                pnpm_opencode="$cand"
+                break
+              fi
+            done
           fi
-          if [ -z "$pnpm_opencode" ] || [ ! -x "$pnpm_opencode" ]; then
-            pnpm_opencode="$HOME/.local/share/pnpm/global/v11/917e035189f54688689c746c0f955a5fe2f55e26b16f39032a627ff5e27b1327/node_modules/@opencode/cli/bin/opencode.exe"
+          if [ -z "$pnpm_opencode" ]; then
+            for cand in "$HOME/.local/share/pnpm/global/v"*/[0-9a-f]*/node_modules/@opencode/cli/bin/opencode.exe; do
+              if [ -x "$cand" ]; then
+                pnpm_opencode="$cand"
+                break
+              fi
+            done
           fi
           if [ ! -x "$pnpm_opencode" ]; then
             echo "opencode: pnpm-managed binary not found (run: pnpm add -g @opencode/cli@latest)" >&2

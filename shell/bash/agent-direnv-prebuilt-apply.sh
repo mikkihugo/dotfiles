@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC1003,SC1007,SC2016,SC2034
 # agent-direnv-prebuilt-apply.sh — apply host-published prebuilt direnv export dumps (no nix eval).
 # Producer: agent-direnv-publish on cc-se-sto-devbox-01 → $XDG_RUNTIME_DIR/agent-direnv/*.{bash,meta}
 # Mirrors agent_direnv_try_shared_dump in hosts/_shared/nix-direnv-3.2.0.nix for
@@ -25,6 +26,17 @@ _agent_direnv_prebuilt_schema_ok() {
 	esac
 }
 
+# The host producer publishes at most 7200 seconds of validity.
+_agent_direnv_prebuilt_dates_ok() {
+	local created="$1" expires="$2" now="$3"
+	[[ "$created" =~ ^[0-9]{1,10}$ && "$expires" =~ ^[0-9]{1,10}$ && "$now" =~ ^[0-9]{1,10}$ ]] || return 1
+	created=$((10#$created))
+	expires=$((10#$expires))
+	now=$((10#$now))
+	[ "$created" -le "$now" ] && [ "$expires" -gt "$created" ] &&
+		[ $((expires - created)) -le 7200 ] && [ "$now" -le "$expires" ]
+}
+
 # Lane-keyed CARGO_TARGET_DIR and direnv_layout_dir after a canonical dump applies
 # to a different checkout path (bind-in-publisher; see Engine ADR se-direnv-workspace-bind).
 _agent_direnv_bind_engine_workspace() {
@@ -38,8 +50,8 @@ _agent_direnv_bind_engine_workspace() {
 _agent_direnv_prebuilt_header_matches() {
 	local header="$1" repo="$2" key="$3" system="$4" devshell="$5"
 	case "$header" in
-	"# agent-direnv-prebuilt repo=$repo key=$key system=$system devshell=$devshell rebind="*) return 0 ;;
-	"# agent-direnv-v2 repo=$repo key=$key system=$system devshell=$devshell rebind="*) return 0 ;;
+	"# agent-direnv-prebuilt repo=$repo key=$key system=$system devshell=$devshell rebind=-") return 0 ;;
+	"# agent-direnv-v2 repo=$repo key=$key system=$system devshell=$devshell rebind=-") return 0 ;;
 	*) return 1 ;;
 	esac
 }
@@ -229,7 +241,7 @@ agent_direnv_prebuilt_try_apply() {
 	local repo consumer_kind identity_root apply_dump
 	local system devshell rebind rebind_digest inputs_digest material name path digest key
 	local dump meta schema meta_repo meta_key meta_system meta_devshell meta_rebind
-	local expires_at now header strip_helper
+	local created_at expires_at now header strip_helper resolved_root resolved_input
 	local -a declared_inputs=() protected_args=()
 	local declared
 
@@ -245,9 +257,18 @@ agent_direnv_prebuilt_try_apply() {
 	fi
 
 	case "$root" in
-	/home/mhugo/code/jcode) repo=jcode; consumer_kind=canonical ;;
-	/home/mhugo/code/singularity-engine) repo=singularity-engine; consumer_kind=canonical ;;
-	/srv/infra) repo=infra; consumer_kind=canonical ;;
+	/home/mhugo/code/jcode)
+		repo=jcode
+		consumer_kind=canonical
+		;;
+	/home/mhugo/code/singularity-engine)
+		repo=singularity-engine
+		consumer_kind=canonical
+		;;
+	/srv/infra)
+		repo=infra
+		consumer_kind=canonical
+		;;
 	/home/mhugo/code/worktrees/jj/jcode/* | /home/mhugo/code/worktrees/git/jcode/*)
 		repo=jcode
 		consumer_kind=lane
@@ -284,6 +305,9 @@ agent_direnv_prebuilt_try_apply() {
 			case "$declared" in
 			/* | ../* | */../* | */.. | *'*'* | *'?'* | *'['* | *']'*) return 1 ;;
 			esac
+			resolved_root="$(realpath -e -- "$identity_root")" || return 1
+			resolved_input="$(realpath -m -- "$identity_root/$declared")" || return 1
+			case "$resolved_input" in "$resolved_root"/*) ;; *) return 1 ;; esac
 			declared_inputs+=("$declared")
 		done <"$identity_root/.agent-direnv-inputs"
 	fi
@@ -324,6 +348,7 @@ agent_direnv_prebuilt_try_apply() {
 	meta_system="$(awk -F= '$1 == "system" {print $2}' "$meta")"
 	meta_devshell="$(awk -F= '$1 == "devshell" {print $2}' "$meta")"
 	meta_rebind="$(awk -F= '$1 == "rebind" {print $2}' "$meta")"
+	created_at="$(awk -F= '$1 == "created_at" {print $2}' "$meta")"
 	expires_at="$(awk -F= '$1 == "expires_at" {print $2}' "$meta")"
 	now="$(date +%s)"
 	_agent_direnv_prebuilt_schema_ok "$schema" || return 1
@@ -332,10 +357,7 @@ agent_direnv_prebuilt_try_apply() {
 	[ "$meta_system" = "$system" ] || return 1
 	[ "$meta_devshell" = "$devshell" ] || return 1
 	[ "$meta_rebind" = "$rebind" ] || return 1
-	case "$expires_at" in
-	'' | *[!0-9]*) return 1 ;;
-	esac
-	[ "$now" -le "$expires_at" ] || return 1
+	_agent_direnv_prebuilt_dates_ok "$created_at" "$expires_at" "$now" || return 1
 
 	IFS= read -r header <"$dump" || return 1
 	_agent_direnv_prebuilt_header_matches "$header" "$repo" "$key" "$system" "$devshell" || return 1
@@ -356,6 +378,12 @@ agent_direnv_prebuilt_try_apply() {
 		return 1
 	fi
 
+	if [ "${_agent_direnv_emit_only:-}" = 1 ]; then
+		cat -- "$apply_dump" || return 1
+		[ "$apply_dump" != "$dump" ] && rm -f "$apply_dump"
+		return 0
+	fi
+
 	# shellcheck disable=SC1090
 	. "$apply_dump" || {
 		[ "$apply_dump" != "$dump" ] && rm -f "$apply_dump"
@@ -369,15 +397,21 @@ agent_direnv_prebuilt_try_apply() {
 	return 0
 }
 
+# Validate and emit without sourcing, for non-Bash consumers.
+agent_direnv_prebuilt_emit() {
+	local _agent_direnv_emit_only=1
+	agent_direnv_prebuilt_try_apply "$@"
+}
+
 # Write a ~/.cache/agent-direnv snapshot from a valid prebuilt dump (no nix eval).
 agent_direnv_prebuilt_write_snapshot() {
 	local root="$1"
 	local out_dir="$2"
 	local repo identity_root
 	local system devshell rebind_digest inputs_digest material name path digest key
-	local dump meta schema meta_repo meta_key expires_at now header strip_helper stripped
+	local dump meta schema meta_repo meta_key meta_system meta_devshell meta_rebind created_at expires_at now header strip_helper stripped
 	local -a declared_inputs=()
-	local declared
+	local declared resolved_root resolved_input stat_result
 
 	[ -n "${BASH_VERSION:-}" ] || return 1
 	[ -n "$root" ] && [ -n "$out_dir" ] || return 1
@@ -399,6 +433,18 @@ agent_direnv_prebuilt_write_snapshot() {
 		[ -f "$identity_root/.agent-direnv-inputs" ] && [ ! -L "$identity_root/.agent-direnv-inputs" ] || return 1
 		inputs_digest="$(sha256sum -- "$identity_root/.agent-direnv-inputs")"
 		inputs_digest="${inputs_digest%% *}"
+		while IFS= read -r declared || [ -n "$declared" ]; do
+			declared="${declared#"${declared%%[![:space:]]*}"}"
+			declared="${declared%"${declared##*[![:space:]]}"}"
+			[ -n "$declared" ] && [ "${declared#\#}" = "$declared" ] || continue
+			case "$declared" in
+			/* | ../* | */../* | */.. | *'*'* | *'?'* | *'['* | *']'*) return 1 ;;
+			esac
+			resolved_root="$(realpath -e -- "$identity_root")" || return 1
+			resolved_input="$(realpath -m -- "$identity_root/$declared")" || return 1
+			case "$resolved_input" in "$resolved_root"/*) ;; *) return 1 ;; esac
+			declared_inputs+=("$declared")
+		done <"$identity_root/.agent-direnv-inputs"
 	fi
 
 	material="$(
@@ -413,27 +459,38 @@ agent_direnv_prebuilt_write_snapshot() {
 			printf '%s:%s\n' "$name" "$digest"
 		done
 		printf 'inputs:%s\n' "$inputs_digest"
+		for declared in "${declared_inputs[@]}"; do
+			path="$identity_root/$declared"
+			digest=-
+			if [ -f "$path" ] && [ ! -L "$path" ]; then
+				digest="$(sha256sum -- "$path")"
+				digest="${digest%% *}"
+			fi
+			printf 'input:%s:%s\n' "$declared" "$digest"
+		done
 		printf 'rebind:%s\n' "$rebind_digest"
 	)"
 	key="$(printf '%s\n' "$material" | sha256sum)"
 	key="${key%% *}"
 	dump="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv/$key.bash"
 	meta="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv/$key.meta"
-	[ -f "$dump" ] && [ -r "$dump" ] || return 1
-	[ -f "$meta" ] && [ -r "$meta" ] || return 1
+	[ -f "$dump" ] && [ ! -L "$dump" ] && [ -r "$dump" ] && [ ! -w "$dump" ] || return 1
+	[ -f "$meta" ] && [ ! -L "$meta" ] && [ -r "$meta" ] && [ ! -w "$meta" ] || return 1
 
 	schema="$(awk -F= '$1 == "schema" {print $2}' "$meta")"
 	meta_repo="$(awk -F= '$1 == "repo" {print $2}' "$meta")"
 	meta_key="$(awk -F= '$1 == "key" {print $2}' "$meta")"
+	meta_system="$(awk -F= '$1 == "system" {print $2}' "$meta")"
+	meta_devshell="$(awk -F= '$1 == "devshell" {print $2}' "$meta")"
+	meta_rebind="$(awk -F= '$1 == "rebind" {print $2}' "$meta")"
+	created_at="$(awk -F= '$1 == "created_at" {print $2}' "$meta")"
 	expires_at="$(awk -F= '$1 == "expires_at" {print $2}' "$meta")"
 	now="$(date +%s)"
 	_agent_direnv_prebuilt_schema_ok "$schema" || return 1
 	[ "$meta_repo" = "$repo" ] || return 1
 	[ "$meta_key" = "$key" ] || return 1
-	case "$expires_at" in
-	'' | *[!0-9]*) return 1 ;;
-	esac
-	[ "$now" -le "$expires_at" ] || return 1
+	[ "$meta_system" = "$system" ] && [ "$meta_devshell" = "$devshell" ] && [ "$meta_rebind" = - ] || return 1
+	_agent_direnv_prebuilt_dates_ok "$created_at" "$expires_at" "$now" || return 1
 
 	IFS= read -r header <"$dump" || return 1
 	_agent_direnv_prebuilt_header_matches "$header" "$repo" "$key" "$system" "$devshell" || return 1
@@ -446,11 +503,31 @@ agent_direnv_prebuilt_write_snapshot() {
 		return 1
 	fi
 
-	mkdir -p "$out_dir"
-	{
-		printf '# agent-direnv-root:%s\n' "$root"
-		cat "$stripped"
-	} >"$out_dir/env"
+	mkdir -p "$out_dir" || {
+		rm -f "$stripped"
+		return 1
+	}
+	if (printf '# agent-direnv-root:%s\n' "$root" && cat "$stripped") >"$out_dir/env"; then
+		:
+	else
+		rm -f "$stripped" "$out_dir/env" "$out_dir/fingerprint"
+		return 1
+	fi
 	rm -f "$stripped"
+	if (
+		printf '%s\n' "$root" || return 1
+		for name in .envrc flake.nix flake.lock; do
+			if [ -e "$root/$name" ]; then
+				stat_result="$(stat -c '%Y %s' "$root/$name")" || return 1
+				printf '%s %s ' "$name" "$stat_result" || return 1
+			fi
+		done
+		printf '\n' && date -u +%FT%TZ
+	) >"$out_dir/fingerprint"; then
+		:
+	else
+		rm -f "$out_dir/env" "$out_dir/fingerprint"
+		return 1
+	fi
 	return 0
 }

@@ -1023,3 +1023,347 @@ test("stable-shell.nix generators never emit a relative interpreter", async () =
   assert.match(source, /#!\$\{bashBin\}/, "declarative wrapper must interpolate the store bash");
   assert.match(source, /exec \$\{bashBin\} "\$@"/, "declarative wrapper must exec the store bash by absolute path");
 });
+
+
+// Synthetic producer bytes and fixed sentinels exercise real shell consumers.
+// The child inherits the declared toolchain PATH, but no shell startup hooks.
+test("prebuilt-only shell consumers enforce producer and miss contracts", async () => {
+  const program = String.raw`import hashlib, os, pathlib, subprocess, tempfile, time, sys, re, shutil
+BASH = shutil.which('bash')
+ZSH = shutil.which('zsh')
+assert BASH and ZSH
+S = pathlib.Path(sys.argv[1]).resolve()
+tmp = pathlib.Path(tempfile.mkdtemp(prefix='prebuilt-proof-'))
+root = tmp / 'root'
+root.mkdir()
+run = tmp / 'run'
+(run / 'agent-direnv').mkdir(parents=True)
+home = tmp / 'home'
+helper = home / '.dotfiles/shell/bash/agent-direnv-prebuilt-apply.sh'
+helper.parent.mkdir(parents=True)
+bins = tmp / 'bin'
+bins.mkdir()
+calls = tmp / 'calls'
+calls.write_text('')
+for name in ['direnv', 'nix', 'systemctl', 'sleep', 'setsid']:
+    p = bins / name
+    p.write_text('#!' + BASH + '\nprintf "%s\\n" ' + name + ' >> "$SENTINEL"\nexit 1\n')
+    p.chmod(0o755)
+strip = bins / 'strip'
+strip.write_text('#!' + BASH + '\nif [ "${'${'}1:-}" = --validate ]; then cat >/dev/null; else cat; fi\n')
+strip.chmod(0o755)
+(root / '.envrc').write_text('fixture\n')
+(root / 'flake.nix').write_text('fixture\n')
+(root / 'flake.lock').write_text('fixture\n')
+(root / '.agent-direnv-inputs').write_text('input.txt\n')
+(root / 'input.txt').write_text('declared fixture\n')
+
+def rewrite(p):
+    s = (S / p).read_text()
+    return s.replace('/home/mhugo/code/singularity-engine', str(tmp / 'missing-engine')).replace('/home/mhugo/code/jcode', str(root)).replace('/srv/infra', str(tmp / 'missing-infra'))
+helper.write_text(rewrite('shell/bash/agent-direnv-prebuilt-apply.sh'))
+loader = tmp / 'loader'
+loader.write_text(rewrite('shell/bash/direnv-export.sh'))
+env = {'HOME': str(home), 'PATH': str(bins) + os.pathsep + os.environ['PATH'], 'XDG_RUNTIME_DIR': str(run), 'AGENT_DIRENV_STATE': str(tmp / 'state'), 'SENTINEL': str(calls), 'STRIP_AGENT_DIRENV_SNAPSHOT': str(strip), 'AGENT_DIRENV_PREBUILT_ONLY': '1', 'TMPDIR': str(tmp)}
+
+def call(script, args=(), env_override=None):
+    e = env.copy()
+    e.update(env_override or {})
+    return subprocess.run([BASH, '--noprofile', '--norc', '-c', script, 'bash', *map(str, args)], cwd=root, env=e, capture_output=True, text=True, )
+
+def digest(p):
+    return hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else '-'
+
+def fixture(declared='input.txt'):
+    material = 'repo:jcode\nsystem:x86_64-linux\ndevShell:default\n' + ''.join((f'{n}:{digest(root / n)}\n' for n in ['.envrc', 'flake.lock', 'flake.nix'])) + f"inputs:{digest(root / '.agent-direnv-inputs')}\ninput:{declared}:{digest(root / declared)}\nrebind:-\n"
+    key = hashlib.sha256(material.encode()).hexdigest()
+    d = run / 'agent-direnv' / f'{key}.bash'
+    m = d.with_suffix('.meta')
+    d.unlink(missing_ok=True)
+    m.unlink(missing_ok=True)
+    d.write_text(f'# agent-direnv-prebuilt repo=jcode key={key} system=x86_64-linux devshell=default rebind=-\nexport FIXTURE_LOADED=yes\nexport PATH=/prebuilt/bin\n')
+    now = int(time.time())
+    m.write_text(f'schema=centralcloud.agent-direnv/prebuilt\nrepo=jcode\nkey={key}\nsystem=x86_64-linux\ndevshell=default\nrebind=-\ncreated_at={now}\nexpires_at={now + 7200}\n')
+    d.chmod(0o444)
+    m.chmod(0o444)
+    return (d, m)
+fail = []
+
+def check(name, ok, detail=''):
+    detail = detail.replace(os.environ['PATH'], '<inherited PATH>')
+    print(('PASS' if ok else 'FAIL') + ' ' + name + (' ' + detail if not ok else ''))
+    fail.extend([] if ok else [name])
+
+def clear():
+    calls.write_text('')
+
+def load():
+    return call('. "$1"; printf "loaded=%s shell=%s path=%s\\n" "${'${'}FIXTURE_LOADED:-no}" "${'${'}IN_NIX_SHELL:-unset}" "$PATH"', [loader])
+clear()
+r = load()
+check(
+    'missing prebuilt fails open without local execution',
+    r.returncode == 0 and 'loaded=no shell=unset' in r.stdout and (not calls.read_text()),
+    repr((r.stdout, r.stderr, calls.read_text())),
+)
+d, m = fixture()
+clear()
+r = load()
+check(
+    'valid prebuilt and caller PATH',
+    r.returncode == 0 and 'loaded=yes' in r.stdout and (str(bins) in r.stdout) and (not calls.read_text()),
+    repr((r.stdout, r.stderr, calls.read_text())),
+)
+m.chmod(0o644)
+m.write_text(re.sub('expires_at=\\d+', 'expires_at=1', m.read_text()))
+m.chmod(0o444)
+clear()
+r = load()
+check(
+    'expired prebuilt rejected',
+    'loaded=no shell=unset' in r.stdout and (not calls.read_text()),
+    repr((r.stdout, r.stderr, calls.read_text())),
+)
+d, m = fixture()
+d.chmod(0o644)
+d.write_text('malformed\nexport FIXTURE_LOADED=yes\n')
+d.chmod(0o444)
+clear()
+r = load()
+check(
+    'malformed prebuilt rejected',
+    'loaded=no shell=unset' in r.stdout and (not calls.read_text()),
+    repr((r.stdout, r.stderr, calls.read_text())),
+)
+d, m = fixture()
+(root / 'input.txt').write_text('changed bytes\n')
+clear()
+r = load()
+check(
+    'changed declared input rejected',
+    'loaded=no shell=unset' in r.stdout and (not calls.read_text()),
+    repr((r.stdout, r.stderr, calls.read_text())),
+)
+(root / 'input.txt').write_text('declared fixture\n')
+d, m = fixture()
+out = tmp / 'snapshot'
+r = call('. "$1"; agent_direnv_prebuilt_write_snapshot "$2" "$3"', [helper, root, out])
+check(
+    'declared input snapshot produced',
+    r.returncode == 0 and (out / 'fingerprint').is_file(),
+    repr((r.returncode, r.stdout, r.stderr)),
+)
+hashroot = hashlib.sha256(str(root).encode()).hexdigest()
+dest = tmp / 'state' / hashroot
+dest.parent.mkdir(parents=True, exist_ok=True)
+if out.is_dir():
+    out.rename(dest)
+clear()
+r = load() if not dest.exists() else call('. "$1"; printf "loaded=%s\\n" "${'${'}FIXTURE_LOADED:-no}"', [loader], {'AGENT_DIRENV_PREBUILT_ONLY': '0'})
+check(
+    'snapshot accepted by actual legacy consumer without local profile',
+    r.returncode == 0 and 'loaded=yes' in r.stdout and (not calls.read_text()),
+    repr((r.stdout, r.stderr, calls.read_text())),
+)
+(root / '.envrc').write_text('legacy changed\n')
+for path in (run / 'agent-direnv').glob('*.bash'):
+    if path.read_text().startswith('# agent-direnv-root:') or path.read_text().startswith('# agent-direnv-envrc-root:'):
+        path.unlink()
+clear()
+r = load() if False else call('. "$1"; printf done', [loader], {'AGENT_DIRENV_PREBUILT_ONLY': '0'})
+check('policy off retains legacy export', 'direnv' in calls.read_text(), repr((r.stdout, r.stderr, calls.read_text())))
+nix = (S / 'home/modules/agent-direnv.nix').read_text()
+text = nix.split('pkgs.writeShellScriptBin "direnv-agent" \'\'\n', 1)[1].split("\n  '';", 1)[0]
+pkgs = tmp / 'pkgs'
+(pkgs / 'bin').mkdir(parents=True)
+for tool in ('sha256sum', 'tail', 'mktemp', 'sed'):
+    executable = shutil.which(tool)
+    if not executable:
+        raise RuntimeError(f'required declared test tool unavailable: {tool}')
+    (pkgs / 'bin' / tool).symlink_to(executable)
+text = text.replace("''${'${'}", '${'${'}')
+text = text.replace('${'${'}lib.optionalString prebuiltOnly "1"}', '1')
+text = text.replace('${'${'}pkgs.coreutils}', str(pkgs))
+text = text.replace('${'${'}pkgs.gnused}', str(pkgs))
+text = text.replace('${'${'}pkgs.direnv}', str(tmp / 'no-real-direnv'))
+agent = tmp / 'agent'
+agent.write_text(text)
+clear()
+r = call('source "$1" "$2"', [agent, root])
+check(
+    'generated agent miss nonzero empty stdout',
+    r.returncode == 75 and (not r.stdout) and ('direnv' not in calls.read_text()) and ('sleep' not in calls.read_text()),
+    repr((r.returncode, r.stdout, r.stderr, calls.read_text())),
+)
+(root / '.envrc').write_text('fixture\n')
+d, m = fixture()
+clear()
+r = call('source "$1" "$2"', [agent, root])
+check(
+    'generated agent valid prebuilt hit',
+    r.returncode == 0 and 'FIXTURE_LOADED=yes' in r.stdout and (not calls.read_text()),
+    repr((r.returncode, r.stdout, r.stderr, calls.read_text())),
+)
+m.chmod(0o644)
+m.write_text(re.sub('expires_at=\\d+', 'expires_at=1', m.read_text()))
+m.chmod(0o444)
+clear()
+r = call('source "$1" "$2"', [agent, root])
+check(
+    'generated agent rejects expired producer',
+    r.returncode == 75 and (not r.stdout) and ('direnv' not in calls.read_text()),
+    repr((r.returncode, r.stdout, r.stderr, calls.read_text())),
+)
+d, m = fixture()
+d.chmod(0o644)
+d.write_text('malformed\n')
+d.chmod(0o444)
+clear()
+r = call('source "$1" "$2"', [agent, root])
+check(
+    'generated agent rejects malformed producer',
+    r.returncode == 75 and (not r.stdout) and ('direnv' not in calls.read_text()),
+    repr((r.returncode, r.stdout, r.stderr, calls.read_text())),
+)
+d, m = fixture()
+(root / 'input.txt').write_text('different\n')
+clear()
+r = call('source "$1" "$2"', [agent, root])
+check(
+    'generated agent rejects changed input',
+    r.returncode == 75 and (not r.stdout) and ('direnv' not in calls.read_text()),
+    repr((r.returncode, r.stdout, r.stderr, calls.read_text())),
+)
+outside = tmp / 'outside'
+outside.mkdir()
+(outside / 'input.txt').write_text('outside bytes\n')
+(root / 'link').symlink_to(outside, target_is_directory=True)
+(root / '.agent-direnv-inputs').write_text('link/input.txt\n')
+fixture('link/input.txt')
+clear()
+r = call('. "$1"; agent_direnv_prebuilt_write_snapshot "$2" "$3"', [helper, root, tmp / 'escape-snapshot'])
+check(
+    'parent symlink escape rejected',
+    r.returncode != 0 and (not (tmp / 'escape-snapshot' / 'env').exists()),
+    repr((r.returncode, r.stdout, r.stderr)),
+)
+r = load()
+check(
+    'loader rejects parent symlink escape',
+    'loaded=no' in r.stdout and (not calls.read_text()),
+    repr((r.stdout, r.stderr, calls.read_text())),
+)
+(root / '.agent-direnv-inputs').write_text('input.txt\n')
+d, m = fixture()
+d.chmod(0o644)
+d.write_text(d.read_text().replace('rebind=-', 'rebind=foreign'))
+d.chmod(0o444)
+clear()
+r = load()
+check(
+    'foreign header rebind rejected by loader',
+    'loaded=no' in r.stdout and (not calls.read_text()),
+    repr((r.stdout, r.stderr, calls.read_text())),
+)
+r = call('. "$1"; agent_direnv_prebuilt_write_snapshot "$2" "$3"', [helper, root, tmp / 'bad-header'])
+check(
+    'foreign header rebind rejected by snapshot',
+    r.returncode != 0 and (not (tmp / 'bad-header' / 'env').exists()),
+    repr((r.returncode, r.stdout, r.stderr)),
+)
+d, m = fixture()
+blocked = tmp / 'blocked'
+blocked.write_text('owned file')
+r = call('. "$1"; if agent_direnv_prebuilt_write_snapshot "$2" "$3"; then printf false-success; else printf rejected; fi', [helper, root, blocked])
+check(
+    'snapshot destination failure reported',
+    r.returncode == 0 and r.stdout == 'rejected',
+    repr((r.returncode, r.stdout, r.stderr)),
+)
+locked = tmp / 'unwritable'
+locked.mkdir(mode=0o500)
+r = call('. "$1"; if agent_direnv_prebuilt_write_snapshot "$2" "$3"; then printf false-success; else printf rejected; fi', [helper, root, locked])
+check(
+    'unwritable snapshot directory rejected',
+    r.returncode == 0 and r.stdout == 'rejected' and (not (locked / 'env').exists()),
+    repr((r.returncode, r.stdout, r.stderr)),
+)
+clear()
+r = call('. "$1"; printf "%s" "$IN_NIX_SHELL"', [loader], {'IN_NIX_SHELL': 'impure', 'DIRENV_DIR': '-' + str(root)})
+check(
+    'matching inherited shell preserved',
+    r.stdout == 'impure' and (not calls.read_text()),
+    repr((r.stdout, r.stderr, calls.read_text())),
+)
+clear()
+zsh = ZSH
+e = env.copy()
+e['TEST_PATH'] = env['PATH']
+r = subprocess.run([zsh, '-f', '-c', 'PATH=$TEST_PATH; export PATH; . "$1"; printf "loaded=%s path=%s\\n" "${'${'}FIXTURE_LOADED:-no}" "$PATH"', 'zsh', str(loader)], cwd=root, env=e, capture_output=True, text=True, )
+check(
+    'zsh prebuilt hit and caller PATH',
+    r.returncode == 0 and 'loaded=yes' in r.stdout and (str(bins) in r.stdout) and (not calls.read_text()),
+    repr((r.returncode, r.stdout, r.stderr, calls.read_text())),
+)
+
+# Producer timestamps must be present, sensible and match the 7200s producer TTL.
+d, m = fixture()
+metadata = m.read_text()
+for label, changed in (
+    ('missing creation', re.sub(r'created_at=\d+\n', '', metadata)),
+    ('future creation', re.sub(r'created_at=\d+', f'created_at={int(time.time()) + 100}', metadata)),
+    ('invalid lifetime', re.sub(r'expires_at=\d+', f'expires_at={int(time.time()) + 8000}', metadata)),
+):
+    m.chmod(0o644)
+    m.write_text(changed)
+    m.chmod(0o444)
+    r = load()
+    check(f'{label} rejected by loader', 'loaded=no' in r.stdout, repr((r.returncode, r.stderr)))
+    r = call('. "$1"; agent_direnv_prebuilt_write_snapshot "$2" "$3"', [helper, root, tmp / 'invalid-date'])
+    check(f'{label} rejected by snapshot', r.returncode != 0, repr((r.returncode, r.stdout, r.stderr)))
+
+
+print('fixture:', tmp)
+sys.exit(bool(fail))
+`;
+  const base = await mkdtemp(join(tmpdir(), "prebuilt-only-contract-"));
+  const runner = join(base, "proof.py");
+  await writeFile(runner, program);
+  const env = { HOME: base, PATH: process.env.PATH, TMPDIR: base };
+  const result = spawnSync("python3", [runner, process.cwd()], { env, encoding: "utf8" });
+  const evidence = `${result.stdout}\n${result.stderr}\n${result.error ?? ""}`;
+  assert.equal(result.status, 0, evidence);
+  const scenarios = [
+    "missing prebuilt fails open without local execution",
+    "valid prebuilt and caller PATH",
+    "expired prebuilt rejected",
+    "malformed prebuilt rejected",
+    "changed declared input rejected",
+    "declared input snapshot produced",
+    "snapshot accepted by actual legacy consumer without local profile",
+    "policy off retains legacy export",
+    "generated agent miss nonzero empty stdout",
+    "generated agent valid prebuilt hit",
+    "generated agent rejects expired producer",
+    "generated agent rejects malformed producer",
+    "generated agent rejects changed input",
+    "parent symlink escape rejected",
+    "loader rejects parent symlink escape",
+    "foreign header rebind rejected by loader",
+    "foreign header rebind rejected by snapshot",
+    "snapshot destination failure reported",
+    "unwritable snapshot directory rejected",
+    "matching inherited shell preserved",
+    "zsh prebuilt hit and caller PATH",
+    "missing creation rejected by loader",
+    "missing creation rejected by snapshot",
+    "future creation rejected by loader",
+    "future creation rejected by snapshot",
+    "invalid lifetime rejected by loader",
+    "invalid lifetime rejected by snapshot",
+];
+  for (const scenario of scenarios) {
+    assert.ok(result.stdout.includes(`PASS ${scenario}\n`), `${scenario}\n${evidence}`);
+  }
+  assert.equal((result.stdout.match(/^PASS /gm) ?? []).length, scenarios.length, evidence);
+});

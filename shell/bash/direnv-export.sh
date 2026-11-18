@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# shellcheck disable=SC1090,SC2016,SC3043
 # Load a repository environment for non-interactive shells without repeatedly
 # evaluating the same repo. Consumers: bashrc, BASH_ENV (Claude/Codex/goose),
 # zshenv (Cursor `zsh -c` — Cursor does not use the agent-shell wrapper as
@@ -129,17 +130,17 @@ fi
 # Cursor `zsh -c` sanitizes PATH. If direnv/coreutils/flock are missing, pull
 # them from the system profiles. Do not prepend when they already resolve —
 # tests (and anyone with a wrapped direnv) must keep their PATH winner.
-if ! command -v direnv >/dev/null 2>&1 ||
+if [ "${AGENT_DIRENV_PREBUILT_ONLY:-}" != 1 ] && { ! command -v direnv >/dev/null 2>&1 ||
 	! command -v timeout >/dev/null 2>&1 ||
 	! command -v sha256sum >/dev/null 2>&1 ||
 	! command -v flock >/dev/null 2>&1 ||
-	! command -v python3 >/dev/null 2>&1; then
+	! command -v python3 >/dev/null 2>&1; }; then
 	PATH="/run/current-system/sw/bin:/etc/profiles/per-user/${USER:-mhugo}/bin:${HOME}/.nix-profile/bin:/usr/bin:${PATH}"
 fi
 
 # Home Manager supplies coreutils, but fail open if a dependency is absent;
 # never replace the bounded contract with an unbounded fallback.
-if ! command -v direnv >/dev/null 2>&1 || ! command -v timeout >/dev/null 2>&1; then
+if [ "${AGENT_DIRENV_PREBUILT_ONLY:-}" != 1 ] && { ! command -v direnv >/dev/null 2>&1 || ! command -v timeout >/dev/null 2>&1; }; then
 	_direnv_cleanup
 	return 0
 fi
@@ -447,6 +448,36 @@ _direnv_fill_cache() {
 }
 
 if ! _direnv_root=$(_direnv_envrc_root); then
+	_direnv_cleanup
+	export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
+	return 0
+fi
+
+# Prebuilt-only consumers never enter local export, refresh, sleep, or service paths.
+if [ "${AGENT_DIRENV_PREBUILT_ONLY:-}" = 1 ]; then
+	_direnv_prebuilt_helper="${HOME}/.dotfiles/shell/bash/agent-direnv-prebuilt-apply.sh"
+	if [ -n "${BASH_VERSION:-}" ] && [ -r "$_direnv_prebuilt_helper" ]; then
+		. "$_direnv_prebuilt_helper"
+		if agent_direnv_prebuilt_try_apply "$_direnv_root"; then
+			_direnv_restore_caller_path
+		else
+			printf 'agent-direnv: no valid prebuilt export for %s\n' "$_direnv_root" >&2
+		fi
+	elif [ -r "$_direnv_prebuilt_helper" ] && command -v bash >/dev/null 2>&1; then
+		_direnv_prebuilt_tmp=$(mktemp "${TMPDIR:-/tmp}/agent-direnv-loader.XXXXXX") || _direnv_prebuilt_tmp=
+		if [ -n "$_direnv_prebuilt_tmp" ] &&
+			env -u BASH_ENV -u ENV bash --noprofile --norc -c '. "$1"; agent_direnv_prebuilt_emit "$2"' bash "$_direnv_prebuilt_helper" "$_direnv_root" >"$_direnv_prebuilt_tmp" &&
+			[ -s "$_direnv_prebuilt_tmp" ]; then
+			. "$_direnv_prebuilt_tmp"
+			_direnv_restore_caller_path
+		else
+			printf 'agent-direnv: no valid prebuilt export for %s\n' "$_direnv_root" >&2
+		fi
+		[ -z "$_direnv_prebuilt_tmp" ] || rm -f -- "$_direnv_prebuilt_tmp"
+	else
+		printf 'agent-direnv: prebuilt helper unavailable for %s\n' "$_direnv_root" >&2
+	fi
+	unset _direnv_prebuilt_helper _direnv_prebuilt_tmp
 	_direnv_cleanup
 	export BASH_ENV="${BASH_ENV:-$HOME/.dotfiles/shell/bash/noninteractive-path.sh}"
 	return 0

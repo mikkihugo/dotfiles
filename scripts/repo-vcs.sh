@@ -201,11 +201,17 @@ fetch_forgejo_pruned() {
 }
 valid_name() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid worktree name: $1"; }
 # Leftover refs are namespaced (chore/*, fix/*, …). The slash keeps main and
-# other checkout-local short names out of this retire surface.
+# other checkout-local short names out of this retire surface. A bare name
+# (jj leaves push-<token> refs behind) is a valid name too, but a bare name
+# may also be a real branch: branch-retire may delete it only when its tip
+# is already in main, so no unique work can be lost.
 valid_leftover_ref() {
-	[[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] || die "invalid leftover ref: $1"
+	if [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._/-]*$ ]]; then
+		return 0
+	fi
+	[[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid leftover ref: $1"
 	case "$1" in
-	main | HEAD | origin/main) die 'branch-retire refuses main/HEAD' ;;
+	main | master | HEAD | origin/main) die 'branch-retire refuses main/HEAD' ;;
 	esac
 }
 leftover_ref_checked_out() {
@@ -828,13 +834,23 @@ branch-delete | branch-retire)
 	else
 		revision="$(git -C "$root" rev-parse "refs/remotes/origin/$ref")"
 	fi
+	if [[ "$apply" == --apply ]]; then
+		# Pruned Forgejo fetch is the live remote proof. A failed ls-remote must
+		# not look like "absent" when origin/ still names the leftover. It
+		# runs before the containment check so origin/main is current.
+		fetch_forgejo_pruned "$root"
+	fi
+	if [[ "$ref" != */* ]]; then
+		# A bare-named ref may be a real branch: retire it only when its tip
+		# is already in main, so the deletion cannot lose unique work.
+		git -C "$root" merge-base --is-ancestor "$revision" refs/heads/main ||
+			git -C "$root" merge-base --is-ancestor "$revision" refs/remotes/origin/main ||
+			die "leftover ref carries unique commits: $ref"
+	fi
 	if [[ "$apply" != --apply ]]; then
 		printf 'dry-run leftover=%s revision=%s local=%s remote_tracking=%s apply=false\n' "$ref" "$revision" "$local_present" "$remote_tracking"
 		exit 0
 	fi
-	# Pruned Forgejo fetch is the live remote proof. A failed ls-remote must
-	# not look like "absent" when origin/ still names the leftover.
-	fetch_forgejo_pruned "$root"
 	forgejo_present=false
 	if git -C "$root" show-ref --verify --quiet "refs/remotes/origin/$ref"; then
 		forgejo_present=true

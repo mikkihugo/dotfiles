@@ -286,10 +286,26 @@ if "$root/scripts/repo-vcs.sh" branch-retire main >/dev/null 2>&1; then
 	printf 'branch-retire unexpectedly accepted main\n' >&2
 	exit 1
 fi
-if "$root/scripts/repo-vcs.sh" branch-retire leftover-unnamespaced >/dev/null 2>&1; then
-	printf 'branch-retire unexpectedly accepted an unnamespaced ref\n' >&2
+if "$root/scripts/repo-vcs.sh" branch-retire master >/dev/null 2>&1; then
+	printf 'branch-retire unexpectedly accepted master\n' >&2
 	exit 1
 fi
+# A bare-named leftover (jj leaves push-<token> refs behind) is a valid ref
+# name now: the verb must judge it by what it is (no such ref, unique
+# commits), never by its shape.
+if "$root/scripts/repo-vcs.sh" branch-retire leftover-unnamespaced >"$tmp/unnamespaced.out" 2>"$tmp/unnamespaced.err"; then
+	printf 'branch-retire unexpectedly retired an unnamespaced ref\n' >&2
+	exit 1
+fi
+if grep -Fq 'invalid leftover ref' "$tmp/unnamespaced.err"; then
+	printf 'branch-retire must accept a bare-named leftover ref name\n' >&2
+	exit 1
+fi
+grep -Fq 'no leftover ref' "$tmp/unnamespaced.err" || {
+	printf 'branch-retire must refuse a bare-named ref the repository does not have\n' >&2
+	cat "$tmp/unnamespaced.err" >&2
+	exit 1
+}
 
 retire_log="$tmp/branch-retire.log"
 mkdir -p "$tmp/retire"
@@ -328,6 +344,68 @@ if grep -Fq 'push ' "$retire_log"; then
 	printf 'branch-retire dry-run pushed a leftover delete\n' >&2
 	exit 1
 fi
+
+# A bare-named leftover whose tip is already in main is retirable: the bare
+# name may be a real branch, so containment in main is what makes it safe.
+bare_log="$tmp/branch-retire-bare.log"
+cat >"$tmp/retire/git-bare" <<'RETIRE_BARE'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$RETIRE_BARE_LOG"
+if [[ "$*" == *'show-ref --verify --quiet refs/heads/push-uuprrylrvzsk'* ]]; then
+	exit 0
+fi
+if [[ "$*" == *'rev-parse refs/heads/push-uuprrylrvzsk'* ]]; then
+	printf '%s\n' d1d2455c9a6e1b0d4f2c8b7a5e3d1c9b8a7e6d50
+	exit 0
+fi
+if [[ "$*" == *'show-ref --verify --quiet refs/remotes/origin/push-uuprrylrvzsk'* ]]; then
+	exit 0
+fi
+if [[ "$*" == *'merge-base --is-ancestor'* ]]; then
+	exit 0
+fi
+exit 0
+RETIRE_BARE
+chmod 0755 "$tmp/retire/git-bare"
+if ! RETIRE_BARE_LOG="$bare_log" SE_GIT_BIN="$tmp/retire/git-bare" _run_repo_vcs "$root/scripts/repo-vcs.sh" branch-retire push-uuprrylrvzsk >"$tmp/retire-bare.out" 2>"$tmp/retire-bare.err"; then
+	printf 'branch-retire dry-run must succeed for a bare-named leftover ref contained in main\n' >&2
+	cat "$tmp/retire-bare.err" >&2
+	exit 1
+fi
+grep -Fq 'dry-run leftover=push-uuprrylrvzsk' "$tmp/retire-bare.out" || {
+	printf 'branch-retire dry-run must report the bare-named leftover ref\n' >&2
+	cat "$tmp/retire-bare.out" >&2
+	exit 1
+}
+
+# The same bare name carrying commits main does not have must be refused:
+# retiring it would lose work.
+unique_log="$tmp/branch-retire-bare-unique.log"
+cat >"$tmp/retire/git-bare-unique" <<'RETIRE_BARE_UNIQUE'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$RETIRE_BARE_UNIQUE_LOG"
+if [[ "$*" == *'show-ref --verify --quiet refs/heads/push-uuprrylrvzsk'* ]]; then
+	exit 0
+fi
+if [[ "$*" == *'rev-parse refs/heads/push-uuprrylrvzsk'* ]]; then
+	printf '%s\n' d1d2455c9a6e1b0d4f2c8b7a5e3d1c9b8a7e6d50
+	exit 0
+fi
+if [[ "$*" == *'merge-base --is-ancestor'* ]]; then
+	exit 1
+fi
+exit 0
+RETIRE_BARE_UNIQUE
+chmod 0755 "$tmp/retire/git-bare-unique"
+if RETIRE_BARE_UNIQUE_LOG="$unique_log" SE_GIT_BIN="$tmp/retire/git-bare-unique" _run_repo_vcs "$root/scripts/repo-vcs.sh" branch-retire push-uuprrylrvzsk >"$tmp/retire-bare-unique.out" 2>"$tmp/retire-bare-unique.err"; then
+	printf 'branch-retire must refuse a bare-named ref that carries unique commits\n' >&2
+	exit 1
+fi
+grep -Fq 'carries unique commits' "$tmp/retire-bare-unique.err" || {
+	printf 'branch-retire must name the unique-commit refusal for a bare-named ref\n' >&2
+	cat "$tmp/retire-bare-unique.err" >&2
+	exit 1
+}
 
 checked_out_log="$tmp/branch-retire-checked-out.log"
 cat >"$tmp/retire/git-checked-out" <<'RETIRE_CHECKED_OUT'

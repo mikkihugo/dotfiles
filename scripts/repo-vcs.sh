@@ -309,6 +309,17 @@ primary_head_content_contained() {
 	return 1
 }
 
+# jj's working-copy changes are detected from CAPTURED status output, never
+# from a live pipeline: `grep -q` exits at the first match, SIGPIPEs jj, and
+# under pipefail the pipeline then reports failure even though the match
+# succeeded — so a pipe-guard fires on the wrong side of the condition. The
+# same trap the rev-list history proof below avoids.
+jj_working_copy_has_changes() {
+	local status_text
+	status_text="$(jj --repository "$root" status --no-pager 2>/dev/null || true)"
+	grep -E '^Working copy changes:' <<<"$status_text" >/dev/null
+}
+
 # jj owns the working copy in the primary checkout, so the publishable unit is
 # a jj commit, not a working-tree snapshot. `jj commit` creates a new EMPTY
 # working-copy commit on top of the described one, so the commit main must
@@ -318,8 +329,9 @@ primary_head_content_contained() {
 # itself can only push one remote per invocation).
 jj_publish_main_bookmark() {
 	local target
-	jj --repository "$root" status --no-pager | grep -Eq '^Working copy changes:' &&
+	if jj_working_copy_has_changes; then
 		die 'working copy has uncommitted changes; commit them first: repo vcs describe "<message>"'
+	fi
 	# --no-graph matters: with the graph, jj renders the id as a label
 	# ("○  245e945a…"), which `jj bookmark set -r` cannot parse as a revset.
 	# The template emits one newline-terminated bare id per commit.
@@ -633,10 +645,15 @@ describe)
 	fi
 	[[ $# -eq 1 ]] || die 'describe requires one message'
 	if [[ -d "$root/.jj" ]]; then
-		# jj 0.47 prints "Working copy changes:" when edits are pending; the
-		# older "nothing: ..." wording no longer appears, so the previous
-		# guard never fired and a clean tree produced an empty commit.
-		jj --repository "$root" status --no-pager | grep -Eq '^Working copy changes:' &&
+		# jj 0.47 prints "Working copy changes:" when edits are pending and
+		# "The working copy has no changes." otherwise. The guard must die
+		# when the working copy is CLEAN, because the commit would then be
+		# empty. The previous form never fired: `grep -q` exited at the
+		# first match, SIGPIPEd jj, and under pipefail the pipeline reported
+		# failure even on a successful match — so the guard was skipped
+		# exactly when there WERE changes and a clean tree produced an empty
+		# commit.
+		jj_working_copy_has_changes ||
 			die 'no changes to describe'
 		jj --repository "$root" commit -m "$1"
 	else

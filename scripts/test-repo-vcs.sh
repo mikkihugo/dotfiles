@@ -899,3 +899,49 @@ if [[ -d "$rb/repo/.git/rebase-merge" ]]; then
 	cat "$tmp/rb.err" >&2
 	exit 1
 fi
+
+# describe must COMMIT the working-copy changes in a jj repository. The guard
+# that refuses an empty commit had its polarity inverted: it died with 'no
+# changes to describe' exactly when there WERE changes, and — because the
+# AND-list then returned 1 under `set -e` — exited silently with status 1 when
+# the working copy was clean (observed 2026-11-18).
+ds="$tmp/describe-jj"
+mkdir -p "$ds/scripts"
+ds_git_bin="${SE_GIT_BIN:-$(command -v git)}"
+ds_git() { "$ds_git_bin" -c user.name=t -c user.email=t@t -c init.defaultBranch=main "$@"; }
+ds_git init -q "$ds"
+printf 'a\n' >"$ds/f"
+# The facade copy below lands in the fixture's tree, and jj tracks untracked
+# files, so the copy would make the working copy dirty and the "clean tree"
+# case would not be clean. Ignore it, and commit the ignore rule so jj
+# imports it with the rest of the tree.
+printf 'scripts/\n' >"$ds/.gitignore"
+ds_git -C "$ds" add f .gitignore
+ds_git -C "$ds" commit -qm c1
+(cd "$ds" && jj git init --colocate >/dev/null 2>&1)
+# The facade resolves its repository root from its own path, so the script is
+# copied into the fixture: $root is the fixture repo, not the dotfiles repo.
+cp "$root/scripts/repo-vcs.sh" "$ds/scripts/repo-vcs.sh"
+# Clean working copy: the commit would be empty, so describe must refuse WITH
+# its message instead of exiting silently.
+if bash "$ds/scripts/repo-vcs.sh" describe "clean tree" >"$tmp/ds-clean.out" 2>"$tmp/ds-clean.err"; then
+	printf 'describe must refuse an empty commit\n' >&2
+	exit 1
+fi
+grep -Fq 'no changes to describe' "$tmp/ds-clean.err" || {
+	printf 'describe refusal must say there are no changes\n' >&2
+	cat "$tmp/ds-clean.err" >&2
+	exit 1
+}
+# Dirty working copy: describe must create the commit carrying the message.
+printf 'b\n' >"$ds/f"
+if ! bash "$ds/scripts/repo-vcs.sh" describe "with changes" >"$tmp/ds-dirty.out" 2>"$tmp/ds-dirty.err"; then
+	printf 'describe must commit the working-copy changes\n' >&2
+	cat "$tmp/ds-dirty.err" >&2
+	exit 1
+fi
+ds_description="$(jj --repository "$ds" log --no-graph -r '@-' -T 'description' 2>/dev/null || true)"
+[[ "$ds_description" == 'with changes' ]] || {
+	printf 'describe must record the message on the new commit (got: %s)\n' "$ds_description" >&2
+	exit 1
+}

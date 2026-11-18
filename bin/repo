@@ -282,6 +282,13 @@ Version control:
       1. Run `repo vcs branch-retire`.
       2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs converge-main
+    What: Rebase a diverged main onto origin/main, keeping the local commits
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs converge-main`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs git push
     What: Publish the jj-tracked main bookmark to Forgejo and GitHub, mirroring jj git push
     When: Before choosing a repository lifecycle transition.
@@ -726,6 +733,13 @@ Version control:
       1. Run `repo vcs branch-retire`.
       2. Read back repository state through `repo lane` or `repo vcs` before another transition.
     Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+  repo vcs converge-main
+    What: Rebase a diverged main onto origin/main, keeping the local commits
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs converge-main`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
   repo vcs git push
     What: Publish the jj-tracked main bookmark to Forgejo and GitHub, mirroring jj git push
     When: Before choosing a repository lifecycle transition.
@@ -833,6 +847,26 @@ Version control:
 
 Index: repo help
 PURPOSE_REPO_HELP_FILTER_vcs_branch_retire
+      ;;
+    'vcs converge-main')
+      cat <<'PURPOSE_REPO_HELP_FILTER_vcs_converge_main'
+Usage: repo <command> [args...]
+
+Commands are listed like MCP tools: what, when, steps, falsifier, and access mode.
+
+Version control:
+  Read state, isolate work, mutate, then land/publish.
+
+  repo vcs converge-main
+    What: Rebase a diverged main onto origin/main, keeping the local commits
+    When: Before choosing a repository lifecycle transition.
+    Steps:
+      1. Run `repo vcs converge-main`.
+      2. Read back repository state through `repo lane` or `repo vcs` before another transition.
+    Falsifier: A non-zero exit or failed verification means this lifecycle step is incomplete.
+
+Index: repo help
+PURPOSE_REPO_HELP_FILTER_vcs_converge_main
       ;;
     'vcs describe')
       cat <<'PURPOSE_REPO_HELP_FILTER_vcs_describe'
@@ -1242,6 +1276,7 @@ elif [[ "${1:-}" == 'test' ]] && [[ "${2:-}" == 'check-entry' ]]; then shift 2; 
 elif [[ "${1:-}" == 'test' ]] && [[ "${2:-}" == 'codex-preferences' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo test codex-preferences" PURPOSE_COMMAND_CLASS="test" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-check.sh" 'codex-preferences' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'amend' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs amend" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'amend' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'branch-retire' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs branch-retire" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'branch-retire' "$@"
+elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'converge-main' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs converge-main" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'converge-main' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'describe' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs describe" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'describe' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'diff' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs diff" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'diff' "$@"
 elif [[ "${1:-}" == 'vcs' ]] && [[ "${2:-}" == 'fetch' ]]; then shift 2; if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then show_help; exit 0; fi; require_nix_context; run_backend PURPOSE_REPO_ROOT="$ROOT" PURPOSE_COMMAND_NAME="repo vcs fetch" PURPOSE_COMMAND_CLASS="vcs" PURPOSE_COMMAND_REPO_ROOT="$ROOT" -- "$ROOT/scripts/repo-vcs.sh" 'fetch' "$@"

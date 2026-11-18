@@ -404,6 +404,13 @@ rebase)
 	if [[ "${1:-}" == '--continue' ]]; then
 		[[ $# -ge 2 ]] || die 'rebase --continue requires at least one resolved path'
 		rebase_dir="$(git -C "$root" rev-parse --git-path rebase-merge)"
+		# --git-path answers RELATIVE to the repository root in the primary
+		# checkout (".git/rebase-merge") and absolute only in a linked
+		# worktree. The facade runs from the caller's directory and bin/repo
+		# does not cd to the root, so the relative form must be anchored or
+		# the check below reports "no rebase is in progress" for a rebase
+		# that IS in progress.
+		[[ "$rebase_dir" == /* ]] || rebase_dir="$root/$rebase_dir"
 		[[ -d "$rebase_dir" ]] || die 'no rebase is in progress'
 		shift
 		for resolved_path in "$@"; do
@@ -477,7 +484,7 @@ sync-main)
 		# origin/main does not have: in the primary that tree IS jj's working
 		# copy, and the next jj import would abandon that content.
 		primary_head_content_contained "$primary" ||
-			die 'primary checkout holds content origin/main does not have; land it first: repo vcs describe "<message>" then repo vcs publish, or repo vcs worktree-create <name> origin/main'
+			die 'primary checkout holds content origin/main does not have; land it first: repo vcs describe "<message>" then repo vcs push, or repo vcs worktree-create <name> origin/main'
 		if [[ -n "$branch" ]]; then
 			git -C "$primary" reset --hard origin/main
 		else
@@ -614,7 +621,7 @@ primary-to-main)
 	# holds content origin/main does not have (the next jj import would
 	# abandon that content).
 	primary_head_content_contained "$primary" ||
-		die 'primary checkout holds content origin/main does not have; land it first: repo vcs describe "<message>" then repo vcs publish, or repo vcs worktree-create <name> origin/main'
+		die 'primary checkout holds content origin/main does not have; land it first: repo vcs describe "<message>" then repo vcs push, or repo vcs worktree-create <name> origin/main'
 	git -C "$primary" checkout --quiet --force -B main origin/main
 	printf 'aligned=main revision=%s previous_branch=%s discarded_paths=%d\n' "$(git -C "$primary" rev-parse HEAD)" "$branch" "$discarded"
 	;;
@@ -739,7 +746,7 @@ worktree-create)
 	git -C "$root" worktree add -b "worktree/$name" "$path" "$revision"
 	;;
 worktree-delete | worktree-drop)
-	[[ $# -eq 1 ]] || die 'worktree-delete requires name'
+	[[ $# -eq 1 ]] || die 'repo vcs worktree-drop requires a lane name'
 	name="$1"
 	valid_name "$name"
 	path="$HOME/.dotfiles-worktrees/$name"
@@ -784,11 +791,11 @@ worktree-abandon)
 	printf 'abandoned=%s revision=%s clean=true live_process=false\n' "$name" "$revision"
 	;;
 branch-delete | branch-retire)
-	[[ $# -ge 1 && $# -le 2 ]] || die 'branch-delete requires a leftover ref and optional --apply'
+	[[ $# -ge 1 && $# -le 2 ]] || die 'repo vcs branch-retire requires a leftover ref and optional --apply'
 	ref="$1"
 	apply="${2:-}"
 	valid_leftover_ref "$ref"
-	[[ -z "$apply" || "$apply" == --apply ]] || die 'branch-delete accepts only --apply after the leftover ref'
+	[[ -z "$apply" || "$apply" == --apply ]] || die 'repo vcs branch-retire accepts only --apply after the leftover ref'
 	local_present=false
 	if git -C "$root" show-ref --verify --quiet "refs/heads/$ref"; then
 		local_present=true
@@ -837,7 +844,7 @@ branch-delete | branch-retire)
 	printf 'retired leftover=%s revision=%s local=%s forgejo=%s github=%s\n' "$ref" "$revision" "$local_present" "$forgejo_present" "$github_present"
 	;;
 contract-test)
-	[[ $# -eq 0 ]] || die 'contract-test takes no arguments'
+	[[ $# -eq 0 ]] || die 'repo vcs test takes no arguments'
 	# Spot-check the strict-publication core (status, push-github, push,
 	# land) is registered in .purpose/commands.json. Per-iteration
 	# assertions over the full vcs surface are deliberately omitted: the
@@ -919,5 +926,5 @@ config)
 	[[ $# -eq 0 ]] || die 'config takes no arguments'
 	printf 'push_timeout=%s\n' "$push_timeout"
 	;;
-*) die 'usage: repo-vcs.sh {status|diff|log|show|worktree-list|fetch|rebase|sync-main [--divergence-only]|converge-main|primary-to-main|describe|amend|push|git-push|push-github|land|lane-commit|lane-push|lane-publish|worktree-create|worktree-delete|worktree-abandon|branch-delete|contract-test|config}' ;;
+*) die 'usage: repo vcs {status|diff|log|show|worktree-list|fetch|rebase|sync-main [--divergence-only]|converge-main|primary-to-main|describe|amend|push|git push|push-github|land|test|worktree-create|worktree-drop|worktree-abandon|branch-retire}; repo lane {commit|push|publish}' ;;
 esac

@@ -831,3 +831,71 @@ grep -Fq 'fast_forward=true' "$tmp/sm-ok.out" || {
 	printf 'sync-main must leave the primary clean\n' >&2
 	exit 1
 }
+
+# Every agent-facing command the facade names must be declared in
+# .purpose/commands.json and dispatchable through the generated bin/repo. A
+# name that exists only inside the facade is a dead instruction: the operator
+# follows it and gets "unknown command" (observed 2026-11-18 for `repo vcs
+# converge-main`, which the facade's own sync-main recovery text told the
+# operator to run).
+facade_refs="$(grep -oE 'repo (vcs|lane) [a-z-]+' "$root/scripts/repo-vcs.sh" | sort -u)"
+[[ -n "$facade_refs" ]] || {
+	printf 'no agent-facing command references found in the facade\n' >&2
+	exit 1
+}
+while IFS= read -r ref; do
+	[[ -n "$ref" ]] || continue
+	ref_group="$(printf '%s' "$ref" | cut -d' ' -f2)"
+	ref_verb="$(printf '%s' "$ref" | cut -d' ' -f3)"
+	jq -e --arg g "$ref_group" --arg v "$ref_verb" \
+		'.commands[] | select(.path[0] == $g and .path[1] == $v)' \
+		"$root/.purpose/commands.json" >/dev/null || {
+		printf 'facade names an undeclared command: %s\n' "$ref" >&2
+		exit 1
+	}
+	grep -Fq "repo $ref_group $ref_verb" "$root/bin/repo" || {
+		printf 'generated dispatcher does not expose: %s\n' "$ref" >&2
+		exit 1
+	}
+done <<<"$facade_refs"
+
+# rebase --continue must find the rebase directory from the repository root:
+# `git rev-parse --git-path rebase-merge` answers RELATIVE to the root in a
+# plain checkout (".git/rebase-merge") and absolute only in a linked
+# worktree, and the facade runs from the caller's directory. Unanchored, the
+# check reported "no rebase is in progress" for a rebase that WAS in progress
+# (observed 2026-11-18).
+rb="$tmp/rebase-continue"
+mkdir -p "$rb/repo/scripts" "$rb/elsewhere"
+rb_git_bin="${SE_GIT_BIN:-$(command -v git)}"
+rb_git() { "$rb_git_bin" -c user.name=t -c user.email=t@t -c init.defaultBranch=main "$@"; }
+rb_git init -q "$rb/repo"
+printf 'base\n' >"$rb/repo/f"
+rb_git -C "$rb/repo" add f
+rb_git -C "$rb/repo" commit -qm base
+rb_git -C "$rb/repo" checkout -q -b topic
+printf 'topic\n' >"$rb/repo/f"
+rb_git -C "$rb/repo" commit -qam topic
+rb_git -C "$rb/repo" checkout -q main
+printf 'main\n' >"$rb/repo/f"
+rb_git -C "$rb/repo" commit -qam main
+if rb_git -C "$rb/repo" rebase topic >/dev/null 2>&1; then
+	printf 'rebase fixture must produce a conflict\n' >&2
+	exit 1
+fi
+printf 'resolved\n' >"$rb/repo/f"
+# The facade resolves its repository root from its own path, so the script is
+# copied into the fixture: $root is the fixture repo, not the dotfiles repo.
+cp "$root/scripts/repo-vcs.sh" "$rb/repo/scripts/repo-vcs.sh"
+(cd "$rb/elsewhere" && bash "$rb/repo/scripts/repo-vcs.sh" rebase --continue f) \
+	>"$tmp/rb.out" 2>"$tmp/rb.err" || true
+if grep -Fq 'no rebase is in progress' "$tmp/rb.err"; then
+	printf 'rebase --continue must resolve the rebase directory against the repository root\n' >&2
+	cat "$tmp/rb.err" >&2
+	exit 1
+fi
+if [[ -d "$rb/repo/.git/rebase-merge" ]]; then
+	printf 'rebase --continue must finish the rebase it found\n' >&2
+	cat "$tmp/rb.err" >&2
+	exit 1
+fi

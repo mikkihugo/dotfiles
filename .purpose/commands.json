@@ -310,6 +310,22 @@
     {
       "path": [
         "vcs",
+        "converge-main"
+      ],
+      "description": "Rebase a diverged main onto origin/main, keeping the local commits",
+      "class": "vcs",
+      "backend": {
+        "kind": "executable",
+        "executable": "scripts/repo-vcs.sh",
+        "args": [
+          "converge-main"
+        ],
+        "authority": "repository-vcs-facade"
+      }
+    },
+    {
+      "path": [
+        "vcs",
         "primary-to-main"
       ],
       "description": "Move the primary checkout off a stale branch onto origin/main when all its uncommitted changes are already in main's history",

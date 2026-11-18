@@ -187,6 +187,16 @@ Otherwise continue executing.
 
 ---
 
+## Pre-existing issues
+
+Always fix pre-existing issues encountered during the work, including failing
+checks. Do not work around them, defer them, or leave them for later — a
+pre-existing failure you can see is in scope by default. Preserve unrelated
+user work and follow approval and safety boundaries. If a fix cannot be
+completed, report the blocker and evidence.
+
+---
+
 ## Prefer root cause
 
 Prefer fixing the underlying cause instead of repeatedly treating symptoms.

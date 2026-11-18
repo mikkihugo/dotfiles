@@ -123,7 +123,11 @@ transport_case() { # <label> <expect: ssh|https> <env assignments...>
 	local label="$1" expect="$2" log="$tmp/transport-$1.log"
 	shift 2
 	rm -f "$tmp/bao-called"
-	if ! env -u BASH_ENV -u DOTFILES_FORGEJO_TOKEN PATH="$tmp/fakebao:$PATH" AMEND_LOG="$log" SE_GIT_BIN="$tmp/amend/git" "$@" \
+	# FORGEJO_TOKEN_FILE is host-wide (one rendered copy per user, not per
+	# repo). Leaving it set makes the "no token source" case resolve a real
+	# token from the rendered copy, so the HTTPS path would authenticate
+	# instead of refusing. Neutralize it here like the token-copy cases below.
+	if ! env -u BASH_ENV -u DOTFILES_FORGEJO_TOKEN -u FORGEJO_TOKEN_FILE PATH="$tmp/fakebao:$PATH" AMEND_LOG="$log" SE_GIT_BIN="$tmp/amend/git" "$@" \
 		"$root/scripts/repo-vcs.sh" amend 'fix(vcs): transport' >"$tmp/transport-$label.out" 2>"$tmp/transport-$label.err"; then
 		if [[ "$expect" == ssh ]]; then
 			printf 'forgejo transport %s: amend failed\n' "$label" >&2
@@ -611,10 +615,17 @@ printf 'Working copy changes:\nM file\n' >"$tmp/jj-dirty.status"
 printf 'The working copy has no changes.\n' >"$tmp/jj-clean.status"
 printf 'aaaabbbbccccddddeeeeffff00001111222233334444555566667777888899990\n' >"$tmp/jj-target.revset"
 
+# The facade picks its jj or git publication path by the presence of a .jj
+# directory next to itself. Run it from a copy that has one so this case
+# exercises the jj path in every checkout, including a git worktree lane
+# that has no .jj of its own.
+mkdir -p "$tmp/jjroot/.jj" "$tmp/jjroot/scripts"
+cp "$root/scripts/repo-vcs.sh" "$tmp/jjroot/scripts/repo-vcs.sh"
+
 # A dirty working copy is refused: jj publishes commits, not working-tree bytes.
 if JJ_LOG="$tmp/jj-dirty.log" JJ_STATUS="$tmp/jj-dirty.status" JJ_REVSET="$tmp/jj-target.revset" \
 	GIT_LOG="$tmp/git-dirty.log" PATH="$tmp/jjstub:$PATH" SE_GIT_BIN="$tmp/gitstub/git" \
-	_run_repo_vcs "$root/scripts/repo-vcs.sh" git-push >"$tmp/jj-dirty.out" 2>"$tmp/jj-dirty.err"; then
+	_run_repo_vcs "$tmp/jjroot/scripts/repo-vcs.sh" git-push >"$tmp/jj-dirty.out" 2>"$tmp/jj-dirty.err"; then
 	printf 'git push must refuse a dirty working copy\n' >&2
 	exit 1
 fi
@@ -633,7 +644,7 @@ fi
 # stops before the gate and both remotes stay untouched.
 if JJ_LOG="$tmp/jj-clean.log" JJ_STATUS="$tmp/jj-clean.status" JJ_REVSET="$tmp/jj-target.revset" \
 	GIT_LOG="$tmp/git-clean.log" PATH="$tmp/jjstub:$PATH" SE_GIT_BIN="$tmp/gitstub/git" \
-	_run_repo_vcs "$root/scripts/repo-vcs.sh" git-push >"$tmp/jj-clean.out" 2>"$tmp/jj-clean.err"; then
+	_run_repo_vcs "$tmp/jjroot/scripts/repo-vcs.sh" git-push >"$tmp/jj-clean.out" 2>"$tmp/jj-clean.err"; then
 	printf 'git push must not publish when the remote fetch fails\n' >&2
 	exit 1
 fi

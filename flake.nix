@@ -204,9 +204,11 @@
           })
         ];
       };
-      toolchain = (import ./home/lib/toolchain.nix pkgs) // {
-        go = (import nixpkgs-go {system = sys;}).go;
-      };
+      toolchain = (import ./home/lib/toolchain.nix pkgs) // (
+        if hostname == "cc-se-sto-devbox-01"
+        then {go = (import nixpkgs-go {system = sys;}).go;}
+        else {}
+      );
       home = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs =

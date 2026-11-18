@@ -741,78 +741,93 @@ grep -Fq 'is on worktree/other' "$tmp/lane-other.err" || {
 	exit 1
 }
 
-# A git-side ref move in the primary must refuse while jj holds uncommitted
-# changes in the primary working copy. jj imports git refs on EVERY
-# invocation, so a moved git head makes the NEXT jj command in this
-# repository abandon the superseded jj commits — content included, with only
-# a jj warning in the output (observed 2026-11-18 after a sync-main
-# fast-forward). The facade owns the move, so the facade owns the refusal.
-mkdir -p "$tmp/jjguard/home/.dotfiles/.jj" "$tmp/jjguard/bin"
-cat >"$tmp/jjguard/bin/git" <<'JJGUARD_GIT'
-#!/usr/bin/env bash
-printf '%s\n' "$*" >>"$JJGUARD_GIT_LOG"
-case "$*" in
-*"symbolic-ref --quiet --short HEAD"*) printf '%s\n' main ;;
-*"status --porcelain"*) : ;;
-*"rev-parse origin/main"*) printf '%s\n' "$JJGUARD_REMOTE_SHA" ;;
-*"rev-parse main"*) printf '%s\n' "$JJGUARD_LOCAL_SHA" ;;
-*"cherry origin/main main"*) : ;;
-esac
-exit 0
-JJGUARD_GIT
-cat >"$tmp/jjguard/bin/jj" <<'JJGUARD_JJ'
-#!/usr/bin/env bash
-printf '%s\n' "$*" >>"$JJGUARD_JJ_LOG"
-if [[ -n "${JJGUARD_JJ_DIRTY:-}" ]]; then
-	printf 'Working copy changes:\n M file\n'
-fi
-exit 0
-JJGUARD_JJ
-chmod 0755 "$tmp/jjguard/bin/git" "$tmp/jjguard/bin/jj"
-JJGUARD_LOCAL_SHA=1111111111111111111111111111111111111111
-JJGUARD_REMOTE_SHA=2222222222222222222222222222222222222222
-: >"$tmp/jjguard/git.log"
-: >"$tmp/jjguard/jj.log"
-if JJGUARD_JJ_DIRTY=1 HOME="$tmp/jjguard/home" JJGUARD_GIT_LOG="$tmp/jjguard/git.log" JJGUARD_JJ_LOG="$tmp/jjguard/jj.log" \
-	JJGUARD_LOCAL_SHA="$JJGUARD_LOCAL_SHA" JJGUARD_REMOTE_SHA="$JJGUARD_REMOTE_SHA" \
-	SE_GIT_BIN="$tmp/jjguard/bin/git" SE_JJ_BIN="$tmp/jjguard/bin/jj" \
-	_run_repo_vcs "$root/scripts/repo-vcs.sh" sync-main >"$tmp/jjguard/dirty.out" 2>"$tmp/jjguard/dirty.err"; then
-	printf 'sync-main must refuse to move git refs while jj holds uncommitted changes\n' >&2
+# sync-main in the primary: the primary checkout is jj-colocated, and jj's
+# export leaves the shared git HEAD DETACHED at jj's working-copy commit. A
+# detached primary is the normal jj state, not an error, so sync-main must
+# accept it and re-attach the branch when it fast-forwards.
+#
+# The move must also refuse while the primary's HEAD tree holds content
+# origin/main does not have: in the primary that tree IS jj's working copy
+# (jj exports its snapshot into the index and the worktree, so git status
+# stays clean), and the next jj import would abandon that content with only a
+# jj warning (observed 2026-11-18). The guard is git-side: jj is never
+# consulted, because `jj status` is itself the trigger for the export that
+# detaches the primary's HEAD.
+#
+# Hermetic: a local bare repository stands in for Forgejo.
+sm="$tmp/sync-main"
+mkdir -p "$sm/home" "$sm/bin"
+sm_git_bin="${SE_GIT_BIN:-$(command -v git)}"
+sm_git() { "$sm_git_bin" -c user.name=t -c user.email=t@t -c init.defaultBranch=main "$@"; }
+sm_git init -q --bare "$sm/remote.git"
+sm_git clone -q "$sm/remote.git" "$sm/seed" 2>/dev/null
+printf 'v1\n' >"$sm/seed/f"
+sm_git -C "$sm/seed" add f
+sm_git -C "$sm/seed" commit -qm one
+sm_git -C "$sm/seed" push -q origin main
+sm_git clone -q "$sm/remote.git" "$sm/home/.dotfiles" 2>/dev/null
+sm_git clone -q "$sm/remote.git" "$sm/seed2" 2>/dev/null
+printf 'v2\n' >"$sm/seed2/f"
+sm_git -C "$sm/seed2" commit -qam two
+sm_git -C "$sm/seed2" push -q origin main
+# A jj working copy: a commit whose tree holds content origin/main does not
+# have. jj owns that commit — refs/heads/main stays where the last
+# publication left it and HEAD is detached at the working-copy commit, which
+# is exactly the state jj's export leaves behind.
+printf 'unique local work\n' >"$sm/home/.dotfiles/f"
+sm_git -C "$sm/home/.dotfiles" add f
+sm_git -C "$sm/home/.dotfiles" commit -qm 'jj working copy'
+sm_git -C "$sm/home/.dotfiles" checkout -q --detach HEAD
+sm_git -C "$sm/home/.dotfiles" branch -f main HEAD~1
+# A jj invocation in the primary is the trigger for the export that detaches
+# HEAD, so the facade must never consult it on this path.
+printf '#!/usr/bin/env bash\nprintf "jj %%s\\n" "$*" >>"%s/jj.log"\nexit 1\n' "$sm" >"$sm/bin/jj"
+chmod 0755 "$sm/bin/jj"
+if HOME="$sm/home" PATH="$sm/bin:$PATH" DOTFILES_FORGEJO_HTTPS_URL="$sm/remote.git" SE_GIT_BIN="$sm_git_bin" \
+	_run_repo_vcs "$root/scripts/repo-vcs.sh" sync-main >"$tmp/sm-refuse.out" 2>"$tmp/sm-refuse.err"; then
+	printf 'sync-main must refuse while the primary holds content origin/main does not have\n' >&2
 	exit 1
 fi
-grep -Fq 'jj holds uncommitted changes' "$tmp/jjguard/dirty.err" || {
-	printf 'sync-main refusal must name the jj working copy\n' >&2
-	cat "$tmp/jjguard/dirty.err" >&2
+grep -Fq 'uncontained_paths=f' "$tmp/sm-refuse.err" || {
+	printf 'sync-main refusal must name the uncontained path\n' >&2
+	cat "$tmp/sm-refuse.err" >&2
 	exit 1
 }
-if grep -Fq 'reset --hard' "$tmp/jjguard/git.log"; then
-	printf 'sync-main moved git refs despite a dirty jj working copy\n' >&2
-	cat "$tmp/jjguard/git.log" >&2
+[[ "$(cat "$sm/home/.dotfiles/f")" == 'unique local work' ]] || {
+	printf 'sync-main must not destroy the primary content it refused to move\n' >&2
+	exit 1
+}
+[[ "$(sm_git -C "$sm/home/.dotfiles" rev-parse main)" == "$(sm_git -C "$sm/remote.git" rev-parse main~1)" ]] || {
+	printf 'sync-main must not move main while it refuses\n' >&2
+	exit 1
+}
+[[ ! -e "$sm/jj.log" ]] || {
+	printf 'sync-main must never consult jj in the primary (jj calls=%s)\n' "$(wc -l <"$sm/jj.log")" >&2
+	exit 1
+}
+# The same detached primary whose HEAD tree is already contained in
+# origin/main's history fast-forwards and re-attaches the branch.
+sm_git -C "$sm/home/.dotfiles" checkout -q --detach HEAD~1
+if ! HOME="$sm/home" PATH="$sm/bin:$PATH" DOTFILES_FORGEJO_HTTPS_URL="$sm/remote.git" SE_GIT_BIN="$sm_git_bin" \
+	_run_repo_vcs "$root/scripts/repo-vcs.sh" sync-main >"$tmp/sm-ok.out" 2>"$tmp/sm-ok.err"; then
+	printf 'sync-main must fast-forward a detached primary whose content is contained\n' >&2
+	cat "$tmp/sm-ok.err" >&2
 	exit 1
 fi
-# A clean jj working copy must not block the fast-forward, and jj must NOT be
-# consulted after the ref move: any jj invocation re-imports the moved git
-# head and exports a new working-copy commit, which detaches the shared
-# primary's git HEAD (observed 2026-11-18) and makes the next sync-main
-# refuse with "primary checkout detached".
-: >"$tmp/jjguard/git.log"
-: >"$tmp/jjguard/jj.log"
-HOME="$tmp/jjguard/home" JJGUARD_GIT_LOG="$tmp/jjguard/git.log" JJGUARD_JJ_LOG="$tmp/jjguard/jj.log" \
-	JJGUARD_LOCAL_SHA="$JJGUARD_LOCAL_SHA" JJGUARD_REMOTE_SHA="$JJGUARD_REMOTE_SHA" \
-	SE_GIT_BIN="$tmp/jjguard/bin/git" SE_JJ_BIN="$tmp/jjguard/bin/jj" \
-	_run_repo_vcs "$root/scripts/repo-vcs.sh" sync-main >"$tmp/jjguard/clean.out" 2>"$tmp/jjguard/clean.err" || {
-	printf 'sync-main must fast-forward when the jj working copy is clean\n' >&2
-	cat "$tmp/jjguard/clean.err" >&2
+grep -Fq 'fast_forward=true' "$tmp/sm-ok.out" || {
+	printf 'sync-main must report the fast-forward\n' >&2
+	cat "$tmp/sm-ok.out" >&2
 	exit 1
 }
-grep -Fq 'reset --hard' "$tmp/jjguard/git.log" || {
-	printf 'sync-main did not fast-forward main\n' >&2
-	cat "$tmp/jjguard/git.log" >&2
+[[ "$(sm_git -C "$sm/home/.dotfiles" symbolic-ref --short HEAD)" == main ]] || {
+	printf 'sync-main must re-attach the detached primary to main\n' >&2
 	exit 1
 }
-jj_calls="$(wc -l <"$tmp/jjguard/jj.log")"
-[[ "$jj_calls" -eq 1 ]] || {
-	printf 'sync-main must consult jj exactly once (pre-move guard) and never after the ref move (jj calls=%s)\n' "$jj_calls" >&2
-	cat "$tmp/jjguard/jj.log" >&2
+[[ "$(sm_git -C "$sm/home/.dotfiles" rev-parse main)" == "$(sm_git -C "$sm/remote.git" rev-parse main)" ]] || {
+	printf 'sync-main must fast-forward main onto origin/main\n' >&2
+	exit 1
+}
+[[ -z "$(sm_git -C "$sm/home/.dotfiles" status --porcelain)" ]] || {
+	printf 'sync-main must leave the primary clean\n' >&2
 	exit 1
 }

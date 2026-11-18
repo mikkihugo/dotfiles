@@ -249,50 +249,65 @@ lane_root_for() {
 }
 
 # The primary checkout is jj-colocated: jj keeps its own view of the git refs
-# and imports them on EVERY invocation. A git-side ref move in the primary
-# (sync-main's fast-forward, primary-to-main's checkout) therefore leaves
-# jj's view stale, and the NEXT jj command in this repository — possibly
-# another agent's unrelated read — imports the new git head, resets its
-# working-copy parent onto it and abandons the superseded jj commits. When a
-# jj working-copy commit holds real content, that content is destroyed with
-# only a jj warning in the output ("Reset the working copy parent to the new
-# Git HEAD", "Abandoned 2 commits that are no longer reachable"; observed
-# 2026-11-18 in this repository after a sync-main fast-forward).
+# and imports them on EVERY invocation. Two consequences shape every git-side
+# ref move in the primary (sync-main's fast-forward, primary-to-main's
+# checkout):
 #
-# Two rules follow, and both live here so every git-side ref move inherits
-# them:
-#   1. refuse the move while jj holds uncommitted changes in the primary;
-#   2. refresh jj's view right after the move, so jj never discovers a moved
-#      git head on its own later.
-# jj keeps abandoned commits under refs/jj/keep/*, so a refused move loses
-# nothing and a completed move stays recoverable.
-jj_bin="${SE_JJ_BIN:-}"
-if [[ -z "$jj_bin" ]]; then
-	jj_bin="$(command -v jj || true)"
-fi
-
-jj_working_copy_dirty() {
-	local dir="$1" out
-	[[ -d "$dir/.jj" ]] || return 1
-	[[ -n "$jj_bin" && -x "$jj_bin" ]] || return 1
-	out="$("$jj_bin" --repository "$dir" status --no-pager 2>/dev/null || true)"
-	[[ "$out" == *"Working copy changes:"* ]]
+#   1. jj may export at any moment, and its export writes the shared git HEAD
+#      DETACHED at jj's working-copy commit. A detached primary is therefore
+#      the normal jj state, not an error, so a git-side verb must accept it
+#      and re-attach the branch afterwards.
+#   2. a git-side ref move leaves jj's view stale; the NEXT jj command
+#      imports the moved head, resets its working-copy parent onto it and
+#      abandons the superseded jj commits. When that jj working-copy commit
+#      holds content origin/main does not have, the content is destroyed with
+#      only a jj warning in the output ("Reset the working copy parent to the
+#      new Git HEAD", "Abandoned 2 commits that are no longer reachable";
+#      observed 2026-11-18 in this repository after a sync-main fast-forward).
+#
+# Both rules are enforced git-side. Asking jj is NOT an option: jj status is
+# itself the trigger for the export that detaches the primary's git HEAD
+# (observed 2026-11-18: HEAD@{2} "export from jj" one second before HEAD@{3}
+# "reset: moving to origin/main"). jj keeps abandoned commits under
+# refs/jj/keep/*, so a refused move loses nothing.
+#
+# Containment test: every blob the primary's HEAD tree holds must already
+# exist in origin/main's history. That is exactly "jj's working-copy content
+# is already upstream", proved without invoking jj. In the primary jj exports
+# its snapshot into the index and the worktree, so the HEAD tree IS jj's
+# working copy — a blob origin/main does not have is content a ref move would
+# destroy.
+primary_head_content_contained() {
+	local primary="$1" path blob candidates='' missing=''
+	while IFS= read -r -d '' path; do
+		blob="$(git -C "$primary" rev-parse "HEAD:$path" 2>/dev/null || true)"
+		[[ -n "$blob" ]] || continue
+		candidates+="$blob"$'\n'
+	done < <(git -C "$primary" diff --name-only -z HEAD origin/main 2>/dev/null)
+	[[ -n "$candidates" ]] || return 0
+	# Membership is tested over the whole object graph, not per path: a file
+	# upstream DELETED still has its last blob in origin/main's history, so
+	# an upstream deletion is not unique work.
+	local uncontained
+	uncontained="$(git -C "$primary" rev-list --objects origin/main 2>/dev/null |
+		awk -v want="$candidates" '
+			BEGIN { n = split(want, w, "\n"); for (i = 1; i <= n; i++) if (w[i] != "") set[w[i]] = 1 }
+			{ if ($1 in set) delete set[$1] }
+			END { for (k in set) print k }')" || return 1
+	if [[ -z "$uncontained" ]]; then
+		return 0
+	fi
+	while IFS= read -r -d '' path; do
+		blob="$(git -C "$primary" rev-parse "HEAD:$path" 2>/dev/null || true)"
+		[[ -n "$blob" ]] || continue
+		if printf '%s\n' "$uncontained" |
+			awk -v want="$blob" '$1 == want { found = 1 } END { exit !found }'; then
+			missing+="$path"$'\n'
+		fi
+	done < <(git -C "$primary" diff --name-only -z HEAD origin/main 2>/dev/null)
+	printf 'uncontained_paths=%s' "$missing" >&2
+	return 1
 }
-
-jj_refuse_dirty_working_copy() {
-	local dir="$1"
-	jj_working_copy_dirty "$dir" || return 0
-	die "jj holds uncommitted changes in the working copy of $dir; a git-side ref move here abandons them. Commit or abandon them in jj first (jj --repository $dir log -r @, jj --repository $dir abandon @), then retry. Nothing was changed."
-}
-
-# NO refresh after a git-side ref move: any jj invocation re-imports the moved
-# git head, snapshots a new working-copy commit and exports it, which leaves
-# the shared primary's git HEAD detached at that commit (observed 2026-11-18:
-# HEAD@{2} "export from jj" right after HEAD@{3} "reset: moving origin/main").
-# A detached primary is refused by sync-main ("primary checkout detached").
-# The pre-move guard above is the whole contract: it refuses the move while jj
-# holds uncommitted changes, so the stale jj view that follows the move
-# carries no content that could be lost.
 
 # jj owns the working copy in the primary checkout, so the publishable unit is
 # a jj commit, not a working-tree snapshot. `jj commit` creates a new EMPTY
@@ -434,8 +449,12 @@ sync-main)
 	done
 	primary="$HOME/.dotfiles"
 	[[ -d "$primary" ]] || die "primary checkout is missing: $primary"
-	branch="$(git -C "$primary" symbolic-ref --quiet --short HEAD)" || die 'primary checkout is detached'
-	[[ "$branch" == main ]] || die 'primary checkout is not on main'
+	# A DETACHED primary is the normal jj state, not an error: jj's export
+	# writes the shared git HEAD detached at jj's working-copy commit
+	# (observed 2026-11-18 in this repository's reflog). Only a HEAD parked
+	# on some OTHER branch is a problem.
+	branch="$(git -C "$primary" symbolic-ref --quiet --short HEAD || true)"
+	[[ -z "$branch" || "$branch" == main ]] || die 'primary checkout is not on main'
 	[[ -z "$(git -C "$primary" status --porcelain)" ]] || die 'primary checkout is not clean'
 	fetch_forgejo_main "$primary"
 	if [[ "$(git -C "$primary" rev-parse main)" == "$(git -C "$primary" rev-parse origin/main)" ]]; then
@@ -454,8 +473,19 @@ sync-main)
 	files=
 	sha=
 	if [[ -z "$local_only" ]]; then
-		jj_refuse_dirty_working_copy "$primary"
-		git -C "$primary" reset --hard origin/main
+		# Refuse the move while the primary's HEAD tree holds content
+		# origin/main does not have: in the primary that tree IS jj's working
+		# copy, and the next jj import would abandon that content.
+		primary_head_content_contained "$primary" ||
+			die 'primary checkout holds content origin/main does not have; land it first: repo vcs describe "<message>" then repo vcs publish, or repo vcs worktree-create <name> origin/main'
+		if [[ -n "$branch" ]]; then
+			git -C "$primary" reset --hard origin/main
+		else
+			# Detached HEAD: `git reset` moves only the detached ref, so
+			# refs/heads/main would stay behind. Align the branch and re-attach
+			# HEAD in one step (the primary-to-main primitive).
+			git -C "$primary" checkout --quiet --force -B main origin/main
+		fi
 		printf 'synced=main revision=%s fast_forward=true\n' "$(git -C "$primary" rev-parse main)"
 		exit 0
 	fi
@@ -580,7 +610,11 @@ primary-to-main)
 	if [[ -n "$detached_head" ]]; then
 		git -C "$primary" update-ref "refs/dotfiles-primary-backup/$detached_head" "$detached_head"
 	fi
-	jj_refuse_dirty_working_copy "$primary"
+	# The primary's HEAD tree is jj's working copy; refuse the move while it
+	# holds content origin/main does not have (the next jj import would
+	# abandon that content).
+	primary_head_content_contained "$primary" ||
+		die 'primary checkout holds content origin/main does not have; land it first: repo vcs describe "<message>" then repo vcs publish, or repo vcs worktree-create <name> origin/main'
 	git -C "$primary" checkout --quiet --force -B main origin/main
 	printf 'aligned=main revision=%s previous_branch=%s discarded_paths=%d\n' "$(git -C "$primary" rev-parse HEAD)" "$branch" "$discarded"
 	;;

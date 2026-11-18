@@ -116,12 +116,25 @@ resolve_operator() {
 	# One evaluation lists the published package attributes; the first candidate
 	# that is actually there is the one to build. An unknown attribute is an
 	# error, so this answers "which exist" without building anything.
-	published="$(nix eval --raw "path:$root#packages.x86_64-linux" --apply builtins.attrNames 2>/dev/null || true)"
+	#
+	# The apply must RETURN A STRING: --raw refuses to coerce a list, so
+	# "--apply builtins.attrNames" fails ("cannot coerce a list to a string")
+	# and the probe would silently yield an empty name list. Joining the names
+	# into one space-separated string keeps the --raw contract and the word
+	# matching below intact.
+	published="$(nix eval --raw "path:$root#packages.x86_64-linux" \
+		--apply 'x: builtins.concatStringsSep " " (builtins.attrNames x)' 2>/dev/null || true)"
+	# When the probe yields nothing (evaluation failed, or the repository
+	# publishes no packages set), fall back to trying both candidates rather
+	# than skipping them all: skipping every candidate would leave the
+	# operator unresolvable where the previous direct build still worked.
 	for attr in engine-repo repo; do
-		case " $published " in
-		*" $attr "*) ;;
-		*) continue ;;
-		esac
+		if [ -n "$published" ]; then
+			case " $published " in
+			*" $attr "*) ;;
+			*) continue ;;
+			esac
+		fi
 		out="$(nix build --no-link --print-out-paths "path:$root#$attr" 2>/dev/null || true)"
 		if [ -z "$out" ]; then
 			out="$(nix build --no-link --print-out-paths --offline "path:$root#$attr" 2>/dev/null || true)"

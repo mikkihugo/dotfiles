@@ -164,6 +164,16 @@ in {
         # Export BASH_ENV so every non-interactive bash hits the shared
         # enter-once direnv loader without inheriting a parent shell.
         BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";
+        # Codex Desktop's SSH transport boots its own app-server unless this
+        # is "true". That foreign server owns the control socket, so the
+        # native manager refuses to own it ("app server running but is not
+        # managed by codex app-server daemon") and start/stop/restart all
+        # fail. The native daemon owns the socket instead and the desktop
+        # attaches to that one.
+        # Upstream requires this in the remote account's SSH login-shell
+        # startup file: home.sessionVariables reaches it through
+        # ~/.profile -> hm-session-vars.sh.
+        CODEX_SSH_SKIP_APP_SERVER_BOOT = "true";
         # Host-wide direnv print-dev-env concurrency (also defaulted in
         # config/direnv/direnvrc). Raised from 2 to 4 on 2026-10-29 so
         # Engine + infra + jcode cold loads can overlap without queue timeout.

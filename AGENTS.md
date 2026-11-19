@@ -48,11 +48,14 @@ supersedes, retains, or purges across them.
 
 Enforced here:
 
-- **Codex** — `[features] memories = false` plus `[memories] use_memories` /
-  `generate_memories = false`. These live in `config/codex/shared-preferences.toml`
+- **Codex** — thread memory ON since operator decision 2026-11-19 (reversing
+  2026-09-19): `[features] memories = true` plus `[memories] use_memories` /
+  `generate_memories = true`. These live in `config/codex/shared-preferences.toml`
   (re-applied to the mutable `~/.codex/config.toml` on every activation) as well
   as `config/codex/config.toml` (seeded once). Both are needed: Codex rewrites
-  its own config, so a seed-only setting does not survive.
+  its own config, so a seed-only setting does not survive. repo_memory
+  coordination mail remains the cross-client durable surface; thread memory is
+  the per-thread working layer on top.
 - **Qoder** — `autoMemoryEnabled: false`, written by the MCP merge block in
   `home/modules/activation.nix`.
 

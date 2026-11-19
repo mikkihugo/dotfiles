@@ -85,12 +85,10 @@ wake_on_agent_messages = true
 # after codex adds its client prefix; the long deployment-name key
 # pushed 8 of 88 names over the limit (2026-09-08).
 non_prefixed_mcp_tool_names = { enabled = true, server_names = ["ccgw"] }
-# Codex's own on-disk memory store is off: durable agent memory belongs in the
-# repo_memory bank reached through the CentralCloud MCP gateway, not in a
-# per-client store no other tool can read, supersede, or purge.
-# ~/.codex/memories/skills and ~/.codex/memories/.agents are the authored
-# instruction plane and are unaffected by this flag.
-memories = false
+# Codex's on-disk thread memory is ON (operator decision 2026-11-19, reversing
+# 2026-09-19): repo_memory coordination mail remains the cross-client surface;
+# thread memory is the per-thread working layer.
+memories = true
 unified_exec = true
 shell_snapshot = true
 multi_agent = true
@@ -146,11 +144,11 @@ config_file = "agents/implementer.toml"
 description = "Adversarial reviewer (GPT-5.6 Sol): architectural review, risk analysis, and evidence challenge."
 config_file = "agents/reviewer.toml"
 
-# Belt and braces alongside [features].memories: never generate new local
-# memories, never read the existing ones back into context.
+# Operator decision 2026-11-19 (reverses 2026-09-19): read and generate thread
+# memories alongside repo_memory as the cross-client surface.
 [memories]
-use_memories = false
-generate_memories = false
+use_memories = true
+generate_memories = true
 
 [mcp_servers.ccgw]
 url = "http://mcp-gateway.svc/mcp"

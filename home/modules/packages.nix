@@ -29,6 +29,7 @@
     diffstat # per-file histogram of a unified diff
     jq # JSON query and transform
     yq-go # Mike Farah yq v4; repo validators rely on eval/ea and -o=json
+    sqlite # sqlite3 CLI + libs; inspecting ~/.codex/*.sqlite thread state without python
     btop # process/resource monitor (replaces htop)
     psmisc # process-tree diagnostics (`pstree`) for agent/session ownership audits
     tokei # count lines of code by language

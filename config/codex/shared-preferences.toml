@@ -65,7 +65,9 @@ tool_output_token_limit = 32000
 status_line = ["model-with-reasoning", "current-dir", "project-name", "git-branch", "run-state", "five-hour-limit", "weekly-limit", "thread-id", "thread-title", "task-progress"]
 
 [features]
-memories = false
+# Operator decision 2026-11-19: re-enabled (reverses 2026-09-19). Codex thread
+# memory is on; repo_memory coordination mail remains the cross-client surface.
+memories = true
 context_management = true
 step_model_switching = true
 mcp_2026_07_28 = true
@@ -77,8 +79,8 @@ wake_on_agent_messages = true
 hooks = true
 
 [memories]
-use_memories = false
-generate_memories = false
+use_memories = true
+generate_memories = true
 
 # Signal-specific OTLP/HTTP paths are required by the collector. This block is
 # applied on every activation so mutable ~/.codex/config.toml cannot retain a

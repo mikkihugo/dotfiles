@@ -180,21 +180,12 @@ in {
       rm -f "$HOME/.npm-global/bin/claude"
     '';
 
-    seedMutableCodexConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      mkdir -p "$HOME/.codex"
-      if [ -L "$HOME/.codex/config.toml" ] || [ ! -e "$HOME/.codex/config.toml" ]; then
-        rm -f "$HOME/.codex/config.toml"
-        cp "${../../config/codex/config.toml}" "$HOME/.codex/config.toml"
-        chmod 600 "$HOME/.codex/config.toml"
-      fi
-    '';
-
     # Seed ~/.copilot as mutable files so the Copilot CLI can persist its own
     # settings, global instructions, and /agent definitions in place. Home
     # Manager store symlinks are read-only (root-owned, on a read-only /nix/store),
     # so any in-client write to them fails. These paths are therefore excluded
     # from home.file in files.nix and seeded here instead, following the same
-    # mutable-config pattern as seedMutableCodexConfig and goose config.yaml.
+    # mutable-config pattern as goose config.yaml.
     #
     # Convergent and non-destructive: an existing regular file is left untouched
     # so client-written edits survive activation; a stale store symlink or a
@@ -223,39 +214,6 @@ in {
           fi
         fi
       done
-    '';
-
-    removeRetiredCodexAgentRoles = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      # ~/.codex/agents is auto-loaded by Codex, independently of [agents] in
-      # config.toml. Retire the former gateway roles so opaque Responses items
-      # cannot be routed to an external resident agent. Preserve a plain
-      # user-owned gateway TOML outside that auto-loaded directory for recovery.
-      agents_dir="$HOME/.codex/agents"
-      retired_dir="$HOME/.codex/retired-agent-roles"
-      for target in "$agents_dir"/*.toml; do
-        if [ ! -e "$target" ] && [ ! -L "$target" ]; then
-          continue
-        elif [ -L "$target" ] && [ ! -e "$target" ]; then
-          rm -f "$target"
-          continue
-        fi
-        if [ -f "$target" ] && ${pkgs.gnugrep}/bin/grep -Eq "^[[:space:]]*model_provider[[:space:]]*=[[:space:]]*['\"]llm-gateway['\"][[:space:]]*(#.*)?$" "$target"; then
-          if [ -L "$target" ]; then
-            rm -f "$target"
-          else
-            mkdir -p "$retired_dir"
-            backup="$(mktemp "$retired_dir/gateway-agent.XXXXXX")"
-            mv "$target" "$backup"
-          fi
-        fi
-      done
-    '';
-
-    applySharedCodexPreferences = lib.hm.dag.entryAfter ["seedMutableCodexConfig"] ''
-      ${toolchain.python}/bin/python3 "${../../scripts/codex-preferences}" apply \
-        --source "${../../config/codex/shared-preferences.toml}" \
-        --backbone "${../../config/agents/purpose-backbone.md}"
-      chmod 600 "$HOME/.codex/config.toml"
     '';
 
     linkMutableMiseConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''

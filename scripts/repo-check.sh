@@ -119,7 +119,7 @@ verify_activation_package() {
 
 stage_python_unit_tests() {
 	python3 "$root/scripts/test-repo-check-entry.py"
-	python3 "$root/scripts/test-codex-preferences.py"
+	python3 "$root/scripts/test-codex-standalone.py"
 	python3 "$root/scripts/test-purpose-backbone.py"
 	python3 "$root/scripts/test-jcode-preferences.py"
 	python3 "$root/scripts/test-merge-authorized-keys.py"
@@ -130,7 +130,6 @@ stage_bash_unit_tests() {
 	bash "$root/scripts/test-infra-guard-drift.sh"
 	bash "$root/scripts/test-sccache-profile-scope.sh"
 	bash "$root/scripts/test-language-cache-layout.sh"
-	bash "$root/scripts/test-codex-rollout-gc.sh"
 	bash "$root/scripts/test-git-credential-forgejo-bao.sh"
 	bash "$root/scripts/test-forgejo-token-sync.sh"
 	bash "$root/scripts/test-checkout-sync.sh"
@@ -143,9 +142,6 @@ stage_node_unit_tests() {
 			scripts/test-opencode-config.mjs \
 			scripts/test-cargo-pgrx-wrapper.mjs \
 			scripts/test-tabby-terminal.mjs \
-			scripts/test-codex-hosted-search.mjs \
-			scripts/test-codex-external-harness-skill.mjs \
-			scripts/test-codex-external-run.mjs \
 			scripts/test-detect-secrets-work-packet-filter.mjs \
 			scripts/test-jcode-lane-settle-retirement.mjs \
 			scripts/test-sops-trace-guard.mjs \
@@ -190,20 +186,13 @@ stage_nixos_ownership_eval() {
 
 main() {
 	case "${1:-}" in
-	codex-preferences)
-		[[ $# == 1 ]] || {
-			printf 'unexpected Codex test arguments\n' >&2
-			return 2
-		}
-		python3 "$root/scripts/test-codex-preferences.py"
-		return
-		;;
 	check-entry)
 		[[ $# == 1 ]] || {
 			printf 'unexpected entry test arguments\n' >&2
 			return 2
 		}
 		python3 "$root/scripts/test-repo-check-entry.py"
+		python3 "$root/scripts/test-codex-standalone.py"
 		return
 		;;
 	"") [[ $# == 0 ]] || {

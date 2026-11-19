@@ -50,12 +50,13 @@ Enforced here:
 
 - **Codex** — thread memory ON since operator decision 2026-11-19 (reversing
   2026-09-19): `[features] memories = true` plus `[memories] use_memories` /
-  `generate_memories = true`. These live in `config/codex/shared-preferences.toml`
-  (re-applied to the mutable `~/.codex/config.toml` on every activation) as well
-  as `config/codex/config.toml` (seeded once). Both are needed: Codex rewrites
-  its own config, so a seed-only setting does not survive. repo_memory
-  coordination mail remains the cross-client durable surface; thread memory is
-  the per-thread working layer on top.
+  `generate_memories = true`. Codex configuration is owned by the standalone
+  `~/.codex` home, not by this repo: the shared preferences live in
+  `~/.codex/shared-preferences.toml` and are re-applied to the mutable
+  `~/.codex/config.toml` by `~/.codex/scripts/codex-preferences apply`. Both
+  are needed: Codex rewrites its own config, so a seed-only setting does not
+  survive. repo_memory coordination mail remains the cross-client durable
+  surface; thread memory is the per-thread working layer on top.
 - **Qoder** — `autoMemoryEnabled: false`, written by the MCP merge block in
   `home/modules/activation.nix`.
 
@@ -114,7 +115,3 @@ Operator decision 2026-09-19: agent hooks are owned per CLI, not by this repo.
 This repository does not ship a GPU worker Home Manager module. Do not
 propose embedding-worker / inference-fabric workloads on mikki-laptop
 (aarch64, no GPU).
-
-## Scoped Codex verification
-
-Run `repo check nix` once after exact-root direnv entry; it checks only the environment. `repo test codex-preferences` verifies managed GPT6 defaults, feature save/apply, and preservation of unrelated profiles and roles. `repo test check-entry` proves startup checks cannot invoke the full gate. `repo check` remains the required full verification before publication.

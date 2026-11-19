@@ -49,7 +49,7 @@ class CheckEntryTest(unittest.TestCase):
             probe = root / "scripts/current-home-profile"
             probe.write_text("#!/usr/bin/env bash\nprintf invoked > \"$FULL_MARKER\"\nprintf profile\n")
             probe.chmod(0o755)
-            for args in ([""], ["", "unexpected"], ["unknown"], ["codex-preferences", "extra"], ["check-entry", "extra"]):
+            for args in ([""], ["", "unexpected"], ["unknown"], ["check-entry", "extra"]):
                 with self.subTest(args=args):
                     marker = root / "full"
                     marker.unlink(missing_ok=True)

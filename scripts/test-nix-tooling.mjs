@@ -561,22 +561,10 @@ test("mise is managed by mise without a flake bump; no auto-update timer", async
   assert.doesNotMatch(updater, /\$mise_bin"\s+self-update|ExecStart=.*self-update/);
   assert.doesNotMatch(updater, /systemd\.user\.(services|timers)\.mise-auto-update/);
 });
-test("Codex native daemon owns package selection and lifecycle", async () => {
+test("Codex daemon lifecycle is not managed by Home Manager", async () => {
   const home = await source("home/home.nix");
-  const daemon = await source("home/modules/codex-managed-daemon.nix");
-
-  assert.match(home, /\.\/modules\/codex-managed-daemon\.nix/);
-  assert.doesNotMatch(home, /\.\/modules\/codex-server-auto-update\.nix/);
-  assert.match(daemon, /app-server daemon bootstrap --remote-control/);
-  assert.match(daemon, /app-server daemon update/);
-  assert.match(daemon, /app-server daemon update --from-cli --yes/);
-  assert.match(daemon, /app-server daemon start/);
-  assert.match(daemon, /entryBetween \["linkGeneration"\] \["writeBoundary"\]/);
-  assert.match(daemon, /entryAfter \["reloadSystemd"\]/);
-  assert.match(daemon, /disable --now codex-managed-daemon\.service/);
-  assert.match(daemon, /disable --now codex-server-auto-update\.timer/);
-  assert.doesNotMatch(daemon, /systemd\.user|OnCalendar|RestartSec|ExecStart/);
-  assert.doesNotMatch(daemon, /codex-guardian/);
+  assert.doesNotMatch(home, /\.\/modules\/codex-managed-daemon\.nix/);
+  assert.doesNotMatch(home, /\.\/modules\/codex-thread-gc\.nix/);
 });
 
 test("Droid Remote Control owns the daemon lifecycle and provider environment", async () => {
@@ -710,13 +698,10 @@ test("repo check delegates to the single repository check implementation", async
   const check = await source("scripts/repo-check.sh");
   for (const expected of [
     "scripts/test-repo-vcs.sh",
-    "scripts/test-codex-preferences.py",
+    "scripts/test-codex-standalone.py",
     "scripts/test-tabby-terminal.mjs",
-    "scripts/test-codex-hosted-search.mjs",
     "scripts/test-detect-secrets-work-packet-filter.mjs",
     "scripts/test-jcode-lane-settle-retirement.mjs",
-    "scripts/test-codex-external-harness-skill.mjs",
-    "scripts/test-codex-external-run.mjs",
     "scripts/test-nix-tooling.mjs",
   ]) {
     assert.match(check, new RegExp(expected.replaceAll(".", "\\.")), `repo check omits ${expected}`);
@@ -727,13 +712,6 @@ test("repo check delegates to the single repository check implementation", async
   assert.match(check, /org2nix build --no-link --print-out-paths/);
   assert.match(check, /source \"\$root\/scripts\/org2nix.sh\"/);
   assert.doesNotMatch(check, /nix-fast-build\s+--flake/);
-});
-
-test("global Codex instructions keep publication owned until land completes", async () => {
-  const agents = await source("config/codex/AGENTS.md");
-  assert.match(agents, /Do not launch delegated commit, land, push, or publication work as a background process/);
-  assert.match(agents, /complete synchronously within the subagent turn/);
-  assert.match(agents, /coordinator must perform and verify it/);
 });
 
 test("otel-env.sh resolves OTLP helpers without mutating caller PATH", async () => {

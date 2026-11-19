@@ -434,21 +434,6 @@
     {
       "path": [
         "test",
-        "codex-preferences"
-      ],
-      "description": "Verify managed Codex preference preservation",
-      "class": "test",
-      "backend": {
-        "kind": "executable",
-        "executable": "scripts/repo-check.sh",
-        "args": [
-          "codex-preferences"
-        ]
-      }
-    },
-    {
-      "path": [
-        "test",
         "check-entry"
       ],
       "description": "Verify bounded environment-check dispatch",

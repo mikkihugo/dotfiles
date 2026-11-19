@@ -2,10 +2,5 @@
   "schema": 1,
   "updatedAt": "2026-09-07",
   "memoryBankId": "dotfiles",
-  "files": {
-    "config/codex/AGENTS.md": {
-      "bundleHash": "45158b446bf9",
-      "instructionHash": "08aa3def7d9b"
-    }
-  }
+  "files": {}
 }

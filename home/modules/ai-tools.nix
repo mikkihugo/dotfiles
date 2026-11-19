@@ -805,54 +805,6 @@ in {
         '';
       };
 
-      # Codex CLI is npm-managed (`npm i -g @openai/codex`) and needs no wrapper:
-      # ~/.npm-global/bin is already on PATH via home.sessionPath.
-      #
-      # The former OTEL wrapper here sourced otel-env.sh and exported
-      # OTEL_SERVICE_NAME. Codex 0.147.0 configures OTLP natively instead --
-      # verified with `codex exec --strict-config`, which rejects unknown fields
-      # and accepted otel.exporter / otel.environment / otel.log_user_prompt.
-      # The exporter must be the struct form; the bare string "otlp-http" is
-      # rejected with "invalid type: unit variant, expected struct variant".
-      # On this host otel-env.sh resolved to the in-cluster collector with EMPTY
-      # headers, so nothing dynamic was being contributed and the endpoint is
-      # expressible statically. See config/codex/config.toml.
-
-      # Codex spawns its command runner as `codex-code-mode-host`. At least one
-      # invocation path resolves that name from PATH rather than beside the codex
-      # binary -- that is the failure upstream reports, and it is what broke here.
-      # Other paths do use the vendor sibling: processes observed at 21:54/22:04
-      # ran the vendored binary while no PATH entry carried the name. So this
-      # wrapper is a belt-and-braces fix for the PATH-resolving callers, not a
-      # claim that every caller uses PATH. Until 2026-08-08 that name was
-      # supplied by a mise shim; removing aqua:openai/codex from mise (and
-      # reshimming) deleted the shim, so every Codex tool call failed with
-      # "the local Codex command runner: ~/.local/bin/codex-code-mode-host is
-      # missing" (openai/codex#31831, #31833). The npm package vendors the real
-      # binary next to its own codex; expose it under the name Codex looks for.
-      ".local/bin/codex-code-mode-host" = {
-        executable = true;
-        force = true;
-        text = ''
-          #!/usr/bin/env bash
-          set -euo pipefail
-          # npm links only `codex` (the meta package's sole bin; the platform
-          # package declares bin: null), so the sidecar never reaches PATH.
-          # Try the current layout first, then fall back to a search so a new
-          # version, target triple, or npm hoisting decision does not break it.
-          root="$HOME/.npm-global/lib/node_modules/@openai"
-          vendor="$root/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex-code-mode-host"
-          if [ ! -x "$vendor" ]; then
-            vendor="$(find "$root" -name codex-code-mode-host -type f -perm -u+x 2>/dev/null | head -n 1)"
-          fi
-          if [ -z "''${vendor:-}" ] || [ ! -x "$vendor" ]; then
-            echo "codex-code-mode-host: vendored binary not found under $root (reinstall with: npm i -g @openai/codex)" >&2
-            exit 127
-          fi
-          exec "$vendor" "$@"
-        '';
-      };
-
       # OpenCode 2.x — managed by pnpm (`pnpm add -g @opencode/cli`), NOT by
       # Nix/Home Manager. Rationale: OpenCode's `Service.method()` detector only
       # recognises curl/npm/pnpm/bun/yarn/vp/brew/winget layouts. A Nix store

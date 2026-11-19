@@ -41,7 +41,6 @@ in {
     ./modules/reap-abandoned-searches.nix
     ./modules/forgejo-token-file.nix
     ./modules/home-emergency-backup.nix
-    ./modules/codex-managed-daemon.nix
     ./modules/opencode-otel-ingest.nix
     ./modules/files.nix
     ./modules/ai-tools.nix
@@ -52,7 +51,6 @@ in {
     ./modules/nix-index.nix
     ./modules/dotfiles-auto-update.nix
     ./modules/checkout-sync.nix
-    ./modules/codex-thread-gc.nix
     ./modules/droid-remote-control.nix
     ./modules/sshid-key-sync.nix
     ./modules/agent-direnv.nix
@@ -157,16 +155,6 @@ in {
         # Export BASH_ENV so every non-interactive bash hits the shared
         # enter-once direnv loader without inheriting a parent shell.
         BASH_ENV = "$HOME/.dotfiles/shell/bash/noninteractive-path.sh";
-        # Codex Desktop's SSH transport boots its own app-server unless this
-        # is "true". That foreign server owns the control socket, so the
-        # native manager refuses to own it ("app server running but is not
-        # managed by codex app-server daemon") and start/stop/restart all
-        # fail. The native daemon owns the socket instead and the desktop
-        # attaches to that one.
-        # Upstream requires this in the remote account's SSH login-shell
-        # startup file: home.sessionVariables reaches it through
-        # ~/.profile -> hm-session-vars.sh.
-        CODEX_SSH_SKIP_APP_SERVER_BOOT = "true";
         # The direnv print-dev-env slot-pool limit has exactly ONE reader:
         # config/direnv/direnvrc, which defaults it to 4 itself. That file is
         # Home-Manager-installed only where the NixOS host module does not own

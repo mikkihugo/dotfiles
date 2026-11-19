@@ -35,36 +35,6 @@ in {
       force = true;
     };
 
-    # Codex CLI config is seeded by activation.nix as a mutable file. The Codex
-    # client owns model/reasoning choices, approvals, notices, and feature
-    # toggles at runtime, so this path must not be a Home Manager symlink.
-    ".codex/rules/default.rules" = {
-      source = ../../config/codex/default.rules;
-      force = true;
-    };
-
-    # 2026-10-11: .codex/AGENTS.md is the Codex-specific addon. The global
-    # canonical plane is ~/.agents/AGENTS.md; Codex happens to read its
-    # local AGENTS.md at session start and appends whatever this file says
-    # on top of the canonical prose. Keep the body Codex-specific (Codex
-    # config knobs, config.toml notes, Codex-side MCP relay wiring) so the
-    # global plane stays CLI-agnostic. Addon content lives in
-    # .dotfiles/config/codex/AGENTS.md.
-    ".codex/AGENTS.md" = {
-      source = ../../config/codex/AGENTS.md;
-      force = true;
-    };
-
-    ".codex/model-catalogs/minimax-m3.json" = {
-      source = ../../config/codex/model-catalogs/minimax-m3.json;
-      force = true;
-    };
-
-    ".codex/minimax-m3.config.toml" = {
-      source = ../../config/codex/minimax-m3.config.toml;
-      force = true;
-    };
-
     # Claude Code status line for Jujutsu-backed repos. Those repos replace `jj`
     # on PATH with a refuse shim and expose reads only through their own `repo
     # vcs` facade, so the usual git-branch status line has nothing to read.
@@ -104,60 +74,8 @@ in {
       force = true;
     };
 
-    ".codex/agents/default.toml" = {
-      source = ../../config/codex/agents/default.toml;
-      force = true;
-    };
-
-    ".codex/agents/taxonomy-worker.toml" = {
-      source = ../../config/codex/agents/taxonomy-worker.toml;
-      force = true;
-    };
-
-    ".codex/agents/taxonomy-validator.toml" = {
-      source = ../../config/codex/agents/taxonomy-validator.toml;
-      force = true;
-    };
-
-    ".codex/agents/singularity-engine-harvester.toml" = {
-      source = ../../config/codex/agents/singularity-engine-harvester.toml;
-      force = true;
-    };
-
-    ".codex/agents/scout.toml" = {
-      source = ../../config/codex/agents/scout.toml;
-      force = true;
-    };
-
-    ".codex/agents/implementer.toml" = {
-      source = ../../config/codex/agents/implementer.toml;
-      force = true;
-    };
-
-    ".codex/agents/reviewer.toml" = {
-      source = ../../config/codex/agents/reviewer.toml;
-      force = true;
-    };
-
     ".agents/host/codex-device-auth.md" = {
       source = ../../config/agents/host/codex-device-auth.md;
-      force = true;
-    };
-
-    # Alternate gateway-backed Codex profiles are intentionally not installed.
-    # Keep the provenance launcher below for explicitly authorized external CLI
-    # workers; it is not a Codex model profile.
-    # Agent skills are installed from the Engine-owned Purpose Tool MCP/plugin via
-    # install_skills. Dotfiles keeps only archived legacy copies; Home Manager
-    # must not republish them as live ~/.agents, ~/.claude, or ~/.copilot skills.
-    # Reusable external-harness-orchestration is installed by Purpose Tool;
-    # this module owns only the Codex-specific launcher.
-    # The provenance launcher is installed only under ~/.codex/bin.
-    ".codex/bin/codex-external-run" = {
-      source = pkgs.replaceVars ../../config/codex/bin/codex-external-run.mjs {
-        node = "${pkgs.nodejs}/bin/node";
-      };
-      executable = true;
       force = true;
     };
 

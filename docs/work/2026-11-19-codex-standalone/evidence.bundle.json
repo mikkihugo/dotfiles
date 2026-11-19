@@ -1,0 +1,47 @@
+{
+  "scope": "Home Manager ownership removal in task workspace",
+  "baseline": {
+    "command": "python3 scripts/test-codex-standalone.py",
+    "result": "failed: home/home.nix still manages modules/codex-managed-daemon.nix"
+  },
+  "checks": [
+    {
+      "command": "python3 scripts/test-codex-standalone.py",
+      "result": "passed"
+    },
+    {
+      "command": "nix-instantiate --parse on home/home.nix and changed modules activation.nix, files.nix, ai-tools.nix, shell.nix",
+      "result": "passed"
+    },
+    {
+      "command": "node --test --test-name-pattern='Codex daemon lifecycle' scripts/test-nix-tooling.mjs",
+      "result": "passed"
+    },
+    {
+      "command": "python3 scripts/test-purpose-backbone.py",
+      "result": "passed"
+    },
+    {
+      "command": "purpose-repo-commands check <workspace>",
+      "result": "ok, no errors or warnings"
+    },
+    {
+      "command": "node --test scripts/test-nix-tooling.mjs",
+      "result": "passed"
+    },
+    {
+      "command": "python3 scripts/test-repo-check-entry.py",
+      "result": "passed"
+    },
+    {
+      "command": "repo check",
+      "result": "preamble passed; activation-package build interrupted with exit 1 before result"
+    }
+  ],
+  "limitations": [
+    "Full repository check interrupted during activation build; no successful build evidence",
+    "Standalone runtime switch and readback not run",
+    "Preserve managed code-mode-host link before Home Manager switch"
+  ],
+  "falsifier": "Home Manager generated activation or home.file still manages Codex configuration or daemon"
+}

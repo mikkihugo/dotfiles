@@ -153,7 +153,8 @@ class CodexPreferencesTest(unittest.TestCase):
                 "wake_on_agent_messages",
             ):
                 self.assertIs(data["features"][feature], True)
-            self.assertIs(data["features"]["memories"], False)
+            # Operator decision 2026-11-19 reversed 2026-09-19: thread memory on.
+            self.assertIs(data["features"]["memories"], True)
 
     def test_minimax_m3_is_selectable_without_replacing_the_openai_default(self):
         root = SCRIPT.parents[1]

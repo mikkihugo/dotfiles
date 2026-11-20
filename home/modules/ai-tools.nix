@@ -652,8 +652,8 @@ in {
     packages =
       [
         # API-key-injecting wrappers (shadow the raw Nix binaries for these tools).
-        # kimi is managed by mise (npm:@moonshot-ai/kimi-code) and wrapped in
-        # ~/.local/bin/kimi to route through the CentralCloud llm-gateway.
+        # kimi is standalone since 2026-11-20: npm-global install, hand-written
+        # ~/.local/bin/kimi shim — intentionally not managed here.
         # vtcode: llm-gateway.svc only (see wrappers + ~/.local/bin/vtcode).
         vtcodeWrapper
         # Raw llm-agents packages — no key injection needed.      # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)
@@ -720,30 +720,6 @@ in {
       # own persistence of UI and keybinding state
       # (crates/jcode-base/src/config/config_file.rs: Config::save writes
       # ~/.jcode/config.toml directly).
-
-      # Shadow the mise `kimi` shim so `kimi` routes through the CentralCloud
-      # llm-gateway by default. ~/.local/bin is before ~/.local/share/mise/shims in
-      # PATH, so this wrapper wins. Falls back to native Moonshot endpoints when
-      # LLM_MUX_* are not exported (e.g. non-interactive shells without SOPS loader).
-      ".local/bin/kimi" = {
-        executable = true;
-        force = true;
-        text = ''
-          #!/usr/bin/env bash
-          set -euo pipefail
-
-          # shellcheck source=/dev/null
-          [ -f "$HOME/.dotfiles/shell/bash/otel-env.sh" ] && . "$HOME/.dotfiles/shell/bash/otel-env.sh"
-          export OTEL_SERVICE_NAME="kimi-code"
-
-          if [ -n "''${LLM_MUX_API_KEY:-}" ] && [ -n "''${LLM_MUX_BASE_URL:-}" ]; then
-            export KIMI_API_KEY="$LLM_MUX_API_KEY"
-            export KIMI_BASE_URL="$LLM_MUX_BASE_URL"
-          fi
-
-          exec "$HOME/.local/share/mise/shims/kimi" "$@"
-        '';
-      };
 
       # node/npm/npx entry points for mise's npm backend. mise strips its own
       # install and shim dirs from the PATH of spawned backend commands (anti-

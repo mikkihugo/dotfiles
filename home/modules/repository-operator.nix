@@ -25,7 +25,7 @@
 # surface, and it resolves the repository and admits the target itself.
 # Nothing found? REFUSE. Running the wrong repository's surface is worse than
 # running none.
-{...}: {
+_: {
   home.file.".local/bin/repo" = {
     source = ./repository-operator/repo;
     executable = true;

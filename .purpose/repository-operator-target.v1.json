@@ -1,0 +1,35 @@
+{
+  "schema_version": "repository-operator-target/v1",
+  "target_id": "dotfiles",
+  "canonical_primary": {
+    "workspace_name": "default",
+    "path": "/home/mhugo/.dotfiles"
+  },
+  "backend": "jj-native",
+  "state_namespace": "dotfiles",
+  "vcs_policy": {
+    "canonical_remote": "origin",
+    "integration_branch": "main",
+    "task_workspace": {
+      "root": "/home/mhugo/.dotfiles-worktrees",
+      "workspace_name_prefix": "",
+      "branch_name_prefix": "worktree/"
+    },
+    "publication_mode": "integration-only",
+    "allowed_gate_identifiers": [
+      "command-view",
+      "target-contract",
+      "vcs-integrity"
+    ]
+  },
+  "allowed_compiled_capabilities": [
+    "build",
+    "check",
+    "generate",
+    "lint",
+    "prove",
+    "test",
+    "vcs"
+  ],
+  "command_contract_digest": "sha256:0af2894998aa8ab75ab0cb1243719a41d2e290f64fafcfaccd25d3418d92b959"
+}

@@ -110,6 +110,16 @@
       url = "github:Mic92/direnv-instant/1.3.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # singularity-engine: consumed ONLY for the repository-operator ELF
+    # (`packages.ergo`), projected below as `engine-repo`. One derivation,
+    # built once in Engine; the host `repo` shim resolves this attribute when
+    # a checkout ships no launcher. Do NOT use this input for anything else —
+    # evaluation cost and lock churn stay bounded to the operator.
+    singularity-engine = {
+      url = "git+ssh://git@git.centralcloud.net:2222/singularity/singularity-engine";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -123,6 +133,7 @@
     flake-utils,
     llm-agents,
     direnv-instant,
+    singularity-engine,
     ...
   }: let
     # Semantic release asserted independently of the nixpkgs source revision.
@@ -206,11 +217,13 @@
           })
         ];
       };
-      toolchain = (import ./home/lib/toolchain.nix pkgs) // (
-        if hostname == "cc-se-sto-devbox-01"
-        then {go = (import nixpkgs-go {system = sys;}).go;}
-        else {}
-      );
+      toolchain =
+        (import ./home/lib/toolchain.nix pkgs)
+        // (
+          if hostname == "cc-se-sto-devbox-01"
+          then {inherit (import nixpkgs-go {system = sys;}) go;}
+          else {}
+        );
       home = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs =
@@ -335,6 +348,18 @@
       # the profiles. `nix run path:.#home-manager -- switch ...` therefore
       # cannot drift to a mutable Home Manager branch.
       packages.home-manager = home-manager.packages.${sys}.home-manager;
+
+      # Engine's public `repo` operator ELF, renamed so it cannot shadow any
+      # in-repo launcher. Cwd still selects the repository root; the host
+      # `repo` shim resolves this attribute when the checkout ships no
+      # launcher of its own (dotfiles dropped its generated Bash facade).
+      engine-repo =
+        maintenance-pkgs.runCommand "engine-repo" {
+          meta.mainProgram = "engine-repo";
+        } ''
+          mkdir -p "$out/bin"
+          ln -s ${singularity-engine.packages.${sys}.ergo}/bin/ergo "$out/bin/engine-repo"
+        '';
 
       # `nix develop` — for editing secrets and running dotfiles linters.
       # Not the daily shell (home-manager provides that); this shell is

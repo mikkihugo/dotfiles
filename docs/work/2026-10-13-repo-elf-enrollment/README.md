@@ -7,26 +7,48 @@ flake input).
 | File | Role |
 |---|---|
 | `purpose.contract.json` | Why: switch `bin/repo` to the operator ELF. Consumer: every agent shell on this devbox. Contract: `repo --version` reports the operator binary; `repo check nix` and `repo vcs test` pass with the operator as dispatcher. Falsifier: `repo check` fails OR `repo` reports a non-Rust file type. |
-| `validation.report.json` | Most recent `purpose-validate-work` output. Currently `ok: false` because the work-spec/evidence bundle has not been authored; that authoring requires the engine-side enrollment change (R3 in the contract) before the work itself can be implemented. Re-run validator after enrollment is live. |
-| (future) `work.spec.json`, `evidence.bundle.json`, `current-spec.snapshot.json` | Authored when the engine-side enrollment is in place. The contract intentionally scopes the build on the engine's admission decision, not the local migration. |
+| `validation.report.json` | Most recent validation output. |
+| (future) `work.spec.json`, `evidence.bundle.json`, `current-spec.snapshot.json` | Authored when the engine admission lands and the dotfiles-side change executes. |
 
-**Blocker** (R3 in the contract): `tools/repository-operator/src/operator_floor.rs:44`
-declares `pub const ENROLLED_OPERATOR_TARGETS: &[&str] = &["singularity-engine"];`.
-Adding `"dotfiles"` requires rebuilding the operator with that line extended.
-This is an engine-side change (`/home/mhugo/code/singularity-engine`), not a
-dotfiles change. Until the engine patch lands, the operator refuses every
-command on the dotfiles checkout with `OPERATOR_ROUTE_NOT_ENROLLED`.
+## Status 2026-11-20 (in flight)
 
-**Re-validate** after the engine-side enrollment change:
+The blocker (R3) is being executed today, in order:
 
-```bash
-PURPOSE_TOOL_ALLOWED_ROOTS=/home/mhugo/.dotfiles \
-  /nix/store/7vrgih17y1y0kgkz3inr5ip29xa5d9yf-purpose-tool-mcp-0.6.168/bin/purpose-validate-work \
-  /home/mhugo/.dotfiles/docs/work/2026-10-13-repo-elf-enrollment \
-  --repo-root /home/mhugo/.dotfiles
-```
+1. **Engine lane `dotfiles-enroll`** (singularity-engine): add `"dotfiles"` to
+   `ENROLLED_OPERATOR_TARGETS` (`tools/repository-operator/src/operator_floor.rs:55`;
+   currently `["singularity-engine", "infra", "jcode"]`, no test pins the list) and
+   expose the operator ELF via `hydraJobs` in Engine's flake so Hydra
+   (`infra/apps/hydra-oci`, today a bounded fixture) can build and cache the one
+   derivation fleet-wide.
+2. **Dotfiles lane `lane-create-verb`** (this repo, staged): delete the generated
+   `bin/repo` facade + `.purpose/commands.json` + `.purpose/repo-agent-catalog.json`;
+   add the `singularity-engine` flake input projecting `packages.engine-repo`
+   (jcode pattern); author `.purpose/repository-operator-target.v1.json`
+   (canonical primary `/home/mhugo/.dotfiles`, lane root
+   `/home/mhugo/.dotfiles-worktrees`, branch prefix `worktree/`,
+   `publication_mode: integration-only`).
+3. After (1) lands: re-lock the dotfiles flake pin to the enrolling engine rev,
+   then publish lane (2) and verify `repo --version` reports the ELF.
 
-Once `ok: true`, complete the work spec and evidence per the engine's
-purpose-tool workflow (work packets are emitted and validated, not hand-
-authored). Run `purpose-repo-commands convert` and the validator again to
-cycle until `authorizes_execution: true` after the engine admission lands.
+## Decisions and findings
+
+- **Command contract digest** (`command_contract_digest` in the target manifest)
+  is the sha256 of the ELF-embedded v2 command grammar — a compatibility
+  assertion, never target-supplied policy. Seeded from the live manifest that
+  jcode runs today; the operator's own `verify_target_command_contract` refuses
+  on mismatch, so a wrong seed fails loudly at first dispatch, not silently.
+- **GitHub mirror gap**: the Rust target manifest has no dual-remote
+  publication field; dotfiles' Forgejo+GitHub push is reduced to
+  integration-only (Forgejo) at enrollment. Follow-up: a mirror-sync mechanism
+  for the GitHub dotfiles mirror must be rebuilt outside the operator.
+- **One ELF**: consumers import `singularity-engine.packages.repo` (burned-in
+  jj/git/ssh/nix paths, consumer-neutral). Per-repo projections only rename the
+  binary (`engine-repo` in dotfiles/jcode) so it cannot shadow an in-repo
+  launcher. The host `~/.local/bin/repo` shim (home-manager,
+  `home/modules/repository-operator.nix`) resolves per-caller: launcher, else
+  `#engine-repo`, else refuse.
+
+## Re-validate
+
+After the engine admission lands and the dotfiles lane publishes, re-run the
+validator against this packet and author the work spec + evidence bundle.

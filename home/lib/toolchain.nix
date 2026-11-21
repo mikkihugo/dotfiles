@@ -1,4 +1,4 @@
-  # Fleet language attrs aligned with singularity-engine/nix/toolchains/versions.json.
+# Fleet language attrs aligned with singularity-engine/nix/toolchains/versions.json.
 # Use these names in HM modules instead of pkgs.python3 / pkgs.go so nixos-26.05
 # defaults (python 3.13, go 1.26) cannot drift under a generation bump.
 # go: pinned to stable 1.26 (pkgs.go_1_26) by operator decision 2026-11-16 —

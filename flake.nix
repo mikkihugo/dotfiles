@@ -179,6 +179,8 @@
           (_final: prev: {
             ast-grep = nixpkgs-unstable.legacyPackages.${sys}.ast-grep;
             inherit (nixpkgs-unstable.legacyPackages.${sys}) ripgrep;
+            # git 2.56.0: the fleet-canonical nixpkgs pin ships 2.54.0.
+            inherit (nixpkgs-unstable.legacyPackages.${sys}) git;
             inherit (import nixpkgs-jujutsu {system = sys;}) jujutsu;
             inherit (nixpkgs-unstable.legacyPackages.${sys}) mise;
             # vultr-cli 3.11.0: from nixpkgs-unstable so the Nix build serves

@@ -106,7 +106,13 @@ Host cc-fr-lau-store-01
     IdentityFile ~/.ssh/personal_admin_id_ed25519
     IdentitiesOnly yes
 
-Host cc-fr-lau-store-02
+Host cc-fr-lau-0002
+    HostName 89.117.63.169
+    User root
+    IdentityFile ~/.ssh/personal_admin_id_ed25519
+    IdentitiesOnly yes
+
+Host cc-fr-lau-0005
     HostName 75.119.154.193
     User root
     IdentityFile ~/.ssh/personal_admin_id_ed25519

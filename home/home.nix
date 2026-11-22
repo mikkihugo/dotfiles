@@ -54,7 +54,6 @@ in {
     ./modules/droid-remote-control.nix
     ./modules/sshid-key-sync.nix
     ./modules/agent-direnv.nix
-    ./modules/devshell-prewarm.nix
     ./modules/cargo-target-prune.nix
     ./modules/mise-auto-update.nix
     ./modules/grok-leader.nix

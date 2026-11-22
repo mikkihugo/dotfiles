@@ -82,7 +82,7 @@ resolve_operator() {
 	# The operator is one Engine derivation; a repository consumes it from its
 	# own flake output. The attribute is a per-repository projection: a
 	# repository that declares the operator target consumes the Engine input
-	# and exposes it as `engine-repo`; Engine's own tree exposes it as `repo`.
+	# and exposes it as `ergo`; Engine's own tree exposes it as `ergo` too.
 	#
 	# Probing the wrong name costs a full flake evaluation, so the attribute
 	# is READ from the repository's own output set instead of guessed.
@@ -128,7 +128,7 @@ resolve_operator() {
 	# publishes no packages set), fall back to trying both candidates rather
 	# than skipping them all: skipping every candidate would leave the
 	# operator unresolvable where the previous direct build still worked.
-	for attr in engine-repo repo; do
+	for attr in ergo; do
 		if [ -n "$published" ]; then
 			case " $published " in
 			*" $attr "*) ;;
@@ -139,9 +139,9 @@ resolve_operator() {
 		if [ -z "$out" ]; then
 			out="$(nix build --no-link --print-out-paths --offline "path:$root#$attr" 2>/dev/null || true)"
 		fi
-		if [ -n "$out" ] && [ -x "$out/bin/repo" ]; then
-			printf '%s' "$out/bin/repo" >"$cache/$resolved" || true
-			printf '%s' "$out/bin/repo"
+		if [ -n "$out" ] && [ -x "$out/bin/ergo" ]; then
+			printf '%s' "$out/bin/ergo" >"$cache/$resolved" || true
+			printf '%s' "$out/bin/ergo"
 			return 0
 		fi
 	done

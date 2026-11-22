@@ -112,7 +112,7 @@
     };
 
     # singularity-engine: consumed ONLY for the repository-operator ELF
-    # (`packages.ergo`), projected below as `engine-repo`. One derivation,
+    # (`packages.ergo`), re-exported below as `ergo`. One derivation,
     # built once in Engine; the host `repo` shim resolves this attribute when
     # a checkout ships no launcher. Do NOT use this input for anything else —
     # evaluation cost and lock churn stay bounded to the operator.
@@ -230,6 +230,7 @@
           specialArgs
           // {
             targetSystem = sys;
+            ergo = singularity-engine.packages.${sys}.ergo;
             inherit hostname toolchain;
           };
         modules = [
@@ -349,17 +350,10 @@
       # cannot drift to a mutable Home Manager branch.
       packages.home-manager = home-manager.packages.${sys}.home-manager;
 
-      # Engine's public `repo` operator ELF, renamed so it cannot shadow any
-      # in-repo launcher. Cwd still selects the repository root; the host
-      # `repo` shim resolves this attribute when the checkout ships no
-      # launcher of its own (dotfiles dropped its generated Bash facade).
-      engine-repo =
-        maintenance-pkgs.runCommand "engine-repo" {
-          meta.mainProgram = "engine-repo";
-        } ''
-          mkdir -p "$out/bin"
-          ln -s ${singularity-engine.packages.${sys}.ergo}/bin/ergo "$out/bin/engine-repo"
-        '';
+      # Engine's repository operator `ergo` (packages.ergo), re-exported as-is.
+      # Cwd selects the repository root; the host `repo` shim resolves this
+      # attribute when a checkout ships no launcher of its own.
+      ergo = singularity-engine.packages.${sys}.ergo;
 
       # `nix develop` — for editing secrets and running dotfiles linters.
       # Not the daily shell (home-manager provides that); this shell is

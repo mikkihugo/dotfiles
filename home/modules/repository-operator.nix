@@ -25,7 +25,13 @@
 # surface, and it resolves the repository and admits the target itself.
 # Nothing found? REFUSE. Running the wrong repository's surface is worse than
 # running none.
-_: {
+{
+  ergo,
+  lib,
+  ...
+}: {
+  # One name in every repository for the Engine operator binary.
+  home.sessionVariables.REPOSITORY_OPERATOR_BIN = lib.getExe ergo;
   home.file.".local/bin/repo" = {
     source = ./repository-operator/repo;
     executable = true;

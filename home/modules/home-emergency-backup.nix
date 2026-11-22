@@ -410,7 +410,8 @@ in
             Persistent = true;
             Unit = "home-emergency-backup-${name}.service";
           };
-          Install.WantedBy = ["timers.target"];
+          # Operator 2026-11-22: borg timers off (devbox I/O saturation). No
+          # WantedBy, so the timer is never started; run the service by hand.
         })
       targets;
     }
@@ -482,7 +483,7 @@ in
             Persistent = true;
             Unit = "worktrees-hel1.service";
           };
-          Install.WantedBy = ["timers.target"];
+          # Off since 2026-11-22 (see home-emergency timers above).
         };
         worktrees-fsn1 = {
           Unit.Description = "Nightly lane-worktree backup to FSN1";
@@ -492,7 +493,7 @@ in
             Persistent = true;
             Unit = "worktrees-fsn1.service";
           };
-          Install.WantedBy = ["timers.target"];
+          # Off since 2026-11-22 (see home-emergency timers above).
         };
       };
     })

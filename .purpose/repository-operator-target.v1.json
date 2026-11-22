@@ -11,7 +11,8 @@
     "canonical_remote": "origin",
     "integration_branch": "main",
     "task_workspace": {
-      "root": "/home/mhugo/.dotfiles-worktrees",
+      "root": "/home/mhugo/.dotfiles/.worktrees",
+      "legacy_pool_root": "/home/mhugo/.dotfiles-worktrees",
       "workspace_name_prefix": "",
       "branch_name_prefix": "worktree/"
     },

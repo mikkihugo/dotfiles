@@ -224,12 +224,31 @@ leftover_ref_checked_out() {
 
 command_name="${1:-}"
 shift || true
+registered_lane_path() {
+	local name="$1"
+	local path=""
+	local worktrees
+	worktrees="$(git -C "$root" worktree list --porcelain)" || return 2
+	local current="worktree $HOME/.dotfiles/.worktrees/$name"
+	local legacy="worktree $HOME/.dotfiles-worktrees/$name"
+	while IFS= read -r entry; do
+		[[ "$entry" == "$current" || "$entry" == "$legacy" ]] || continue
+		if [[ -n "$path" ]]; then
+			printf 'dotfiles-vcs: multiple registered worktrees for lane: %s\n' "$name" >&2
+			return 2
+		fi
+		path="${entry#worktree }"
+	done <<< "$worktrees"
+	[[ -n "$path" ]] || return 1
+	printf '%s' "$path"
+}
+
 # Resolve a worktree's branch, tolerating the current worktree/ prefix and the
 # legacy codex/ one. The prefix was agent-specific until 2026-08-12: every agent
 # using this facade was forced onto a codex/* branch whichever agent it was.
 task_branch_for() {
 	local name="$1"
-	local path="$HOME/.dotfiles-worktrees/$name"
+	local path="${2:-}"
 	local live_branch=""
 	if git -C "$root" show-ref --verify --quiet "refs/heads/worktree/$name"; then
 		printf 'worktree/%s' "$name"
@@ -238,6 +257,9 @@ task_branch_for() {
 	if git -C "$root" show-ref --verify --quiet "refs/heads/codex/$name"; then
 		printf 'codex/%s' "$name"
 		return
+	fi
+	if [[ -z "$path" ]]; then
+		path="$(registered_lane_path "$name")" || die "cannot resolve registered lane: $name"
 	fi
 	if [[ -d "$path" ]]; then
 		live_branch="$(git -C "$path" symbolic-ref --quiet --short HEAD || true)"
@@ -249,7 +271,8 @@ task_branch_for() {
 lane_root_for() {
 	local name="$1"
 	valid_name "$name"
-	local path="$HOME/.dotfiles-worktrees/$name"
+	local path
+	path="$(registered_lane_path "$name")" || die "cannot resolve registered lane: $name"
 	[[ -d "$path" ]] || die "unknown lane: $name (create with repo vcs worktree-create)"
 	printf '%s' "$path"
 }
@@ -764,26 +787,31 @@ worktree-create)
 	name="$1"
 	revision="$2"
 	valid_name "$name"
-	path="$HOME/.dotfiles-worktrees/$name"
-	[[ ! -e "$path" ]] || die "worktree path exists: $path"
+	if registered_lane_path "$name" >/dev/null; then
+		die "worktree already registered: $name"
+	else
+		[[ $? == 1 ]] || die "could not verify registered worktrees for: $name"
+	fi
+	path="$HOME/.dotfiles/.worktrees/$name"
+	[[ ! -e "$path" && ! -L "$path" ]] || die "worktree path exists: $path"
 	git -C "$root" worktree add -b "worktree/$name" "$path" "$revision"
 	;;
 worktree-delete | worktree-drop)
 	[[ $# -eq 1 ]] || die 'repo vcs worktree-drop requires a lane name'
 	name="$1"
 	valid_name "$name"
-	path="$HOME/.dotfiles-worktrees/$name"
+	path="$(registered_lane_path "$name")" || die "cannot resolve registered lane: $name"
 	[[ "$(realpath "$root")" != "$(realpath "$path")" ]] || die 'cannot delete current worktree'
-	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'worktree is not registered'
+	branch="$(task_branch_for "$name" "$path")"
 	[[ -z "$(git -C "$path" status --porcelain)" ]] || die 'worktree is dirty'
-	if ! git -C "$root" merge-base --is-ancestor "$(task_branch_for "$name")" main; then
+	if ! git -C "$root" merge-base --is-ancestor "$branch" main; then
 		fetch_forgejo_main "$root"
-		git -C "$root" merge-base --is-ancestor "$(task_branch_for "$name")" origin/main || die 'worktree branch is not integrated into main'
+		git -C "$root" merge-base --is-ancestor "$branch" origin/main || die 'worktree branch is not integrated into main'
 	fi
 	git -C "$root" worktree remove "$path"
 	# The primary checkout may intentionally lag origin/main. Integration was
 	# proven above, so delete the local task ref without re-checking stale main.
-	git -C "$root" branch -D "$(task_branch_for "$name")"
+	git -C "$root" branch -D "$branch"
 	;;
 worktree-abandon)
 	[[ $# -eq 2 ]] || die 'worktree-abandon requires name and discard-unintegrated'
@@ -791,13 +819,13 @@ worktree-abandon)
 	confirmation="$2"
 	valid_name "$name"
 	[[ "$confirmation" == discard-unintegrated ]] || die 'worktree-abandon requires exact discard-unintegrated confirmation'
-	path="$HOME/.dotfiles-worktrees/$name"
+	path="$(registered_lane_path "$name")" || die "cannot resolve registered lane: $name"
 	[[ "$(realpath "$root")" != "$(realpath -m "$path")" ]] || die 'cannot abandon current worktree'
-	git -C "$root" worktree list --porcelain | awk '/^worktree / {print substr($0,10)}' | grep -Fxq "$path" || die 'worktree is not registered'
+	branch="$(task_branch_for "$name" "$path")"
 	if [[ ! -e "$path" ]]; then
 		git -C "$root" worktree prune
-		revision="$(git -C "$root" rev-parse "$(task_branch_for "$name")")"
-		git -C "$root" branch -D "$(task_branch_for "$name")"
+		revision="$(git -C "$root" rev-parse "$branch")"
+		git -C "$root" branch -D "$branch"
 		printf 'abandoned=%s revision=%s clean=true live_process=false missing_path=true\n' "$name" "$revision"
 		exit 0
 	fi
@@ -808,9 +836,9 @@ worktree-abandon)
 		"$path" | "$path"/*) die "worktree is owned by a live process: $process_cwd -> $resolved_cwd" ;;
 		esac
 	done
-	revision="$(git -C "$root" rev-parse "$(task_branch_for "$name")")"
+	revision="$(git -C "$root" rev-parse "$branch")"
 	git -C "$root" worktree remove "$path"
-	git -C "$root" branch -D "$(task_branch_for "$name")"
+	git -C "$root" branch -D "$branch"
 	printf 'abandoned=%s revision=%s clean=true live_process=false\n' "$name" "$revision"
 	;;
 branch-delete | branch-retire)

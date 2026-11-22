@@ -762,6 +762,7 @@ cat >"$tmp/lane/git" <<'LANE_GIT'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$LANE_LOG"
 case "$*" in
+*'worktree list --porcelain'*) printf 'worktree %s\n' "$HOME/.dotfiles-worktrees/demo"; exit 0 ;;
 *'show-ref --verify --quiet refs/heads/worktree/demo'*) exit 0 ;;
 *'symbolic-ref --quiet --short HEAD'*) printf '%s\n' worktree/demo; exit 0 ;;
 *'diff --cached --quiet'*) exit 1 ;;
@@ -802,6 +803,7 @@ cat >"$tmp/lane-other/git" <<'LANE_OTHER_GIT'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$LANE_LOG"
 case "$*" in
+*'worktree list --porcelain'*) printf 'worktree %s\n' "$HOME/.dotfiles-worktrees/demo"; exit 0 ;;
 *'show-ref --verify --quiet refs/heads/worktree/demo'*) exit 0 ;;
 *'symbolic-ref --quiet --short HEAD'*) printf '%s\n' worktree/other; exit 0 ;;
 esac

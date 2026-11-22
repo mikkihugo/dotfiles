@@ -88,3 +88,6 @@ config/goose/secrets.yaml
 age-keys.txt
 result
 .direnv/
+
+# Repository-local workspaces
+/.worktrees/

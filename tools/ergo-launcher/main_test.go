@@ -219,3 +219,39 @@ func TestTheCacheKeyMovesWithTheLock(t *testing.T) {
 		t.Fatal("the cache key did not move with flake.lock")
 	}
 }
+
+func TestOneRepositoryHasOneCacheKey(t *testing.T) {
+	root := fakeRepository(t)
+	link := filepath.Join(t.TempDir(), "checkout-link")
+	if err := os.Symlink(root, link); err != nil {
+		t.Fatalf("symlink repository: %v", err)
+	}
+	if cacheKey(root) != cacheKey(link) {
+		t.Fatal("two paths to the same repository produced two cache keys")
+	}
+}
+
+func TestTheGcRootPointsAtThePackageNotTheBinary(t *testing.T) {
+	data := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", data)
+
+	// A binary inside a package is not itself a store path; the root must
+	// point at the package or the collector ignores it.
+	pkg := "/nix/store/00000000000000000000000000000000-ergo-0.1.0"
+	if got := packagePath(pkg + "/bin/ergo"); got != pkg {
+		t.Fatalf("packagePath = %q, want %q", got, pkg)
+	}
+	if got := packagePath("/tmp/not-a-store-path/bin/ergo"); got != "" {
+		t.Fatalf("packagePath = %q, want an empty string for a path outside the store", got)
+	}
+
+	gcRoot(pkg, "testkey")
+	link := filepath.Join(data, "nix", "gcroots", "auto", "ergo-launcher-testkey")
+	target, err := os.Readlink(link)
+	if err != nil {
+		t.Fatalf("no GC root at %s: %v", link, err)
+	}
+	if target != pkg {
+		t.Fatalf("GC root points at %q, want the package %q", target, pkg)
+	}
+}

@@ -153,10 +153,7 @@ func (h *host) resolve(root string, allowBuild bool) (string, string, error) {
 // build realizes the caller's own operator output. One Nix client, one
 // attribute at a time, no attribute listing.
 func (h *host) build(root string) (string, error) {
-	physical, err := filepath.EvalSymlinks(root)
-	if err != nil {
-		physical = root
-	}
+	physical := physicalRoot(root)
 	system := nixSystem()
 	var failure error
 	for _, attr := range operatorAttrs {
@@ -190,14 +187,25 @@ func (h *host) build(root string) (string, error) {
 // cacheKey binds a cached store path to one repository AND one lock: the
 // root plus the digest of its flake.lock. A moved lock is a different key,
 // so a stale binary is never served for a new pin.
+//
+// The root is resolved physically: /home/mhugo/code/infra and /srv/infra are
+// the same repository, and they must share one cache entry.
 func cacheKey(root string) string {
 	sum := sha256.New()
-	sum.Write([]byte(root))
+	sum.Write([]byte(physicalRoot(root)))
 	sum.Write([]byte{0})
 	if lock, err := os.ReadFile(filepath.Join(root, "flake.lock")); err == nil {
 		sum.Write(lock)
 	}
 	return hex.EncodeToString(sum.Sum(nil))[:32]
+}
+
+// physicalRoot resolves a repository root through its symlinks.
+func physicalRoot(root string) string {
+	if resolved, err := filepath.EvalSymlinks(root); err == nil {
+		return resolved
+	}
+	return root
 }
 
 // cached returns the cached store path for root while it still exists.
@@ -224,7 +232,7 @@ func (h *host) cache(root, bin string) {
 	if file == "" {
 		return
 	}
-	tmp := file + ".tmp"
+	tmp := fmt.Sprintf("%s.%d.tmp", file, os.Getpid())
 	if err := os.WriteFile(tmp, []byte(bin+"\n"), 0o644); err != nil {
 		return
 	}
@@ -232,7 +240,7 @@ func (h *host) cache(root, bin string) {
 		os.Remove(tmp)
 		return
 	}
-	gcRoot(bin, cacheKey(root))
+	gcRoot(packagePath(bin), cacheKey(root))
 }
 
 func (h *host) cacheFile(root string) string {
@@ -243,11 +251,27 @@ func (h *host) cacheFile(root string) string {
 	return filepath.Join(dir, cacheKey(root))
 }
 
+// packagePath returns the store path that carries a package's binary.
+// Nix gives a binary the shape <store>/<name>/bin/<binary>, and the binary
+// itself is NOT a store path — a GC root must point at the package, or the
+// collector ignores it and the cached binary disappears.
+func packagePath(bin string) string {
+	dir := filepath.Dir(bin)
+	if filepath.Base(dir) != "bin" {
+		return ""
+	}
+	pkg := filepath.Dir(dir)
+	if !strings.HasPrefix(pkg, "/nix/store/") {
+		return ""
+	}
+	return pkg
+}
+
 // gcRoot keeps a cached store path alive across garbage collection. Nix
 // reads the per-user auto roots directory, so one symlink is enough and no
 // Nix client is needed.
-func gcRoot(bin, key string) {
-	if !strings.HasPrefix(bin, "/nix/store/") {
+func gcRoot(pkg, key string) {
+	if pkg == "" || !strings.HasPrefix(pkg, "/nix/store/") {
 		return
 	}
 	dir := filepath.Join(dataHome(), "nix", "gcroots", "auto")
@@ -255,9 +279,9 @@ func gcRoot(bin, key string) {
 		return
 	}
 	link := filepath.Join(dir, "ergo-launcher-"+key)
-	tmp := link + ".tmp"
+	tmp := fmt.Sprintf("%s.%d.tmp", link, os.Getpid())
 	os.Remove(tmp)
-	if err := os.Symlink(bin, tmp); err != nil {
+	if err := os.Symlink(pkg, tmp); err != nil {
 		return
 	}
 	if err := os.Rename(tmp, link); err != nil {

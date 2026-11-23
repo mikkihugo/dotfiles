@@ -32,6 +32,14 @@
 }: {
   # One name in every repository for the Engine operator binary.
   home.sessionVariables.REPOSITORY_OPERATOR_BIN = lib.getExe ergo;
+  # `ergo` is the operator's name and the host entry both names resolve to.
+  # `repo` stays until the per-CLI mailbox hooks that invoke `repo coord hook`
+  # move over; both exec the one resolver above.
+  home.file.".local/bin/ergo" = {
+    source = ./repository-operator/repo;
+    executable = true;
+    force = true;
+  };
   home.file.".local/bin/repo" = {
     source = ./repository-operator/repo;
     executable = true;

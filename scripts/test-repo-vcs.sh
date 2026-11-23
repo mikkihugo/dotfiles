@@ -911,6 +911,26 @@ grep -Fq 'fast_forward=true' "$tmp/sm-ok.out" || {
 	printf 'sync-main must leave the primary clean\n' >&2
 	exit 1
 }
+# A file ADDED upstream is not primary content: the guard reads a blob only
+# from a path the primary's HEAD tree has, so a merge that adds files must
+# still fast-forward and check the new file out. `git rev-parse` without
+# --verify echoes an unresolvable HEAD:<path> to stdout, which would make
+# every upstream-added file look like uncontained primary content.
+sm_git clone -q "$sm/remote.git" "$sm/seed3" 2>/dev/null
+printf 'added upstream\n' >"$sm/seed3/g"
+sm_git -C "$sm/seed3" add g
+sm_git -C "$sm/seed3" commit -qm three
+sm_git -C "$sm/seed3" push -q origin main
+if ! HOME="$sm/home" PATH="$sm/bin:$PATH" DOTFILES_FORGEJO_HTTPS_URL="$sm/remote.git" SE_GIT_BIN="$sm_git_bin" \
+	_run_repo_vcs "$root/scripts/repo-vcs.sh" sync-main >"$tmp/sm-added.out" 2>"$tmp/sm-added.err"; then
+	printf 'sync-main must fast-forward when origin/main added a file\n' >&2
+	cat "$tmp/sm-added.err" >&2
+	exit 1
+fi
+[[ -e "$sm/home/.dotfiles/g" ]] || {
+	printf 'sync-main must check out the file origin/main added\n' >&2
+	exit 1
+}
 
 # Every agent-facing command the facade names must be declared in
 # .purpose/commands.json and dispatchable through the generated bin/repo. A

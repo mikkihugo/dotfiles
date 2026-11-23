@@ -309,7 +309,13 @@ lane_root_for() {
 primary_head_content_contained() {
 	local primary="$1" path blob candidates='' missing=''
 	while IFS= read -r -d '' path; do
-		blob="$(git -C "$primary" rev-parse "HEAD:$path" 2>/dev/null || true)"
+		# --verify --quiet: plain `git rev-parse` ECHOES an unresolvable
+		# argument to stdout ("HEAD:<path>" for a path the primary's HEAD
+		# tree does not have), so a file ADDED upstream would be read as a
+		# blob the primary holds and reported as uncontained content — the
+		# guard would refuse every sync after a file-adding merge. Only a
+		# path that exists in the primary's HEAD tree has a blob.
+		blob="$(git -C "$primary" rev-parse --verify --quiet "HEAD:$path" 2>/dev/null || true)"
 		[[ -n "$blob" ]] || continue
 		candidates+="$blob"$'\n'
 	done < <(git -C "$primary" diff --name-only -z HEAD origin/main 2>/dev/null)
@@ -327,7 +333,13 @@ primary_head_content_contained() {
 		return 0
 	fi
 	while IFS= read -r -d '' path; do
-		blob="$(git -C "$primary" rev-parse "HEAD:$path" 2>/dev/null || true)"
+		# --verify --quiet: plain `git rev-parse` ECHOES an unresolvable
+		# argument to stdout ("HEAD:<path>" for a path the primary's HEAD
+		# tree does not have), so a file ADDED upstream would be read as a
+		# blob the primary holds and reported as uncontained content — the
+		# guard would refuse every sync after a file-adding merge. Only a
+		# path that exists in the primary's HEAD tree has a blob.
+		blob="$(git -C "$primary" rev-parse --verify --quiet "HEAD:$path" 2>/dev/null || true)"
 		[[ -n "$blob" ]] || continue
 		if printf '%s\n' "$uncontained" |
 			awk -v want="$blob" '$1 == want { found = 1 } END { exit !found }'; then

@@ -26,12 +26,24 @@
 # Nothing found? REFUSE. Running the wrong repository's surface is worse than
 # running none.
 {
-  ergo,
-  lib,
+  config,
   ...
 }: {
-  # One name in every repository for the Engine operator binary.
-  home.sessionVariables.REPOSITORY_OPERATOR_BIN = lib.getExe ergo;
+  # The operator binary, correct in EVERY repository shell on this host.
+  #
+  # It points at the host entry, not at `lib.getExe ergo`. Both name the same
+  # operator, but the store path would put singularity-engine.packages.ergo
+  # into the home profile closure, so every `hms` had to realize a full Rust
+  # operator build before it could activate (measured 40+ minutes under fleet
+  # load). The entry is a script, so the closure stays free of the operator and
+  # the resolver realizes it lazily on first use, caching the result.
+  #
+  # A shell that pins a specific operator (infra's .envrc, from its pinned
+  # Engine input) still shadows this with its own concrete store path; that is
+  # the more specific setting and it stays correct.
+  home.sessionVariables.REPOSITORY_OPERATOR_BIN =
+    "${config.home.homeDirectory}/.local/bin/ergo";
+  #
   # `ergo` is the operator's name and the host entry both names resolve to.
   # `repo` stays until the per-CLI mailbox hooks that invoke `repo coord hook`
   # move over; both exec the one resolver above.

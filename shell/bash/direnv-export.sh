@@ -148,9 +148,8 @@ fi
 _direnv_do_enter() {
 	# Never trace this function: xtrace prints the eval argument already
 	# expanded, so a traced agent shell writes out the whole `export DIRENV_DIFF=`
-	# blob, which decodes to the previous environment -- including the live
-	# SCCACHE_WEBDAV_TOKEN, because the jcode devShell unsets it on entry and
-	# direnv therefore has to remember it to restore on exit. This matters more
+	# blob, which decodes to the previous environment and may include secrets
+	# that direnv remembers to restore on exit. This matters more
 	# than the interactive loaders: zsh's envExtra sources ONLY this file, so for
 	# `zsh -c` agent shells it is the single dotfiles file in play.
 	# Same rule and same zsh caveat as _load_sops_secrets in shell/bash/bashrc.

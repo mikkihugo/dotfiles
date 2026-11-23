@@ -1,0 +1,148 @@
+{
+  "schema_version": "workspec/v4",
+  "workspec_id": "2026-11-18-disable-sccache-workspec",
+  "purpose_contract_id": "2026-11-18-disable-sccache",
+  "handover": {
+    "state": "proposed",
+    "producer": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    }
+  },
+  "feature_tree_target": {
+    "kind": "unknown",
+    "name": "2026-11-18-disable-sccache",
+    "status": "planned"
+  },
+  "current_spec": {
+    "snapshot_id": "2026-11-18-disable-sccache-current-spec",
+    "uri": "current-spec.snapshot.json",
+    "digest": {
+      "algorithm": "sha256",
+      "canonicalization": "raw-bytes",
+      "value": "7ec34a220e2753fe0775cbb3ae74a89c14c10d6a575dda7157981a1c64e692fb"
+    }
+  },
+  "requirement_delta": {
+    "added": [
+      {
+        "id": "R1",
+        "statement": "Home Manager profiles do not install or configure sccache or Rust compiler wrappers.",
+        "acceptance_criteria": [
+          "All profiles omit sccache from packages and omit SCCACHE_* and RUSTC_WRAPPER variables.",
+          "All profiles evaluate successfully."
+        ],
+        "requirement_form": {
+          "ears": {
+            "pattern": "ubiquitous",
+            "system": "Home Manager profiles",
+            "response": "omit sccache packages and compiler wrapper settings"
+          }
+        },
+        "breaker": {
+          "breaker_id": "B1",
+          "condition": "validation accepts an implementation without the promised behavior",
+          "witness_kind": "contract-test",
+          "expected": "rejected"
+        },
+        "risk": "low",
+        "source": "purpose_contract"
+      }
+    ],
+    "modified": [],
+    "removed": [],
+    "renamed": []
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "statement": "Home Manager profiles do not install or configure sccache or Rust compiler wrappers.",
+      "acceptance_criteria": [
+        "All profiles omit sccache from packages and omit SCCACHE_* and RUSTC_WRAPPER variables.",
+        "All profiles evaluate successfully."
+      ],
+      "requirement_form": {
+        "ears": {
+          "pattern": "ubiquitous",
+          "system": "Home Manager profiles",
+          "response": "omit sccache packages and compiler wrapper settings"
+        }
+      },
+      "breaker": {
+        "breaker_id": "B1",
+        "condition": "validation accepts an implementation without the promised behavior",
+        "witness_kind": "contract-test",
+        "expected": "rejected"
+      },
+      "risk": "low",
+      "source": "purpose_contract"
+    }
+  ],
+  "scope": {
+    "allowed": [
+      "home/modules/packages.nix",
+      "scripts/test-sccache-profile-scope.sh",
+      "docs/work/2026-11-18-disable-sccache/**",
+      "shell/bash/bashrc",
+      "shell/bash/direnv-export.sh",
+      "config/nix/local-build.nix.conf"
+    ],
+    "blocked": [],
+    "expected_files": []
+  },
+  "test_plan": [
+    {
+      "id": "T1",
+      "requirement_id": "R1",
+      "kind": "contract",
+      "description": "Evaluate package and variable absence for each profile.",
+      "must_fail_first": true
+    }
+  ],
+  "verification_plan": {
+    "commands": [
+      "bash scripts/test-sccache-profile-scope.sh"
+    ],
+    "evidence_required": [
+      "test",
+      "quality",
+      "falsifier"
+    ]
+  },
+  "model_requirements": {
+    "coding": 0.6,
+    "debugging": 0.4
+  },
+  "run_control": {
+    "autonomous_allowed": true,
+    "approval_required": false,
+    "max_doubt_to_proceed": 1
+  },
+  "traceability": {
+    "owner": {
+      "kind": "agent",
+      "id": "scaffold_work"
+    },
+    "agent_role": "implementer",
+    "source_node_id": "2026-11-18-disable-sccache",
+    "target_planes": [
+      "engine"
+    ],
+    "dependencies": [],
+    "retry_policy": {
+      "max_attempts": 1,
+      "backoff": "none",
+      "retryable_terminal_reasons": []
+    },
+    "dispatch_scope": {
+      "kind": "local"
+    }
+  },
+  "execution_constraints": {
+    "required_capabilities": [],
+    "requested_isolation": "unspecified",
+    "side_effect_policy": "fenced",
+    "expected_artifact_schemas": [],
+    "deterministic_replay_required": true
+  }
+}

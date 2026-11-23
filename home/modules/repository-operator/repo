@@ -149,6 +149,7 @@ resolve_operator() {
 }
 
 REPO_BIN="$repo_root/bin/$cli_name"
+[ -x "$REPO_BIN" ] || REPO_BIN="$repo_root/bin/ergo"
 if [ -x "$REPO_BIN" ] && [ "$(readlink -f "$REPO_BIN")" != "$self" ]; then
 	delegate="$REPO_BIN"
 else

@@ -1,0 +1,8 @@
+RED: rg -n "^\\s*sccache(\\s|$)" home/modules/packages.nix found line 82; assertion exited 1.
+GREEN: identical assertion found no declaration and exited 0.
+bash -n scripts/test-sccache-profile-scope.sh exited 0.
+Nix evaluation deferred pending coordinator clearance.
+RED: shell export assertion found SCCACHE_WEBDAV_TOKEN at shell/bash/bashrc:414; exited 1.
+GREEN: identical assertion found no export and exited 0.
+bash -n shell/bash/bashrc shell/bash/direnv-export.sh scripts/test-sccache-profile-scope.sh exited 0.
+Scoped Nix profile test: started 2026-11-18 08:08 UTC; copied three Nix source paths, then waited in daemon I/O. At ~3 minutes worker thread 574032 was D state; interrupted without a test result. No Nix evaluation pass claimed.

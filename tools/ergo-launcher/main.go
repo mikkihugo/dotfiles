@@ -96,13 +96,14 @@ func (h *host) run(args []string) int {
 		return 2
 	}
 
-	// --help belongs to the launcher: it must answer without a Nix client,
-	// so it never reaches the build step.
-	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
+	// --help and help belong to the launcher: they must answer without a
+	// Nix client, so they never reach the build step.
+	if len(args) > 0 && launcherOwns(args[0]) {
 		if bin, _, err := h.resolve(root, false); err == nil {
 			return h.execOperator(bin, args)
 		}
 		h.printUsage()
+		fmt.Fprintln(h.stdout, "\nNo operator is exported or cached for this repository, so the launcher\nanswers --help itself. Load the checkout's direnv to reach the operator surface.")
 		return 0
 	}
 
@@ -331,6 +332,18 @@ Resolution:
 The launcher never evaluates a Nix attribute listing and never builds on
 --help. Outside an enrolled repository it refuses.
 `, launcherVersion, strings.Join(exportedOperatorVars, " or "))
+}
+
+// launcherOwns reports whether an argument is the launcher's own help
+// request rather than the operator's. The launcher answers those itself:
+// they must never reach the build step, because the build is the one path
+// that starts a Nix client.
+func launcherOwns(arg string) bool {
+	switch arg {
+	case "--help", "-h", "help":
+		return true
+	}
+	return false
 }
 
 // findRepositoryRoot walks up from start to the repository that owns the

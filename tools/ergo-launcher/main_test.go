@@ -134,16 +134,18 @@ func TestHelpNeverStartsANixClient(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", t.TempDir())
 	root := fakeRepository(t)
 
-	h, out, calls := newHost(t, root, map[string]string{})
+	for _, arg := range []string{"--help", "-h", "help"} {
+		h, out, calls := newHost(t, root, map[string]string{})
 
-	if code := h.run([]string{"--help"}); code != 0 {
-		t.Fatalf("exit code = %d, want 0 (output: %s)", code, out.String())
-	}
-	if !strings.Contains(out.String(), "host entry point") {
-		t.Fatalf("--help did not print the launcher usage: %s", out.String())
-	}
-	if len(*calls) != 0 {
-		t.Fatalf("--help started a Nix client: %v", *calls)
+		if code := h.run([]string{arg}); code != 0 {
+			t.Fatalf("%s: exit code = %d, want 0 (output: %s)", arg, code, out.String())
+		}
+		if !strings.Contains(out.String(), "host entry point") {
+			t.Fatalf("%s did not print the launcher usage: %s", arg, out.String())
+		}
+		if len(*calls) != 0 {
+			t.Fatalf("%s started a Nix client: %v", arg, *calls)
+		}
 	}
 }
 

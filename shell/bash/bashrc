@@ -282,6 +282,8 @@ _load_sops_secrets() {
 			COPILOT_AGENT_MODEL=auto-minimax \
 			command copilot "$@"
 	}
+	# Local 9router combo catalog (~/.copilot/providers.json). Not llm-gateway.
+	copilot-9router() { command copilot-byok "$@"; }
 
 	# OpenAI Gateway (ACE Coder / Goose CLI)
 	val=$(_sops_val openai_gateway api_key)

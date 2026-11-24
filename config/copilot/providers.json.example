@@ -1,0 +1,23 @@
+{
+  "providers": [
+    {
+      "name": "9router",
+      "type": "openai",
+      "baseUrl": "http://127.0.0.1:20128/v1",
+      "apiKey": "REPLACE_ME"
+    }
+  ],
+  "models": [
+    { "id": "minimax-m3", "provider": "9router" },
+    { "id": "minimax-m3.1-flash", "provider": "9router" },
+    { "id": "glm-5.3", "provider": "9router" },
+    { "id": "glm-5.3-flash", "provider": "9router" },
+    { "id": "kimi-k3", "provider": "9router" },
+    { "id": "kimi-k2.8", "provider": "9router" },
+    { "id": "deepseek-v4-pro", "provider": "9router" },
+    { "id": "deepseek-v4.1-flash", "provider": "9router" },
+    { "id": "Qwen3.6-35B-A3B", "provider": "9router" },
+    { "id": "Qwen3.8-27B", "provider": "9router" },
+    { "id": "gemini-4-argon", "provider": "9router" }
+  ]
+}

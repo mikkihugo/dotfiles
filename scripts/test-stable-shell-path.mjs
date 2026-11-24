@@ -1083,7 +1083,7 @@ def fixture(declared='input.txt'):
     m.unlink(missing_ok=True)
     d.write_text(f'# agent-direnv-prebuilt repo=jcode key={key} system=x86_64-linux devshell=default rebind=-\nexport FIXTURE_LOADED=yes\nexport PATH=/prebuilt/bin\n')
     now = int(time.time())
-    m.write_text(f'schema=centralcloud.agent-direnv/prebuilt\nrepo=jcode\nkey={key}\nsystem=x86_64-linux\ndevshell=default\nrebind=-\ncreated_at={now}\nexpires_at={now + 7200}\n')
+    m.write_text(f'schema=centralcloud.agent-direnv/v1\nrepo=jcode\nkey={key}\nsystem=x86_64-linux\ndevshell=default\nrebind=-\ncreated_at={now}\nexpires_at={now + 7200}\n')
     d.chmod(0o444)
     m.chmod(0o444)
     return (d, m)

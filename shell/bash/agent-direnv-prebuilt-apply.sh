@@ -20,10 +20,7 @@ _agent_direnv_prebuilt_strip_helper() {
 }
 
 _agent_direnv_prebuilt_schema_ok() {
-	case "$1" in
-	centralcloud.agent-direnv/prebuilt | centralcloud.agent-direnv/v2) return 0 ;;
-	*) return 1 ;;
-	esac
+	[ "$1" = "centralcloud.agent-direnv/v1" ]
 }
 
 # The host producer publishes at most 7200 seconds of validity.
@@ -50,8 +47,7 @@ _agent_direnv_bind_engine_workspace() {
 _agent_direnv_prebuilt_header_matches() {
 	local header="$1" repo="$2" key="$3" system="$4" devshell="$5"
 	case "$header" in
-	"# agent-direnv-prebuilt repo=$repo key=$key system=$system devshell=$devshell rebind=-") return 0 ;;
-	"# agent-direnv-v2 repo=$repo key=$key system=$system devshell=$devshell rebind=-") return 0 ;;
+	"# agent-direnv repo=$repo key=$key system=$system devshell=$devshell rebind=-") return 0 ;;
 	*) return 1 ;;
 	esac
 }
@@ -269,17 +265,17 @@ agent_direnv_prebuilt_try_apply() {
 		repo=infra
 		consumer_kind=canonical
 		;;
-	/home/mhugo/code/worktrees/jj/jcode/* | /home/mhugo/code/worktrees/git/jcode/*)
+	/home/mhugo/code/jcode/.worktrees/* | /home/mhugo/code/worktrees/jj/jcode/* | /home/mhugo/code/worktrees/git/jcode/*)
 		repo=jcode
 		consumer_kind=lane
 		identity_root=/home/mhugo/code/jcode
 		;;
-	/home/mhugo/code/worktrees/jj/singularity-engine/* | /home/mhugo/code/worktrees/git/singularity-engine/* | /home/mhugo/code/.worktrees/singularity-engine/*)
+	/home/mhugo/code/singularity-engine/.worktrees/* | /home/mhugo/code/worktrees/jj/singularity-engine/* | /home/mhugo/code/worktrees/git/singularity-engine/* | /home/mhugo/code/.worktrees/singularity-engine/*)
 		repo=singularity-engine
 		consumer_kind=lane
 		identity_root=/home/mhugo/code/singularity-engine
 		;;
-	/home/mhugo/code/worktrees/jj/infra/* | /home/mhugo/code/worktrees/git/infra/* | /srv/infra-worktrees/* | /srv/worktrees/*/infra/*)
+	/srv/infra/.worktrees/* | /home/mhugo/code/worktrees/jj/infra/* | /home/mhugo/code/worktrees/git/infra/*)
 		repo=infra
 		consumer_kind=lane
 		identity_root=/srv/infra

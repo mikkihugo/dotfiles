@@ -61,12 +61,13 @@
   # subprocesses keep this identity; hostnames and transient child PIDs never
   # become lease owners. The same ID is attached to OTLP resource attributes.
   clientSessionIdentity = client: ''
-    if [ -z "''${SE_WORKSPACE_OWNER:-}" ]; then
+    if [ -z "''${REPOSITORY_OPERATOR_WORKSPACE_OWNER:-}" ]; then
       client_session_id="$(${pkgs.coreutils}/bin/tr -d '\n' < /proc/sys/kernel/random/uuid)"
-      export SE_WORKSPACE_OWNER="${client}:$client_session_id"
+      export REPOSITORY_OPERATOR_WORKSPACE_OWNER="${client}:$client_session_id"
     else
-      client_session_id="''${SE_WORKSPACE_OWNER#*:}"
+      client_session_id="''${REPOSITORY_OPERATOR_WORKSPACE_OWNER#*:}"
     fi
+    export SE_WORKSPACE_OWNER="''${REPOSITORY_OPERATOR_WORKSPACE_OWNER}"
     export OTEL_RESOURCE_ATTRIBUTES="''${OTEL_RESOURCE_ATTRIBUTES:+$OTEL_RESOURCE_ATTRIBUTES,}agent.client=${client},agent.session.id=$client_session_id"
   '';
 

@@ -44,15 +44,9 @@
   home.sessionVariables.REPOSITORY_OPERATOR_BIN =
     "${config.home.homeDirectory}/.local/bin/ergo";
   #
-  # `ergo` is the operator's name and the host entry both names resolve to.
-  # `repo` stays until the per-CLI mailbox hooks that invoke `repo coord hook`
-  # move over; both exec the one resolver above.
+  # Host PATH entry is `ergo` only. Retired `~/.local/bin/repo` and per-checkout
+  # generated `bin/repo` must not shadow the native operator ELF.
   home.file.".local/bin/ergo" = {
-    source = ./repository-operator/repo;
-    executable = true;
-    force = true;
-  };
-  home.file.".local/bin/repo" = {
     source = ./repository-operator/repo;
     executable = true;
     force = true;

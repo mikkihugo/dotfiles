@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # The host entry for the repository command surface.
 #
-# This file lives at ~/.local/bin/repo and shadows every repository's own
-# `bin/repo`, because ~/.local/bin precedes the nix profile on PATH.
+# Installed as ~/.local/bin/ergo. Resolves the native operator ELF from the
+# caller's repository flake output; never execs generated bin/repo launchers.
 #
 # THE DELEGATE IS RESOLVED FROM THE CALLER'S REPOSITORY, NEVER FROM A CONSTANT.
 # An earlier revision resolved it as:
@@ -148,16 +148,11 @@ resolve_operator() {
 	return 1
 }
 
-REPO_BIN="$repo_root/bin/$cli_name"
-[ -x "$REPO_BIN" ] || REPO_BIN="$repo_root/bin/ergo"
-if [ -x "$REPO_BIN" ] && [ "$(readlink -f "$REPO_BIN")" != "$self" ]; then
-	delegate="$REPO_BIN"
-else
-	delegate="$(resolve_operator "$repo_root" || true)"
-	[ -n "$delegate" ] ||
-		die "$repo_root ships no executable launcher and no operator output;
-     refusing rather than guessing a surface."
-fi
+# Raw native `ergo` only. Generated `bin/repo` is retired and must not shadow the ELF.
+delegate="$(resolve_operator "$repo_root" || true)"
+[ -n "$delegate" ] ||
+	die "$repo_root ships no operator output;
+     refusing rather than guessing a surface or exec bin/repo."
 
 # Engine-only: refresh the protected default workspace before delegating.
 # Fenced by the resolved repository root, not by a $PWD prefix match, so a lane

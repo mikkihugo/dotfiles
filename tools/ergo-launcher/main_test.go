@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -187,20 +188,39 @@ func TestTheRepositorysOwnLauncherIsUsedWhenItShipsOne(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(root, "bin"), 0o755); err != nil {
 		t.Fatalf("create bin directory: %v", err)
 	}
-	launcher := fakeOperator(t, filepath.Join(root, "bin"), "repo")
+	fakeOperator(t, filepath.Join(root, "bin"), "repo")
 
 	h, out, calls := newHost(t, root, map[string]string{})
+	h.exec = func(name string, args ...string) (string, error) {
+		*calls = append(*calls, name+" "+strings.Join(args, " "))
+		return "", fmt.Errorf("error: flake does not provide attribute 'packages.x86_64-linux.ergo'")
+	}
 
+	// The operator is tried first: the checkout's own launcher is the last
+	// resort, never a stand-in in front of the operator.
 	if code := h.run([]string{"vcs", "status"}); code != 0 {
 		t.Fatalf("exit code = %d, want 0 (output: %s)", code, out.String())
 	}
 	if !strings.Contains(out.String(), "fake-operator vcs status") {
 		t.Fatalf("the repository launcher did not run: %s", out.String())
 	}
-	if len(*calls) != 0 {
-		t.Fatalf("a Nix client was started: %v", *calls)
+	if len(*calls) == 0 {
+		t.Fatal("the operator was never tried")
 	}
-	_ = launcher
+
+	// The second call must not repeat the realization attempt: the checkout
+	// is remembered as publishing no operator output.
+	second, out2, calls2 := newHost(t, root, map[string]string{})
+	second.exec = func(name string, args ...string) (string, error) {
+		*calls2 = append(*calls2, name+" "+strings.Join(args, " "))
+		return "", fmt.Errorf("error: flake does not provide attribute")
+	}
+	if code := second.run([]string{"vcs", "status"}); code != 0 {
+		t.Fatalf("exit code = %d, want 0 (output: %s)", code, out2.String())
+	}
+	if len(*calls2) != 0 {
+		t.Fatalf("the realization was repeated: %v", *calls2)
+	}
 }
 
 func TestACachedPathThatNamesTheLauncherIsRefused(t *testing.T) {

@@ -25,6 +25,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -33,19 +34,28 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const launcherVersion = "0.1.0"
 
-// repositoryMarker is the declaration every enrolled repository carries; the
-// operator reads the same file to admit its target. The legacy command
-// contract is accepted as a fallback for checkouts that predate the target
-// declaration.
-const repositoryMarker = ".purpose/repository-operator-target.v1.json"
+// buildTimeoutSeconds bounds the one realization of the caller's operator.
+// A saturated evaluation lock otherwise hangs the caller for hours, which is
+// the failure this launcher exists to end.
+const buildTimeoutSeconds = 7200
 
-const legacyRepositoryMarker = ".purpose/commands.json"
+// realizationTimeout bounds the Nix client the launcher starts. It is
+// generous enough for a full operator build and short enough that a
+// saturated evaluation lock fails instead of hanging the caller.
+const realizationTimeout = 2 * time.Hour
+
+// repositoryMarker is the declaration every enrolled repository carries; the
+// operator reads the same file to admit its target. A checkout without it is
+// not enrolled, whatever else it declares.
+const repositoryMarker = ".purpose/repository-operator-target.v1.json"
 
 // exportedOperatorVars are the environment variables a checkout's direnv
 // exports for its pinned operator: the current name first, the pre-rename
@@ -153,10 +163,14 @@ func (h *host) resolve(root string, allowBuild bool) (string, string, error) {
 		return cached, "cache", nil
 	}
 
-	// A checkout that ships its own launcher drives the surface that way.
-	// Some repositories publish no operator output at all.
-	if launcher := repositoryLauncher(root); launcher != "" && !h.isSelf(launcher) {
-		return launcher, "repository launcher", nil
+	// A checkout that publishes no operator output at all is remembered, so
+	// later calls go straight to its own launcher instead of paying the
+	// realization attempt again.
+	if h.hasNoOperator(root) {
+		if launcher := repositoryLauncher(root); launcher != "" && !h.isSelf(launcher) {
+			return launcher, "repository launcher", nil
+		}
+		return "", "", errors.New("this repository publishes no operator output")
 	}
 
 	if !allowBuild {
@@ -164,11 +178,51 @@ func (h *host) resolve(root string, allowBuild bool) (string, string, error) {
 	}
 
 	bin, err := h.build(root)
-	if err != nil {
-		return "", "", err
+	if err == nil {
+		h.cache(root, bin)
+		return bin, "build", nil
 	}
-	h.cache(root, bin)
-	return bin, "build", nil
+
+	// A checkout that ships its own launcher drives the surface that way. It
+	// is the LAST resort: the launcher in some of those checkouts is a Bash
+	// dispatcher whose own verbs start a Nix client, so it must never stand
+	// in front of the operator.
+	if launcher := repositoryLauncher(root); launcher != "" && !h.isSelf(launcher) {
+		if missingAttribute(err) {
+			h.markNoOperator(root)
+		}
+		return launcher, "repository launcher", nil
+	}
+	return "", "", err
+}
+
+// missingAttribute reports whether a realization failed because the
+// repository publishes no such attribute — as opposed to a transient
+// failure, which must not be remembered.
+func missingAttribute(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "does not provide attribute")
+}
+
+// noOperatorPath is the marker that records a repository with no operator
+// output.
+func (h *host) noOperatorPath(root string) string {
+	return h.cacheFile(root) + ".no-operator"
+}
+
+func (h *host) hasNoOperator(root string) bool {
+	_, err := os.Stat(h.noOperatorPath(root))
+	return err == nil
+}
+
+func (h *host) markNoOperator(root string) {
+	file := h.noOperatorPath(root)
+	tmp := fmt.Sprintf("%s.%d.tmp", file, os.Getpid())
+	if err := os.WriteFile(tmp, []byte("no operator output\n"), 0o644); err != nil {
+		return
+	}
+	if err := os.Rename(tmp, file); err != nil {
+		os.Remove(tmp)
+	}
 }
 
 // repositoryLauncher returns the checkout's own launcher, when it ships one.
@@ -188,17 +242,22 @@ func repositoryLauncher(root string) string {
 // attribute at a time, no attribute listing.
 func (h *host) build(root string) (string, error) {
 	physical := physicalRoot(root)
-	var failure error
+	var failures []string
 	for _, attr := range operatorAttrs {
 		installable := fmt.Sprintf("path:%s#%s", physical, attr)
-		out, err := h.exec("nix", "build", "--no-link", "--print-out-paths", installable)
+		out, err := h.exec("nix", "build",
+			"--no-link",
+			"--no-write-lock-file",
+			"--print-out-paths",
+			"--option", "build-timeout", strconv.Itoa(buildTimeoutSeconds),
+			installable)
 		if err != nil {
-			failure = fmt.Errorf("%s: %w", installable, err)
+			failures = append(failures, fmt.Sprintf("%s: %v", installable, err))
 			continue
 		}
 		storePath := strings.TrimSpace(out)
 		if storePath == "" {
-			failure = fmt.Errorf("%s: nix build printed no store path", installable)
+			failures = append(failures, fmt.Sprintf("%s: nix build printed no store path", installable))
 			continue
 		}
 		for _, name := range operatorAttrs {
@@ -207,9 +266,9 @@ func (h *host) build(root string) (string, error) {
 				return bin, nil
 			}
 		}
-		failure = fmt.Errorf("%s: %s carries no operator binary", installable, storePath)
+		failures = append(failures, fmt.Sprintf("%s: %s carries no operator binary", installable, storePath))
 	}
-	return "", failure
+	return "", errors.New(strings.Join(failures, "; "))
 }
 
 // cacheKey binds a cached store path to one repository AND one lock: the
@@ -246,6 +305,12 @@ func operatorSourceDigest(root string) string {
 		return ""
 	}
 	sum := sha256.New()
+	for _, manifest := range []string{"Cargo.toml", "Cargo.lock"} {
+		if data, err := os.ReadFile(filepath.Join(root, "tools", "repository-operator", manifest)); err == nil {
+			fmt.Fprintf(sum, "%s %d\n", manifest, len(data))
+			sum.Write(data)
+		}
+	}
 	var walk func(string) error
 	walk = func(dir string) error {
 		entries, err := os.ReadDir(dir)
@@ -448,10 +513,8 @@ func findRepositoryRoot(start string) (string, bool) {
 		return "", false
 	}
 	for {
-		for _, marker := range []string{repositoryMarker, legacyRepositoryMarker} {
-			if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
-				return dir, true
-			}
+		if _, err := os.Stat(filepath.Join(dir, repositoryMarker)); err == nil {
+			return dir, true
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
@@ -461,8 +524,14 @@ func findRepositoryRoot(start string) (string, bool) {
 	}
 }
 
+// execCommand runs a command under a deadline. The realization of the
+// operator is the one path that starts a Nix client, and a saturated
+// evaluation lock makes that client wait for hours; the deadline turns that
+// wait into a reported failure.
 func execCommand(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+	ctx, cancel := context.WithTimeout(context.Background(), realizationTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

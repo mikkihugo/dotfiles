@@ -518,7 +518,10 @@ test("Home Manager uses the nixpkgs mise package without a private overlay", asy
   assert.match(home, /programs\.mise\s*=\s*\{/);
   assert.match(home, /package\s*=\s*pkgs\.mise;/);
   assert.doesNotMatch(packages, /^\s*mise(?:\s|#|$)/m);
-  assert.match(flake, /packages\.home-manager\s*=\s*home-manager\.packages\.\$\{sys\}\.home-manager;/);
+  // The home-manager package is re-exported per system from the home-manager
+  // input. The attribute lives in the `packages` set, which statix requires
+  // to be written as one attrset rather than repeated keys.
+  assert.match(flake, /packages\s*=\s*\{[\s\S]*?home-manager\s*=\s*home-manager\.packages\.\$\{sys\}\.home-manager;/);
   assert.match(bootstrap, /"path:\$ROOT_DIR#home-manager" -- switch/);
   assert.doesNotMatch(bootstrap, /home-manager\/master|nix profile install/);
   assert.match(packages, /^\s*gnumake\b/m);

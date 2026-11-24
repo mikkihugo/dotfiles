@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Refresh ~/.copilot/providers.json model limits from local 9router GET /v1/models.
+set -euo pipefail
+
+PROVIDERS="${COPILOT_PROVIDERS_CONFIG:-${COPILOT_HOME:-$HOME}/.copilot/providers.json}"
+BASE_URL="${NINEROUTER_BASE_URL:-http://127.0.0.1:20128}"
+API_KEY="${NINEROUTER_API_KEY:-$(jq -r '.providers[0].apiKey // empty' "$PROVIDERS" 2>/dev/null || true)}"
+
+if [[ ! -f "$PROVIDERS" ]]; then
+  echo "Missing $PROVIDERS — create from config/copilot/providers.json.example" >&2
+  exit 1
+fi
+
+if [[ -z "$API_KEY" ]] || [[ "$API_KEY" == "REPLACE_ME" ]]; then
+  echo "Set apiKey in $PROVIDERS or export NINEROUTER_API_KEY" >&2
+  exit 1
+fi
+
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
+
+curl -sfS --max-time 120 "${BASE_URL}/v1/models" \
+  -H "Authorization: Bearer ${API_KEY}" \
+  -o "${tmpdir}/models.json"
+
+jq --slurpfile catalog "${tmpdir}/models.json" '
+  def lookup($id):
+    ($catalog[0].data[] | select(.id == $id)) as $m
+    | if $m == null then error("9router has no combo id: \($id)")
+      else
+        ($m.context_length // $m.capabilities.contextWindow) as $ctx
+        | ($m.max_completion_tokens // $m.capabilities.maxOutput) as $raw_out
+        | ($raw_out | if . >= $ctx then ($ctx * 0.125 | floor) else . end) as $out
+        | ($ctx - $out | if . < 1 then ($ctx - ($ctx * 0.125 | floor)) else . end) as $prompt
+        | ({ maxContextWindowTokens: $ctx, maxOutputTokens: $out, maxPromptTokens: $prompt }
+           + if ($m.capabilities.vision == true)
+             then { capabilities: { supports: { vision: true } } }
+             else {} end)
+      end;
+  .models |= map(del(.maxContextWindowTokens, .maxPromptTokens, .maxOutputTokens, .capabilities) + lookup(.id))
+' "$PROVIDERS" > "${tmpdir}/providers.new.json"
+
+mv "${tmpdir}/providers.new.json" "$PROVIDERS"
+echo "Updated limits for $(jq '.models | length' "$PROVIDERS") models in $PROVIDERS"

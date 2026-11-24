@@ -39,6 +39,7 @@
 # running none.
 {
   config,
+  lib,
   ergoLauncher,
   ...
 }: {
@@ -54,14 +55,29 @@
   # A shell that pins a specific operator (infra's .envrc, from its pinned
   # Engine input) still shadows this with its own concrete store path; that is
   # the more specific setting and it stays correct.
-  home.sessionVariables.REPOSITORY_OPERATOR_BIN = "${config.home.homeDirectory}/.local/bin/ergo";
   #
   # `ergo` is the operator's name and the host entry's name. There is no
   # `repo` host entry: the operator renamed the surface, and a second name
   # for the same binary is a second thing to keep in sync.
-  home.file.".local/bin/ergo" = {
-    source = "${ergoLauncher}/bin/ergo-launcher";
-    executable = true;
-    force = true;
+  home = {
+    sessionVariables.REPOSITORY_OPERATOR_BIN = "${config.home.homeDirectory}/.local/bin/ergo";
+
+    file.".local/bin/ergo" = {
+      source = "${ergoLauncher}/bin/ergo-launcher";
+      executable = true;
+      force = true;
+    };
+
+    # Retired 2026-11-24: host surface is `ergo` only. Drop the old HM `repo` shim.
+    activation.retireRepoHostShim = lib.hm.dag.entryAfter ["home-manager-files"] ''
+      repo_shim="${config.home.homeDirectory}/.local/bin/repo"
+      if [ -L "$repo_shim" ]; then
+        case "$(readlink "$repo_shim")" in
+          *home-manager-files*)
+            rm -f "$repo_shim"
+            ;;
+        esac
+      fi
+    '';
   };
 }

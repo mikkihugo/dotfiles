@@ -19,7 +19,7 @@ direnv_export_shell_guard_msg() {
 direnv: code=INVALID_ARGUMENT reason=EXPORT_SHELL_REQUIRED domain=direnv.centralcloud.net/cli
 message: direnv export requires a target shell (bash, zsh, fish, …). Bare 'direnv export' is invalid outside a shell hook that supplies the target.
 help(eval_zsh): eval "$(direnv export zsh)"
-help(eval_bash): eval "$(direnv export bash)"   # bin/repo recovery and agent shells
+help(eval_bash): eval "$(direnv export bash)"   # ergo recovery and agent shells
 help(interactive): direnv allow && cd .        # reload after .envrc or allow changes
 help(more): https://google.aip.dev/193
 EOF

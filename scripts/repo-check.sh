@@ -118,7 +118,6 @@ verify_activation_package() {
 }
 
 stage_python_unit_tests() {
-	python3 "$root/scripts/test-repo-check-entry.py"
 	python3 "$root/scripts/test-codex-standalone.py"
 	python3 "$root/scripts/test-purpose-backbone.py"
 	python3 "$root/scripts/test-jcode-preferences.py"
@@ -133,6 +132,23 @@ stage_bash_unit_tests() {
 	bash "$root/scripts/test-git-credential-forgejo-bao.sh"
 	bash "$root/scripts/test-forgejo-token-sync.sh"
 	bash "$root/scripts/test-checkout-sync.sh"
+}
+
+stage_go_unit_tests() {
+	# The host `ergo` launcher (tools/ergo-launcher) is the only Go program in
+	# this repository. Its suite also runs inside the Nix build (doCheck) and
+	# through `nix flake check`, so this stage is the fast local path.
+	if ! command -v go >/dev/null 2>&1; then
+		printf 'skipped go unit tests (no go toolchain on PATH)\n'
+		return 0
+	fi
+	(
+		# The module lives in tools/ergo-launcher; the repository root has
+		# no go.mod, so the test runs inside the module.
+		cd "$root/tools/ergo-launcher"
+		# Never download a toolchain: the check runs offline.
+		GOTOOLCHAIN=local go test ./...
+	)
 }
 
 stage_node_unit_tests() {
@@ -186,15 +202,6 @@ stage_nixos_ownership_eval() {
 
 main() {
 	case "${1:-}" in
-	check-entry)
-		[[ $# == 1 ]] || {
-			printf 'unexpected entry test arguments\n' >&2
-			return 2
-		}
-		python3 "$root/scripts/test-repo-check-entry.py"
-		python3 "$root/scripts/test-codex-standalone.py"
-		return
-		;;
 	"") [[ $# == 0 ]] || {
 		printf 'unexpected empty check argument\n' >&2
 		return 2
@@ -228,6 +235,7 @@ main() {
 	fi
 	check_stage python-unit-tests stage_python_unit_tests
 	check_stage bash-unit-tests stage_bash_unit_tests
+	check_stage go-unit-tests stage_go_unit_tests
 	check_stage node-unit-tests stage_node_unit_tests
 	check_stage stable-shell-tests stage_stable_shell_tests
 	# Keep the NixOS ownership evaluation out of the nominal Node-only suite: it

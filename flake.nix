@@ -112,9 +112,10 @@
     };
 
     # singularity-engine: consumed ONLY for the repository-operator ELF
-    # (`packages.ergo`), re-exported below as `ergo`. One derivation,
-    # built once in Engine; the host `repo` shim resolves this attribute when
-    # a checkout ships no launcher. Do NOT use this input for anything else —
+    # (`packages.ergo`), re-exported below as `packages.<system>.ergo`. One
+    # derivation, built once in Engine; the host `ergo` launcher resolves
+    # this attribute when a checkout ships no launcher. Do NOT use this input
+    # for anything else —
     # evaluation cost and lock churn stay bounded to the operator.
     singularity-engine = {
       url = "git+ssh://git@git.centralcloud.net:2222/singularity/singularity-engine";
@@ -161,6 +162,35 @@
       import nixpkgs {
         inherit system;
         config.allowUnfree = true;
+      };
+
+    # The host `ergo` entry point.
+    #
+    # A small Go launcher that resolves the operator for the CALLER's
+    # repository and execs it. Go because permanent tooling is Go; the
+    # program uses only the standard library, so there is no vendor blob to
+    # hash and no go2nix plugin to load — when it grows a dependency it moves
+    # to go2nix with the rest of the fleet.
+    #
+    # The launcher is NOT the operator: the home profile closure stays free
+    # of singularity-engine.packages.ergo, so `hms` does not have to realize
+    # a full Rust operator build before it can activate.
+    ergoLauncher = sys:
+      (pkgsFor sys).buildGoModule {
+        pname = "ergo-launcher";
+        version = "0.1.0";
+        src = ./tools/ergo-launcher;
+        # The repository pins Go 1.26 (home/lib/toolchain.nix); a second
+        # Go version in the closure would drift from that pin.
+        go = (pkgsFor sys).go_1_26;
+        vendorHash = null;
+        # The launcher test is the runnable check: it runs inside this
+        # build and through `nix flake check`.
+        doCheck = true;
+        meta = {
+          description = "Host entry point for the repository operator";
+          mainProgram = "ergo-launcher";
+        };
       };
 
     # Single home.nix works on all arches. targetSystem is passed as
@@ -231,6 +261,7 @@
           // {
             targetSystem = sys;
             ergo = singularity-engine.packages.${sys}.ergo;
+            ergoLauncher = ergoLauncher sys;
             inherit hostname toolchain;
           };
         modules = [
@@ -335,6 +366,9 @@
               test "$version" = 3.11.0
               printf '%s\n' "$version" > "$out"
             '';
+          # The host `ergo` launcher, with its test suite: `nix flake check`
+          # builds it, and that build runs `go test ./...`.
+          ergo-launcher = ergoLauncher sys;
         });
     }
     // flake-utils.lib.eachDefaultSystem (sys: let
@@ -348,12 +382,20 @@
       # Bootstrap runner from the same locked Home Manager input used to build
       # the profiles. `nix run path:.#home-manager -- switch ...` therefore
       # cannot drift to a mutable Home Manager branch.
-      packages.home-manager = home-manager.packages.${sys}.home-manager;
+      packages = {
+        home-manager = home-manager.packages.${sys}.home-manager;
 
-      # Engine's repository operator `ergo` (packages.ergo), re-exported as-is.
-      # Cwd selects the repository root; the host `repo` shim resolves this
-      # attribute when a checkout ships no launcher of its own.
-      ergo = singularity-engine.packages.${sys}.ergo;
+        # The host `ergo` launcher: the entry point Home Manager installs at
+        # ~/.local/bin/ergo. Exposed so it can be built and run on its own.
+        ergo-launcher = ergoLauncher sys;
+
+        # Engine's repository operator `ergo`, re-exported as-is under the
+        # standard packages.<system> shape so `nix build .#ergo` resolves it
+        # in one evaluation. Cwd selects the repository root; the host `ergo`
+        # launcher resolves this attribute when a checkout ships no launcher
+        # of its own.
+        ergo = singularity-engine.packages.${sys}.ergo;
+      };
 
       # `nix develop` — for editing secrets and running dotfiles linters.
       # Not the daily shell (home-manager provides that); this shell is

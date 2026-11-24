@@ -91,3 +91,6 @@ result
 
 # Repository-local workspaces
 /.worktrees/
+
+# Go build leftovers: `go build` in tools/ergo-launcher drops the binary here.
+tools/ergo-launcher/ergo-launcher

@@ -199,7 +199,8 @@ in {
         "agents/cheap-explore.agent.md|${../../config/copilot/agents/cheap-explore.agent.md}" \
         "agents/tri-lane.agent.md|${../../config/copilot/agents/tri-lane.agent.md}" \
         "agents/task-prompts.md|${../../config/copilot/agents/task-prompts.md}" \
-        "agents/README.md|${../../config/copilot/agents/README.md}"
+        "agents/README.md|${../../config/copilot/agents/README.md}" \
+        "providers.json|${../../config/copilot/providers.json.example}"
       do
         rel="''${entry%%|*}"
         src="''${entry#*|}"

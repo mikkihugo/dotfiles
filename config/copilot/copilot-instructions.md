@@ -85,7 +85,23 @@ still pass `model:` for consistency.
 **Default to `model: auto-minimax`** unless the task explicitly needs a
 different lineage.
 
-## BYOK env vars
+## Local 9router BYOK (`providers.json`)
+
+Use this when you want Copilot’s `/model` picker to list **9router combo ids**
+on `127.0.0.1:20128`, not llm-gateway aliases.
+
+- **Start:** `copilot-byok` or `copilot-9router` (same wrapper). Plain `copilot`
+  keeps `COPILOT_PROVIDER_*` → **llm-gateway** and **ignores** `providers.json`.
+- **Catalog:** `~/.copilot/providers.json` — one `openai` provider, models are
+  combo ids (`9router/glm-5.3`, etc.).
+- **Refresh limits** from live `/v1/models`:
+  `9router-sync-copilot-providers` (after 9router or combo changes).
+- **Protocol:** per **provider** only (`type: openai`, `wireApi: completions`).
+  9router converts to upstream minimax/kimi/glm; do not set per-model wire in
+  the file.
+- Require `systemctl --user is-active 9router.service` before starting.
+
+## BYOK env vars (llm-gateway default)
 
 Already wired in `/home/mhugo/.dotfiles/shell/bash/bashrc` lines
 147-204 (loaded via SOPS on session start):

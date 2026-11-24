@@ -67,7 +67,6 @@
     else
       client_session_id="''${REPOSITORY_OPERATOR_WORKSPACE_OWNER#*:}"
     fi
-    export SE_WORKSPACE_OWNER="''${REPOSITORY_OPERATOR_WORKSPACE_OWNER}"
     export OTEL_RESOURCE_ATTRIBUTES="''${OTEL_RESOURCE_ATTRIBUTES:+$OTEL_RESOURCE_ATTRIBUTES,}agent.client=${client},agent.session.id=$client_session_id"
   '';
 
@@ -954,6 +953,18 @@ in {
         executable = true;
         force = true;
         source = "${gooseQwenFast}/bin/goose-qwen-fast";
+      };
+
+      ".local/bin/copilot-byok" = {
+        executable = true;
+        force = true;
+        source = ../../config/copilot/bin/copilot-byok;
+      };
+
+      ".local/bin/9router-sync-copilot-providers" = {
+        executable = true;
+        force = true;
+        source = ../../config/copilot/bin/9router-sync-copilot-providers;
       };
     };
   };

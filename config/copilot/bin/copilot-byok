@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Local 9router catalog via ~/.copilot/providers.json (not llm-gateway env BYOK).
+set -euo pipefail
+
+for name in "${!COPILOT_PROVIDER_@}"; do
+  unset "$name"
+done
+unset COPILOT_MODEL COPILOT_AGENT_MODEL
+
+export COPILOT_PROVIDERS_CONFIG="${COPILOT_PROVIDERS_CONFIG:-${COPILOT_HOME:-$HOME}/.copilot/providers.json}"
+export COPILOT_ENABLE_ALT_PROVIDERS=true
+
+for arg in "$@"; do
+  case "$arg" in
+    --model|--model=*) exec copilot "$@" ;;
+  esac
+done
+exec copilot --model 9router/minimax-m3 "$@"

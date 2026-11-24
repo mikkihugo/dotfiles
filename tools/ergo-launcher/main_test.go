@@ -38,7 +38,12 @@ func newHost(t *testing.T, wd string, env map[string]string) (*host, *bytes.Buff
 	var out bytes.Buffer
 	calls := &[]string{}
 	h := &host{
-		getenv: func(name string) string { return env[name] },
+		getenv: func(name string) string {
+			if value, ok := env[name]; ok {
+				return value
+			}
+			return os.Getenv(name)
+		},
 		wd:     wd,
 		self:   filepath.Join(t.TempDir(), "ergo-launcher"),
 		stdout: &out,
@@ -355,7 +360,8 @@ func TestTheGcRootPointsAtThePackageNotTheBinary(t *testing.T) {
 		t.Fatalf("packagePath = %q, want an empty string for a path outside the store", got)
 	}
 
-	gcRoot(pkg, "testkey")
+	h := &host{getenv: os.Getenv}
+	h.gcRoot(pkg, "ergo-launcher-testkey")
 	link := filepath.Join(data, "nix", "gcroots", "auto", "ergo-launcher-testkey")
 	target, err := os.Readlink(link)
 	if err != nil {

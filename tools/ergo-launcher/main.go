@@ -97,9 +97,9 @@ func (h *host) run(args []string) int {
 		return 2
 	}
 
-	// --help and help belong to the launcher: they must answer without a
-	// Nix client, so they never reach the build step.
-	if len(args) > 0 && launcherOwns(args[0]) {
+	// The help requests and a bare invocation belong to the launcher: they
+	// must answer without a Nix client, so they never reach the build step.
+	if len(args) == 0 || launcherOwns(args[0]) {
 		if bin, _, err := h.resolve(root, false); err == nil {
 			return h.execOperator(bin, args)
 		}
@@ -314,11 +314,11 @@ func (h *host) cache(root, bin string) {
 		os.Remove(tmp)
 		return
 	}
-	gcRoot(packagePath(bin), cacheKey(root))
+	h.gcRoot(packagePath(bin), gcRootName(root))
 }
 
 func (h *host) cacheFile(root string) string {
-	dir := cacheDir()
+	dir := h.cacheDir()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return ""
 	}
@@ -341,18 +341,27 @@ func packagePath(bin string) string {
 	return pkg
 }
 
+// gcRootName keys the GC root by REPOSITORY, not by cache key: when the
+// lock moves, the new root replaces the old one, so the superseded package
+// stops being rooted and can be collected.
+func gcRootName(root string) string {
+	sum := sha256.New()
+	sum.Write([]byte(physicalRoot(root)))
+	return "ergo-launcher-" + hex.EncodeToString(sum.Sum(nil))[:16]
+}
+
 // gcRoot keeps a cached store path alive across garbage collection. Nix
 // reads the per-user auto roots directory, so one symlink is enough and no
 // Nix client is needed.
-func gcRoot(pkg, key string) {
+func (h *host) gcRoot(pkg, name string) {
 	if pkg == "" || !strings.HasPrefix(pkg, "/nix/store/") {
 		return
 	}
-	dir := filepath.Join(dataHome(), "nix", "gcroots", "auto")
+	dir := filepath.Join(h.dataHome(), "nix", "gcroots", "auto")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return
 	}
-	link := filepath.Join(dir, "ergo-launcher-"+key)
+	link := filepath.Join(dir, name)
 	tmp := fmt.Sprintf("%s.%d.tmp", link, os.Getpid())
 	os.Remove(tmp)
 	if err := os.Symlink(pkg, tmp); err != nil {
@@ -489,21 +498,23 @@ func isExecutable(path string) bool {
 	return !info.IsDir() && info.Mode()&0o111 != 0
 }
 
-func cacheDir() string {
-	if dir, err := os.UserCacheDir(); err == nil && dir != "" {
+// cacheDir is where the resolved operator paths are remembered.
+func (h *host) cacheDir() string {
+	if dir := h.getenv("XDG_CACHE_HOME"); dir != "" {
 		return filepath.Join(dir, "ergo-launcher")
 	}
-	if home, err := os.UserHomeDir(); err == nil {
+	if home := h.getenv("HOME"); home != "" {
 		return filepath.Join(home, ".cache", "ergo-launcher")
 	}
 	return filepath.Join(os.TempDir(), "ergo-launcher")
 }
 
-func dataHome() string {
-	if dir := os.Getenv("XDG_DATA_HOME"); dir != "" {
+// dataHome is where Nix reads the per-user GC roots from.
+func (h *host) dataHome() string {
+	if dir := h.getenv("XDG_DATA_HOME"); dir != "" {
 		return dir
 	}
-	if home, err := os.UserHomeDir(); err == nil {
+	if home := h.getenv("HOME"); home != "" {
 		return filepath.Join(home, ".local", "share")
 	}
 	return filepath.Join(os.TempDir(), ".local", "share")

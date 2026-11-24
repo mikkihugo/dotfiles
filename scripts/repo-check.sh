@@ -202,14 +202,6 @@ stage_nixos_ownership_eval() {
 
 main() {
 	case "${1:-}" in
-	check-entry)
-		[[ $# == 1 ]] || {
-			printf 'unexpected entry test arguments\n' >&2
-			return 2
-		}
-		python3 "$root/scripts/test-codex-standalone.py"
-		return
-		;;
 	"") [[ $# == 0 ]] || {
 		printf 'unexpected empty check argument\n' >&2
 		return 2

@@ -7,14 +7,15 @@
 # and projects it into its own flake output.
 #
 # `~/.local/bin/ergo` is a small Go launcher (tools/ergo-launcher). It
-# resolves the delegate from the CALLER's repository and execs it:
+# resolves the delegate from the CALLER's repository and runs it:
 #
 #   1. the operator the checkout's direnv exported
 #      (REPOSITORY_OPERATOR_BIN, or REPOSITORY_MANAGER_BIN until the rename
 #      lands everywhere);
 #   2. otherwise the store path cached for (repository root, flake.lock
 #      digest), reused while it still exists;
-#   3. otherwise one build of that repository's own operator output, cached.
+#   3. otherwise the checkout's own launcher, when it ships one;
+#   4. otherwise one build of that repository's own operator output, cached.
 #
 # The previous revision resolved the delegate with
 # `nix eval --raw path:$root#packages.<system>` — a full flake evaluation

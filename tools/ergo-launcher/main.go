@@ -16,7 +16,8 @@
 //  1. the operator exported by the caller's own checkout;
 //  2. the store path cached for (repository root, flake.lock digest), reused
 //     while it still exists and GC-rooted so it survives collection;
-//  3. one Nix build of the caller's own operator output, cached for reuse.
+//  3. the checkout's own launcher, when it ships one;
+//  4. one Nix build of the caller's own operator output, cached for reuse.
 //
 // Outside an enrolled repository it refuses: running the wrong repository's
 // surface is worse than running none.
@@ -32,8 +33,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
+	"syscall"
 )
 
 const launcherVersion = "0.1.0"
@@ -107,6 +108,16 @@ func (h *host) run(args []string) int {
 		return 0
 	}
 
+	// --version belongs to the launcher for the same reason: a version
+	// query must never realize an operator.
+	if len(args) > 0 && (args[0] == "--version" || args[0] == "-V") {
+		if bin, _, err := h.resolve(root, false); err == nil {
+			return h.execOperator(bin, args)
+		}
+		fmt.Fprintf(h.stdout, "ergo %s (host launcher)\n", launcherVersion)
+		return 0
+	}
+
 	bin, _, err := h.resolve(root, true)
 	if err != nil {
 		fmt.Fprintf(h.stderr, "ergo: no operator for %s\n", root)
@@ -135,8 +146,17 @@ func (h *host) resolve(root string, allowBuild bool) (string, string, error) {
 		return candidate, name, nil
 	}
 
-	if cached, ok := h.cached(root); ok {
+	// The cached path is one this launcher built for THIS repository. It
+	// must still exist and must not be this launcher: a cache entry naming
+	// the launcher would exec it, and exec it again, forever.
+	if cached, ok := h.cached(root); ok && !h.isSelf(cached) {
 		return cached, "cache", nil
+	}
+
+	// A checkout that ships its own launcher drives the surface that way.
+	// Some repositories publish no operator output at all.
+	if launcher := repositoryLauncher(root); launcher != "" && !h.isSelf(launcher) {
+		return launcher, "repository launcher", nil
 	}
 
 	if !allowBuild {
@@ -151,36 +171,43 @@ func (h *host) resolve(root string, allowBuild bool) (string, string, error) {
 	return bin, "build", nil
 }
 
+// repositoryLauncher returns the checkout's own launcher, when it ships one.
+// The canonical name is `ergo`; `repo` is the name older checkouts still
+// use, and the file name belongs to the checkout, not to this launcher.
+func repositoryLauncher(root string) string {
+	for _, name := range []string{"ergo", "repo"} {
+		candidate := filepath.Join(root, "bin", name)
+		if isExecutable(candidate) {
+			return candidate
+		}
+	}
+	return ""
+}
+
 // build realizes the caller's own operator output. One Nix client, one
 // attribute at a time, no attribute listing.
 func (h *host) build(root string) (string, error) {
 	physical := physicalRoot(root)
-	system := nixSystem()
 	var failure error
 	for _, attr := range operatorAttrs {
-		installables := []string{
-			fmt.Sprintf("path:%s#%s", physical, attr),
-			fmt.Sprintf("path:%s#%s.%s", physical, attr, system),
+		installable := fmt.Sprintf("path:%s#%s", physical, attr)
+		out, err := h.exec("nix", "build", "--no-link", "--print-out-paths", installable)
+		if err != nil {
+			failure = fmt.Errorf("%s: %w", installable, err)
+			continue
 		}
-		for _, installable := range installables {
-			out, err := h.exec("nix", "build", "--no-link", "--print-out-paths", installable)
-			if err != nil {
-				failure = fmt.Errorf("%s: %w", installable, err)
-				continue
-			}
-			storePath := strings.TrimSpace(out)
-			if storePath == "" {
-				failure = fmt.Errorf("%s: nix build printed no store path", installable)
-				continue
-			}
-			for _, name := range operatorAttrs {
-				bin := filepath.Join(storePath, "bin", name)
-				if isExecutable(bin) {
-					return bin, nil
-				}
-			}
-			failure = fmt.Errorf("%s: %s carries no operator binary", installable, storePath)
+		storePath := strings.TrimSpace(out)
+		if storePath == "" {
+			failure = fmt.Errorf("%s: nix build printed no store path", installable)
+			continue
 		}
+		for _, name := range operatorAttrs {
+			bin := filepath.Join(storePath, "bin", name)
+			if isExecutable(bin) {
+				return bin, nil
+			}
+		}
+		failure = fmt.Errorf("%s: %s carries no operator binary", installable, storePath)
 	}
 	return "", failure
 }
@@ -188,6 +215,12 @@ func (h *host) build(root string) (string, error) {
 // cacheKey binds a cached store path to one repository AND one lock: the
 // root plus the digest of its flake.lock. A moved lock is a different key,
 // so a stale binary is never served for a new pin.
+//
+// The key also folds in the state of a repository's own operator source.
+// The one repository that BUILDS the operator from its own tree (Engine)
+// changes the binary without moving its flake.lock, so a lock-only key
+// would serve a pre-edit binary — and the cached path is GC-rooted, so it
+// would never age out. The previous shim handled this the same way.
 //
 // The root is resolved physically: /home/mhugo/code/infra and /srv/infra are
 // the same repository, and they must share one cache entry.
@@ -198,7 +231,47 @@ func cacheKey(root string) string {
 	if lock, err := os.ReadFile(filepath.Join(root, "flake.lock")); err == nil {
 		sum.Write(lock)
 	}
+	sum.Write([]byte{0})
+	sum.Write([]byte(operatorSourceDigest(root)))
 	return hex.EncodeToString(sum.Sum(nil))[:32]
+}
+
+// operatorSourceDigest digests the operator source a repository builds
+// from, when it has one. Repositories that consume a PINNED operator have
+// no such tree, and their flake.lock already names the exact binary.
+func operatorSourceDigest(root string) string {
+	src := filepath.Join(root, "tools", "repository-operator", "src")
+	info, err := os.Stat(src)
+	if err != nil || !info.IsDir() {
+		return ""
+	}
+	sum := sha256.New()
+	var walk func(string) error
+	walk = func(dir string) error {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return nil
+		}
+		for _, entry := range entries {
+			path := filepath.Join(dir, entry.Name())
+			if entry.IsDir() {
+				if err := walk(path); err != nil {
+					return err
+				}
+				continue
+			}
+			file, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			fmt.Fprintf(sum, "%d %d %s\n", file.Size(), file.ModTime().UnixNano(), strings.TrimPrefix(path, root))
+		}
+		return nil
+	}
+	if err := walk(src); err != nil {
+		return ""
+	}
+	return hex.EncodeToString(sum.Sum(nil))[:16]
 }
 
 // physicalRoot resolves a repository root through its symlinks.
@@ -300,12 +373,24 @@ func (h *host) execOperator(bin string, args []string) int {
 	if err := cmd.Run(); err != nil {
 		var exit *exec.ExitError
 		if errors.As(err, &exit) {
-			return exit.ExitCode()
+			return exitStatus(exit)
 		}
 		fmt.Fprintf(h.stderr, "ergo: cannot run %s: %v\n", bin, err)
 		return 2
 	}
 	return 0
+}
+
+// exitStatus reports the status a shell would report for the operator: the
+// operator's own exit code, or 128+signal when it was killed by a signal.
+func exitStatus(exit *exec.ExitError) int {
+	if status, ok := exit.Sys().(syscall.WaitStatus); ok && status.Signaled() {
+		return 128 + int(status.Signal())
+	}
+	if code := exit.ExitCode(); code >= 0 {
+		return code
+	}
+	return 1
 }
 
 func (h *host) isSelf(candidate string) bool {
@@ -402,16 +487,6 @@ func isExecutable(path string) bool {
 		return false
 	}
 	return !info.IsDir() && info.Mode()&0o111 != 0
-}
-
-// nixSystem maps the running system to Nix's spelling, so the launcher can
-// address a `pkg.<system>` output without asking Nix.
-func nixSystem() string {
-	arch := map[string]string{"amd64": "x86_64", "arm64": "aarch64"}[runtime.GOARCH]
-	if arch == "" {
-		arch = runtime.GOARCH
-	}
-	return arch + "-" + runtime.GOOS
 }
 
 func cacheDir() string {

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // fakeOperator writes an executable that stands in for the operator binary.
@@ -175,6 +176,95 @@ func TestCachedOperatorIsReusedWithoutNix(t *testing.T) {
 	}
 }
 
+func TestTheRepositorysOwnLauncherIsUsedWhenItShipsOne(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	root := fakeRepository(t)
+	if err := os.MkdirAll(filepath.Join(root, "bin"), 0o755); err != nil {
+		t.Fatalf("create bin directory: %v", err)
+	}
+	launcher := fakeOperator(t, filepath.Join(root, "bin"), "repo")
+
+	h, out, calls := newHost(t, root, map[string]string{})
+
+	if code := h.run([]string{"vcs", "status"}); code != 0 {
+		t.Fatalf("exit code = %d, want 0 (output: %s)", code, out.String())
+	}
+	if !strings.Contains(out.String(), "fake-operator vcs status") {
+		t.Fatalf("the repository launcher did not run: %s", out.String())
+	}
+	if len(*calls) != 0 {
+		t.Fatalf("a Nix client was started: %v", *calls)
+	}
+	_ = launcher
+}
+
+func TestACachedPathThatNamesTheLauncherIsRefused(t *testing.T) {
+	cache := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", cache)
+	root := fakeRepository(t)
+
+	h, out, calls := newHost(t, root, map[string]string{})
+	// A cache entry naming the launcher itself would exec it forever.
+	entry := filepath.Join(cache, "ergo-launcher", cacheKey(root))
+	if err := os.MkdirAll(filepath.Dir(entry), 0o755); err != nil {
+		t.Fatalf("create cache directory: %v", err)
+	}
+	if err := os.WriteFile(entry, []byte(h.self+"\n"), 0o644); err != nil {
+		t.Fatalf("write cache entry: %v", err)
+	}
+	h.exec = func(name string, args ...string) (string, error) {
+		*calls = append(*calls, name+" "+strings.Join(args, " "))
+		return "", os.ErrNotExist
+	}
+
+	if code := h.run([]string{"vcs", "status"}); code != 2 {
+		t.Fatalf("exit code = %d, want 2 (output: %s)", code, out.String())
+	}
+	if len(*calls) != 2 {
+		t.Fatalf("the cached launcher was not refused: %v", *calls)
+	}
+}
+
+func TestTheCacheKeyMovesWithTheOperatorSource(t *testing.T) {
+	root := fakeRepository(t)
+	src := filepath.Join(root, "tools", "repository-operator", "src")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatalf("create operator source: %v", err)
+	}
+	source := filepath.Join(src, "main.rs")
+	if err := os.WriteFile(source, []byte("fn main() {}\n"), 0o644); err != nil {
+		t.Fatalf("write operator source: %v", err)
+	}
+	before := cacheKey(root)
+	if err := os.WriteFile(source, []byte("fn main() { /* edited */ }\n"), 0o644); err != nil {
+		t.Fatalf("edit operator source: %v", err)
+	}
+	if err := os.Chtimes(source, time.Now().Add(time.Minute), time.Now().Add(time.Minute)); err != nil {
+		t.Fatalf("touch operator source: %v", err)
+	}
+	if after := cacheKey(root); after == before {
+		t.Fatal("the cache key did not move with the operator source")
+	}
+}
+
+func TestVersionNeverStartsANixClient(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	root := fakeRepository(t)
+
+	for _, arg := range []string{"--version", "-V"} {
+		h, out, calls := newHost(t, root, map[string]string{})
+		if code := h.run([]string{arg}); code != 0 {
+			t.Fatalf("%s: exit code = %d, want 0 (output: %s)", arg, code, out.String())
+		}
+		if !strings.Contains(out.String(), "host launcher") {
+			t.Fatalf("%s did not print the launcher version: %s", arg, out.String())
+		}
+		if len(*calls) != 0 {
+			t.Fatalf("%s started a Nix client: %v", arg, *calls)
+		}
+	}
+}
+
 func TestOneBuildIsCachedAndReused(t *testing.T) {
 	cache := t.TempDir()
 	t.Setenv("XDG_CACHE_HOME", cache)
@@ -208,6 +298,24 @@ func TestOneBuildIsCachedAndReused(t *testing.T) {
 	}
 	if len(*calls2) != 0 {
 		t.Fatalf("the cached operator was not reused: %v", *calls2)
+	}
+}
+
+func TestTheBuildAsksForTwoAttributesAtMost(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	root := fakeRepository(t)
+
+	h, out, calls := newHost(t, root, map[string]string{})
+	h.exec = func(name string, args ...string) (string, error) {
+		*calls = append(*calls, name+" "+strings.Join(args, " "))
+		return "", os.ErrNotExist
+	}
+
+	if code := h.run([]string{"vcs", "status"}); code != 2 {
+		t.Fatalf("exit code = %d, want 2 (output: %s)", code, out.String())
+	}
+	if len(*calls) != 2 {
+		t.Fatalf("Nix clients started = %d, want 2 (ergo, repo): %v", len(*calls), *calls)
 	}
 }
 

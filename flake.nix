@@ -112,9 +112,10 @@
     };
 
     # singularity-engine: consumed ONLY for the repository-operator ELF
-    # (`packages.ergo`), re-exported below as `ergo`. One derivation,
-    # built once in Engine; the host `ergo` launcher resolves this attribute
-    # when a checkout ships no launcher. Do NOT use this input for anything else —
+    # (`packages.ergo`), re-exported below as `packages.<system>.ergo`. One
+    # derivation, built once in Engine; the host `ergo` launcher resolves
+    # this attribute when a checkout ships no launcher. Do NOT use this input
+    # for anything else —
     # evaluation cost and lock churn stay bounded to the operator.
     singularity-engine = {
       url = "git+ssh://git@git.centralcloud.net:2222/singularity/singularity-engine";
@@ -179,7 +180,9 @@
         pname = "ergo-launcher";
         version = "0.1.0";
         src = ./tools/ergo-launcher;
-        go = (pkgsFor sys).go_1_27;
+        # The repository pins Go 1.26 (home/lib/toolchain.nix); a second
+        # Go version in the closure would drift from that pin.
+        go = (pkgsFor sys).go_1_26;
         vendorHash = null;
         # The launcher test is the runnable check: it runs inside this
         # build and through `nix flake check`.
@@ -379,16 +382,20 @@
       # Bootstrap runner from the same locked Home Manager input used to build
       # the profiles. `nix run path:.#home-manager -- switch ...` therefore
       # cannot drift to a mutable Home Manager branch.
-      packages.home-manager = home-manager.packages.${sys}.home-manager;
+      packages = {
+        home-manager = home-manager.packages.${sys}.home-manager;
 
-      # The host `ergo` launcher: the entry point Home Manager installs at
-      # ~/.local/bin/ergo. Exposed so it can be built and run on its own.
-      packages.ergo-launcher = ergoLauncher sys;
+        # The host `ergo` launcher: the entry point Home Manager installs at
+        # ~/.local/bin/ergo. Exposed so it can be built and run on its own.
+        ergo-launcher = ergoLauncher sys;
 
-      # Engine's repository operator `ergo` (packages.ergo), re-exported as-is.
-      # Cwd selects the repository root; the host `ergo` launcher resolves
-      # this attribute when a checkout ships no launcher of its own.
-      ergo = singularity-engine.packages.${sys}.ergo;
+        # Engine's repository operator `ergo`, re-exported as-is under the
+        # standard packages.<system> shape so `nix build .#ergo` resolves it
+        # in one evaluation. Cwd selects the repository root; the host `ergo`
+        # launcher resolves this attribute when a checkout ships no launcher
+        # of its own.
+        ergo = singularity-engine.packages.${sys}.ergo;
+      };
 
       # `nix develop` — for editing secrets and running dotfiles linters.
       # Not the daily shell (home-manager provides that); this shell is

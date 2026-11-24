@@ -143,9 +143,11 @@ stage_go_unit_tests() {
 		return 0
 	fi
 	(
-		cd "$root"
+		# The module lives in tools/ergo-launcher; the repository root has
+		# no go.mod, so the test runs inside the module.
+		cd "$root/tools/ergo-launcher"
 		# Never download a toolchain: the check runs offline.
-		GOTOOLCHAIN=local go test ./tools/ergo-launcher/...
+		GOTOOLCHAIN=local go test ./...
 	)
 }
 

@@ -154,6 +154,12 @@ stage_go_unit_tests() {
 stage_node_unit_tests() {
 	(
 		cd "$root"
+		bash scripts/test-flake-source-entry.sh
+		if [[ -n ${REPOSITORY_OPERATOR_FLAKE_SOURCE_BIN:-} ]]; then
+			bash scripts/test-flake-source-policy.sh
+		else
+			printf 'skipped flake source policy fixture (no provisioned helper)\n'
+		fi
 		node --test \
 			scripts/test-opencode-config.mjs \
 			scripts/test-cargo-pgrx-wrapper.mjs \

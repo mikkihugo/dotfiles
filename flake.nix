@@ -6,6 +6,7 @@
 #   homeConfigurations."mikki-bunker"  — x86_64 WSL2 desktop
 #   homeConfigurations."mikki-laptop"  — aarch64 laptop
 #   homeConfigurations."cc-se-sto-devbox-01" — x86_64 fleet devbox
+#   homeConfigurations."cc-fr-lau-devbox-01" — x86_64 fleet devbox
 #   homeConfigurations."mhugo"         — generic x86_64 fallback
 #
 #   devShells.default  — lightweight shell for dotfiles maintenance.
@@ -293,6 +294,7 @@
         "mikki-laptop" = mkHome "aarch64-linux" "mikki-laptop";
         # CentralCloud development host: x86_64 without the bunker GPU role.
         "cc-se-sto-devbox-01" = mkHome "x86_64-linux" "cc-se-sto-devbox-01";
+        "cc-fr-lau-devbox-01" = mkHome "x86_64-linux" "cc-fr-lau-devbox-01";
         # Generic username fallback. Named machines use their explicit profile,
         # so pure evaluation never depends on evaluator state and an unknown
         # host cannot accidentally enable the bunker GPU role.
@@ -304,6 +306,8 @@
       hydraJobs = nixpkgs.lib.genAttrs ["x86_64-linux"] (_system: {
         homeConfigurations-cc-se-sto-devbox-01-activationPackage =
           homeConfigurations."cc-se-sto-devbox-01".activationPackage;
+        homeConfigurations-cc-fr-lau-devbox-01-activationPackage =
+          homeConfigurations."cc-fr-lau-devbox-01".activationPackage;
       });
 
       # `nix fmt` runs alejandra on every .nix file in the repo.
@@ -322,6 +326,19 @@
         (sys: let
           pkgs = pkgsFor sys;
         in {
+          lau-home-profile = let
+            home = homeConfigurations."cc-fr-lau-devbox-01".config;
+            hostnamectl = pkgs.writeShellScriptBin "hostnamectl" ''
+              echo cc-fr-lau-devbox-01
+            '';
+          in
+            assert home.home.username == "mhugo";
+            assert !home.programs.direnv.enable;
+            assert !(home.home.file ? ".config/nix/nix.conf");
+              pkgs.runCommand "lau-home-profile" {nativeBuildInputs = [hostnamectl pkgs.bash];} ''
+                test "$(bash ${./scripts/current-home-profile})" = cc-fr-lau-devbox-01
+                touch "$out"
+              '';
           format =
             pkgs.runCommand "dotfiles-format-check-${sys}" {
               src = ./.;

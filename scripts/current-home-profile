@@ -13,6 +13,9 @@ Mikki-Laptop | mikki-laptop)
 cc-se-sto-devbox-01)
 	echo "cc-se-sto-devbox-01"
 	;;
+cc-fr-lau-devbox-01)
+	echo "cc-fr-lau-devbox-01"
+	;;
 *)
 	echo "mhugo"
 	;;

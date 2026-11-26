@@ -12,7 +12,7 @@
   ...
 }: let
   dotfilesRoot = "$HOME/.dotfiles";
-  nixosOwnsInteractiveDirenv = lib.toLower hostname == "cc-se-sto-devbox-01";
+  nixosOwnsInteractiveDirenv = builtins.elem (lib.toLower hostname) ["cc-se-sto-devbox-01" "cc-fr-lau-devbox-01"];
 
   # NixOS `programs.direnv-instant` puts `eval "$(direnv-instant hook bash)"` in
   # /etc/bashrc, which bash sources BEFORE ~/.bashrc. The hook arms a SIGUSR1

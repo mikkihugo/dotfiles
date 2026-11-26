@@ -15,7 +15,7 @@
   # This host's Nix and direnv configuration is the NixOS module under
   # /srv/infra. A user nix.conf is loaded after /etc/nix/nix.conf and wins,
   # which is how keep-derivations=false used to undo the daemon.
-  nixosOwnsHostNix = lib.toLower hostname == "cc-se-sto-devbox-01";
+  nixosOwnsHostNix = builtins.elem (lib.toLower hostname) ["cc-se-sto-devbox-01" "cc-fr-lau-devbox-01"];
 in {
   home.file = {
     ".config/ripgrep/config" = {
@@ -87,7 +87,7 @@ in {
     };
 
     # Other Home Manager profiles still use the user builder file.
-    # cc-se-sto-devbox-01 does not: /etc/nix/nix.conf is the config.
+    # Fleet devboxes do not: /etc/nix/nix.conf is the config.
     ".config/nix/nix.conf" = lib.mkIf (!nixosOwnsHostNix) {
       source = ../../config/nix/local-build.nix.conf;
       force = true;

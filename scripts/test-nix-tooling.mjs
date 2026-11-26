@@ -585,8 +585,13 @@ test("Droid Remote Control owns the daemon lifecycle and provider environment", 
   assert.match(service, /ConditionPathExists\s*=\s*\[/);
   assert.match(service, /"%h\/\.local\/bin\/droid"/);
   assert.match(service, /"%h\/\.factory\/computer\.json"/);
-  assert.match(service, /Restart\s*=\s*"on-failure"/);
+  // The daemon must come back after any exit, not only after a failure:
+  // Factory never wakes an offline Remote Control computer.
+  assert.match(service, /Restart\s*=\s*"always"/);
   assert.match(service, /RestartSec\s*=\s*"5s"/);
+  // The start limit is what makes Restart=always safe against a restart loop.
+  assert.match(service, /StartLimitIntervalSec\s*=\s*300/);
+  assert.match(service, /StartLimitBurst\s*=\s*5/);
   assert.match(service, /WantedBy\s*=\s*\["default\.target"\]/);
   assert.match(service, /Requires\s*=\s*\["sops-nix\.service"\]/);
   assert.match(service, /After\s*=\s*\["sops-nix\.service"\]/);

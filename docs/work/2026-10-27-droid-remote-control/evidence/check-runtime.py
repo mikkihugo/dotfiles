@@ -16,7 +16,7 @@ from pathlib import Path
 SERVICE = "droid-remote-control.service"
 PROVIDER_SERVICE = "droid-provider-config.service"
 ENV_FILE = Path.home() / ".config" / "factory" / "droid.env"
-DROID = Path.home() / ".local" / "bin" / "droid"
+REGISTRATION_FILE = Path.home() / ".factory" / "computer.json"
 COMPUTER_NAME = "cc-se-sto-devbox-01"
 PROVIDER_KEYS = ("MINIMAX_API_KEY", "KIMI_API_KEY", "OLLAMA_API_KEY")
 
@@ -71,11 +71,44 @@ def descendants(pid: int) -> list[int]:
 
 
 def native_daemon_pid(main_pid: int) -> int | None:
+    """The process that holds the provider environment.
+
+    The managed wrapper execs the native binary, so the unit's main process
+    IS the native daemon. Older CLI builds spawned it as a child instead.
+    """
+    if "droid daemon --remote-control" in process_command(main_pid):
+        return main_pid
     for pid in descendants(main_pid):
-        command = process_command(pid)
-        if "@factory/cli" in command and "droid daemon --remote-control" in command:
+        if "droid daemon --remote-control" in process_command(pid):
             return pid
     return None
+
+
+def registration_state() -> dict[str, object]:
+    """Local registration plus the relay line the daemon prints at startup.
+
+    `droid computer list` has been an in-process command since CLI 1.21.1, so
+    the CLI no longer prints a table this check could parse.
+    """
+    computer_id = ""
+    if REGISTRATION_FILE.exists():
+        try:
+            computer_id = str(
+                json.loads(REGISTRATION_FILE.read_text()).get("computerId", "")
+            )
+        except json.JSONDecodeError:
+            computer_id = ""
+    journal = run(
+        "journalctl", "--user", "-u", SERVICE, "-n", "50", "--no-pager"
+    ).stdout
+    relay_reports_computer = any(
+        "Relay:" in line and COMPUTER_NAME in line for line in journal.splitlines()
+    )
+    return {
+        "computer_id": computer_id,
+        "relay_reports_computer": relay_reports_computer,
+        "registered": bool(computer_id) and relay_reports_computer,
+    }
 
 
 def env_file_keys() -> set[str]:
@@ -150,7 +183,7 @@ def main() -> int:
     mode = stat.S_IMODE(ENV_FILE.stat().st_mode)
     file_keys = env_file_keys()
     provider_environment = verify_provider_environment(int(main_pid))
-    computers = run(str(DROID), "computer", "list").stdout
+    registration = registration_state()
 
     if provider_state != "active":
         failures.append(f"provider service is {provider_state}, expected active")
@@ -172,8 +205,8 @@ def main() -> int:
         failures.append(
             f"Droid process is missing provider variables: {missing_process_keys}"
         )
-    if f"{COMPUTER_NAME}\t" not in computers:
-        failures.append(f"computer list does not contain {COMPUTER_NAME}")
+    if not registration["registered"]:
+        failures.append(f"local registration does not report {COMPUTER_NAME}")
 
     restart_result: dict[str, object] | None = None
     if args.restart:
@@ -190,7 +223,9 @@ def main() -> int:
         "provider_env_mode": oct(mode),
         "provider_env_key_names": sorted(file_keys),
         "provider_environment_present": provider_environment,
-        "computer_registered": f"{COMPUTER_NAME}\t" in computers,
+        "computer_registered": registration["registered"],
+        "computer_id": registration["computer_id"],
+        "relay_reports_computer": registration["relay_reports_computer"],
         "restart": restart_result,
         "failures": failures,
     }

@@ -8,15 +8,18 @@
 # fields purpose, consumer, contract, failure_boundary, and invariants.
 # What tests should verify: contract ownership, the managed Droid command,
 # registration conditions, ordered SOPS-backed provider-env rendering,
-# environment injection, and failure restart.
+# environment injection, and restart after any daemon exit.
 #
 # Runtime checks:
 #   systemctl --user status droid-remote-control.service
-#   droid computer list
+#   python3 docs/work/2026-10-27-droid-remote-control/evidence/check-runtime.py
 # After first registration, start the daemon with:
 #   systemctl --user start droid-remote-control.service
 # After provider-key rotation, refresh both services with:
 #   systemctl --user restart droid-provider-config.service droid-remote-control.service
+# The CLI is npm-managed and auto-update is off, so update it by hand and
+# restart the unit (https://docs.factory.com/remote-control.md):
+#   npm install -g droid@latest && systemctl --user restart droid-remote-control.service
 {
   config,
   lib,
@@ -102,6 +105,9 @@ in {
         "%h/.local/bin/droid"
         "%h/.factory/computer.json"
       ];
+      # The start limit is the guard that makes Restart=always safe: a daemon
+      # that cannot start stops after 5 attempts in 5 minutes instead of
+      # looping forever.
       StartLimitIntervalSec = 300;
       StartLimitBurst = 5;
       # sd-switch, invoked by Home Manager on switch, reads this and leaves a
@@ -112,7 +118,10 @@ in {
       Type = "simple";
       ExecStart = "%h/.local/bin/droid daemon --remote-control";
       EnvironmentFile = "%h/.config/factory/droid.env";
-      Restart = "on-failure";
+      # Factory never wakes a Remote Control computer whose daemon is offline,
+      # so the unit comes back after any exit, not only after a failure
+      # (https://docs.factory.com/remote-control.md).
+      Restart = "always";
       RestartSec = "5s";
       KillMode = "control-group";
     };

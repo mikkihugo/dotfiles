@@ -56,6 +56,7 @@ in {
     ./modules/agent-direnv.nix
     ./modules/devshell-prewarm.nix
     ./modules/cargo-target-prune.nix
+    ./modules/home-trash-expire.nix
     ./modules/mise-auto-update.nix
     ./modules/grok-leader.nix
     ./modules/minimax-responses-compat.nix

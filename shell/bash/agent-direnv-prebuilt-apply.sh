@@ -312,31 +312,9 @@ agent_direnv_prebuilt_try_apply() {
 		done <"$identity_root/.agent-direnv-inputs"
 	fi
 
-	material="$(
-		printf 'repo:%s\nsystem:%s\ndevShell:%s\n' "$repo" "$system" "$devshell"
-		for name in .envrc flake.lock flake.nix; do
-			path="$identity_root/$name"
-			digest=-
-			if [ -f "$path" ]; then
-				digest="$(sha256sum -- "$path")"
-				digest="${digest%% *}"
-			fi
-			printf '%s:%s\n' "$name" "$digest"
-		done
-		printf 'inputs:%s\n' "$inputs_digest"
-		for declared in "${declared_inputs[@]}"; do
-			path="$identity_root/$declared"
-			digest=-
-			if [ -f "$path" ] && [ ! -L "$path" ]; then
-				digest="$(sha256sum -- "$path")"
-				digest="${digest%% *}"
-			fi
-			printf 'input:%s:%s\n' "$declared" "$digest"
-		done
-		printf 'rebind:%s\n' "$rebind_digest"
-	)"
-	key="$(printf '%s\n' "$material" | sha256sum)"
-	key="${key%% *}"
+	strip_helper="$(_agent_direnv_prebuilt_strip_helper)" || return 1
+	key="$("$strip_helper" --identity --admit-root "$identity_root" --repository "$repo" --identity-system "$system" --identity-devshell "$devshell")" || return 1
+	[[ "$key" =~ ^[0-9a-f]{64}$ ]] || return 1
 	dump="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv/$key.bash"
 	meta="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv/$key.meta"
 	[ -f "$dump" ] && [ ! -L "$dump" ] && [ -r "$dump" ] && [ ! -w "$dump" ] || return 1
@@ -447,31 +425,9 @@ agent_direnv_prebuilt_write_snapshot() {
 		done <"$identity_root/.agent-direnv-inputs"
 	fi
 
-	material="$(
-		printf 'repo:%s\nsystem:%s\ndevShell:%s\n' "$repo" "$system" "$devshell"
-		for name in .envrc flake.lock flake.nix; do
-			path="$identity_root/$name"
-			digest=-
-			if [ -f "$path" ]; then
-				digest="$(sha256sum -- "$path")"
-				digest="${digest%% *}"
-			fi
-			printf '%s:%s\n' "$name" "$digest"
-		done
-		printf 'inputs:%s\n' "$inputs_digest"
-		for declared in "${declared_inputs[@]}"; do
-			path="$identity_root/$declared"
-			digest=-
-			if [ -f "$path" ] && [ ! -L "$path" ]; then
-				digest="$(sha256sum -- "$path")"
-				digest="${digest%% *}"
-			fi
-			printf 'input:%s:%s\n' "$declared" "$digest"
-		done
-		printf 'rebind:%s\n' "$rebind_digest"
-	)"
-	key="$(printf '%s\n' "$material" | sha256sum)"
-	key="${key%% *}"
+	strip_helper="$(_agent_direnv_prebuilt_strip_helper)" || return 1
+	key="$("$strip_helper" --identity --admit-root "$identity_root" --repository "$repo" --identity-system "$system" --identity-devshell "$devshell")" || return 1
+	[[ "$key" =~ ^[0-9a-f]{64}$ ]] || return 1
 	dump="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv/$key.bash"
 	meta="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/agent-direnv/$key.meta"
 	[ -f "$dump" ] && [ ! -L "$dump" ] && [ -r "$dump" ] && [ ! -w "$dump" ] || return 1

@@ -20,7 +20,12 @@ mise = "latest"
 # sidecar, which makes every shell/exec tool call inside Codex fail with
 # "failed to spawn code-mode host ... (os error 2)". The npm platform
 # package @openai/codex-linux-x64 vendors codex + codex-code-mode-host.
-"npm:@moonshot-ai/kimi-code" = "latest"
+# kimi-code is NOT mise-managed: it ships a native single-binary distribution
+# (upstream install.sh -> ~/.kimi-code/bin/kimi), which mise cannot install
+# because the CLI's GitHub tags are "@moonshot-ai/kimi-code@<version>" — the
+# github/spinel/ubi backends mangle that into a 404. The npm package is only
+# the JS bundle (node + main.mjs); the native binary starts faster and is
+# self-contained. Upstream owns the update path; see home.nix sessionPath.
 "github:aaif-goose/goose" = "latest"
 # Qoder CLI is not in the mise registry; follow the latest OSS release tarball.
 "http:qodercli" = "latest"

@@ -652,8 +652,9 @@ in {
     packages =
       [
         # API-key-injecting wrappers (shadow the raw Nix binaries for these tools).
-        # kimi is standalone since 2026-11-20: npm-global install, hand-written
-        # ~/.local/bin/kimi shim — intentionally not managed here.
+        # kimi is standalone since 2026-11-20: upstream native binary
+        # (~/.kimi-code/bin/kimi) behind the hand-written ~/.local/bin/kimi shim
+        # — intentionally not managed here.
         # vtcode: llm-gateway.svc only (see wrappers + ~/.local/bin/vtcode).
         vtcodeWrapper
         # Raw llm-agents packages — no key injection needed.      # NOTE: numtide's prebuilt cache is x86_64-only. On aarch64 (laptop)

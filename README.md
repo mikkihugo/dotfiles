@@ -71,7 +71,7 @@ shell/
 lefthook.yml                 Git hooks: alejandra, statix, deadnix, shellcheck,
                              shfmt, typos, detect-secrets on pre-commit
                              (jj backend does not auto-run these — agents:
-                             `lefthook run` / `repo check`, never raw git/jj)
+                             `lefthook run` / `ergo check`, never raw git/jj)
 ```
 
 ## Secrets

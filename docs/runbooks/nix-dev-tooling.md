@@ -9,7 +9,7 @@ Host home-manager may mirror binaries on PATH; PATH is not the instruction sourc
 
 | Job | Command |
 | --- | ------- |
-| Lint/format Nix | `lefthook run pre-commit` or Engine `repo check` |
+| Lint/format Nix | `lefthook run pre-commit` or Engine `ergo check` |
 | Readable build | `nom build` when on PATH |
 | Switch + diff | `hms` (`command ls` + `nvd`) when HM aliases applied |
 

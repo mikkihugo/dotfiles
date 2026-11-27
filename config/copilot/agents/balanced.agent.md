@@ -57,13 +57,16 @@ actually need to.
 ## VCS rules
 
 - All VCS read, mutation, workspace, sync, recovery, and publication
-  actions go through `repo <group> <command>` (e.g. `repo vcs status`,
-  `repo vcs describe`, `repo vcs publish`). Raw `git` and raw `jj` are
-  forbidden.
+  actions go through the native operator `ergo <group> <command>`
+  (e.g. `ergo vcs status`, `ergo vcs describe`, `ergo land`). Raw `git` and
+  raw `jj` are forbidden.
 - Long-running or multi-file work belongs in a registered jj task lane
-  (`repo vcs workspace-create <name> --objective '...'`), not in-place
+  (`ergo lane create <name> --objective '...'`), not in-place
   edits on the read-only canonical primary. The lane's lease expires
   in 4h — heartbeat if the work will exceed that.
+- The lane lifecycle: create with `ergo lane create <name> --objective '<text>'`,
+  commit with `ergo vcs describe '<text>'`, publish with `ergo land <lane>`,
+  check status with `ergo status` / `ergo vcs status`.
 - Never edit a file under `/home/mhugo/code/singularity-engine`. That
   checkout is a read-only nix mount.
 - Quarry trees (`/home/mhugo/quarries/<name>`) are read-only donor

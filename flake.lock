@@ -364,21 +364,6 @@
         "type": "github"
       }
     },
-    "nix-filter": {
-      "locked": {
-        "lastModified": 1791915028,
-        "narHash": "sha256-/vtxTQyuha8ssLhL5a1zsHoZM8R5gwWXZNun5CG+DrQ=",
-        "owner": "numtide",
-        "repo": "nix-filter",
-        "rev": "f54d82f341662c8b5c3ae92e614fe0a8c256b995",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "nix-filter",
-        "type": "github"
-      }
-    },
     "nix2container": {
       "inputs": {
         "nixpkgs": [
@@ -557,7 +542,6 @@
         "gritql": "gritql",
         "kimi-code-src": "kimi-code-src",
         "lefthook": "lefthook",
-        "nix-filter": "nix-filter",
         "nix2container": "nix2container",
         "nixpkgs": [
           "nixpkgs"
@@ -567,11 +551,11 @@
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
-        "lastModified": 1795310522,
-        "narHash": "sha256-Ka87b9aDg50bY+hexZGN/RoYMQbujxt/J+FXhcol/VU=",
+        "lastModified": 1795668240,
+        "narHash": "sha256-Zk0Nan7RkyUlFx/MP0lX1WHbmfay3KSBxE3YcTJxHi0=",
         "ref": "refs/heads/main",
-        "rev": "18449d16e991a4e7b67d4514d06c30a358e65be0",
-        "revCount": 18441,
+        "rev": "443b4af8a29acfce775be4946192d22d9861eafd",
+        "revCount": 18527,
         "type": "git",
         "url": "ssh://git@git.centralcloud.net:2222/singularity/singularity-engine"
       },

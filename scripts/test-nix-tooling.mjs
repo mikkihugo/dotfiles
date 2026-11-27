@@ -698,14 +698,13 @@ test("dotfiles flake does not import ace-coder or the GPU worker", async () => {
 
 test("repo check delegates to the single repository check implementation", async () => {
   // After the just-removal migration, `justfile` no longer exists; the
-  // canonical agent entry point is `bin/repo` (generated from
-  // .purpose/commands.json). The bootstrap contracts below still apply:
-  // scripts/repo-check.sh must run the full 24-test gate and the bootstrap
-  // references it from both `bin/repo check` and the
+  // canonical agent entry point is the native operator (`ergo`). The bootstrap
+  // contracts below still apply: scripts/repo-check.sh must run the full gate
+  // and the bootstrap references it from both `ergo check` and the
   // scripts/repo-maintenance.sh sync-mise-upgrade helper.
   const check = await source("scripts/repo-check.sh");
   for (const expected of [
-    "scripts/test-repo-vcs.sh",
+    "scripts/test-ergo-vcs.sh",
     "scripts/test-codex-standalone.py",
     "scripts/test-tabby-terminal.mjs",
     "scripts/test-detect-secrets-work-packet-filter.mjs",

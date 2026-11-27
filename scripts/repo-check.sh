@@ -221,7 +221,7 @@ main() {
 	if nix_gate_needs_build; then
 		nix_relevant=1
 	fi
-	check_stage preamble bash "$root/scripts/test-repo-vcs.sh"
+	check_stage preamble bash "$root/scripts/test-ergo-vcs.sh"
 	# One remote activation build per check (ast-grep shim + build gate share it).
 	# The shim stage still takes a per-profile flock so concurrent checks serialize.
 	if [[ $nix_relevant -eq 1 ]]; then

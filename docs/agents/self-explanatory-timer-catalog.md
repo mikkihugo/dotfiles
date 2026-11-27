@@ -93,7 +93,7 @@ Each is a 1-line change in the corresponding unit file or `.nix` source:
 | `nix-generation-prune.timer` | `nix-generations-prune-daily.timer` |
 
 > All renames require operator authority (these are Nix-managed systemd
-> units or system-level unit files outside `repo vcs` scope).
+> units or system-level unit files outside `ergo vcs` scope).
 
 ## Self-audit
 

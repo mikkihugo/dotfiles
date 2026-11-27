@@ -65,8 +65,12 @@ into the tri-lane, even when the lanes above are unavailable:
 - Verify before claiming success: run the relevant test/build/lint,
   reproduce the original symptom, or read back the resulting state.
 - Long-running or multi-file work belongs in a registered jj task lane
-  (`repo vcs workspace-create`), not in-place on the read-only canonical
+  (`ergo lane create`), not in-place on the read-only canonical
   primary.
+- The lane lifecycle: create with `ergo lane create <name> --objective '<text>'`,
+  commit with `ergo vcs describe '<text>'`, publish with `ergo land <lane>`,
+  check status with `ergo status` / `ergo vcs status`. Raw `git` and raw `jj`
+  are not for agents.
 
 ## When not to escalate
 

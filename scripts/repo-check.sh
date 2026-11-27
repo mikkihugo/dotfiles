@@ -154,6 +154,12 @@ stage_go_unit_tests() {
 stage_node_unit_tests() {
 	(
 		cd "$root"
+		bash scripts/test-flake-source-entry.sh
+		if [[ -n ${REPOSITORY_OPERATOR_FLAKE_SOURCE_BIN:-} ]]; then
+			bash scripts/test-flake-source-policy.sh
+		else
+			printf 'skipped flake source policy fixture (no provisioned helper)\n'
+		fi
 		node --test \
 			scripts/test-opencode-config.mjs \
 			scripts/test-cargo-pgrx-wrapper.mjs \
@@ -221,7 +227,7 @@ main() {
 	if nix_gate_needs_build; then
 		nix_relevant=1
 	fi
-	check_stage preamble bash "$root/scripts/test-ergo-vcs.sh"
+	check_stage preamble bash "$root/scripts/test-repo-vcs.sh"
 	# One remote activation build per check (ast-grep shim + build gate share it).
 	# The shim stage still takes a per-profile flock so concurrent checks serialize.
 	if [[ $nix_relevant -eq 1 ]]; then

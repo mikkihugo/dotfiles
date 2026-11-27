@@ -1,0 +1,11 @@
+{
+  "schema_version": "flake-source-policy/v1",
+  "hidden_exact": [
+    ".envrc",
+    ".nix/direnv.sh",
+    ".purpose/flake-source-policy.v1.json",
+    ".secrets.baseline",
+    ".statix.toml"
+  ],
+  "hidden_recursive_prefixes": []
+}

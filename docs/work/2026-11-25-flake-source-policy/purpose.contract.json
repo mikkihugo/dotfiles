@@ -1,0 +1,35 @@
+{
+  "purpose": "Bound dotfiles flake source without copying runtime workspace data",
+  "consumer": "Dotfiles shell and Nix checks",
+  "contract": "Use the shared Engine loader and a repository-specific tracked hidden-input policy on cold entry",
+  "failureBoundary": "A missing or invalid loader or policy fails closed before flake evaluation",
+  "evidence": "Tiny tracked Git fixture exercises hidden policy; entrypoint stub tests ordering and failure propagation; uncached direnv reads projected path; flake check --no-build evaluates projected source.",
+  "falsifier": "A runtime sentinel enters filtered source, a required tracked input is absent, or cold entry evaluates the bare checkout",
+  "nonGoals": [
+    "Home Manager activation",
+    "Changing the shared Engine filter implementation"
+  ],
+  "invariants": [
+    "No canonical checkout mutation",
+    "Ordinary visible untracked source remains included subject to existing exclusions",
+    "Untracked hidden files are excluded",
+    "Reserved runtime exclusions override policy"
+  ],
+  "assumptions": [
+    {
+      "claim": "Cold shell entry has access to the Engine organizational Nix config and Forgejo SSH for the pinned helper",
+      "doubt": 1,
+      "falsifier": "The config root is unavailable or Forgejo SSH cannot fetch the pinned revision"
+    },
+    {
+      "claim": "Engine PR #1761 commit 89abff9f058a543aa9597f20007a9b0ee6673db6 remains fetchable and is integrated before this consumer is merged",
+      "doubt": 1,
+      "falsifier": "Forgejo no longer serves that commit or the prerequisite PR is not integrated"
+    }
+  ],
+  "baseline": {
+    "fixture": "/home/mhugo/.agent-work/dotfiles-flake-source-IDAyd1",
+    "command": "nix --extra-experimental-features \"nix-command flakes\" flake metadata --json --no-write-lock-file path:<fixture>; test -f <reported-path>/.worktrees/sentinel",
+    "result": "RED: bare path source copied runtime sentinel"
+  }
+}

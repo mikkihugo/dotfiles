@@ -4,10 +4,10 @@
 #
 # Purpose: show working-copy identity, cleanliness, bookmark, workspace and the
 # CAS tree id without ever invoking the `jj` binary — this repo replaces `jj` on
-# PATH with an agent-vcs-refuse shim and requires the `repo vcs` facade.
+# PATH with an agent-vcs-refuse shim and requires the native `ergo` operator.
 #
 # Consumer: settings.json -> statusLine.command
-# Falsifier: if `repo vcs status` stops printing a "Working copy  (@) :" line,
+# Falsifier: if `ergo vcs status` stops printing a "Working copy  (@) :" line,
 # the change id renders empty and this script must be updated.
 
 set -uo pipefail
@@ -39,21 +39,35 @@ YEL=$'\033[33m'
 GRN=$'\033[32m'
 MAG=$'\033[35m'
 
-# Resolve `repo` by walking up from the rendered directory, never from PATH: a
+# Resolve the native operator entry point, never from PATH alone: a
 # direnv-exported PATH keeps pointing at whichever checkout the shell was opened
 # in, which would report that repo's state while sitting somewhere else.
-repo_bin=""
-root=$cwd
-while [ "$root" != "/" ] && [ -n "$root" ]; do
-	if [ -x "$root/bin/repo" ]; then
-		repo_bin="$root/bin/repo"
+#
+# Resolution order:
+#   1. the operator the checkout's own direnv exported (checkout-pinned and
+#      exact — REPOSITORY_OPERATOR_BIN, or the pre-rename spelling);
+#   2. the host entry point ~/.local/bin/ergo, whose launcher resolves the
+#      operator for the caller's own repository;
+#   3. `ergo` on PATH, as the last resort.
+#
+# The operator resolves the checkout from the CALLER's cwd, so every probe
+# below runs with cwd set to the rendered directory.
+operator_bin=""
+for candidate in \
+	"${REPOSITORY_OPERATOR_BIN:-}" \
+	"${REPOSITORY_MANAGER_BIN:-}" \
+	"${HOME:-}/.local/bin/ergo"; do
+	if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+		operator_bin="$candidate"
 		break
 	fi
-	root=$(dirname "$root")
 done
+if [ -z "$operator_bin" ]; then
+	operator_bin="$(command -v ergo 2>/dev/null || true)"
+fi
 
-# No repo facade here -> render the plain prompt and stop.
-if [ -z "$repo_bin" ]; then
+# No operator here -> render the plain prompt and stop.
+if [ -z "$operator_bin" ]; then
 	line=$(printf '%s%s%s %s%s%s' "$DIM" "${model:-claude}" "$RST" "$DIM" "$(basename "$cwd")" "$RST")
 	[ -n "$load_1m" ] && line="$line ${DIM}│${RST} load:${load_1m}"
 	[ -n "$disk_free" ] && line="$line ${DIM}│${RST} free:${disk_free}"
@@ -67,7 +81,7 @@ emit() {
 	printf '%s' "$1" >"$cache.tmp.$$" 2>/dev/null && mv -f "$cache.tmp.$$" "$cache" 2>/dev/null
 }
 
-# A full `repo vcs` probe costs ~6s wall; a statusline must never block that
+# A full `ergo vcs` probe costs ~6s wall; a statusline must never block that
 # long. Serve the last rendered line immediately and refresh out of band, so a
 # render is always cache-fast and the displayed state trails by at most one
 # refresh. Only the very first render in a directory pays the full cost.
@@ -90,7 +104,7 @@ if [ -f "$cache" ] && [ -z "${STATUSLINE_JJ_REFRESH:-}" ]; then
 	exit 0
 fi
 
-status=$("$repo_bin" vcs status 2>/dev/null || true)
+status=$(cd "$cwd" 2>/dev/null && "$operator_bin" vcs status 2>/dev/null || true)
 
 # No jj working copy under this path -> plain prompt.
 if ! printf '%s' "$status" | grep -q 'Working copy'; then
@@ -115,8 +129,8 @@ case "$parent" in
 *' | '*) bookmark=$(printf '%s' "$parent" | sed 's/ | .*//' | awk '{print $3}') ;;
 esac
 
-ws=$("$repo_bin" vcs current-workspace 2>/dev/null | tr -d '\n')
-tree=$("$repo_bin" vcs tree-id @ 2>/dev/null | tr -d '\n' | cut -c1-12)
+ws=$(cd "$cwd" 2>/dev/null && "$operator_bin" lane current 2>/dev/null | tr -d '\n')
+tree=$(cd "$cwd" 2>/dev/null && "$operator_bin" vcs tree-id @ 2>/dev/null | tr -d '\n' | cut -c1-12)
 
 line="${DIM}${model:-claude}${RST}"
 line="${line} ${DIM}│${RST} ${CYAN}${change}${RST} ${state}"

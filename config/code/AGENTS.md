@@ -34,14 +34,13 @@ first-party only.
   - **This checkout is a READ-ONLY nix mount** (`engine-checkout-readonly`):
     `touch` fails with "Read-only file system". No in-place edits, commits, or
     jj mutations here.
-  - It **is** jj-backed (`.jj/` present, `repo vcs` facade). `git` commands fail
+  - It **is** jj-backed (`.jj/` present, `ergo vcs` operator). `git` commands fail
     because it is a non-colocated jj repo (no `.git`) — this is **not** "not a
     repo" and not "no VCS surface". Do not claim that.
   - Canonical forge: **Forgejo** `singularity/singularity-engine` (default
     `main`). GitHub is a mirror. `singularity-ng/singularity-engine` is stale.
   - To change files: spawn a **writable** jj workspace off the shared store
-    (`repo vcs workspace-create <name> --objective '…'`; `workspace-spawn`
-    is the same command). Engine also: `repo lane create`. Never a
+    (`ergo lane create <name> --objective '…'`). Never a
     client-local worktree dir. Only if no writable workspace is reachable,
     fall back to the Forgejo contents API (create branch → PUT file → open
     PR) and say so explicitly.
@@ -69,12 +68,24 @@ first-party only.
 - For cross-repo design work, cite local source paths from both the reference
   repo and the target first-party implementation.
 
+## VCS surface
+
+The native operator (`ergo`) is the only VCS surface. Raw `git` and raw `jj`
+are not for agents.
+
+| Step | Command |
+|---|---|
+| Create a workspace | `ergo lane create <name> --objective '<text>'` |
+| Commit | `ergo vcs describe '<text>'` |
+| Publish | `ergo land <lane>` |
+| Status | `ergo status` / `ergo vcs status` |
+
 ## Verification
 
 - Before edits: `find <target> -name AGENTS.md -print`.
 - Before broad repo work: `git -C <target> rev-parse --show-toplevel`. Note
   jj-backed repos (e.g. singularity-engine) have no `.git`; check `.jj/` and use
-  `repo vcs` there instead of assuming git failure means "not a repo".
+  `ergo vcs` there instead of assuming git failure means "not a repo".
 - Before claiming a vendor comparison: list the vendor files read and the local
   first-party files they map to.
 

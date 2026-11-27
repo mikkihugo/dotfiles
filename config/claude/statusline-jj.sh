@@ -2,9 +2,9 @@
 # shellcheck shell=bash disable=SC1008,SC2239
 # Claude Code statusline for jj-backed repos that forbid native jj.
 #
-# Purpose: show working-copy identity, cleanliness, bookmark, workspace and the
-# CAS tree id without ever invoking the `jj` binary — this repo replaces `jj` on
-# PATH with an agent-vcs-refuse shim and requires the native `ergo` operator.
+# Purpose: show working-copy identity, cleanliness, bookmark, workspace without
+# ever invoking the `jj` binary — this repo replaces `jj` on PATH with an
+# agent-vcs-refuse shim and requires the native `ergo` operator.
 #
 # Consumer: settings.json -> statusLine.command
 # Falsifier: if `ergo vcs status` stops printing a "Working copy  (@) :" line,
@@ -130,7 +130,6 @@ case "$parent" in
 esac
 
 ws=$(cd "$cwd" 2>/dev/null && "$operator_bin" lane current 2>/dev/null | tr -d '\n')
-tree=$(cd "$cwd" 2>/dev/null && "$operator_bin" vcs tree-id @ 2>/dev/null | tr -d '\n' | cut -c1-12)
 
 line="${DIM}${model:-claude}${RST}"
 line="${line} ${DIM}│${RST} ${CYAN}${change}${RST} ${state}"
@@ -138,6 +137,5 @@ line="${line} ${DIM}│${RST} ${CYAN}${change}${RST} ${state}"
 [ -n "$disk_free" ] && line="${line} ${DIM}│${RST} free:${disk_free}"
 [ -n "$bookmark" ] && line="${line} ${DIM}│${RST} ${MAG}${bookmark}${RST}"
 [ -n "$ws" ] && line="${line} ${DIM}│${RST} ${DIM}ws:${RST}${ws}"
-[ -n "$tree" ] && line="${line} ${DIM}│${RST} ${DIM}tree:${tree}${RST}"
 
 emit "$line"

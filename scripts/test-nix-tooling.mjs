@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
@@ -674,7 +676,61 @@ test("dotfiles direnv exports Engine org NIX_CONFIG before the flake", async () 
   const orgDirenv = await source(".nix/direnv.sh");
   assert.match(envrc, /source_env \.nix\/direnv\.sh/);
   assert.match(orgDirenv, /org-nix-config\.sh/);
-  assert.match(orgDirenv, /se_org_nix_config_activate/);
+  assert.match(orgDirenv, /repository_operator_org_nix_config_activate/);
+});
+
+test("dotfiles activation uses the selected provider and preserves callback failures", async () => {
+  const fixture = await mkdtemp(join(tmpdir(), "dotfiles-org-nix-"));
+  const cache = join(fixture, "nix/cache");
+  await mkdir(cache, { recursive: true });
+  const provider = join(cache, "org-nix-config.sh");
+  const engineShim = join(cache, "org2nix.sh");
+  const run = (script, extra = "") => spawnSync("bash", ["--noprofile", "--norc", "-c", `source "$1" || exit $?; ${extra}` , "bash", join(contractRoot, script)], {
+    env: { ...process.env, BASH_ENV: "", HOME: fixture, EXPECTED_ROOT: fixture, REPOSITORY_OPERATOR_ORG_NIX_CONFIG_ROOT: fixture }, encoding: "utf8",
+  });
+  for (const preferredShim of [false, true]) {
+    if (preferredShim) await writeFile(engineShim, "org2nix_activate() { return 91; }\n");
+    for (const callback of ["repository_operator", "repository_manager"]) {
+      await writeFile(provider, `${callback}_org_nix_config_activate() { [[ "$REPOSITORY_OPERATOR_ORG_NIX_CONFIG_ROOT" == "$EXPECTED_ROOT" ]] || return 72; ${callback === "repository_manager" ? '[[ "$REPOSITORY_MANAGER_ORG_NIX_CONFIG_ROOT" == "$EXPECTED_ROOT" ]] || return 73;' : ""} export NIX_CONFIG=fixture; }\n`);
+      for (const script of [".nix/direnv.sh", "scripts/org2nix.sh"]) {
+        const result = run(script, `EXPECTED_ROOT="$REPOSITORY_OPERATOR_ORG_NIX_CONFIG_ROOT"; export EXPECTED_ROOT; ${script.startsWith("scripts/") ? "org2nix_activate;" : ""} [[ "$NIX_CONFIG" == fixture* && -z "\${REPOSITORY_MANAGER_ORG_NIX_CONFIG_ROOT:-}" ]]`);
+        assert.equal(result.status, 0, result.stderr);
+      }
+    }
+  }
+  await writeFile(provider, "repository_operator_org_nix_config_activate() { return 37; }\nrepository_manager_org_nix_config_activate() { return 0; }\n");
+  for (const script of [".nix/direnv.sh", "scripts/org2nix.sh"]) {
+    const failed = run(script, script.startsWith("scripts/") ? "org2nix_activate" : "true");
+    assert.equal(failed.status, 37, failed.stderr);
+  }
+});
+
+test("dotfiles activation resolves the owner function under zsh as well as bash", async () => {
+  // `declare -F` succeeds for an undefined function name under zsh, so a
+  // guard written with it calls a function that does not exist and the whole
+  // .envrc evaluation aborts with exit 127. `command -v` is the portable check.
+  const fixture = await mkdtemp(join(tmpdir(), "dotfiles-org-nix-zsh-"));
+  const cache = join(fixture, "nix/cache");
+  await mkdir(cache, { recursive: true });
+  const provider = join(cache, "org-nix-config.sh");
+  const hasZsh = spawnSync("zsh", ["--version"], { encoding: "utf8" }).status === 0;
+  const shells = hasZsh ? ["bash", "zsh"] : ["bash"];
+  for (const callback of ["repository_operator", "repository_manager"]) {
+    await writeFile(provider, `${callback}_org_nix_config_activate() { export NIX_CONFIG=fixture; }\n`);
+    for (const shell of shells) {
+      const result = spawnSync(shell, ["-c", `source "$1" || exit $?; [[ "$NIX_CONFIG" == fixture* ]]`, shell, join(contractRoot, ".nix/direnv.sh")], {
+        env: { ...process.env, BASH_ENV: "", HOME: fixture, REPOSITORY_OPERATOR_ORG_NIX_CONFIG_ROOT: fixture }, encoding: "utf8",
+      });
+      assert.equal(result.status, 0, `${shell} .nix/direnv.sh (${callback} provider): ${result.stderr}`);
+    }
+  }
+  // The guard must not use `declare -F`: it is wrong under zsh. Match code
+  // lines only, so a comment may still name the rejected form.
+  for (const script of [".nix/direnv.sh", "scripts/org2nix.sh"]) {
+    const text = await readFile(join(contractRoot, script), "utf8");
+    const code = text.split("\n").filter((line) => !/^\s*#/.test(line)).join("\n");
+    assert.doesNotMatch(code, /declare\s+-F/, `${script} must not guard with declare -F`);
+  }
 });
 
 test("Home Manager activation uses the non-deprecated nix profile command", async () => {

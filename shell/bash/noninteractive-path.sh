@@ -5,7 +5,7 @@
 # non-interactive/agent shells (Claude Code, Cursor agent, CI, `bash -c`) never
 # source shell/bash/bashrc and never get its wrapper-precedence restore. mise's
 # `activate` hook-env prepends tool INSTALL dirs (…/mise/installs/<tool>/latest)
-# ahead of ~/.local/bin, so bare `vtcode`/`goose`/`kimi` hit the raw upstream
+# ahead of ~/.local/bin, so bare `vtcode`/`goose` hit the raw upstream
 # binary (no llm-gateway routing, no OTEL) instead of the HM gateway wrapper.
 #
 # This is the non-interactive twin of the `export PATH="$HOME/.local/bin:$PATH"`

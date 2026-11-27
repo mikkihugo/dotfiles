@@ -81,14 +81,18 @@ in {
     # PATH additions — prepended before the system PATH in every session.
     sessionPath = [
       "$HOME/.local/bin" # pip/pipx, claude CLI, local tools
-      "$HOME/.local/share/mise/shims" # mise-managed tools such as kimi and copilot
+      "$HOME/.local/share/mise/shims" # mise-managed tools such as copilot
       "$HOME/.npm-global/bin" # codex and other npm globals
 
       "$HOME/.amp/bin"
       # zsh, gemini and other home-manager packages. Nothing else puts this on PATH
       # here (no /etc/profile.d/nix.sh), so `zsh` is not found from bash.
       "$HOME/.nix-profile/bin"
-      # ~/.kimi-code/bin removed — kimi is managed by mise (npm:@moonshot-ai/kimi-code)
+      # ~/.kimi-code/bin is deliberately NOT on PATH: it holds the upstream native
+      # kimi binary plus helper scripts (fd, kimi-sync-models) that would shadow
+      # other tools. `kimi` itself resolves through the hand-written
+      # ~/.local/bin/kimi shim, which injects the OTel and LLM-mux env before
+      # exec'ing ~/.kimi-code/bin/kimi. Upstream install.sh owns that install.
       # pnpm global bin — opencode (pnpm-managed, so `opencode upgrade` can
       # detect its install method and self-upgrade). pnpm itself is nixpkgs (pnpm_12 12.9.0).
       "$HOME/.local/share/pnpm/bin"

@@ -82,16 +82,16 @@
       },
       {
         "id": "R1",
-        "statement": "The dotfiles Home Manager profile shall own one Droid Remote Control systemd user service that runs the managed Droid wrapper, starts only for a locally registered computer, restarts after failure, and is enabled at the user default target.",
+        "statement": "The dotfiles Home Manager profile shall own one Droid Remote Control systemd user service that runs the managed Droid wrapper, starts only for a locally registered computer, restarts whenever the daemon exits, and is enabled at the user default target.",
         "acceptance_criteria": [
           "home/home.nix imports the Droid Remote Control module",
           "The service ExecStart uses ~/.local/bin/droid daemon --remote-control",
           "The service requires both ~/.local/bin/droid and ~/.factory/computer.json",
-          "The service is enabled at default.target and restarts on failure",
+          "The service is enabled at default.target and restarts whenever the daemon exits",
           "The cc-se-sto-devbox-01 profile evaluates successfully",
           "Live readback shows droid-remote-control.service active",
           "A controlled native-daemon termination causes the systemd unit to restart and return to active state",
-          "droid computer list identifies cc-se-sto-devbox-01 as this machine",
+          "the local registration and the daemon relay line identify cc-se-sto-devbox-01 as this machine",
           "The Codex managed daemon declaration remains unchanged"
         ],
         "requirement_form": {
@@ -179,11 +179,11 @@
         "home/home.nix imports the Droid Remote Control module",
         "The service ExecStart uses ~/.local/bin/droid daemon --remote-control",
         "The service requires both ~/.local/bin/droid and ~/.factory/computer.json",
-        "The service is enabled at default.target and restarts on failure",
+        "The service is enabled at default.target and restarts whenever the daemon exits",
         "The cc-se-sto-devbox-01 profile evaluates successfully",
         "Live readback shows droid-remote-control.service active",
         "A controlled native-daemon termination causes the systemd unit to restart and return to active state",
-        "droid computer list identifies cc-se-sto-devbox-01 as this machine",
+        "the local registration and the daemon relay line identify cc-se-sto-devbox-01 as this machine",
         "The Codex managed daemon declaration remains unchanged"
       ],
       "requirement_form": {
@@ -267,7 +267,7 @@
       "nix eval --raw .#homeConfigurations.cc-se-sto-devbox-01.activationPackage.drvPath",
       "repo check",
       "systemctl --user is-active droid-remote-control.service",
-      "~/.local/bin/droid computer list",
+      "journalctl --user -u droid-remote-control.service -n 50 --no-pager | grep -F 'Relay:'",
       "python3 docs/work/2026-10-27-droid-remote-control/evidence/check-runtime.py",
       "purpose-validate-work docs/work/2026-10-27-droid-remote-control --require-evidence"
     ],
